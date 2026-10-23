@@ -9,6 +9,8 @@ for (const f of ['js/logic.js', 'js/art.js', 'js/sound.js', 'js/ui.js']) {
   const code = fs.readFileSync(path.join(root, f), 'utf8');
   html = html.replace(tag, () => `<script>\n${code}\n</script>`);
 }
+// La parte de app instalable necesita archivos aparte: no va en la versión de un solo archivo
+html = html.replace(/<!-- PWA -->[\s\S]*?<!-- \/PWA -->\s*/, '');
 if (/<script src="js\//.test(html)) throw new Error('No se pudo incrustar un script');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist', 'envivo-tycoon.html'), html);

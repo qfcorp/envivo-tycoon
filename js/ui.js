@@ -135,6 +135,7 @@
           <button class="btn" data-act="next-day">${I('sleep')}Descansar y pasar al día siguiente <span class="muted small">(gastos ${M(rent)})</span></button>
         </div>
       </div>
+      ${installCard()}
       ${story}
       <div class="sectitle">Lo último que pasó</div>
       <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>Día ${l.day}</span>${esc(l.text)}</p>`).join('')}</div>
@@ -145,6 +146,17 @@
         Si tus deudas pasan de $300, quiebras.
       </div>
       <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}Empezar partida nueva</button>`;
+  }
+
+  // Botón para instalar como app (solo si el navegador lo permite)
+  function installCard() {
+    const P = window.PWA;
+    try {
+      if (!P || P.isStandalone()) return '';
+      if (P.canInstall()) return `<button class="btn" data-act="install">${I('box')}Instalar como app en este celular</button>`;
+      if (P.isIOS()) return `<div class="card small muted">${I('tip', 'sm')} Para instalar el juego: toca <b>Compartir</b> en Safari y luego <b>Agregar a inicio</b>.</div>`;
+    } catch (e) { /* sin instalación */ }
+    return '';
   }
 
   function renderClientes() {
@@ -399,6 +411,9 @@
     const id = el.dataset.id ? Number(el.dataset.id) : null;
     switch (a) {
       case 'mute': snd.toggle(); render(); break;
+      case 'install':
+        try { window.PWA.install().then((r) => { if (r === 'accepted') toast('¡Listo! El juego quedó instalado.'); render(); }); } catch (err) { toast('Este navegador no permite instalar.'); }
+        break;
       case 'tab': tab = el.dataset.tab; snd.play('tap'); render(); window.scrollTo(0, 0); break;
       case 'close': closeModal(); render(); break;
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
@@ -446,6 +461,7 @@
   /* ---------- Inicio ---------- */
   // Íconos fijos de la barra de abajo y la cabecera
   document.querySelectorAll('[data-ico]').forEach((el) => { el.insertAdjacentHTML('afterbegin', I(el.dataset.ico)); });
+  try { if (window.PWA) window.PWA.onChange(() => { if (tab === 'inicio') render(); }); } catch (e) { /* sin instalación */ }
   S = load() || G.newGame();
   save();
   render();
