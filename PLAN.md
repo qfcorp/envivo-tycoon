@@ -110,10 +110,44 @@ Nota: el bot es "razonable" pero no muy fino. Un bot que solo acepta duelos con 
 - [ ] Empaquetar como app Android
 - [ ] Ícono, capturas, ficha en Play Console
 
-### Fase 4 — En línea tipo Kingshot (pendiente, opcional)
-- [ ] Cuentas de jugador y guardado en servidor
-- [ ] Ranking de productoras
-- [ ] Alianzas / competir por contratos
+### Fase 4 — Venta con dinero real y servidor (en curso)
+Decisiones (23 oct 2026): VPS de OVH, dirección **juego.tukanec.com** (luego un dominio propio), cobro con **Pago Plux**
+(portado de TuPass), venta de paquetes de créditos, paquete de inicio, Pase VIP 30 días y equipos exclusivos.
+- [x] Contrato juego ↔ servidor: `server/API.md`
+- [x] Servidor PHP 8.3 + SQLite: cuentas, sesiones, partida en la nube, monedero de créditos con libro, entregas, VIP con bono diario (`server/`)
+- [x] Cobro con Pago Plux: pago normal, OTP, 3DS, webhook opcional; nunca se guarda la tarjeta; idempotente
+- [x] Panel de ventas `admin.php` (totales, CSV para facturar, dar créditos a mano) y páginas legales (borrador para abogado)
+- [x] Instalador para el VPS (`server/deploy/instalar.sh`) y guía paso a paso `docs/DESPLIEGUE.md`
+- [x] En el juego: pestaña Tienda, crear cuenta / entrar, comprar, canjear, bono VIP, elegir partida nube vs celular
+- [x] Equipos exclusivos (Dron 4K, grúa, unidad móvil, generador) y equipos solo VIP (guardados si se vence el VIP)
+- [x] Pruebas: `bash server/tests/correr.sh` (230 + 32) y `bash tests/tienda_e2e.sh` (compra de punta a punta desde el juego)
+- [ ] Publicar en el VPS (lo hace Dimitry con `docs/DESPLIEGUE.md`) y agregar `/var/lib/envivo` y `/etc/envivo` al respaldo restic
+- [ ] Certificación de Plux para juego.tukanec.com antes de cobrar de verdad (hasta entonces: sandbox)
+- [ ] Completar RUC/correo/WhatsApp en las páginas legales y revisión de abogado (también de los nombres de marcas)
+
+### Fase 5 — Mercado entre jugadores (en curso)
+Reglas: `server/MERCADO.md`. Comisión 5% (se quema), solo quien compró créditos, máx. 10 publicaciones, vencen a los 7 días,
+equipos con número de serie, los créditos nunca se convierten en dinero real.
+- [x] En el juego: inventario del servidor sincronizado con la bodega (`js/premium.js`, `tests/test_premium.js`)
+- [ ] Servidor: inventario, publicar / comprar / retirar, panel del mercado (ayudante trabajando)
+- [ ] Pantalla del mercado en el juego
+
+### Fase 6 — Comunidad y eventos en línea (diseño listo)
+Diseño completo: documento "Eventos en línea entre productoras" (Claude Docs). Contrato técnico: `server/SOCIAL.md`.
+- [ ] Servidores (reinos), asociaciones de hasta 20 productoras, chat de servidor / asociación / coalición con moderación (ayudante trabajando en el servidor)
+- [ ] Liga Semanal y Desafío Técnico del Día
+- [ ] Mega Festival y Duelo de Productoras (el servidor repite cada jugada para evitar trampas)
+- [ ] Productor del Año, Switcher en Vivo (minijuego) y Pase de Temporada
+- [ ] Gran Licitación en coalición (tiempo real), Copas internacionales servidor contra servidor, Desafío de Cadenas Internacionales
+
+### Fase 7 — Realismo (en curso)
+Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md` (en curso).
+- [ ] Catálogo de equipos reales con marcas cambiadas (de handycam a cámara de sistema con lente box 100x, PTZ, drones, repeticiones, intercom, bonding, OB van)
+- [ ] Personal por evento (mínimo / ideal por rol: cablero, boom, repeticiones, gráficos, shader, piloto de dron...) con riesgo al ir con menos gente
+- [ ] Niveles de experiencia del personal (Junior, Semi-senior, Senior, Internacional)
+- [ ] Plan de cámaras dibujado por evento (cámaras detrás de los arcos, tribuna principal, etc.)
+- [ ] Eventos nuevos: boxeo, lucha libre, funeral, lanzamiento de autos, IRL con influencers; contratos internacionales
+- [ ] Gráficos semirrealistas y rápidos (ayudante trabajando)
 
 ## 📝 Bitácora
 
@@ -123,3 +157,4 @@ Nota: el bot es "razonable" pero no muy fino. Un bot que solo acepta duelos con 
 - 2026-10-23: rediseño del ritmo de la historia. Cada capítulo tiene personaje (retrato en la pantalla), ofertas de la historia espaciadas y la rival MegaVisión con contratos disputados. Bot: capítulos en días 4 / 32 / 45 / 60 / 79 / 103 (mediana), 0% quiebras, 100% termina la historia en 400 días. La prueba ahora falla si el ritmo se rompe.
 - 2026-10-23: parte gráfica (íconos, retratos, sede, escena animada), sonidos y app instalable. Todo subido a GitHub.
 - 2026-10-23: juego más difícil (para que luego tenga sentido comprar mejor equipo). MegaVisión con calidad propia en los duelos, más imprevistos y algunos que cuestan plata, gastos que crecen con la empresa, sueldos más altos, pagos atrasados, cancelaciones y pérdida de fama sin trabajar. Los 3 primeros eventos siguen suaves. Bot: capítulos en días 4 / 50 / 70 / 126 / 160 / 212, 8% quiebras, 79,5% termina la historia, pierde el 61% de los duelos, 3,5⭐ promedio en los capítulos 3 a 6. Números en `BALANCE` (js/logic.js). Guardado v2 (las partidas v1 cargan bien).
+- 2026-10-23: servidor de venta terminado (cuentas, nube, créditos, VIP, Plux en sandbox, panel, instalador) y probado de punta a punta desde el juego. Diseño de eventos en línea, chat, copas entre servidores y cadenas internacionales. Plan de realismo (personal por evento, equipos reales). Demo previsto para las ~09:00.
