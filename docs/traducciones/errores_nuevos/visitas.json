@@ -1,0 +1,69 @@
+{
+  "_info": "Códigos NUEVOS del módulo de visitas (server/src/Visitas.php, VisitasApi.php). Mismo formato que docs/traducciones/errores.json: el coordinador los copia ahí (y a \"error.<codigo>\" en js/lang/*.js). falta_jugador_id y falta_permitir van por el prefijo falta_<campo> → falta_dato; limite_intentos y cabecera_requerida ya existen.",
+  "_codigos": {
+    "visitas_cerradas": "existe · Visitas.php · 403 (la productora apagó las visitas: ver y aplaudir)",
+    "productora_no_existe": "existe · Visitas.php · 404 (no existe, borrada o bloqueada)",
+    "aplauso_ya": "existe · Visitas.php · 409 (1 aplauso por visitante, productora y día)",
+    "aplauso_propio": "existe · Visitas.php · 400"
+  },
+  "es": {
+    "visitas_cerradas": "Esta productora no recibe visitas por ahora.",
+    "productora_no_existe": "Esa productora no existe.",
+    "aplauso_ya": "Ya le diste un aplauso hoy a esta productora. Vuelve mañana.",
+    "aplauso_propio": "No puedes aplaudirte a ti mismo."
+  },
+  "en": {
+    "visitas_cerradas": "This company is not receiving visits right now.",
+    "productora_no_existe": "That company does not exist.",
+    "aplauso_ya": "You already applauded this company today. Come back tomorrow.",
+    "aplauso_propio": "You cannot applaud yourself."
+  },
+  "pt-BR": {
+    "visitas_cerradas": "Esta produtora não está recebendo visitas agora.",
+    "productora_no_existe": "Essa produtora não existe.",
+    "aplauso_ya": "Você já aplaudiu esta produtora hoje. Volte amanhã.",
+    "aplauso_propio": "Você não pode aplaudir a si mesmo."
+  },
+  "fr": {
+    "visitas_cerradas": "Cette société ne reçoit pas de visites pour le moment.",
+    "productora_no_existe": "Cette société n’existe pas.",
+    "aplauso_ya": "Vous avez déjà applaudi cette société aujourd’hui. Revenez demain.",
+    "aplauso_propio": "Vous ne pouvez pas vous applaudir vous-même."
+  },
+  "de": {
+    "visitas_cerradas": "Diese Firma empfängt gerade keine Besuche.",
+    "productora_no_existe": "Diese Firma gibt es nicht.",
+    "aplauso_ya": "Du hast dieser Firma heute schon applaudiert. Komm morgen wieder.",
+    "aplauso_propio": "Du kannst dir nicht selbst applaudieren."
+  },
+  "it": {
+    "visitas_cerradas": "Questa casa di produzione non riceve visite al momento.",
+    "productora_no_existe": "Questa casa di produzione non esiste.",
+    "aplauso_ya": "Hai già applaudito questa casa di produzione oggi. Torna domani.",
+    "aplauso_propio": "Non puoi applaudire te stesso."
+  },
+  "ru": {
+    "visitas_cerradas": "Эта студия сейчас не принимает гостей.",
+    "productora_no_existe": "Такой студии нет.",
+    "aplauso_ya": "Вы уже хлопали этой студии сегодня. Приходите завтра.",
+    "aplauso_propio": "Нельзя хлопать самому себе."
+  },
+  "tr": {
+    "visitas_cerradas": "Bu şirket şu an ziyaretçi kabul etmiyor.",
+    "productora_no_existe": "Böyle bir şirket yok.",
+    "aplauso_ya": "Bu şirketi bugün zaten alkışladın. Yarın tekrar gel.",
+    "aplauso_propio": "Kendini alkışlayamazsın."
+  },
+  "id": {
+    "visitas_cerradas": "Rumah produksi ini sedang tidak menerima kunjungan.",
+    "productora_no_existe": "Rumah produksi itu tidak ada.",
+    "aplauso_ya": "Kamu sudah bertepuk tangan untuk rumah produksi ini hari ini. Kembali besok.",
+    "aplauso_propio": "Kamu tidak bisa bertepuk tangan untuk dirimu sendiri."
+  },
+  "zh-CN": {
+    "visitas_cerradas": "这家制作公司暂时不接受拜访。",
+    "productora_no_existe": "这家制作公司不存在。",
+    "aplauso_ya": "今天你已经为这家制作公司鼓过掌了，明天再来吧。",
+    "aplauso_propio": "不能为自己鼓掌。"
+  }
+}
