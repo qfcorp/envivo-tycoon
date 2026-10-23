@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v10';
+const VERSION = 'envivo-v11';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -40,6 +40,7 @@ const SHELL = [
   './js/pase.js',       // Pase de Temporada
   './js/estrellas.js',  // Personal estrella y Pase de Copa
   './js/guia.js',       // guía "toca aquí" del primer evento
+  './js/escena.js',     // franja animada del evento en vivo (opcional)
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',

@@ -1517,6 +1517,8 @@
     const c = ev ? ev.contract : null;
     return A.scene(type, key, liveCams(), false, liveGear(), { client: c ? c.client : '', seed: c ? c.id : 0 });
   }
+  // Franja animada de arriba (js/escena.js, opcional): el lugar, el público, los camarógrafos y el monitor de programa
+  const escena = (c, e) => { try { return window.Escena ? window.Escena.html(c, e) : ''; } catch (err) { return ''; } };
   function incKey() {
     const ev = evS().currentEvent;
     return ev && ev.incidents[ev.step] ? ev.incidents[ev.step].key : null;
@@ -1540,6 +1542,7 @@
     const rolInc = inc.rol && (inc.estadoRol === 'falta' || inc.estadoRol === 'justo')
       ? `<div class="rolwarn ${inc.estadoRol}">${I(roleIcon(inc.rol), 'sm')}<span>${T(inc.estadoRol === 'falta' ? 'vivo.rol_falta' : 'vivo.rol_justo', { rol: esc(roleName(normRole(inc.rol))) })}</span></div>` : '';
     openModal(`
+      ${escena(c, { fase: bueno ? 'momento' : 'imprevisto', clave: key, nombre: eventName(c.type) })}
       ${liveScene(c.type, key)}
       <div class="row between" style="margin-top:10px"><span class="row" style="gap:6px"><span class="live"><i></i>${T('vivo.en_vivo')}</span>${viTag()}</span><span class="small muted">${bueno ? T('vivo.momento', { i: inc.n, total: inc.total }) : T('vivo.imprevisto', { i: inc.n, total: inc.total })}</span></div>
       <div class="small muted" style="margin-top:8px">${esc(eventName(c.type))} · ${esc(TL(c.client))}</div>
@@ -1566,6 +1569,7 @@
     const c = s.currentEvent.contract;
     if (r.q >= 0 && mus.actual() === 'tension' && !esFuneral(c.type)) mus.go(temaDeEvento(c.type));
     openModal(`
+      ${escena(c, { fase: r.q > 0 ? 'bien' : r.q < 0 ? 'mal' : '', clave: key, nombre: eventName(c.type) })}
       ${liveScene(c.type, r.q > 4 ? 'epico' : key === 'luz' && r.q < -10 ? 'luz' : null)}
       <div class="row" style="margin-top:10px;gap:6px"><span class="live"><i></i>${T('vivo.en_vivo')}</span>${viTag()}</div>
       <div class="incident">${esc(gtx(r, r.msg))}</div>
