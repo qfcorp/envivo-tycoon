@@ -167,6 +167,8 @@ function armarPartida(cambios) {
     bien(st2.c === 100 && st2.m === st.m - st.rc, `3: "Reparar" la deja al 100% y cobra ${st.rc} (${st.c}% → ${st2.c}%)`);
     bien(await overlayOn(page) && !!(await page.$('#resDanos')), '3: el resultado sigue abierto');
     bien(/Reparado/.test(await page.innerText('#resDanos')), '3: la fila dice "Reparado"');
+    const filaRep = await page.evaluate(() => { const f = document.querySelector('#resDanos .dn-it.ok'); const i = f && f.querySelector('.dn-bar i'); return f ? { txt: f.querySelector('.dn-cond').innerText, w: i ? i.style.width : '' } : null; });
+    bien(filaRep && filaRep.w === '100%' && /100%/.test(filaRep.txt), `3: la barra y el número muestran 100% después de reparar (${JSON.stringify(filaRep)})`);
     bien(!(await page.$('#resDanos [data-act="repair-all-res"]')), '3: "Reparar todo" se va (queda solo una)');
     bien((await page.textContent('#hMoney')).replace(/\D/g, '') === String(st2.m).replace(/\D/g, ''), '3: el dinero de arriba se actualiza');
     await page.locator('#resDanos').scrollIntoViewIfNeeded();

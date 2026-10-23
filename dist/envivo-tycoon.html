@@ -38029,12 +38029,15 @@
       const rc = costoRep(e), falta = rc - S.money;
       const causa = d.causas.length ? d.causas.map((k) => `<span class="dn-causa">${I(CAUSA_ICO[k] || 'bolt', 'sm')}${esc(causaTxt(k))}</span>`).join('')
         : `<span class="dn-causa">${I('clock', 'sm')}${esc(T('danos.causa.desgaste'))}</span>`;
-      const bar = `<div class="bar dn-bar ${d.despues < WORN() ? 'red' : d.despues < 70 ? 'amber' : ''}">${d.antes !== null ? `<s style="width:${d.antes}%"></s>` : ''}<i style="width:${d.despues}%"></i></div>`;
+      // Ya reparado (aquí o en la Bodega): se muestra cómo quedó ahora, no cómo terminó el evento
+      const ahora = Math.round(e.condition), rep = rc <= 0 && ahora > d.despues;
+      const bar = rep ? `<div class="bar dn-bar"><i style="width:${ahora}%"></i></div>`
+        : `<div class="bar dn-bar ${d.despues < WORN() ? 'red' : d.despues < 70 ? 'amber' : ''}">${d.antes !== null ? `<s style="width:${d.antes}%"></s>` : ''}<i style="width:${d.despues}%"></i></div>`;
       const btn = rc <= 0 ? `<span class="dn-ok">${I('check', 'sm')}${T('danos.reparado')}</span>`
         : `<button class="btn sm green dn-btn" data-act="repair-res" data-id="${e.id}" ${falta > 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${T('danos.reparar', { m: M(rc) })}</button>${falta > 0 ? `<div class="dn-falta">${T('danos.falta', { m: M(falta) })}</div>` : ''}`;
       return `<div class="dn-it ${rc <= 0 ? 'ok' : ''}">${itemArt(e.type, 44, 'mini')}
         <div class="grow" style="min-width:0"><b class="dn-nm">${esc(nmE(e))}</b><div class="dn-causas">${causa}</div>
-          <div class="dn-cond"><span class="num">${d.antes !== null ? `<span class="muted">${d.antes}%</span> → ` : ''}<b class="${d.despues < WORN() ? 'neg' : ''}">${d.despues}%</b></span></div>${bar}${d.despues < WORN() && rc > 0 ? `<span class="dn-riesgo">${I('bolt', 'sm')}${T('danos.riesgo')}</span>` : ''}</div>
+          <div class="dn-cond"><span class="num">${rep ? `<span class="muted">${d.despues}%</span> → <b class="up">${ahora}%</b>` : `${d.antes !== null ? `<span class="muted">${d.antes}%</span> → ` : ''}<b class="${d.despues < WORN() ? 'neg' : ''}">${d.despues}%</b>`}</span></div>${bar}${d.despues < WORN() && rc > 0 ? `<span class="dn-riesgo">${I('bolt', 'sm')}${T('danos.riesgo')}</span>` : ''}</div>
         <div class="dn-acc">${btn}</div></div>`;
     }).join('');
     const todo = pend.length > 1 ? `<button class="btn dn-todo" data-act="repair-all-res" ${S.money < total ? 'disabled' : ''}>${I('wrench', 'sm')}${T('danos.reparar_todo', { m: M(total) })}</button>${S.money < total ? `<div class="dn-falta" style="text-align:center">${T('danos.falta', { m: M(total - S.money) })}</div>` : ''}` : '';
