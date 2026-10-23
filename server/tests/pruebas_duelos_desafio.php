@@ -414,7 +414,7 @@ $eleccion = function (array $mod) use ($costoDe): array {
     return ['personal' => $pers, 'equipos' => $eq];
 };
 $sel = $eleccion($mod);
-$r = $A->post('/api/desafio/empezar', ['personal' => ['p1', 'p5', 'p7', 'p9', 'p11'], 'equipos' => ['e1', 'e8', 'e10', 'e2', 'e3', 'e4']]);
+$r = $A->post('/api/desafio/empezar', ['personal' => array_keys(Desafio::PERSONAL), 'equipos' => array_keys(Desafio::EQUIPOS)]);
 check('Pasarse del presupuesto -> 400 presupuesto', [400, 'presupuesto'], [$A->http, $r['codigo'] ?? null]);
 $r = $A->post('/api/desafio/empezar', ['personal' => ['p2'], 'equipos' => ['e9']]);
 check('Sin cámara -> 400 camaras', [400, 'camaras'], [$A->http, $r['codigo'] ?? null]);
