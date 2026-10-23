@@ -15,6 +15,10 @@
     grua:         { name: 'Cámara en grúa telescópica',     icon: 'grua',         cat: 'cam',      price: 0, q: 4, minRep: 0, premium: true, repairBase: 2600, desc: 'Barridos de cine sobre el público. Cámara de calidad 4.' },
     unidad_movil: { name: 'Unidad móvil de transmisión',    icon: 'unidad_movil', cat: 'switcher', price: 0, q: 3, minRep: 0, premium: true, repairBase: 3500, desc: 'Un estudio completo sobre ruedas. Switcher de calidad 3.' },
     generador:    { name: 'Generador diésel',               icon: 'generador',    cat: 'power',    price: 0, q: 1, minRep: 0, premium: true, repairBase: 900,  desc: 'Si se va la luz, tú sigues al aire.' },
+    // Solo VIP: se canjean con VIP activo y funcionan solo mientras el VIP esté activo
+    vip_cam8k:     { name: 'Cámara de cine 8K Edición VIP', icon: 'cam_cine',     cat: 'cam',      price: 0, q: 5, minRep: 0, premium: true, vip: true, repairBase: 4000, desc: 'La mejor imagen del juego. Cámara de calidad 5.' },
+    vip_switcher:  { name: 'Switcher de estudio VIP',       icon: 'switch_pro',   cat: 'switcher', price: 0, q: 4, minRep: 0, premium: true, vip: true, repairBase: 4200, desc: 'Repeticiones y gráficos de televisión. Switcher de calidad 4.' },
+    vip_satelital: { name: 'Enlace satelital VIP',          icon: 'stream',       cat: 'internet', price: 0, q: 3, minRep: 0, premium: true, vip: true, repairBase: 2500, desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
   };
   const DURABLES = ['item', 'personal'];   // se vuelven a entregar si empiezas partida nueva
   const VIP_DESCUENTO = 0.3;
@@ -68,6 +72,54 @@
     anotar(s, `Reparaste ${G.CATALOG[e.type].name} (${G.money(cost)})${vipActivo ? ' con descuento VIP' : ''}.`);
     return { ok: true, msg: 'Quedó como nuevo.' };
   };
+
+  /* ---------- Equipos VIP: guardados si el VIP no está activo ---------- */
+  const esVip = (type) => !!(G.CATALOG[type] && G.CATALOG[type].vip);
+  const bloqueado = (e) => esVip(e.type) && !vipActivo;
+  const suggestOriginal = G.suggestLoadout;
+  G.suggestLoadout = function (s, contractId) {
+    const r = suggestOriginal(s, contractId);
+    if (vipActivo) return r;
+    // Sin VIP: quitar los equipos VIP y completar con lo mejor que quede de la misma categoría
+    const quitados = r.equipIds.map((id) => s.equip.find((e) => e.id === id)).filter((e) => e && bloqueado(e));
+    let ids = r.equipIds.filter((id) => !quitados.some((e) => e.id === id));
+    quitados.forEach((q) => {
+      const cat = G.CATALOG[q.type].cat;
+      const alt = s.equip.filter((e) => G.CATALOG[e.type].cat === cat && !bloqueado(e) && !ids.includes(e.id))
+        .sort((a, b) => (G.CATALOG[b.type].q * 100 + b.condition) - (G.CATALOG[a.type].q * 100 + a.condition))[0];
+      if (alt) ids.push(alt.id);
+    });
+    return { staffIds: r.staffIds, equipIds: ids };
+  };
+  const startOriginal = G.startEvent;
+  G.startEvent = function (s, contractId, staffIds, equipIds) {
+    const ok = (equipIds || []).filter((id) => { const e = s.equip.find((x) => x.id === id); return e && !bloqueado(e); });
+    return startOriginal(s, contractId, staffIds, ok);
+  };
+
+  /* ---------- Inventario del servidor (equipos que se pueden intercambiar en el mercado) ---------- */
+  // Cada equipo del servidor vive en la partida con srvId. El servidor manda: si ya no está en su
+  // inventario (lo publicaste o lo vendiste) sale de la bodega; si llegó uno nuevo, entra al 100 %.
+  function sincronizarInventario(s, inventario) {
+    if (!Array.isArray(inventario)) return { agregados: [], quitados: [] };
+    const enUso = s.currentEvent ? s.currentEvent.equipIds : [];
+    const ids = inventario.map((x) => x.id);
+    const agregados = [], quitados = [];
+    s.equip = s.equip.filter((e) => {
+      if (e.srvId === undefined || ids.includes(e.srvId) || enUso.includes(e.id)) return true;
+      quitados.push(G.CATALOG[e.type] ? G.CATALOG[e.type].name : e.type);
+      return false;
+    });
+    inventario.forEach((x) => {
+      if (!G.CATALOG[x.item] || s.equip.some((e) => e.srvId === x.id)) return;
+      s.equip.push({ id: nuevoId(s), type: x.item, condition: 100, srvId: x.id, serie: x.serie });
+      agregados.push(`${G.CATALOG[x.item].name}${x.serie ? ' #' + String(x.serie).padStart(4, '0') : ''}`);
+    });
+    agregados.forEach((t) => anotar(s, `🎁 Llegó a tu bodega: ${t}.`));
+    quitados.forEach((t) => anotar(s, `🏷️ ${t} salió de tu bodega (mercado).`));
+    return { agregados, quitados };
+  }
+  const nombreSerie = (e) => `${(G.CATALOG[e.type] || { name: e.type }).name}${e.serie ? ' #' + String(e.serie).padStart(4, '0') : ''}`;
 
   /* ---------- Entregas del servidor ---------- */
   const NOMBRE_ROL = { cam: 'Camarógrafo', dir: 'Director / vMix', audio: 'Sonidista', stream: 'Técnico de streaming' };
@@ -142,6 +194,6 @@
     return false;
   }
 
-  root.Premium = { EXCLUSIVOS, aplicarEntregas, prepararPartidaNueva, setVip, tickVip, esPremium, costoReparar, get vip() { return vipActivo; } };
+  root.Premium = { EXCLUSIVOS, aplicarEntregas, prepararPartidaNueva, sincronizarInventario, setVip, tickVip, esPremium, esVip, bloqueado, nombreSerie, costoReparar, get vip() { return vipActivo; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Premium;
 })(typeof window !== 'undefined' ? window : globalThis);
