@@ -549,7 +549,7 @@ const CORTO = ['director', 'camarografo', 'camarografo', 'sonidista', 'tecnico_t
   ['cam', 'lens', 'support', 'switcher', 'replay', 'graphics', 'audio', 'mics', 'intercom', 'encoder', 'internet', 'wireless', 'cable', 'monitor', 'power', 'rain', 'case', 'vehicle', 'service']
     .forEach((k) => check(cats.includes(k) && Object.values(G.CATALOG).some((it) => it.cat === k), `categoría ${k} vacía o sin nombre`));
   G.CATEGORIAS.forEach((c) => check(typeof c.nombre === 'string' && c.nombre.length, `categoría ${c.key} sin nombre`));
-  const n = Object.keys(G.CATALOG).length;
+  const n = Object.keys(G.CATALOG).filter((k) => !G.CATALOG[k].exclusivo).length;   // sin la Edición Exclusiva (una por categoría)
   check(n >= 60 && n <= 100, `catálogo con ${n} equipos`);
   Object.keys(G.CATALOG).forEach((k) => { const it = G.CATALOG[k]; check(it.name && it.desc && it.q >= 1 && it.q <= 6 && it.price > 0 && typeof it.minRep === 'number' && it.durabilidad >= 1, `equipo ${k} incompleto`); });
   ['cam_basic', 'cam_pro', 'cam_cine', 'switch_basic', 'switch_pro', 'audio_basic', 'audio_pro', 'mics', 'encoder', 'router4g', 'ups', 'raincover'].forEach((k) => check(G.CATALOG[k], `falta la clave vieja ${k}`));

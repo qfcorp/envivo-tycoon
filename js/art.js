@@ -1112,10 +1112,14 @@
       if (zs) p.tag = zs[zs.length - 1] + '×'; else if (r1) p.tag = r1[1] + '-' + r1[2];
     }
     if (p.vip) { p.acc = '#f0b829'; p.tag = p.tag || '8K'; }
+    if (it.exclusivo) { p.acc = '#f0b829'; p.oro = true; }   // Edición Exclusiva: detalles dorados
     return p;
   }
   const ITEM_LABEL = (type) => { const it = catalogItem(type); return it ? it.name : ''; };
 
+  // Medallón dorado de la Edición Exclusiva (abajo a la derecha): aro de oro, estrella oscura, sin letras
+  const MEDALLA = `<g class="ex-medalla" transform="translate(101 101)"><circle r="12.5" fill="#1a1205" opacity=".55"/><circle r="11" fill="${U('gold')}" stroke="#7a520c" stroke-width="1.2"/>`
+    + `<circle r="8" fill="none" stroke="#fff3c4" stroke-width=".8" opacity=".7"/><path d="M0 -6.2l1.8 3.8 4.1.5-3 2.8.8 4.1L0 3l-3.7 2 .8-4.1-3-2.8 4.1-.5z" fill="#3a2606"/></g>`;
   // Art.item(tipo, tamaño, { subtipo, cat, rarity, label }) → render del equipo con brillo de rareza
   function itemRaw(type, size, opts) {
     const o = opts || {};
@@ -1126,13 +1130,15 @@
     let body;
     try { body = DRAW[sub](itemParams(type, r, spec.prm)); } catch (e) { try { body = DRAW.case({}); } catch (e2) { body = ''; } }
     const inline = ensureShared() ? '' : `<defs>${sharedDefs()}</defs>`;
+    // Edición Exclusiva (it.exclusivo): rayos y destellos dorados y un medallón de oro con estrella (sin texto)
+    const oro = !!((catalogItem(type) || {}).exclusivo) && r.key === 'exclusivo';
     const rays = r.key === 'exclusivo' || r.key === 'vip'
-      ? `<g opacity="${r.key === 'vip' ? 0.2 : 0.13}" fill="${r.color}" class="${r.key === 'vip' ? 'rays' : ''}" style="transform-origin:60px 58px">${Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<path d="M60 58L${(60 + 72 * Math.cos(a - 0.11)).toFixed(1)} ${(58 + 72 * Math.sin(a - 0.11)).toFixed(1)}L${(60 + 72 * Math.cos(a + 0.11)).toFixed(1)} ${(58 + 72 * Math.sin(a + 0.11)).toFixed(1)}z"/>`; }).join('')}</g>` : '';
+      ? `<g opacity="${r.key === 'vip' ? 0.2 : oro ? 0.18 : 0.13}" fill="${oro ? '#f0b829' : r.color}" class="${r.key === 'vip' || oro ? 'rays' : ''}" style="transform-origin:60px 58px">${Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<path d="M60 58L${(60 + 72 * Math.cos(a - 0.11)).toFixed(1)} ${(58 + 72 * Math.sin(a - 0.11)).toFixed(1)}L${(60 + 72 * Math.cos(a + 0.11)).toFixed(1)} ${(58 + 72 * Math.sin(a + 0.11)).toFixed(1)}z"/>`; }).join('')}</g>` : '';
     const sparkles = r.key === 'vip' || r.key === 'exclusivo'
-      ? [[16, 20, 0], [104, 16, 0.6], [106, 86, 1.2]].map(([x, y, d]) => `<path d="M${x} ${y - 5}l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z" fill="${r.key === 'vip' ? '#fff3c4' : '#ffd0a8'}" class="twinkle" style="animation-delay:${d}s"/>`).join('') : '';
+      ? [[16, 20, 0], [104, 16, 0.6], [106, 86, 1.2]].map(([x, y, d]) => `<path d="M${x} ${y - 5}l1.4 3.6 3.6 1.4-3.6 1.4-1.4 3.6-1.4-3.6-3.6-1.4 3.6-1.4z" fill="${r.key === 'vip' || oro ? '#fff3c4' : '#ffd0a8'}" class="twinkle" style="animation-delay:${d}s"/>`).join('') : '';
     const label = esc(o.label || ITEM_LABEL(type) || 'Equipo');
     return `<svg class="itemart r-${r.key}" width="${s}" height="${s}" viewBox="0 0 120 120" role="img" aria-label="${label}" data-sub="${sub}">${inline}
-      <circle cx="60" cy="58" r="58" fill="url(#am-glow-${r.key})"/>${rays}${body}${sparkles}</svg>`;
+      <circle cx="60" cy="58" r="58" fill="url(#am-glow-${oro ? 'vip' : r.key})"/>${rays}${body}${sparkles}${oro ? MEDALLA : ''}</svg>`;
   }
 
   // Los dibujos son deterministas: se guardan ya armados (la bodega pinta hasta 90 a la vez)

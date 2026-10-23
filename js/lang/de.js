@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Exklusiv",
     "online.estrellas": "Stars",
     "online.estrellas_det": "Star-Personal und Pokal-Pass",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Exklusiv-Edition",
+    "bodega.ex_canjear": "Für {n} Credits einlösen",
+    "bodega.ex_fama_cred": "Ruhm {n} zum Einlösen",
+    "bodega.ex_con_dinero": "Mit Spielgeld · {m}",
+    "bodega.ex_gratis": "Ohne Credits: mit Spielgeld ab {n} Ruhm oder auf dem Markt.",
+    "bodega.ex_perk_desgaste": "Halber Verschleiß",
+    "bodega.ex_perk_reparar": "Reparatur zum halben Preis",
+    "bodega.ex_perk_bultos": "Weniger Gepäckstücke",
+    "bodega.ex_perk_antes": "Mit Credits ab Ruhm {n}",
+    "bodega.ex_perk_ya": "Mit Credits: sofort verfügbar",
+    "bodega.ex_cuenta": "Erstelle dein Konto, um Exklusives mit Credits einzulösen: Es bleibt in deinem Lager und in deinem Konto gespeichert.",
+    "bodega.ex_mercado": "Auf dem Markt weiterverkaufen",
+    "bodega.ex_vip": "Einlösbar mit aktivem VIP.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

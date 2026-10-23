@@ -21,7 +21,7 @@ for (const [k, v] of Object.entries(d.CATALOGO)) equipos[k] = { cat: v.cat, fama
 const eventos = {};
 for (const [k, v] of Object.entries(d.EVENTOS)) eventos[k] = { nombre: T['ev.' + k] || k, cams: v.cams, audio: !!v.audio, stream: +v.stream, outdoor: +v.outdoor, diff: v.diff, pay: v.pay, fama: v.minRep | 0, clientes: v.clients };
 const exclusivos = {};
-for (const k of ['dron4k', 'grua', 'unidad_movil', 'generador', 'vip_cam8k', 'vip_switcher', 'vip_satelital'])
+for (const k of ['dron4k', 'grua', 'unidad_movil', 'generador', 'vip_cam8k', 'vip_switcher', 'vip_satelital'].concat(Object.keys(d.CATALOGO).filter((x) => d.CATALOGO[x].exclusivo)))
   if (T['item.' + k + '.nombre']) exclusivos[k] = { nombre: T['item.' + k + '.nombre'], detalle: T['item.' + k + '.desc'] || '' };
 process.stdout.write(JSON.stringify({ roles: d.ROLES_DATA.map((r) => r.key), alias: d.ROLE_ALIAS, equipos, eventos, exclusivos }));
 JS;

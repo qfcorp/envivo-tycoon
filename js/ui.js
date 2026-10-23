@@ -771,6 +771,65 @@
       <div class="grow2"></div>
       <button class="btn ${locked || llena ? '' : 'green'}" data-act="buy" data-k="${esc(k)}" ${locked || llena || S.money < it.price ? 'disabled' : ''}>${label}</button></div>`;
   }
+  /* ---------- Edición Exclusiva y equipos con créditos (arriba de cada categoría) ----------
+     La lista y el costo los manda el servidor (/api/estado tienda.premium; lo apagado en el Centro de Control no sale).
+     Sin conexión: los del catálogo con "creditos". Los de Edición Exclusiva también se compran con dinero del juego. */
+  function premiumServidor() {
+    try { const l = Api.estado && Api.estado.tienda && Api.estado.tienda.premium; return Array.isArray(l) ? l : null; } catch (e) { return null; }
+  }
+  function exclusivosDe(cat, items) {
+    const srv = premiumServidor();
+    const out = [];
+    if (srv) srv.forEach((p) => {
+      const en = (p && p.entrega) || {};
+      const it = en.tipo === 'item' ? G.CATALOG[en.item] : null;
+      if (it && it.cat === cat && !out.some((x) => x.key === en.item)) out.push({ key: en.item, it, id: p.id, creditos: Number(p.creditos) || 0, vip: !!p.vip });
+    });
+    else Object.keys(G.CATALOG).forEach((k) => {
+      const it = G.CATALOG[k];
+      if (it.cat === cat && (it.exclusivo || it.premium) && Number(it.creditos) > 0) out.push({ key: k, it, id: k, creditos: Number(it.creditos), vip: !!it.vip });
+    });
+    // Un exclusivo apagado en el Centro de Control sigue a la venta con dinero del juego (sin botón de créditos)
+    (items || []).forEach((it) => { if (it.exclusivo && !out.some((x) => x.key === it.key)) out.push({ key: it.key, it: G.CATALOG[it.key] || it, id: it.key, creditos: 0, vip: false }); });
+    return out.sort((a, b) => (b.it.exclusivo ? 1 : 0) - (a.it.exclusivo ? 1 : 0) || (b.it.q || 0) - (a.it.q || 0) || b.creditos - a.creditos);
+  }
+  function exPerks(it) {
+    if (!it || !it.exclusivo) return '';
+    const fc = Number(it.minRepCreditos) || 0;
+    const l = [['bolt', T('bodega.ex_perk_desgaste')], ['wrench', T('bodega.ex_perk_reparar')], ['box', T('bodega.ex_perk_bultos')]];
+    if (fc < it.minRep) l.push(['star', fc > 0 ? T('bodega.ex_perk_antes', { n: fc }) : T('bodega.ex_perk_ya')]);
+    return `<ul class="exq-perks">${l.map(([ic, t]) => `<li>${I(ic, 'sm')}${esc(t)}</li>`).join('')}</ul>`;
+  }
+  function exCard(x, llena, maxEq) {
+    const k = x.key, it = x.it;
+    const owned = S.equip.filter((e) => e.type === k).length;
+    const fc = Number(it.minRepCreditos) || 0;
+    const bloq = S.rep < fc;
+    const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
+    // Equipos VIP: con cuenta y sin VIP activo el botón queda bloqueado (el servidor igual lo rechazaría)
+    const sinVip = x.vip && !!(Api.estado && Api.estado.logueado && !Api.estado.vip_activo);
+    const cred = x.creditos > 0 ? `<button class="btn ex-cred" data-act="ex-canjear" data-k="${esc(x.id)}" aria-label="${esc(T('bodega.ex_canjear', { n: N(x.creditos) }))}" ${bloq || sinVip ? 'disabled' : ''}>${bloq
+      ? `${I('lock', 'sm')} ${T('bodega.ex_fama_cred', { n: fc })}` : sinVip ? `${I('lock', 'sm')} VIP · ${I('gem', 'sm')}<span>${N(x.creditos)}</span>` : `${I('gem', 'sm')}<span>${N(x.creditos)}</span>`}</button>` : '';
+    let libre = '';
+    if (it.exclusivo) {
+      const lk = it.minRep > S.rep;
+      libre = `<button class="btn sm ex-free ${lk || llena ? '' : 'green'}" data-act="buy" data-k="${esc(k)}" ${lk || llena || S.money < it.price ? 'disabled' : ''}>${lk ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}`
+        : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
+    }
+    return `<div class="card gear shopc exq rf r-${x.vip ? 'vip' : 'exclusivo'}" data-ex="${esc(k)}">
+      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span>${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}</div>
+      <div class="exq-body"><div class="art">${itemArt(k, 120)}</div>
+        <div><div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+        <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>${exPerks(it)}</div></div>
+      ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
+      ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
+      <div class="exq-btns">${cred}${libre}</div>
+      ${it.exclusivo ? `<div class="ex-nota">${T('bodega.ex_gratis', { n: it.minRep })}</div>` : x.vip ? `<div class="ex-nota">${T('bodega.ex_vip')}</div>` : ''}</div>`;
+  }
+  function exCanjear(id) {
+    if (!Api.logueado()) { snd.play('tap'); abrirCuenta('registro', T('bodega.ex_cuenta')); return; }
+    canjear(id);
+  }
   function renderBodega() {
     const cons = Object.keys(G.CONSUMABLES).map((k) => {
       const it = G.CONSUMABLES[k];
@@ -796,7 +855,8 @@
         <div class="grow2"></div>
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
       }
-      return `<div class="card gear rf r-${r.key} ${e.condition < 40 ? 'worn' : ''}">
+      const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
+      return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${e.condition < 40 ? 'worn' : ''}">
         <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
         <div class="art">${itemArt(e.type, 110)}</div>
         <div class="nm">${esc(nmE(e))}</div>
@@ -805,7 +865,7 @@
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
         <div class="row2">
           <button class="btn sm" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${rc > 0 ? M(rc) : T('bodega.nuevo')}</button>
-          ${it.premium ? `<button class="btn sm" disabled>${T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
+          ${it.premium || delSrv ? `<button class="btn sm" disabled>${delSrv ? T('bodega.ex_mercado') : T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
     }).join('');
     const maxEq = maxEquip();
     const llena = S.equip.length >= maxEq;
@@ -815,7 +875,8 @@
     const chips = cats.length > 1 ? `<div class="catrow" role="tablist" aria-label="${esc(T('bodega.categorias'))}">${cats.map((c) => {
       return `<button class="catchip ${c.key === catSel ? 'on' : ''}" role="tab" aria-selected="${c.key === catSel}" data-act="cat" data-k="${esc(c.key)}">${I(c.icon || 'box', 'sm')}<span>${esc(TL(c.nombre || c.name || c.key))}</span><b>${N(c.items.length)}</b></button>`;
     }).join('')}</div>` : '';
-    const shop = cur ? cur.items.map((it) => shopCard(it, llena, maxEq)).join('') : '';
+    const shop = cur ? exclusivosDe(cur.key, cur.items).map((x) => exCard(x, llena, maxEq)).join('')
+      + cur.items.filter((it) => !it.exclusivo).map((it) => shopCard(it, llena, maxEq)).join('') : '';
     const nota = cur && cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
     $('tab-bodega').innerHTML = `
       <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
@@ -1123,6 +1184,13 @@
       const esEquipo = !!G.CATALOG[p.id];
       const rk = p.vip ? 'vip' : esEquipo ? rar(p.id).key : 'comun';
       const rl = p.vip ? { label: 'VIP', color: '#ffd34d' } : rar(p.id);
+      const exIt = esEquipo && G.CATALOG[p.id].exclusivo ? G.CATALOG[p.id] : null;
+      if (exIt) return `<div class="card gear rf r-exclusivo exq-mia" data-ex="${esc(p.id)}">
+        <div class="row between"><span class="exb" title="${esc(T('bodega.ex_badge'))}">${I('gem', 'sm')}${T('rareza.exclusivo')}</span></div>
+        <div class="art">${itemArt(p.id, 110)}</div>
+        <div class="nm">${esc(TL(p.nombre))}</div><div class="qrow">${T('bodega.calidad')} ${qPips(exIt.q)}</div>${exPerks(exIt)}<div class="grow2"></div>
+        <div class="cr" style="margin-top:8px">${I('gem', 'sm')} ${N(p.creditos)}</div>
+        <button class="btn sm ${alcanza ? 'green' : ''}" data-act="canjear" data-k="${esc(p.id)}" ${log ? '' : 'disabled'}>${alcanza ? T('tienda.canjear') : log ? T('tienda.faltan') : T('tienda.entra_canjear')}</button></div>`;
       return `<div class="card gear rf r-${rk}">
         <div class="row between">${esEquipo || p.vip ? `<span class="rtag" style="--rc:${rl.color}">${esc(p.vip ? 'VIP' : rlabel(rl))}</span>` : `<span class="rtag">${T('tienda.ayuda')}</span>`}</div>
         <div class="art">${itemArt(p.id, 110)}</div>
@@ -2015,6 +2083,7 @@
       case 'tienda-pase': snd.play('tap'); try { window.Pase.abrir(ctxInicio()); } catch (err) { console.error('[tienda pase]', err); toast(T('err.no_completo')); } break;
       case 'tienda-vip': snd.play('tap'); try { window.Vip.abrir(ctxInicio()); } catch (err) { console.error('[tienda vip]', err); toast(T('err.no_completo')); } break;
       case 'canjear': canjear(el.dataset.k); break;
+      case 'ex-canjear': exCanjear(el.dataset.k); break;
       case 'vip-bono': bonoVip(); break;
       case 'partida': if (eleccion) { const f = eleccion; eleccion = null; f(el.dataset.k); } break;
       case 'install':

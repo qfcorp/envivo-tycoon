@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Özel",
     "online.estrellas": "Yıldızlar",
     "online.estrellas_det": "Yıldız personel ve Kupa Kartı",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Özel Sürüm",
+    "bodega.ex_canjear": "{n} kredi karşılığında kullan",
+    "bodega.ex_fama_cred": "Almak için Ün {n}",
+    "bodega.ex_con_dinero": "Oyun parasıyla · {m}",
+    "bodega.ex_gratis": "Kredisiz: Ün {n} itibarıyla oyun parasıyla ya da pazarda.",
+    "bodega.ex_perk_desgaste": "Yarı yarıya az yıpranır",
+    "bodega.ex_perk_reparar": "Tamir yarı fiyatına",
+    "bodega.ex_perk_bultos": "Daha az koli",
+    "bodega.ex_perk_antes": "Krediyle Ün {n} itibarıyla",
+    "bodega.ex_perk_ya": "Krediyle: hemen alınabilir",
+    "bodega.ex_cuenta": "Özel ürünleri krediyle almak için hesabını oluştur: deponda ve hesabında kayıtlı kalır.",
+    "bodega.ex_mercado": "Pazarda yeniden satılır",
+    "bodega.ex_vip": "Aktif VIP ile alınır.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

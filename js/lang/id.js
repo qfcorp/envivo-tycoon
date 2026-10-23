@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Eksklusif",
     "online.estrellas": "Bintang",
     "online.estrellas_det": "Kru bintang dan Tiket Piala",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Edisi Eksklusif",
+    "bodega.ex_canjear": "Tukar dengan {n} kredit",
+    "bodega.ex_fama_cred": "Ketenaran {n} untuk menukar",
+    "bodega.ex_con_dinero": "Dengan uang game · {m}",
+    "bodega.ex_gratis": "Tanpa kredit: dengan uang game mulai ketenaran {n}, atau di pasar.",
+    "bodega.ex_perk_desgaste": "Aus setengahnya",
+    "bodega.ex_perk_reparar": "Biaya perbaikan setengah",
+    "bodega.ex_perk_bultos": "Lebih sedikit koli",
+    "bodega.ex_perk_antes": "Dengan kredit mulai ketenaran {n}",
+    "bodega.ex_perk_ya": "Dengan kredit: langsung tersedia",
+    "bodega.ex_cuenta": "Buat akunmu untuk menukar barang eksklusif dengan kredit: tersimpan di gudang dan akunmu.",
+    "bodega.ex_mercado": "Dijual lagi di pasar",
+    "bodega.ex_vip": "Ditukar dengan VIP aktif.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

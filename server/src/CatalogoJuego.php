@@ -595,6 +595,90 @@ final class CatalogoJuego
     'fama' => 45,
     'nombre' => 'Enlace satelital SNG - servicio',
   ),
+  'ex_lente_box' => 
+  array (
+    'cat' => 'lens',
+    'fama' => 75,
+    'nombre' => 'Fujinox UX125x Oro (box 4K 125x) Edición Exclusiva',
+  ),
+  'ex_soporte' => 
+  array (
+    'cat' => 'support',
+    'fama' => 55,
+    'nombre' => 'Vinter Vector 950 Oro + trípode de carbono Edición Exclusiva',
+  ),
+  'ex_repeticion' => 
+  array (
+    'cat' => 'replay',
+    'fama' => 75,
+    'nombre' => 'EVX XT-VIA Oro (servidor 4K) Edición Exclusiva',
+  ),
+  'ex_graficos' => 
+  array (
+    'cat' => 'graphics',
+    'fama' => 85,
+    'nombre' => 'Vizart Motor 3D AR Oro Edición Exclusiva',
+  ),
+  'ex_monitor' => 
+  array (
+    'cat' => 'monitor',
+    'fama' => 55,
+    'nombre' => 'Monitor OLED de referencia 24" Oro Edición Exclusiva',
+  ),
+  'ex_audio' => 
+  array (
+    'cat' => 'audio',
+    'fama' => 75,
+    'nombre' => 'Kalrek Brío 48 Oro (broadcast) Edición Exclusiva',
+  ),
+  'ex_mics' => 
+  array (
+    'cat' => 'mics',
+    'fama' => 22,
+    'nombre' => 'Shur Axiente doble digital Oro Edición Exclusiva',
+  ),
+  'ex_intercom' => 
+  array (
+    'cat' => 'intercom',
+    'fama' => 55,
+    'nombre' => 'ClearKom FreeHabla Oro (12 petacas) Edición Exclusiva',
+  ),
+  'ex_encoder' => 
+  array (
+    'cat' => 'encoder',
+    'fama' => 55,
+    'nombre' => 'LiveYou LU900 Oro (8 módems) Edición Exclusiva',
+  ),
+  'ex_internet' => 
+  array (
+    'cat' => 'internet',
+    'fama' => 10,
+    'nombre' => 'NetGir M9 Oro (5G doble chip) Edición Exclusiva',
+  ),
+  'ex_wireless' => 
+  array (
+    'cat' => 'wireless',
+    'fama' => 38,
+    'nombre' => 'Terradek Rayo 7 Oro 1500 Edición Exclusiva',
+  ),
+  'ex_cable' => 
+  array (
+    'cat' => 'cable',
+    'fama' => 38,
+    'nombre' => 'Fibra SMPTE blindada Oro 150 m Edición Exclusiva',
+  ),
+  'ex_lluvia' => 
+  array (
+    'cat' => 'rain',
+    'fama' => 22,
+    'nombre' => 'Cobertor broadcast Oro ventilado Edición Exclusiva',
+  ),
+  'ex_maletas' => 
+  array (
+    'cat' => 'case',
+    'fama' => 14,
+    'nombre' => 'Maletas Pelikano Oro con ruedas Edición Exclusiva',
+  ),
 );
 
     /** Tipos de evento: clave => [nombre, cams [mín, máx], audio, stream, outdoor, diff, pay [mín, máx], fama, clientes]. */
@@ -1034,6 +1118,76 @@ final class CatalogoJuego
   array (
     'nombre' => 'Enlace satelital portátil (flyaway) Edición VIP',
     'detalle' => 'Tu transmisión sale por satélite: el internet nunca te deja mal.',
+  ),
+  'ex_lente_box' => 
+  array (
+    'nombre' => 'Fujinox UX125x Oro (box 4K 125x) Edición Exclusiva',
+    'detalle' => 'Box 4K de 125x para la cámara de sistema, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_soporte' => 
+  array (
+    'nombre' => 'Vinter Vector 950 Oro + trípode de carbono Edición Exclusiva',
+    'detalle' => 'Cabezal pesado para cámaras con lente box, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_repeticion' => 
+  array (
+    'nombre' => 'EVX XT-VIA Oro (servidor 4K) Edición Exclusiva',
+    'detalle' => 'Servidor de repeticiones 4K de las finales, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_graficos' => 
+  array (
+    'nombre' => 'Vizart Motor 3D AR Oro Edición Exclusiva',
+    'detalle' => 'Gráficos 3D y realidad aumentada sobre la cancha, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_monitor' => 
+  array (
+    'nombre' => 'Monitor OLED de referencia 24" Oro Edición Exclusiva',
+    'detalle' => 'Para que el shader iguale el color de todas las cámaras, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_audio' => 
+  array (
+    'nombre' => 'Kalrek Brío 48 Oro (broadcast) Edición Exclusiva',
+    'detalle' => 'Consola de televisión para narradores y ambiente 5.1, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_mics' => 
+  array (
+    'nombre' => 'Shur Axiente doble digital Oro Edición Exclusiva',
+    'detalle' => 'Dos micrófonos inalámbricos digitales, calidad 3. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_intercom' => 
+  array (
+    'nombre' => 'ClearKom FreeHabla Oro (12 petacas) Edición Exclusiva',
+    'detalle' => 'Intercom inalámbrico de estadio con 12 petacas, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_encoder' => 
+  array (
+    'nombre' => 'LiveYou LU900 Oro (8 módems) Edición Exclusiva',
+    'detalle' => 'Mochila de 8 módems 5G con señal de canal de TV, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_internet' => 
+  array (
+    'nombre' => 'NetGir M9 Oro (5G doble chip) Edición Exclusiva',
+    'detalle' => 'Internet de respaldo con chips de dos operadoras a la vez. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_wireless' => 
+  array (
+    'nombre' => 'Terradek Rayo 7 Oro 1500 Edición Exclusiva',
+    'detalle' => 'Video inalámbrico sin retraso hasta 450 m, calidad 4. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_cable' => 
+  array (
+    'nombre' => 'Fibra SMPTE blindada Oro 150 m Edición Exclusiva',
+    'detalle' => 'Fibra híbrida para la cámara de sistema que aguanta pisadas, calidad 4. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_lluvia' => 
+  array (
+    'nombre' => 'Cobertor broadcast Oro ventilado Edición Exclusiva',
+    'detalle' => 'Cubre cámara, lente box y operador en aguaceros de estadio, calidad 3. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
+  ),
+  'ex_maletas' => 
+  array (
+    'nombre' => 'Maletas Pelikano Oro con ruedas Edición Exclusiva',
+    'detalle' => 'Maletas rígidas: el equipo se gasta menos en los viajes, calidad 2. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.',
   ),
 );
 }

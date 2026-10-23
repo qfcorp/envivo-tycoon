@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Exclusifs",
     "online.estrellas": "Stars",
     "online.estrellas_det": "Personnel vedette et Pass de Coupe",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Édition Exclusive",
+    "bodega.ex_canjear": "Échanger contre {n} crédits",
+    "bodega.ex_fama_cred": "Renommée {n} pour échanger",
+    "bodega.ex_con_dinero": "Avec l’argent du jeu · {m}",
+    "bodega.ex_gratis": "Sans crédits : avec l’argent du jeu dès {n} de renommée, ou sur le marché.",
+    "bodega.ex_perk_desgaste": "S’use deux fois moins",
+    "bodega.ex_perk_reparar": "Réparation à moitié prix",
+    "bodega.ex_perk_bultos": "Moins de colis",
+    "bodega.ex_perk_antes": "Avec crédits dès la renommée {n}",
+    "bodega.ex_perk_ya": "Avec crédits : déjà disponible",
+    "bodega.ex_cuenta": "Crée ton compte pour échanger des exclusivités contre des crédits : elles restent dans ton entrepôt et ton compte.",
+    "bodega.ex_mercado": "Se revend sur le marché",
+    "bodega.ex_vip": "S’échange avec le VIP actif.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

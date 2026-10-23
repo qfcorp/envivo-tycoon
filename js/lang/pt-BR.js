@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Exclusivos",
     "online.estrellas": "Estrelas",
     "online.estrellas_det": "Equipe estrela e Passe de Copa",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Edição Exclusiva",
+    "bodega.ex_canjear": "Resgatar por {n} créditos",
+    "bodega.ex_fama_cred": "Fama {n} para resgatar",
+    "bodega.ex_con_dinero": "Com dinheiro do jogo · {m}",
+    "bodega.ex_gratis": "Sem créditos: com dinheiro do jogo a partir de {n} de fama, ou no mercado.",
+    "bodega.ex_perk_desgaste": "Desgasta pela metade",
+    "bodega.ex_perk_reparar": "Conserto pela metade",
+    "bodega.ex_perk_bultos": "Menos volumes",
+    "bodega.ex_perk_antes": "Com créditos a partir da fama {n}",
+    "bodega.ex_perk_ya": "Com créditos: já disponível",
+    "bodega.ex_cuenta": "Crie sua conta para resgatar exclusivos com créditos: ficam salvos no seu depósito e na sua conta.",
+    "bodega.ex_mercado": "Revenda no mercado",
+    "bodega.ex_vip": "Resgata-se com VIP ativo.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

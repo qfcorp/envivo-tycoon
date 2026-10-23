@@ -1486,6 +1486,20 @@
     "tienda.nav_exclusivos": "Exclusivos",
     "online.estrellas": "Estrellas",
     "online.estrellas_det": "Personal estrella y Pase de Copa",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Edición Exclusiva",
+    "bodega.ex_canjear": "Canjear por {n} créditos",
+    "bodega.ex_fama_cred": "Fama {n} para canjear",
+    "bodega.ex_con_dinero": "Con dinero del juego · {m}",
+    "bodega.ex_gratis": "Sin créditos: con dinero del juego desde {n} de fama, o en el mercado.",
+    "bodega.ex_perk_desgaste": "Se gasta la mitad",
+    "bodega.ex_perk_reparar": "Reparar cuesta la mitad",
+    "bodega.ex_perk_bultos": "Menos bultos",
+    "bodega.ex_perk_antes": "Con créditos desde fama {n}",
+    "bodega.ex_perk_ya": "Con créditos: ya disponible",
+    "bodega.ex_cuenta": "Crea tu cuenta para canjear exclusivos con créditos: quedan guardados en tu bodega y en tu cuenta.",
+    "bodega.ex_mercado": "Se revende en el mercado",
+    "bodega.ex_vip": "Se canjea con VIP activo.",
     // fin de tienda v2
     // Textos de la lógica y del servidor: en español no hace falta traducirlos
     logica: {},

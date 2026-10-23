@@ -50,3 +50,40 @@ cada módulo deja las líneas exactas en `server/INTEGRAR_<MODULO>.md` y el inte
 - `estrella_copa` (por créditos): contrato de personal estrella por N partidos de copa.
 - `pase_copa` (por créditos o $2.99): +5 intentos de preparación por día durante la copa de esa semana.
 Las ofertas escalonadas (VIP) son variantes de packs existentes con contenido fijo y un tope de compras.
+
+## 5. Edición Exclusiva: un equipo top por categoría con créditos
+
+Pedido de Dimitry: que en TODAS las categorías haya un equipo top que se pueda canjear con créditos. Las que no tenían
+(cámaras, switchers, vehículos y energía ya tienen; alquiler por evento no aplica) llevan uno `ex_*`:
+
+| Categoría | id | Calidad (= mejor normal) | Créditos | Con créditos desde fama | Gratis: dinero del juego / fama |
+|---|---|---|---|---|---|
+| Lentes | `ex_lente_box` | 6 (= 6) | 900 | 45 | $66.500 / 75 |
+| Soportes | `ex_soporte` | 5 (= 5) | 450 | 28 | $15.000 / 55 |
+| Repeticiones | `ex_repeticion` | 6 (= 6) | 950 | 45 | $64.500 / 75 |
+| Gráficos | `ex_graficos` | 6 (= 6) | 850 | 55 | $35.000 / 85 |
+| Monitores | `ex_monitor` | 5 (= 5) | 300 | 28 | $3.800 / 55 |
+| Audio | `ex_audio` | 6 (= 6) | 600 | 45 | $18.500 / 75 |
+| Micrófonos | `ex_mics` | 3 (= 3) | 250 | 4 | $1.600 / 22 |
+| Intercom | `ex_intercom` | 5 (= 5) | 500 | 28 | $14.000 / 55 |
+| Encoders | `ex_encoder` | 5 (= 5) | 550 | 28 | $11.500 / 55 |
+| Internet | `ex_internet` | 2 (mejor normal 1; máximo de la categoría 5) | 150 | 0 | $400 / 10 |
+| Video inalámbrico | `ex_wireless` | 4 (= 4) | 300 | 12 | $2.900 / 38 |
+| Fibra y cables | `ex_cable` | 4 (= 4) | 200 | 12 | $1.650 / 38 |
+| Lluvia | `ex_lluvia` | 3 (= 3) | 100 | 4 | $700 / 22 |
+| Maletas | `ex_maletas` | 2 (= 2) | 120 | 0 | $850 / 14 |
+
+- **Sin ventaja en la competencia**: misma calidad que el mejor normal; en Copa y Festival cuentan como equipo del juego con
+  la fama del camino gratis (`minRep`, más alta que la del mejor normal), así que nadie lleva uno antes que lo que se compra
+  con dinero del juego. No están en `Duelos::EQUIPOS` (el kit del duelo sigue igual para todos) y no suman al bono de Ventajas.
+- **Ventajas que no dan puntos**: se gastan la mitad (`desgaste: 0.5`, durabilidad 5), repararlos cuesta la mitad
+  (`repairBase`), ocupan menos bultos en el transporte, acabado dorado, y con créditos se desbloquean antes (`minRepCreditos`).
+  El seguro diario se calcula con el valor del mejor normal (`valor`), no con su precio en dinero del juego.
+- **Gratis (más lento)**: se compran con dinero del juego (≈1,5 veces el mejor normal) desde más fama, o en el mercado entre
+  jugadores (el canjeado con créditos vive en `inventario`, con número de serie; tope 3 veces su costo).
+- **Contenido fijo y visible**: 1 equipo; el canjeado con créditos no se vende al desarmadero (se revende en el mercado).
+- Datos: `js/datos.js` (CATALOGO, `exclusivo: true`), `server/src/Catalogo.php` (PREMIUM, EQUIPOS, MERCADO_PRECIO_MAX),
+  `server/src/CatalogoJuego.php` (generado). El costo y "activo" se cambian en el Centro de Control como cualquier exclusivo.
+- Juego: Bodega → Tienda de equipos muestra arriba de cada categoría sus equipos con créditos (tarjeta dorada, botón 💎);
+  sin cuenta, el botón pide crearla. Prueba: `tests/test_exclusivos.js`.
+

@@ -92,6 +92,22 @@ final class Catalogo
         'vip_cam8k'      => ['nombre' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'detalle' => 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.', 'creditos' => 800, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_cam8k', 'cantidad' => 1]],
         'vip_switcher'   => ['nombre' => 'Rosco Carbonita Ultra Edición VIP', 'detalle' => 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.', 'creditos' => 1000, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_switcher', 'cantidad' => 1]],
         'vip_satelital'  => ['nombre' => 'Enlace satelital portátil (flyaway) Edición VIP', 'detalle' => 'Tu transmisión sale por satélite: el internet nunca te deja mal.', 'creditos' => 700, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_satelital', 'cantidad' => 1]],
+        // Edición Exclusiva: una por categoría (js/datos.js, MONETIZACION.md §5). Misma calidad que el mejor normal; también se compran
+        // gratis con dinero del juego (más fama). Se entregan al inventario del servidor (número de serie, mercado). Contenido fijo: 1 equipo.
+        'ex_lente_box'   => ['nombre' => 'Fujinox UX125x Oro (box 4K 125x) Edición Exclusiva', 'detalle' => 'Box 4K de 125x para la cámara de sistema, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 900, 'entrega' => ['tipo' => 'item', 'item' => 'ex_lente_box', 'cantidad' => 1]],
+        'ex_soporte'     => ['nombre' => 'Vinter Vector 950 Oro + trípode de carbono Edición Exclusiva', 'detalle' => 'Cabezal pesado para cámaras con lente box, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 450, 'entrega' => ['tipo' => 'item', 'item' => 'ex_soporte', 'cantidad' => 1]],
+        'ex_repeticion'  => ['nombre' => 'EVX XT-VIA Oro (servidor 4K) Edición Exclusiva', 'detalle' => 'Servidor de repeticiones 4K de las finales, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 950, 'entrega' => ['tipo' => 'item', 'item' => 'ex_repeticion', 'cantidad' => 1]],
+        'ex_graficos'    => ['nombre' => 'Vizart Motor 3D AR Oro Edición Exclusiva', 'detalle' => 'Gráficos 3D y realidad aumentada sobre la cancha, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 850, 'entrega' => ['tipo' => 'item', 'item' => 'ex_graficos', 'cantidad' => 1]],
+        'ex_monitor'     => ['nombre' => 'Monitor OLED de referencia 24" Oro Edición Exclusiva', 'detalle' => 'Para que el shader iguale el color de todas las cámaras, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 300, 'entrega' => ['tipo' => 'item', 'item' => 'ex_monitor', 'cantidad' => 1]],
+        'ex_audio'       => ['nombre' => 'Kalrek Brío 48 Oro (broadcast) Edición Exclusiva', 'detalle' => 'Consola de televisión para narradores y ambiente 5.1, calidad 6. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 600, 'entrega' => ['tipo' => 'item', 'item' => 'ex_audio', 'cantidad' => 1]],
+        'ex_mics'        => ['nombre' => 'Shur Axiente doble digital Oro Edición Exclusiva', 'detalle' => 'Dos micrófonos inalámbricos digitales, calidad 3. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 250, 'entrega' => ['tipo' => 'item', 'item' => 'ex_mics', 'cantidad' => 1]],
+        'ex_intercom'    => ['nombre' => 'ClearKom FreeHabla Oro (12 petacas) Edición Exclusiva', 'detalle' => 'Intercom inalámbrico de estadio con 12 petacas, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 500, 'entrega' => ['tipo' => 'item', 'item' => 'ex_intercom', 'cantidad' => 1]],
+        'ex_encoder'     => ['nombre' => 'LiveYou LU900 Oro (8 módems) Edición Exclusiva', 'detalle' => 'Mochila de 8 módems 5G con señal de canal de TV, calidad 5. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 550, 'entrega' => ['tipo' => 'item', 'item' => 'ex_encoder', 'cantidad' => 1]],
+        'ex_internet'    => ['nombre' => 'NetGir M9 Oro (5G doble chip) Edición Exclusiva', 'detalle' => 'Internet de respaldo con chips de dos operadoras a la vez. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 150, 'entrega' => ['tipo' => 'item', 'item' => 'ex_internet', 'cantidad' => 1]],
+        'ex_wireless'    => ['nombre' => 'Terradek Rayo 7 Oro 1500 Edición Exclusiva', 'detalle' => 'Video inalámbrico sin retraso hasta 450 m, calidad 4. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 300, 'entrega' => ['tipo' => 'item', 'item' => 'ex_wireless', 'cantidad' => 1]],
+        'ex_cable'       => ['nombre' => 'Fibra SMPTE blindada Oro 150 m Edición Exclusiva', 'detalle' => 'Fibra híbrida para la cámara de sistema que aguanta pisadas, calidad 4. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 200, 'entrega' => ['tipo' => 'item', 'item' => 'ex_cable', 'cantidad' => 1]],
+        'ex_lluvia'      => ['nombre' => 'Cobertor broadcast Oro ventilado Edición Exclusiva', 'detalle' => 'Cubre cámara, lente box y operador en aguaceros de estadio, calidad 3. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 100, 'entrega' => ['tipo' => 'item', 'item' => 'ex_lluvia', 'cantidad' => 1]],
+        'ex_maletas'     => ['nombre' => 'Maletas Pelikano Oro con ruedas Edición Exclusiva', 'detalle' => 'Maletas rígidas: el equipo se gasta menos en los viajes, calidad 2. Acabado dorado: se gasta la mitad, repararlo cuesta la mitad y ocupa menos en el transporte.', 'creditos' => 120, 'entrega' => ['tipo' => 'item', 'item' => 'ex_maletas', 'cantidad' => 1]],
         // Refuerzos (ayudas por tiempo limitado). Los aplica el juego (entrega tipo "refuerzo").
         'refuerzo_camarografo_senior' => ['tipo' => 'refuerzo', 'nombre' => 'Camarógrafo senior de refuerzo', 'detalle' => 'Un camarógrafo con experiencia te acompaña en tus próximos 2 eventos', 'creditos' => 120, 'entrega' => ['tipo' => 'refuerzo', 'item' => 'refuerzo_camarografo_senior', 'cantidad' => 1, 'nivel' => 'senior', 'eventos' => 2]],
         'refuerzo_tecnico_internacional' => ['tipo' => 'refuerzo', 'nombre' => 'Técnico de streaming internacional', 'detalle' => 'Un técnico de nivel internacional cuida tu señal en tus próximos 3 eventos', 'creditos' => 240, 'entrega' => ['tipo' => 'refuerzo', 'item' => 'refuerzo_tecnico_internacional', 'cantidad' => 1, 'nivel' => 'internacional', 'eventos' => 3]],
@@ -105,6 +121,21 @@ final class Catalogo
         'cam_pro' => 'Kanon XA65', 'generador' => 'Kummins 22 kVA diésel insonorizado', 'dron4k' => 'DGI Inspira 3X Cine (dron) Exclusivo', 'grua' => 'Grúa telescópica de 12 m con cabeza remota',
         'unidad_movil' => 'Sprinto OB equipada (4 a 6 cámaras)', 'vip_cam8k' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'vip_switcher' => 'Rosco Carbonita Ultra Edición VIP',
         'vip_satelital' => 'Enlace satelital portátil (flyaway) Edición VIP',
+        // Edición Exclusiva (los mismos nombres que js/datos.js)
+        'ex_lente_box' => 'Fujinox UX125x Oro (box 4K 125x) Edición Exclusiva',
+        'ex_soporte' => 'Vinter Vector 950 Oro + trípode de carbono Edición Exclusiva',
+        'ex_repeticion' => 'EVX XT-VIA Oro (servidor 4K) Edición Exclusiva',
+        'ex_graficos' => 'Vizart Motor 3D AR Oro Edición Exclusiva',
+        'ex_monitor' => 'Monitor OLED de referencia 24" Oro Edición Exclusiva',
+        'ex_audio' => 'Kalrek Brío 48 Oro (broadcast) Edición Exclusiva',
+        'ex_mics' => 'Shur Axiente doble digital Oro Edición Exclusiva',
+        'ex_intercom' => 'ClearKom FreeHabla Oro (12 petacas) Edición Exclusiva',
+        'ex_encoder' => 'LiveYou LU900 Oro (8 módems) Edición Exclusiva',
+        'ex_internet' => 'NetGir M9 Oro (5G doble chip) Edición Exclusiva',
+        'ex_wireless' => 'Terradek Rayo 7 Oro 1500 Edición Exclusiva',
+        'ex_cable' => 'Fibra SMPTE blindada Oro 150 m Edición Exclusiva',
+        'ex_lluvia' => 'Cobertor broadcast Oro ventilado Edición Exclusiva',
+        'ex_maletas' => 'Maletas Pelikano Oro con ruedas Edición Exclusiva',
     ];
 
     /** Comisión del mercado: el vendedor recibe floor(precio * (1 - COMISION)); el resto desaparece. */
@@ -117,6 +148,10 @@ final class Catalogo
     public const MERCADO_PRECIO_MAX = [
         'cam_pro' => 600, 'generador' => 750, 'dron4k' => 1350, 'grua' => 1950, 'unidad_movil' => 2700,
         'vip_cam8k' => 2400, 'vip_switcher' => 3000, 'vip_satelital' => 2100,
+        // Edición Exclusiva: 3 veces su costo en créditos
+        'ex_lente_box' => 2700, 'ex_soporte' => 1350, 'ex_repeticion' => 2850, 'ex_graficos' => 2550, 'ex_monitor' => 900,
+        'ex_audio' => 1800, 'ex_mics' => 750, 'ex_intercom' => 1500, 'ex_encoder' => 1650, 'ex_internet' => 450,
+        'ex_wireless' => 900, 'ex_cable' => 600, 'ex_lluvia' => 300, 'ex_maletas' => 360,
     ];
 
     /** Días que quedan retenidos los créditos que gana un vendedor antes de poder gastarlos (auditoría A-01). */

@@ -88,6 +88,7 @@ Exclusivos con créditos (nombres de js/datos.js; costo editable en el Centro de
 | `grua` | Grúa telescópica de 12 m con cabeza remota | 650 |
 | `unidad_movil` | Sprinto OB equipada (4 a 6 cámaras) | 900 |
 | `vip_cam8k`, `vip_switcher`, `vip_satelital` | Equipos VIP (solo con VIP activo) | 800, 1000, 700 |
+| `ex_*` (14) | Edición Exclusiva: un equipo top por categoría (lentes, soportes, repeticiones, gráficos, monitor, audio, micrófonos, intercom, encoder, internet, video inalámbrico, fibra, lluvia, maletas). Ver MONETIZACION.md §5 | 100 a 950 |
 
 ---
 

@@ -35,6 +35,9 @@ Se agregan:
 | `vip_switcher` | Switcher de estudio VIP | 1.000 | switcher calidad 4 |
 | `vip_satelital` | Enlace satelital VIP (internet que nunca se cae) | 700 | internet calidad 3 |
 
+Los 14 de **Edición Exclusiva** (`ex_*`, MONETIZACION.md §5) también viven en `inventario` y se publican en el mercado
+(precio máximo: 3 veces su costo en créditos, `Catalogo::MERCADO_PRECIO_MAX`).
+
 ## Endpoints nuevos (todos con sesión; POST con cabecera `X-Envivo: 1`)
 - `GET /api/mercado?item=<tipo opcional>&orden=precio|reciente` →
 ```json

@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Эксклюзивы",
     "online.estrellas": "Звёзды",
     "online.estrellas_det": "Звёздный персонал и пропуск Кубка",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Эксклюзивное издание",
+    "bodega.ex_canjear": "Обменять на {n} кредитов",
+    "bodega.ex_fama_cred": "Слава {n} для обмена",
+    "bodega.ex_con_dinero": "За игровые деньги · {m}",
+    "bodega.ex_gratis": "Без кредитов: за игровые деньги со славы {n} или на рынке.",
+    "bodega.ex_perk_desgaste": "Изнашивается вдвое медленнее",
+    "bodega.ex_perk_reparar": "Ремонт вдвое дешевле",
+    "bodega.ex_perk_bultos": "Меньше мест груза",
+    "bodega.ex_perk_antes": "За кредиты со славы {n}",
+    "bodega.ex_perk_ya": "За кредиты: доступно сразу",
+    "bodega.ex_cuenta": "Создай аккаунт, чтобы обменивать эксклюзивы на кредиты: они сохранятся на складе и в аккаунте.",
+    "bodega.ex_mercado": "Перепродаётся на рынке",
+    "bodega.ex_vip": "Обмен при активном VIP.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

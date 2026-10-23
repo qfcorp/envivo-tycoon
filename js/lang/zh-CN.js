@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "独家",
     "online.estrellas": "明星",
     "online.estrellas_det": "明星团队和杯赛通行证",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "独家版",
+    "bodega.ex_canjear": "用 {n} 积分兑换",
+    "bodega.ex_fama_cred": "名气 {n} 才能兑换",
+    "bodega.ex_con_dinero": "用游戏资金 · {m}",
+    "bodega.ex_gratis": "不用积分：名气达到 {n} 后用游戏资金购买，或在市场购买。",
+    "bodega.ex_perk_desgaste": "磨损减半",
+    "bodega.ex_perk_reparar": "维修费减半",
+    "bodega.ex_perk_bultos": "行李更少",
+    "bodega.ex_perk_antes": "名气 {n} 起可用积分兑换",
+    "bodega.ex_perk_ya": "用积分：现在即可兑换",
+    "bodega.ex_cuenta": "创建账号即可用积分兑换独家装备：保存在你的仓库和账号里。",
+    "bodega.ex_mercado": "可在市场转卖",
+    "bodega.ex_vip": "需激活 VIP 才能兑换。",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

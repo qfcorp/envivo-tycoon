@@ -1463,6 +1463,20 @@
     "tienda.nav_exclusivos": "Exclusives",
     "online.estrellas": "Stars",
     "online.estrellas_det": "Star staff and Cup Pass",
+    // Edición Exclusiva (Bodega → Tienda de equipos)
+    "bodega.ex_badge": "Exclusive Edition",
+    "bodega.ex_canjear": "Redeem for {n} credits",
+    "bodega.ex_fama_cred": "Fame {n} to redeem",
+    "bodega.ex_con_dinero": "With game money · {m}",
+    "bodega.ex_gratis": "No credits needed: buy it with game money from {n} fame, or on the market.",
+    "bodega.ex_perk_desgaste": "Wears half as fast",
+    "bodega.ex_perk_reparar": "Repairs cost half",
+    "bodega.ex_perk_bultos": "Fewer cases",
+    "bodega.ex_perk_antes": "With credits from fame {n}",
+    "bodega.ex_perk_ya": "With credits: available now",
+    "bodega.ex_cuenta": "Create your account to redeem exclusives with credits: they stay saved in your warehouse and your account.",
+    "bodega.ex_mercado": "Resell it on the market",
+    "bodega.ex_vip": "Redeemed with active VIP.",
     // fin de tienda v2
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.
     logica: {},

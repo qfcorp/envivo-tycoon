@@ -125,6 +125,8 @@ check('Productos de la tienda (id, precio, créditos, una_vez)', [
     array_map(fn($p) => [$p['id'], $p['precio'], $p['creditos'], $p['una_vez']], $est['tienda']['productos']));
 si('Cada producto trae nombre y detalle', array_reduce($est['tienda']['productos'], fn($c, $p) => $c && is_string($p['nombre']) && $p['nombre'] !== '' && is_string($p['detalle']) && $p['detalle'] !== '', true));
 check('Exclusivos con créditos (id, créditos, vip, tipo)', [['generador', 250, false, 'equipo'], ['kit_reparacion', 60, false, 'consumo'], ['caja_chica', 120, false, 'consumo'], ['estrella', 300, false, 'consumo'], ['dron4k', 450, false, 'equipo'], ['grua', 650, false, 'equipo'], ['unidad_movil', 900, false, 'equipo'], ['vip_cam8k', 800, true, 'vip'], ['vip_switcher', 1000, true, 'vip'], ['vip_satelital', 700, true, 'vip'],
+    // Edición Exclusiva (una por categoría)
+    ['ex_lente_box', 900, false, 'equipo'], ['ex_soporte', 450, false, 'equipo'], ['ex_repeticion', 950, false, 'equipo'], ['ex_graficos', 850, false, 'equipo'], ['ex_monitor', 300, false, 'equipo'], ['ex_audio', 600, false, 'equipo'], ['ex_mics', 250, false, 'equipo'], ['ex_intercom', 500, false, 'equipo'], ['ex_encoder', 550, false, 'equipo'], ['ex_internet', 150, false, 'equipo'], ['ex_wireless', 300, false, 'equipo'], ['ex_cable', 200, false, 'equipo'], ['ex_lluvia', 100, false, 'equipo'], ['ex_maletas', 120, false, 'equipo'],
     ['refuerzo_camarografo_senior', 120, false, 'refuerzo'], ['refuerzo_tecnico_internacional', 240, false, 'refuerzo'], ['alquiler_lente_box', 120, false, 'refuerzo'], ['seguro_evento', 100, false, 'refuerzo'], ['equipo_descansado', 100, false, 'refuerzo']],
     array_map(fn($p) => [$p['id'], $p['creditos'], $p['vip'], $p['tipo']], $est['tienda']['premium']));
 si('El producto oculto transferencia_cuenta NO sale en la tienda', !in_array('transferencia_cuenta', array_column($est['tienda']['productos'], 'id'), true));
@@ -567,6 +569,37 @@ check('Orden -> 503', 503, $s->http);
 require __DIR__ . '/pruebas_mercado_social.php';
 // Tienda nueva, transferencias, reembolsos, Google Play, Centro de Control, soporte, borrar cuenta y arreglos de la auditoría
 require __DIR__ . '/pruebas_tienda_cuenta.php';
+
+// =====================================================================
+titulo('Edición Exclusiva: un equipo top por categoría, con créditos (MONETIZACION.md §5)');
+require_once dirname(__DIR__) . '/src/Catalogo.php';
+require_once dirname(__DIR__) . '/src/CatalogoJuego.php';
+$EXC = array_values(array_filter(array_keys(\EnVivo\Catalogo::PREMIUM), fn($k) => str_starts_with($k, 'ex_')));
+$PJ = \EnVivo\CatalogoJuego::EQUIPOS;
+check('14 exclusivos, cada uno de una categoría distinta del juego', [14, 14], [count($EXC), count(array_unique(array_map(fn($k) => $PJ[$k]['cat'] ?? '?', $EXC)))]);
+si('…ninguno en cámaras, switchers, vehículos, energía ni alquiler (ahí ya hay exclusivos o no aplica)', !array_intersect(array_map(fn($k) => $PJ[$k]['cat'] ?? '?', $EXC), ['cam', 'switcher', 'vehicle', 'power', 'service']));
+$malos = [];
+foreach (\EnVivo\Catalogo::PREMIUM as $k => $p) {
+    if (($p['entrega']['tipo'] ?? '') !== 'item') continue;
+    $it = $p['entrega']['item'];
+    if ($it !== $k || (int) $p['entrega']['cantidad'] !== 1) $malos[] = "$k: entrega";
+    if ((\EnVivo\Catalogo::EQUIPOS[$it] ?? null) !== $p['nombre']) $malos[] = "$k: nombre en EQUIPOS";
+    if ((\EnVivo\Catalogo::MERCADO_PRECIO_MAX[$it] ?? 0) !== 3 * $p['creditos']) $malos[] = "$k: precio máximo del mercado";
+    $x = \EnVivo\CatalogoJuego::EXCLUSIVOS[$it] ?? null;
+    if (!$x || $x['nombre'] !== $p['nombre'] || $x['detalle'] !== $p['detalle']) $malos[] = "$k: nombre/detalle distinto a js/datos.js";
+}
+check('Cada equipo con créditos: contenido fijo (1 unidad), nombre igual en EQUIPOS y en js/datos.js, mercado hasta 3 veces su costo', [], $malos);
+si('…los de Edición Exclusiva también se compran con dinero del juego (están en CatalogoJuego::EQUIPOS con su fama)', array_reduce($EXC, fn($c, $k) => $c && isset($PJ[$k]) && $PJ[$k]['fama'] > 0, true));
+[$xn, $JXN] = $pagador('Ximena Exclusiva');
+$darCreditos($JXN, 3000);
+$antes = $saldo($JXN);
+$r = $canjear($xn, 'ex_repeticion');
+check('Canjear EVX XT-VIA Oro: va al inventario con número de serie y cuesta 950', [200, 'ex_repeticion', 1, $antes - 950], [$xn->http, $r['item']['item'] ?? null, $r['item']['serie'] ?? null, $r['creditos'] ?? null]);
+si('…sale en estado.inventario (el juego lo pone en la bodega)', in_array('ex_repeticion', array_column($xn->apiGet('/api/estado')['inventario'], 'item'), true));
+$r = $xn->api('/api/mercado/publicar', ['inventario_id' => (int) $val("SELECT id FROM inventario WHERE jugador_id = ? AND item = 'ex_repeticion'", [$JXN]), 'precio' => 2851]);
+check('…en el mercado: máximo 3 veces su costo (2.850)', [400, 'precio', 2850], [$xn->http, $r['codigo'] ?? null, $r['precio_max'] ?? null]);
+$r = $canjear($xn, 'ex_maletas');
+check('El más barato (maletas, 120 créditos) también se canjea', [200, 'ex_maletas'], [$xn->http, $r['item']['item'] ?? null]);
 
 titulo('Libro de créditos de TODOS los jugadores = su saldo');
 check('Jugadores con saldo (créditos - deuda) distinto a la suma de su libro', 0, (int) $val('SELECT COUNT(*) FROM jugadores j WHERE j.creditos - j.deuda <> (SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos m WHERE m.jugador_id = j.id)'));

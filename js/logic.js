@@ -451,7 +451,8 @@
   function repairCost(e) {
     const it = itemOf(e);
     const f = typeof it.mant === 'number' ? BALANCE.transporte.repairFactor : BALANCE.repairFactor;
-    return it.alquiler ? 0 : Math.round(it.price * f * (100 - e.condition) / 100);
+    // repairBase: los de Edición Exclusiva se reparan más barato que lo que cuestan
+    return it.alquiler ? 0 : Math.round((typeof it.repairBase === 'number' ? it.repairBase : it.price) * f * (100 - e.condition) / 100);
   }
   function sellPrice(e) {
     const it = itemOf(e);
@@ -464,7 +465,8 @@
      Cuanto más grande la productora, más cuesta mantenerla. Los alquileres por evento no cuentan. */
   // Vehículos de la flota con mantenimiento propio (mant por día): no pagan el 0,2% de seguro de equipos
   const conMant = (e) => typeof itemOf(e).mant === 'number';
-  const equipValueOf = (s) => owned(s).filter((e) => !conMant(e)).reduce((a, e) => a + itemOf(e).price, 0);
+  // valor: lo que vale para el seguro (Edición Exclusiva: el del mejor equipo normal de su categoría, no su precio en dinero del juego)
+  const equipValueOf = (s) => owned(s).filter((e) => !conMant(e)).reduce((a, e) => a + (typeof itemOf(e).valor === 'number' ? itemOf(e).valor : itemOf(e).price), 0);
   function vehiclesDaily(s) { return owned(s).filter(conMant).reduce((a, e) => a + itemOf(e).mant, 0); }
   /* Publicidad de la flota rotulada: cuánto más pagan los clientes (0 a 0,06) */
   function publicidadFlota(s) {
@@ -1555,6 +1557,7 @@
   function bultosDe(it) {
     if (!it || it.alquiler) return 0;
     const T = TRP();
+    if (typeof it.bultos === 'number' && it.bultos >= 0) return it.bultos;   // propio del equipo (Edición Exclusiva: más compacto)
     if (Object.prototype.hasOwnProperty.call(T.bultosSub, it.subtipo)) return T.bultosSub[it.subtipo];
     if (Object.prototype.hasOwnProperty.call(T.bultosCat, it.cat)) return T.bultosCat[it.cat];
     return 1;
@@ -2343,7 +2346,8 @@
     view.equip.forEach((e) => {
       const it = itemOf(e);
       if (it.alquiler) return;
-      const k = BALANCE.wearByDurability[clamp(it.durabilidad || 3, 1, 5)];
+      // desgaste: multiplicador propio (Edición Exclusiva: 0,5 = se gasta la mitad)
+      const k = BALANCE.wearByDurability[clamp(it.durabilidad || 3, 1, 5)] * (typeof it.desgaste === 'number' ? clamp(it.desgaste, 0.1, 1) : 1);
       e.condition = clamp(Math.round(e.condition - randInt(s, W.min + c.diff * W.perDiffMin, W.max + c.diff * W.perDiffMax) * k), 1, 100);
     });
     // Los alquileres por evento se devuelven
