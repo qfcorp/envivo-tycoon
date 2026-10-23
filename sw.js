@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v2';
+const VERSION = 'envivo-v3';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -18,6 +18,8 @@ const SHELL = [
   './js/pwa.js',
   './js/api.js',
   './js/premium.js',
+  './js/mercado.js',
+  './js/chat.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

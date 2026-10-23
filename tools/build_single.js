@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-for (const f of ['js/logic.js', 'js/art.js', 'js/sound.js', 'js/ui.js']) {
+for (const f of ['js/datos.js', 'js/logic.js', 'js/art.js', 'js/sound.js', 'js/api.js', 'js/premium.js', 'js/mercado.js', 'js/chat.js', 'js/ui.js']) {
   const tag = `<script src="${f}"></script>`;
   if (!fs.existsSync(path.join(root, f))) { html = html.replace(tag + '\n', '').replace(tag, ''); continue; }
   const code = fs.readFileSync(path.join(root, f), 'utf8');
