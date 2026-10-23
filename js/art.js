@@ -124,7 +124,10 @@
     stream: '<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>',
   };
 
-  const ALIAS = { dron4k: 'dron', kit_reparacion: 'wrench', caja_chica: 'money', estrella: 'role_cam', inicio: 'gift', vip30: 'crown' };
+  const ALIAS = { dron4k: 'dron', kit_reparacion: 'wrench', caja_chica: 'money', estrella: 'role_cam', inicio: 'gift', vip30: 'crown',
+    // eventos de temporada (js/temporadas.js)
+    tmp_calaveras: 'concierto', tmp_arbol_ny: 'star', tmp_pase_nino: 'star', tmp_reveillon: 'concierto', tmp_anio_viejo: 'bolt',
+    tmp_bodas: 'boda', tmp_serenata: 'concierto', tmp_procesion: 'misa', tmp_corso: 'concierto' };
   function icon(name, cls, size) {
     const body = P[name] || P[ALIAS[name]] || (/^creditos/.test(name) ? P.gem : P.box);
     const dim = size ? ` width="${size}" height="${size}"` : '';
@@ -890,6 +893,21 @@
   /* =========================================================
      Sede de la productora (día y noche)
      ========================================================= */
+  /* Premios de temporada que se ven en la sede (s.temporada.cosmeticos) */
+  function cosmeticosSede(st, roofX, roofY) {
+    const c = st && st.temporada && Array.isArray(st.temporada.cosmeticos) ? st.temporada.cosmeticos : [];
+    const out = { cielo: '', piso: '' };
+    if (!c.length) return out;
+    const has = (k) => c.includes(k);
+    if (has('fuegos')) out.cielo += `<g class="hq-cosm hq-fuegos">${[[60, 2, '#ffd27a'], [250, -6, '#ff5a8a'], [150, -10, '#5ad1ff']].map(([x, y, col], j) => `<g class="twinkle" style="animation-delay:${j * 0.5}s">${Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<path d="M${x} ${y}l${(Math.cos(a) * 11).toFixed(1)} ${(Math.sin(a) * 11).toFixed(1)}" stroke="${col}" stroke-width="1.4" stroke-linecap="round"/>`; }).join('')}</g>`).join('')}</g>`;
+    if (has('pesebre')) out.cielo += `<path class="hq-cosm hq-pesebre twinkle" transform="translate(${roofX + 22} ${roofY - 8})" d="M0-7l2 5h5l-4 3 2 5-5-3-5 3 2-5-4-3h5z" fill="#ffd27a"/>`;
+    if (has('corazones')) out.cielo += `<g class="hq-cosm hq-corazones">${[[110, 30], [200, 26], [250, 36]].map(([x, y]) => `<path transform="translate(${x} ${y}) scale(.7)" d="M0 4C-6-2-10 2-8 6l8 8 8-8c2-4-2-8-8-2z" fill="#ff5a8a" class="twinkle"/>`).join('')}</g>`;
+    if (has('banderines')) out.cielo += `<g class="hq-cosm hq-banderines"><path d="M40 20q140 30 280 0" stroke="#c5ccd6" fill="none"/>${Array.from({ length: 12 }, (_, i) => { const x = 50 + i * 23, y = 20 + Math.sin((i + 0.5) / 12 * Math.PI) * 14; return `<path d="M${x} ${y.toFixed(1)}l6 0-3 8z" fill="${['#ff5a5a', '#ffd27a', '#5ad1ff', '#7dff9a'][i % 4]}"/>`; }).join('')}</g>`;
+    if (has('arbol')) out.piso += `<g class="hq-cosm hq-arbol" transform="translate(318 140)"><rect x="-2" y="-6" width="4" height="6" fill="#6b4a2a"/><path d="M0-44L-13-20h6L-15-6h30L7-20h6z" fill="#2f8f5b"/>${[[-6, -14, '#ff5a5a'], [5, -22, '#ffd27a'], [-3, -30, '#5ad1ff'], [8, -12, '#ff8fb1'], [-9, -9, '#ffd27a']].map(([x, y, col]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${col}" class="blink"/>`).join('')}<path d="M0-49l1.6 3.4h3.6l-2.9 2.2 1.1 3.6L0-42l-3.4 2.2 1.1-3.6-2.9-2.2h3.6z" fill="#ffd27a" class="twinkle"/></g>`;
+    if (has('calabazas')) out.piso += `<g class="hq-cosm hq-calabazas">${[[48, 137], [312, 137]].map(([x, y]) => `<g transform="translate(${x} ${y})"><ellipse rx="7" ry="5" fill="#ff8a1f"/><path d="M-1-5v-3" stroke="#3b7a2a" stroke-width="2"/><path d="M-4-1l2-2 2 2zM1-1l2-2 2 2z" fill="#ffd27a"/></g>`).join('')}</g>`;
+    if (has('flores')) out.piso += `<g class="hq-cosm hq-flores">${Array.from({ length: 7 }, (_, i) => `<circle cx="${150 + i * 10}" cy="${136 - Math.sin(i / 6 * Math.PI) * 6}" r="3" fill="${['#ffffff', '#f4d0ff', '#ffd27a'][i % 3]}"/>`).join('')}</g>`;
+    return out;
+  }
   function hq(s) {
     try {
       const st = s || {};
@@ -963,6 +981,7 @@
       if (has('generador')) side.push(`<g transform="translate(4 122)"><ellipse cx="13" cy="18" rx="16" ry="2.5" fill="#000" opacity=".4"/><rect width="26" height="17" rx="2" fill="${U('org')}"/><rect x="3" y="4" width="10" height="8" fill="#1d2129"/><path d="M20 0v-6h4" stroke="#3a4150" stroke-width="2" fill="none"/><circle cx="26" cy="-9" r="3" fill="#c5ccd6" opacity=".35" class="puff"/></g>`);
       if (has('grua')) side.push(`<g transform="translate(332 140)"><path d="M0 0l-6-26 6 0" stroke="#5b6476" stroke-width="2"/><path d="M-30 -10L22 -40" stroke="${U('cyal')}" stroke-width="3" stroke-linecap="round"/><rect x="16" y="-44" width="12" height="8" rx="1.5" fill="${U('al')}"/></g>`);
       const camRow = cams.slice(0, 6).map((e, i) => sceneCam(26 + i * 34, 121, e.type, 0.6)).join('');
+      const cosm = cosmeticosSede(st, roofX, roofY);
       const lamp = `<path d="M346 140V100" stroke="#3a4150" stroke-width="2"/><path d="M346 100h-8" stroke="#3a4150" stroke-width="2"/><circle cx="337" cy="102" r="2.5" fill="${night ? '#ffd27a' : '#8b95a8'}"/>${night ? cone(337, 104, 2, 36, 16, U('poolW')) : ''}`;
       return `<svg class="hq" viewBox="0 -20 360 170" role="img" aria-label="${esc(label)}">
       <defs>${inline}${wall}</defs>
@@ -971,7 +990,7 @@
       <ellipse cx="180" cy="141" rx="170" ry="5" fill="#000" opacity=".35"/>
       ${building}${roof.join('')}
       <rect x="0" y="140" width="360" height="10" fill="${night ? '#1a1f2a' : '#5b6476'}"/><path d="M0 141h360" stroke="${night ? '#2a3242' : '#8f99aa'}" stroke-width="1.5"/><path d="M0 146h360" stroke="${night ? '#2a3242' : '#e9edf5'}" stroke-width="1" stroke-dasharray="10 8" opacity=".5"/>
-      ${lamp}${side.join('')}${camRow}${van}
+      ${cosm.cielo}${lamp}${side.join('')}${camRow}${van}${cosm.piso}
       <rect x="8" y="-14" width="${Math.min(344, Math.round(label.length * 6.2 + 16))}" height="18" rx="9" fill="#0d0f14cc" stroke="#2a3242"/>
       <text x="16" y="-1.5" font-size="10.5" font-family="${FONT_B}" font-weight="600" fill="#e9edf5">${esc(label)}</text>
     </svg>`;
@@ -986,7 +1005,31 @@
      y los nuevos: boxeo, lucha (lucha libre), funeral, autos (lanzamiento de autos), irl.
      ========================================================= */
   const FOOTBALL = ['barrial', 'ligapro', 'final'];
+  // Tipo de evento que trae una extensión (temporadas): dice qué escena base usa y qué dibujo va encima
+  const extTipo = (type) => { try { const t = Gm().EVENT_TYPES; return t && t[type] && t[type].especial ? t[type] : null; } catch (e) { return null; } };
+  /* Dibujos de temporada encima de la escena (livianos: unas formas y una animación CSS, sin filtros) */
+  function overlayTemporada(kind, u) {
+    const pts = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join('');
+    const rr = (i, m) => Math.floor(Math.abs(Math.sin(i * 12.9898 + m * 0.017) * 43758.5453) % 1 * m);
+    if (kind === 'nieve') return `<g class="tmp-ov tmp-nieve">${pts(28, (i) => `<circle cx="${rr(i, 360)}" cy="${rr(i * 3, 150)}" r="${1 + (i % 3) * 0.6}" fill="#fff" opacity="${0.5 + (i % 4) * 0.12}" class="${i % 2 ? 'twinkle' : ''}"/>`)}
+      <g transform="translate(304 118)"><rect x="-3" y="-4" width="6" height="8" fill="#6b4a2a"/><path d="M0-78L-20-46h9L-26-22h11L-32 0h64L15-22h11L11-46h9z" fill="#1f6b43"/>
+        ${pts(14, (i) => `<circle cx="${(rr(i + 50, 40) - 20) * (0.3 + rr(i + 7, 70) / 100)}" cy="${-6 - rr(i + 7, 66)}" r="1.9" fill="${['#ff5a5a', '#ffd27a', '#5ad1ff', '#7dff9a'][i % 4]}" class="blink" style="animation-delay:${(i % 5) * 0.2}s"/>`)}
+        <path d="M0-86l2.6 5.4h5.8l-4.6 3.4 1.8 5.6L0-75l-5.6 3.4 1.8-5.6-4.6-3.4h5.8z" fill="#ffd27a" class="twinkle"/></g>
+      <path d="M0 162q30-6 60 0t60 0 60 0 60 0 60 0 60 0V170H0z" fill="#eef4ff" opacity=".85"/>
+      ${pts(9, (i) => `<circle cx="${20 + i * 40}" cy="${10 + (i % 2) * 4}" r="2.2" fill="${['#ff5a5a', '#ffd27a', '#5ad1ff', '#7dff9a'][i % 4]}" class="blink"/>`)}<path d="M0 10q40 10 80 0t80 0 80 0 80 0 80 0" stroke="#2a3242" fill="none"/></g>`;
+    if (kind === 'fuegos') return `<g class="tmp-ov tmp-fuegos">${[[70, 34, '#ffd27a'], [180, 22, '#ff5a8a'], [290, 38, '#5ad1ff'], [130, 52, '#7dff9a']].map(([x, y, c], j) => `<g class="twinkle" style="animation-delay:${j * 0.4}s">${pts(10, (i) => { const a = i * Math.PI / 5; return `<path d="M${x} ${y}l${(Math.cos(a) * 16).toFixed(1)} ${(Math.sin(a) * 16).toFixed(1)}" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`; })}<circle cx="${x}" cy="${y}" r="2.5" fill="#fff"/></g>`).join('')}</g>`;
+    if (kind === 'corazones') return `<g class="tmp-ov tmp-corazones">${pts(9, (i) => { const x = 20 + rr(i, 320), y = 14 + rr(i * 5, 70), k = 0.6 + (i % 3) * 0.25; return `<path transform="translate(${x} ${y}) scale(${k})" d="M0 4C-6-2-10 2-8 6l8 8 8-8c2-4-2-8-8-2z" fill="${i % 2 ? '#ff5a8a' : '#ff8fb1'}" opacity=".85" class="${i % 3 ? '' : 'twinkle'}"/>`; })}</g>`;
+    if (kind === 'calabazas') return `<g class="tmp-ov tmp-calabazas">${[[24, 158], [60, 162], [318, 160]].map(([x, y]) => `<g transform="translate(${x} ${y})"><ellipse rx="11" ry="8" fill="#ff8a1f"/><path d="M-4 -8v-4" stroke="#3b7a2a" stroke-width="2.4"/><path d="M-6 -2l3-3 3 3zM2 -2l3-3 3 3z" fill="#ffd27a"/><path d="M-5 3q5 4 10 0" stroke="#ffd27a" stroke-width="1.6" fill="none"/></g>`).join('')}
+      <path d="M150 20q6-8 12 0q6-8 12 0l-12 8z" fill="#0d0b12" opacity=".9"/><path d="M228 34q5-6 10 0q5-6 10 0l-10 6z" fill="#0d0b12" opacity=".8"/>
+      <circle cx="330" cy="22" r="12" fill="#ffe9a3" opacity=".9"/></g>`;
+    if (kind === 'estrellas') return `<g class="tmp-ov tmp-estrellas"><path transform="translate(180 20)" d="M0-12l3 8h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" fill="#ffd27a" class="twinkle"/>${pts(14, (i) => `<circle cx="${rr(i, 360)}" cy="${rr(i * 3, 60)}" r="1.2" fill="#ffe9a3" class="twinkle"/>`)}</g>`;
+    if (kind === 'velas') return `<g class="tmp-ov tmp-velas">${pts(10, (i) => { const x = 18 + i * 36; return `<rect x="${x}" y="150" width="4" height="12" fill="#f4f1d0"/><ellipse cx="${x + 2}" cy="147" rx="2.2" ry="3.6" fill="#ffd27a" class="blink"/>`; })}</g>`;
+    if (kind === 'confeti') return `<g class="tmp-ov tmp-confeti">${pts(36, (i) => `<rect x="${rr(i, 360)}" y="${rr(i * 3, 150)}" width="3" height="5" transform="rotate(${rr(i, 90)} ${rr(i, 360)} ${rr(i * 3, 150)})" fill="${['#ff5a5a', '#ffd27a', '#5ad1ff', '#7dff9a', '#ff8fb1'][i % 5]}" opacity=".9"/>`)}</g>`;
+    return '';
+  }
   function sceneKind(type) {
+    const ex = extTipo(type);
+    if (ex && ex.escena) return ex.escena;
     const t = norm(type);
     if (FOOTBALL.includes(t)) return t;
     if (['misa', 'boda', 'prensa', 'graduacion', 'lanzamiento', 'concierto'].includes(t)) return t;
@@ -1284,7 +1327,7 @@
       const counter = hasVan ? '' : `<g transform="translate(286 148)"><rect width="64" height="16" rx="3" fill="#0d0f14" fill-opacity=".78"/><circle cx="9" cy="8" r="3" fill="none" stroke="#e9edf5" stroke-width="1.4"/><circle cx="9" cy="8" r="1.2" fill="#e9edf5"/><text x="58" y="11.5" font-size="8.5" font-family="${FONT_M}" fill="#e9edf5" text-anchor="end">${vtxt}</text></g>`;
       return `<svg class="scene" viewBox="0 0 360 170" role="img" aria-label="Escena del evento">
       <defs>${inline}<pattern id="${u}noise" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="3" fill="#ffffff14"/><rect y="3" width="3" height="3" fill="#00000040"/></pattern></defs>
-      ${bg}${jib}${van}${sat}${gen}${cams}${drone}
+      ${bg}${(extTipo(type) || {}).overlay ? overlayTemporada(extTipo(type).overlay, u) : ''}${jib}${van}${sat}${gen}${cams}${drone}
       <rect width="360" height="170" fill="${U('vig')}"/>
       ${football ? scoreboard(u, info, incident === 'epico' && !done) : fight ? fightBoard(kind, info) : ''}${fx}
       <g transform="translate(10 148)"><rect width="62" height="16" rx="3" fill="#ff3b3b"/><circle cx="10" cy="8" r="3" fill="#fff" class="blink"/><text x="38" y="12" font-size="10" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">EN VIVO</text></g>

@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "Hepsi bir arada",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Özel etkinlik",
+    "temp.termina": "{n} gün sonra bitiyor",
+    "temp.termina_manana": "Yarın bitiyor",
+    "temp.ultimo_dia": "Son gün!",
+    "temp.requisitos": "Gerekenler:",
+    "temp.pago_extra": "ödeme ×{x}",
+    "temp.meta": "Hedef: {meta} özel etkinlik çek",
+    "temp.premios": "Ödül:",
+    "temp.ver_oferta": "Özel teklifi gör",
+    "temp.sin_oferta": "Sonraki özel teklif {n} oyun günü sonra geliyor",
+    "temp.agotado": "Bu sezon başka özel teklif kalmadı",
+    "temp.cumplida": "Hedef tamam! {trofeo} kazandın",
+    "temp.proximo": "Sonraki özel etkinlik: {temporada}, {n} gün sonra",
+    "temp.proximo_manana": "Sonraki özel etkinlik: {temporada}, yarın!",
+    "temp.trofeos": "Sezon kupaları",
+    "temp.trofeos_vacio": "Henüz sezon kupan yok. Kazanmak için her tarihin özel etkinliklerini çek.",
+    "temp.calendario": "Özel etkinlik takvimi",
+    "temp.oferta_tag": "Özel etkinlik · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

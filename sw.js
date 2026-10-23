@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v6';
+const VERSION = 'envivo-v7';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -13,6 +13,8 @@ const SHELL = [
   './index.html',
   './js/datos.js',
   './js/logic.js',
+  './js/temporadas.js', // eventos especiales por fecha (Navidad, Fin de año, Halloween...)
+  './js/sede.js',       // mejoras de la sede (extensión)
   './js/ui.js',
   './js/art.js',
   './js/plan_evento.js', // plan de personal y cámaras (opcional)

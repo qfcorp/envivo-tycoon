@@ -7,12 +7,13 @@ const fs = require('fs');
 const { chromium } = require('playwright');
 
 (async () => {
-  // Rendimiento: index.html no debe cargar más de 12 scripts que bloquean la primera pantalla (los demás con defer)
+  // Rendimiento: index.html no debe cargar más de 13 scripts que bloquean la primera pantalla (los demás con defer).
+  // 13 = los 11 de siempre + las extensiones js/temporadas.js y js/sede.js, que tienen que registrarse antes de js/ui.js.
   {
     const idx = fs.readFileSync(path.resolve(__dirname, '..', 'index.html'), 'utf8');
     const sync = (idx.match(/<script\b[^>]*\bsrc=[^>]*>/g) || []).filter((t) => !/\b(defer|async)\b/.test(t));
-    if (sync.length > 12) { console.error(`❌ index.html carga ${sync.length} scripts síncronos (máximo 12):\n` + sync.join('\n')); process.exit(1); }
-    console.log(`Scripts síncronos en index.html: ${sync.length} (máximo 12)`);
+    if (sync.length > 13) { console.error(`❌ index.html carga ${sync.length} scripts síncronos (máximo 13):\n` + sync.join('\n')); process.exit(1); }
+    console.log(`Scripts síncronos en index.html: ${sync.length} (máximo 13)`);
   }
   const outDir = path.join(__dirname, 'capturas');
   fs.mkdirSync(outDir, { recursive: true });
@@ -24,7 +25,8 @@ const { chromium } = require('playwright');
   page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g/.test(m.text()) && !/ERR_/.test(m.text())) errors.push('console: ' + m.text()); });
   await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
 
-  const url = 'file://' + path.resolve(__dirname, '..', process.env.GAME_FILE || 'index.html');
+  // ?fecha= fija un día sin temporada (js/temporadas.js): así la prueba no cambia según la fecha del equipo
+  const url = 'file://' + path.resolve(__dirname, '..', process.env.GAME_FILE || 'index.html') + '?fecha=2026-11-10';
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   const shot = (n) => page.screenshot({ path: path.join(outDir, n + '.png') });
   const click = (sel) => page.locator(sel).first().click();

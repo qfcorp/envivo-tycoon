@@ -178,6 +178,7 @@
     s.chapterStats = { good: {}, duels: 0 };
     s.stats = { events: 100, fiveStars: 0, earned: 0, best: {}, good: {}, duels: { won: 0, lost: 0 } }; // fuera del tutorial
     s.seed = seed;
+    s.intento = true; // la lógica no aplica extensiones (temporadas, sede...) a un intento en línea
     return { s, contractId: contrato.id, staffIds: s.staff.map((p) => p.id), equipIds: s.equip.map((e) => e.id), vip };
   }
 

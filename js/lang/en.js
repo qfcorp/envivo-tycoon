@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "Everything at once",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Special event",
+    "temp.termina": "Ends in {n} days",
+    "temp.termina_manana": "Ends tomorrow",
+    "temp.ultimo_dia": "Last day!",
+    "temp.requisitos": "Needs:",
+    "temp.pago_extra": "pay ×{x}",
+    "temp.meta": "Goal: cover {meta} special events",
+    "temp.premios": "Reward:",
+    "temp.ver_oferta": "See the special offer",
+    "temp.sin_oferta": "The next special offer arrives in {n} game days",
+    "temp.agotado": "No special offers left this season",
+    "temp.cumplida": "Goal reached! You won the {trofeo}",
+    "temp.proximo": "Next special event: {temporada} in {n} days",
+    "temp.proximo_manana": "Next special event: {temporada}, tomorrow!",
+    "temp.trofeos": "Season trophies",
+    "temp.trofeos_vacio": "You don't have any season trophies yet. Cover the special events of each date to win them.",
+    "temp.calendario": "Special events calendar",
+    "temp.oferta_tag": "Special event · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

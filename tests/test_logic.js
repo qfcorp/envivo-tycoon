@@ -482,7 +482,7 @@ const CORTO = ['director', 'camarografo', 'camarografo', 'sonidista', 'tecnico_t
   Object.keys(G.EVENT_TYPES).forEach((k) => {
     const t = G.EVENT_TYPES[k];
     check(t.name && Object.keys(t.crew).length && t.positions.length >= t.cams[1], `evento ${k}: faltan datos`);
-    t.positions.forEach((p) => check(G.TEXTOS[`pos.${k}.${p[0]}`] && G.TEXTOS[`pos.${k}.${p[0]}.ideal`], `evento ${k}: posición ${p[0]} sin texto`));
+    t.positions.forEach((p) => check(G.TEXTOS[`pos.${t.posDe || k}.${p[0]}`] && G.TEXTOS[`pos.${t.posDe || k}.${p[0]}.ideal`], `evento ${k}: posición ${p[0]} sin texto`)); // posDe: usa las de otro evento (temporadas)
     let ideal = 0; Object.keys(t.crew).forEach((r) => { ideal += t.crew[r][1]; });
     check(ideal <= G.BALANCE.maxStaff + 1, `evento ${k}: la plantilla ideal (${ideal}) no cabe en ${G.BALANCE.maxStaff} personas`);
   });

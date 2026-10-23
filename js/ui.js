@@ -69,8 +69,8 @@
 
   /* ---------- Límites (de la lógica si los exporta) ---------- */
   const BAL = () => G.BALANCE || {};
-  const maxStaff = () => BAL().maxStaff || 12;
-  const maxEquip = () => BAL().maxEquip || 30;
+  const maxStaff = () => { try { if (G.maxStaff && S) return G.maxStaff(S); } catch (e) { /* abajo */ } return BAL().maxStaff || 12; };
+  const maxEquip = () => { try { if (G.maxEquip && S) return G.maxEquip(S); } catch (e) { /* abajo */ } return BAL().maxEquip || 30; };
   // Límite de quiebra: crece con los gastos diarios (G.bankruptLimit); con una lógica vieja, el fijo
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
   const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
@@ -104,6 +104,36 @@
   let catSel = lsGet('envivo_cat') || 'cam';   // categoría elegida en la tienda de equipos
   let rolBuscar = '';      // puesto elegido para buscar personal
   let diaAntes = null;     // dinero antes de descansar (para el resumen del día)
+
+  /* ---------- Módulos de Inicio (temporadas, sede...) ----------
+     Un módulo hace window.EnVivoInicio.push({ id, orden, tarjeta(ctx) → html, clic(ctx, accion, el) }).
+     Sus botones llevan data-ext="<id>" data-acc="<acción>". */
+  window.EnVivoInicio = window.EnVivoInicio || [];
+  function ctxInicio() {
+    return { G, S: () => S, get estado() { return S; }, A, T, TL, M, money: M, N, esc, I, toast, openModal, closeModal, ask,
+      render: () => render(), save: () => save(), snd, mus };
+  }
+  function modulosInicio() {
+    return (window.EnVivoInicio || []).filter((m) => m && m.id).slice().sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  }
+  function tarjetasInicio() {
+    const ctx = ctxInicio();
+    return modulosInicio().map((m) => {
+      if (typeof m.tarjeta !== 'function') return '';
+      try { return m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); return ''; }
+    }).join('');
+  }
+  // Fecha del celular (o ?fecha=AAAA-MM-DD para demos): la usan las temporadas. Se guarda en la partida (s.temporada.fecha)
+  // y la lógica solo mira esa fecha guardada, nunca el reloj.
+  const fechaPedida = (() => { try { const m = /[?&]fecha=(\d{4}-\d{2}-\d{2})\b/.exec(location.search); return m ? m[1] : null; } catch (e) { return null; } })();
+  function fechaHoy() {
+    if (fechaPedida) return fechaPedida;
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function aplicarFecha() {
+    try { if (window.Temporadas && S) window.Temporadas.setFecha(fechaHoy(), S); } catch (e) { /* sin temporadas */ }
+  }
 
   /* ---------- Guardado ---------- */
   function save() {
@@ -376,6 +406,7 @@
         </div>
       </div>
       ${installCard()}
+      ${tarjetasInicio()}
       ${story}
       <div class="sectitle">${T('inicio.ultimo')}</div>
       <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}
@@ -405,7 +436,8 @@
   }
   function renderClientes() {
     const cards = S.contracts.map((c) => {
-      return `<div class="card">
+      const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
+      return `<div class="card ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
@@ -1141,6 +1173,11 @@
     if (S.gameOver) showGameOver();
   }
 
+  // Líneas que agregan las extensiones al resultado (result.extras = [{ icon, k, p }])
+  function extrasRes(r) {
+    if (!r || !Array.isArray(r.extras) || !r.extras.length) return '';
+    return r.extras.map((x) => `<div class="paylater ext">${I((x && x.icon) || 'star', 'sm')} ${esc(gtx(x, x && x.text))}</div>`).join('');
+  }
   function showResult(r, caja, fresh, ty0) {
     // Con la lógica nueva los capítulos esperan en S.capCompletados; con una vieja, en r.chapterDone
     afterResult = !Array.isArray(S.capCompletados) && r.chapterDone ? r.chapterDone : null;
@@ -1184,6 +1221,7 @@
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       ${duel}
       ${intl}
+      ${extrasRes(r)}
       ${riesgo}
       <table style="margin-top:12px">
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
@@ -1457,6 +1495,15 @@
     }
     const bm = e.target.closest('#overlay [data-merc]');
     if (bm && window.Mercado && $('merc-cont')) { window.Mercado.clicVentana(ctxMercado(), $('merc-cont'), bm); return; }
+    const xe = e.target.closest('[data-ext][data-acc]');
+    if (xe && !xe.disabled) {
+      const m = modulosInicio().find((x) => x.id === xe.dataset.ext);
+      if (m && typeof m.clic === 'function') {
+        snd.play('tap');
+        try { m.clic(ctxInicio(), xe.dataset.acc, xe); } catch (err) { console.error('[inicio ' + m.id + ']', err); toast(T('err.no_completo')); }
+        return;
+      }
+    }
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const a = el.dataset.act;
@@ -1491,7 +1538,7 @@
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
       case 'demo-no': confirmCb = null; closeModal(); render(); continuar(); break;
-      case 'next-day': diaAntes = { money: S.money }; G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); continuar(); break;
+      case 'next-day': diaAntes = { money: S.money }; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); continuar(); break;
       case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
       case 'mkt': {
         const visita = el.dataset.k === 'visitar';
@@ -1546,8 +1593,8 @@
         if (capDeCola && Array.isArray(S.capCompletados) && S.capCompletados.length) { S.capCompletados.shift(); save(); }
         capDeCola = false;
         lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); continuar(); break;
-      case 'new-game': ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { S = G.newGame(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); }); break;
-      case 'restart': S = G.newGame(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); break;
+      case 'new-game': ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { S = G.newGame(); aplicarFecha(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); }); break;
+      case 'restart': S = G.newGame(); aplicarFecha(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); break;
     }
   });
 
@@ -1606,7 +1653,7 @@
     let d = null;
     try { d = G.demoGame ? G.demoGame(kind) : null; } catch (e) { d = null; }
     if (!d) { toast(T('err.no_completo')); continuar(); return; }
-    S = d; olvidarDia(); save(); tab = 'inicio'; prep = null;
+    S = d; aplicarFecha(); olvidarDia(); save(); tab = 'inicio'; prep = null;
     closeModal(); mus.go('menu'); render(); toast(T('demo.listo')); continuar();
   }
   function pedirDemo(kind) {
@@ -1621,6 +1668,7 @@
     enlazarTraductor();
     if (I18) I18.aplicar();
     S = load() || G.newGame();
+    aplicarFecha();
     save();
     render();
     const demo = G.demoGame ? demoPedido() : null;

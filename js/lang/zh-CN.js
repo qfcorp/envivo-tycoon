@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "全部一起来",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "特别活动",
+    "temp.termina": "{n} 天后结束",
+    "temp.termina_manana": "明天结束",
+    "temp.ultimo_dia": "最后一天！",
+    "temp.requisitos": "需要：",
+    "temp.pago_extra": "报酬 ×{x}",
+    "temp.meta": "目标：完成 {meta} 场特别活动",
+    "temp.premios": "奖励：",
+    "temp.ver_oferta": "查看特别邀约",
+    "temp.sin_oferta": "下一个特别邀约将在 {n} 个游戏日后到来",
+    "temp.agotado": "本季已没有更多特别邀约",
+    "temp.cumplida": "目标达成！你赢得了{trofeo}",
+    "temp.proximo": "下一个特别活动：{n} 天后的{temporada}",
+    "temp.proximo_manana": "下一个特别活动：{temporada}，就在明天！",
+    "temp.trofeos": "季节奖杯",
+    "temp.trofeos_vacio": "你还没有季节奖杯。完成每个节日的特别活动即可赢得。",
+    "temp.calendario": "特别活动日历",
+    "temp.oferta_tag": "特别活动 · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

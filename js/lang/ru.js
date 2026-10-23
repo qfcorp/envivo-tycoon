@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "Всё сразу",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Особое событие",
+    "temp.termina": "Закончится через {n} дн.",
+    "temp.termina_manana": "Закончится завтра",
+    "temp.ultimo_dia": "Последний день!",
+    "temp.requisitos": "Нужно:",
+    "temp.pago_extra": "оплата ×{x}",
+    "temp.meta": "Цель: снять {meta} особых события",
+    "temp.premios": "Награда:",
+    "temp.ver_oferta": "Посмотреть особое предложение",
+    "temp.sin_oferta": "Следующее особое предложение — через {n} игр. дн.",
+    "temp.agotado": "В этом сезоне особых предложений больше нет",
+    "temp.cumplida": "Цель выполнена! Ты получил: {trofeo}",
+    "temp.proximo": "Следующее особое событие: {temporada} через {n} дн.",
+    "temp.proximo_manana": "Следующее особое событие: {temporada}, уже завтра!",
+    "temp.trofeos": "Сезонные трофеи",
+    "temp.trofeos_vacio": "У тебя пока нет сезонных трофеев. Снимай особые события в каждую дату, чтобы их получить.",
+    "temp.calendario": "Календарь особых событий",
+    "temp.oferta_tag": "Особое событие · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

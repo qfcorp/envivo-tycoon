@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "Alles auf einmal",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Sonderevent",
+    "temp.termina": "Endet in {n} Tagen",
+    "temp.termina_manana": "Endet morgen",
+    "temp.ultimo_dia": "Letzter Tag!",
+    "temp.requisitos": "Braucht:",
+    "temp.pago_extra": "Bezahlung ×{x}",
+    "temp.meta": "Ziel: {meta} Sonderevents abdecken",
+    "temp.premios": "Belohnung:",
+    "temp.ver_oferta": "Sonderangebot ansehen",
+    "temp.sin_oferta": "Das nächste Sonderangebot kommt in {n} Spieltagen",
+    "temp.agotado": "Keine Sonderangebote mehr in dieser Saison",
+    "temp.cumplida": "Ziel erreicht! Du hast die {trofeo} gewonnen",
+    "temp.proximo": "Nächstes Sonderevent: {temporada} in {n} Tagen",
+    "temp.proximo_manana": "Nächstes Sonderevent: {temporada}, morgen!",
+    "temp.trofeos": "Saison-Trophäen",
+    "temp.trofeos_vacio": "Du hast noch keine Saison-Trophäen. Deck die Sonderevents jedes Datums ab, um sie zu gewinnen.",
+    "temp.calendario": "Kalender der Sonderevents",
+    "temp.oferta_tag": "Sonderevent · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

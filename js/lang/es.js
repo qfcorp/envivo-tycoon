@@ -1366,6 +1366,25 @@
     "desafio.mod.todo": "Todo junto",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Evento especial",
+    "temp.termina": "Termina en {n} días",
+    "temp.termina_manana": "Termina mañana",
+    "temp.ultimo_dia": "¡Último día!",
+    "temp.requisitos": "Pide:",
+    "temp.pago_extra": "pago ×{x}",
+    "temp.meta": "Meta: cubre {meta} eventos especiales",
+    "temp.premios": "Premio:",
+    "temp.ver_oferta": "Ver la oferta especial",
+    "temp.sin_oferta": "La próxima oferta especial llega en {n} días de juego",
+    "temp.agotado": "Ya no quedan ofertas especiales esta temporada",
+    "temp.cumplida": "¡Meta cumplida! Ganaste el {trofeo}",
+    "temp.proximo": "Próximo evento especial: {temporada} en {n} días",
+    "temp.proximo_manana": "Próximo evento especial: {temporada}, ¡mañana!",
+    "temp.trofeos": "Trofeos de temporada",
+    "temp.trofeos_vacio": "Todavía no tienes trofeos de temporada. Cubre los eventos especiales de cada fecha para ganarlos.",
+    "temp.calendario": "Calendario de eventos especiales",
+    "temp.oferta_tag": "Evento especial · {temporada}",
 
 
     // Textos de la lógica y del servidor: en español no hace falta traducirlos

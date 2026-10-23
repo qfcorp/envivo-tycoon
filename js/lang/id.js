@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "Semuanya sekaligus",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Acara khusus",
+    "temp.termina": "Berakhir dalam {n} hari",
+    "temp.termina_manana": "Berakhir besok",
+    "temp.ultimo_dia": "Hari terakhir!",
+    "temp.requisitos": "Perlu:",
+    "temp.pago_extra": "bayaran ×{x}",
+    "temp.meta": "Target: liput {meta} acara khusus",
+    "temp.premios": "Hadiah:",
+    "temp.ver_oferta": "Lihat tawaran khusus",
+    "temp.sin_oferta": "Tawaran khusus berikutnya datang dalam {n} hari permainan",
+    "temp.agotado": "Tidak ada lagi tawaran khusus musim ini",
+    "temp.cumplida": "Target tercapai! Kamu memenangkan {trofeo}",
+    "temp.proximo": "Acara khusus berikutnya: {temporada} dalam {n} hari",
+    "temp.proximo_manana": "Acara khusus berikutnya: {temporada}, besok!",
+    "temp.trofeos": "Trofi musiman",
+    "temp.trofeos_vacio": "Kamu belum punya trofi musiman. Liput acara khusus di setiap tanggal untuk memenangkannya.",
+    "temp.calendario": "Kalender acara khusus",
+    "temp.oferta_tag": "Acara khusus · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

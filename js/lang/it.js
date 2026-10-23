@@ -1343,6 +1343,25 @@
     "desafio.mod.todo": "Tutto insieme",
     // fin de v6
     // fin de la integración
+    // Temporadas (js/temporadas.js)
+    "temp.tag": "Evento speciale",
+    "temp.termina": "Finisce tra {n} giorni",
+    "temp.termina_manana": "Finisce domani",
+    "temp.ultimo_dia": "Ultimo giorno!",
+    "temp.requisitos": "Richiede:",
+    "temp.pago_extra": "paga ×{x}",
+    "temp.meta": "Obiettivo: copri {meta} eventi speciali",
+    "temp.premios": "Premio:",
+    "temp.ver_oferta": "Vedi l'offerta speciale",
+    "temp.sin_oferta": "La prossima offerta speciale arriva tra {n} giorni di gioco",
+    "temp.agotado": "Non ci sono più offerte speciali in questa stagione",
+    "temp.cumplida": "Obiettivo raggiunto! Hai vinto il {trofeo}",
+    "temp.proximo": "Prossimo evento speciale: {temporada} tra {n} giorni",
+    "temp.proximo_manana": "Prossimo evento speciale: {temporada}, domani!",
+    "temp.trofeos": "Trofei di stagione",
+    "temp.trofeos_vacio": "Non hai ancora trofei di stagione. Copri gli eventi speciali di ogni data per vincerli.",
+    "temp.calendario": "Calendario degli eventi speciali",
+    "temp.oferta_tag": "Evento speciale · {temporada}",
 
 
     // Textos de la lógica del juego y del servidor (clave = texto exacto en español). Pendiente.

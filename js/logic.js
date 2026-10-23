@@ -168,6 +168,48 @@
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
   const randInt = (s, a, b) => a + Math.floor(rnd(s) * (b - a + 1));
+
+  /* ---------- Extensiones (temporadas, sede...) ----------
+     Un módulo se registra con registrarExtension({ id, migrar, alNuevoDia, alTerminarEvento, bonoCalidad, multPago,
+     multGastos, limites, contratosExtra }). Todo es opcional. Los intentos en línea (estado armado por intento.js:
+     s.intento = true) NUNCA aplican extensiones: el servidor repite el intento sin ellas y tiene que dar lo mismo. */
+  const extensiones = [];
+  function registrarExtension(ext) {
+    if (!ext || typeof ext !== 'object') return false;
+    if (ext.id) { const i = extensiones.findIndex((e) => e.id === ext.id); if (i >= 0) { extensiones[i] = ext; return true; } }
+    extensiones.push(ext);
+    return true;
+  }
+  // Estado de un intento en línea: lo marca intento.js; por si acaso también se reconoce su forma (día 1, historia
+  // terminada, 100 eventos y nada ganado: una partida real nunca está así)
+  function esIntento(s) {
+    if (!s) return false;
+    if (s.intento === true) return true;
+    return s.day === 1 && s.storyDone === true && !!s.stats && s.stats.events === 100 && s.stats.earned === 0;
+  }
+  let armando = 0; // > 0 mientras newGame arma la partida: los ganchos esperan a migrar() al final
+  function extActivas(s) { return extensiones.length > 0 && !!s && !armando && !esIntento(s); }
+  // Llama al gancho `nombre` de cada extensión (los errores de una extensión no rompen el juego)
+  function cadaExt(s, nombre, fn) {
+    if (!extActivas(s)) return;
+    extensiones.forEach((e) => {
+      if (typeof e[nombre] !== 'function') return;
+      try { fn(e[nombre].bind(e)); } catch (err) { if (typeof console !== 'undefined') console.error('[extension ' + (e.id || '?') + '] ' + nombre, err); }
+    });
+  }
+  function extMult(s, nombre, arg) {
+    let f = 1;
+    cadaExt(s, nombre, (h) => { const v = Number(h(s, arg)); if (isFinite(v) && v > 0) f *= v; });
+    return f;
+  }
+  function extLimite(s, campo) {
+    let n = 0;
+    cadaExt(s, 'limites', (h) => { const l = h(s) || {}; const v = Number(l[campo]); if (isFinite(v)) n += Math.round(v); });
+    return n;
+  }
+  function maxStaff(s) { return BALANCE.maxStaff + extLimite(s, 'staff'); }
+  function maxEquip(s) { return BALANCE.maxEquip + extLimite(s, 'equip'); }
+  function migrarExt(s) { cadaExt(s, 'migrar', (h) => h(s)); return s; }
   const pick = (s, arr) => arr[Math.floor(rnd(s) * arr.length)];
   const chance = (s, p) => rnd(s) < p;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -233,10 +275,28 @@
     });
     CATEGORIAS.forEach((c) => { c.nombre = tx('cat.' + c.key); c.name = c.nombre; });
     Object.keys(CONSUMABLES).forEach((k) => { CONSUMABLES[k].name = tx('cons.' + k + '.nombre'); CONSUMABLES[k].desc = tx('cons.' + k + '.desc'); });
-    Object.keys(EVENT_TYPES).forEach((k) => { EVENT_TYPES[k].name = tx('ev.' + k); });
+    Object.keys(EVENT_TYPES).forEach((k) => { if (!EVENT_TYPES[k].nombre || Object.prototype.hasOwnProperty.call(TEXTOS, 'ev.' + k)) EVENT_TYPES[k].name = tx('ev.' + k); });
     CHAPTERS.forEach((ch, i) => {
       ['title', 'intro', 'goal', 'done'].forEach((f) => { ch[f] = tx('cap.' + i + '.' + f); });
     });
+  }
+  /* Tipo de evento que trae una extensión (por ejemplo, los de temporada). def como en datos.js EVENTOS;
+     con temporada: '<clave>' no sale entre las ofertas normales. El nombre sale de TEXTOS 'ev.<clave>'
+     (o de def.nombre si la extensión trae su propio texto, por ejemplo una temporada que manda el servidor). */
+  function registrarTipoEvento(key, def) {
+    if (!key || !def || D.EVENTOS[key]) return null; // nunca pisa un evento del juego base
+    const t = Object.assign({ key, peso: 1, minRep: 0, clients: [def.cliente || key] }, def);
+    if (typeof t.crew === 'string') t.crew = plantillaDe(t.crew);
+    if (typeof t.crewReal === 'string') t.crewReal = plantillaDe(t.crewReal);
+    if (!t.crewReal) t.crewReal = t.crew;
+    EVENT_TYPES[key] = t;
+    t.name = Object.prototype.hasOwnProperty.call(TEXTOS, 'ev.' + key) || !def.nombre ? tx('ev.' + key) : def.nombre;
+    return t;
+  }
+  function plantillaDe(txt) {
+    const o = {};
+    String(txt).split(',').forEach((p) => { const m = p.trim().match(/^(\w+) (\d+)\/(\d+)$/); if (m) o[m[1]] = [Number(m[2]), Number(m[3])]; });
+    return o;
   }
   function setTraductor(fn) { traductor = typeof fn === 'function' ? fn : null; aplicarTextos(); }
 
@@ -356,7 +416,7 @@
     const hired = s.staff.filter((p) => !p.owner);
     const payroll = hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare;
     const equipValue = owned(s).reduce((a, e) => a + itemOf(e).price, 0);
-    return Math.round(rentFor(s) + d.perStaff * hired.length + equipValue * d.equipShare + payroll);
+    return Math.round((rentFor(s) + d.perStaff * hired.length + equipValue * d.equipShare + payroll) * extMult(s, 'multGastos'));
   }
   function rentTier(s) {
     const size = s.staff.length + owned(s).length;
@@ -385,6 +445,8 @@
       equip: Math.round(owned(s).reduce((a, e) => a + itemOf(e).price, 0) * d.equipShare),
     };
     out.total = dailyCost(s);
+    const fx = extMult(s, 'multGastos');
+    if (fx !== 1) out.ext = { mult: r2(fx), monto: out.total - Math.round(out.total / fx) }; // lo que suman o ahorran las extensiones
     return out;
   }
   /* Sueldo de una persona en un evento (cobra más en eventos grandes) */
@@ -430,6 +492,10 @@
 
   /* ---------- Juego nuevo ---------- */
   function newGame(seed) {
+    armando++;
+    try { return newGame0(seed); } finally { armando--; }
+  }
+  function newGame0(seed) {
     const s = {
       v: SAVE_VERSION,
       seed: (seed === undefined ? Date.now() : seed) | 0,
@@ -466,6 +532,8 @@
     ['misa', 'boda', 'misa'].forEach((k) => { const c = addContract(s, k); c.stream = false; c.outdoor = false; c.cams = 1; c.daysLeft = 4; });
     refreshCandidates(s);
     log(s, 'log.inicio');
+    armando--;
+    try { migrarExt(s); } finally { armando++; }
     return s;
   }
 
@@ -475,6 +543,7 @@
     return Object.keys(EVENT_TYPES).filter((k) => {
       const t = EVENT_TYPES[k];
       if (t.soloInternacional) return false;
+      if (t.temporada) return false; // los eventos de temporada solo llegan por su extensión
       if (t.minRep > s.rep) return false;
       if (!s.storyDone && t.minChapter && s.chapter < t.minChapter) return false;
       // El evento que pide el capítulo solo llega como oferta de la historia
@@ -514,6 +583,9 @@
       story: !!opts.story, // true = oferta de la historia (la pide el capítulo)
     };
     if (c.story) c.daysLeft = randInt(s, 4, 5);
+    if (opts.especial) Object.assign(c, opts.especial); // campos extra de una extensión (temporada, etc.)
+    const fp = extMult(s, 'multPago', c);
+    if (fp !== 1) c.pay = Math.round(c.pay * fp / 10) * 10;
     // Disputado: MegaVisión también lo quiere, así que el cliente exige más (dificultad +1) y paga más
     const R = BALANCE.rival;
     const pc = !s.storyDone && s.chapter === R.fromChapter ? R.contestedChapter : R.contestedChance;
@@ -591,6 +663,8 @@
       repRisk: K.repRisk,
       payLaterShare: K.payLater || 0,
     };
+    const fpi = extMult(s, 'multPago', c);
+    if (fpi !== 1) c.pay = Math.round(c.pay * fpi / 10) * 10;
     c.travelCost = Math.round(c.pay * K.travelShare / 10) * 10;
     c.requisitos = requisitosInternacional(s, c, s.staff.map((p) => p.id), s.equip.map((e) => e.id));
     s.contracts.push(c);
@@ -736,7 +810,7 @@
     if (i < 0) return { ok: false, msg: tx('msg.ya_no_esta') };
     const c = s.candidates[i];
     const fee = c.wage * BALANCE.wage.hireFeeDays;
-    if (s.staff.length >= BALANCE.maxStaff) return { ok: false, msg: tx('msg.oficina_llena', { n: BALANCE.maxStaff }) };
+    if (s.staff.length >= maxStaff(s)) return { ok: false, msg: tx('msg.oficina_llena', { n: maxStaff(s) }) };
     if (s.money < fee) return { ok: false, msg: tx('msg.necesitas_contratar', { monto: money(fee) }) };
     s.money -= fee;
     s.candidates.splice(i, 1);
@@ -776,7 +850,7 @@
     if (!it) return { ok: false, msg: tx('msg.no_existe') };
     if (it.minRep > s.rep) return { ok: false, msg: tx('msg.fama_para_comprar', { n: it.minRep }) };
     if (s.money < it.price) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(it.price) }) };
-    if (s.equip.length >= BALANCE.maxEquip) return { ok: false, msg: tx('msg.bodega_llena') };
+    if (s.equip.length >= maxEquip(s)) return { ok: false, msg: tx('msg.bodega_llena') };
     s.money -= it.price;
     s.equip.push({ id: nextId(s), type, condition: 100 });
     log(s, it.alquiler ? 'log.alquilaste' : 'log.compraste', { item: itemP(type), monto: money(it.price) });
@@ -847,6 +921,7 @@
       // (con muy poca fama, por hacer mal los eventos, los clientes dejan de buscarte)
       const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 && !badStreak(s) ? 1 : 0);
       for (let i = 0; i < n; i++) addContract(s);
+      cadaExt(s, 'contratosExtra', (h) => h(s));
       // A veces un cliente cancela (nunca las ofertas de la historia ni las internacionales)
       const cancelable = s.contracts.filter((c) => !c.story && !c.internacional);
       if (!inTutorial(s) && cancelable.length && chance(s, BALANCE.cancelChance)) {
@@ -908,6 +983,7 @@
         aviso(s, 'quiebra_aviso', left > 1 ? 'log.quiebra_aviso' : 'log.quiebra_aviso1', { monto: money(-bk.limit), n: left });
       }
     } else s.redDays = 0;
+    if (!s.gameOver) cadaExt(s, 'alNuevoDia', (h) => h(s));
   }
 
   /* Límite de quiebra: crece con los gastos diarios (una productora grande aguanta más deuda) */
@@ -1031,7 +1107,7 @@
       if (!p && i >= N) break;
       if (!p) p = ['extra_' + (i + 1), 'fija'];
       if (t.sinDron && p[1] === 'aerea') continue;
-      const nk = 'pos.' + c.type + '.' + p[0];
+      const nk = 'pos.' + (t.posDe || c.type) + '.' + p[0]; // posDe: usa los nombres de posición de otro evento
       const has = Object.prototype.hasOwnProperty.call(TEXTOS, nk);
       out.push({ key: p[0], perfil: p[1], opcional: i >= N,
         nombre: has ? tx(nk) : tx('pos.extra', { n: i + 1 }), ideal: has ? tx(nk + '.ideal') : tx('pos.extra.ideal') });
@@ -1278,6 +1354,14 @@
     if (contract.story) ex = Math.max(ex, -BALANCE.expectStoryCap);
     if (ex) q += add('parte.fama', ex);
     if (t.sensible) parts.push([tx('parte.sensible'), 0, 'parte.sensible']);
+    cadaExt(s, 'bonoCalidad', (h) => {
+      (h(s, contract, staff, equip) || []).forEach((b) => {
+        const pts = Math.round(Number(b && b.pts) || 0);
+        if (!b || !b.k) return;
+        parts.push([tx(b.k, b.p || undefined), pts, b.k]);
+        q += pts;
+      });
+    });
     const qq = clamp(Math.round(q), 0, 100);
     return { q: qq, parts, cameraPlan: plan, rango: qualityRange(s, contract, qq, equip, staff) };
   }
@@ -1798,6 +1882,19 @@
   Object.keys(INCIDENTS).forEach((k) => INCIDENTS[k].choices.forEach((c, i) => { c.k = 'inc.' + k + '.o' + i; Object.defineProperty(c, 'label', { get: () => tx(c.k), enumerable: true }); }));
 
   /* Prueba de habilidad: cuanto más nivel y experiencia tiene la persona, más probable que salga bien */
+  /* Imprevisto que trae una extensión (mismo formato que INCIDENTS; textos inc.<clave>.t / .o<i> / .r<i>).
+     Su when() debe mirar un campo que solo tienen los contratos de la extensión (por ejemplo contract.temporada):
+     así nunca entra en el sorteo de un intento en línea. */
+  function registrarImprevisto(key, def) {
+    if (!key || !def || INCIDENTS[key] || !Array.isArray(def.choices)) return false;
+    def.weight = def.weight || (() => 3);
+    INCIDENTS[key] = def;
+    def.choices.forEach((c, i) => { c.k = 'inc.' + key + '.o' + i; Object.defineProperty(c, 'label', { get: () => tx(c.k), enumerable: true }); });
+    return true;
+  }
+  const incAyuda = { R: (q, k, p) => R(q, k, p), NEED: (k, p) => NEED(k, p), skillCheck: (s, p, ok, bad) => skillCheck(s, p, ok, bad),
+    bestRole: (ev, role) => bestRole(ev, role), hasCat: (ev, cat) => hasCat(ev, cat), camsOf: (ev) => camsOf(ev), itemOf: (e) => itemOf(e),
+    randInt: (s, a, b) => randInt(s, a, b), chance: (s, p) => chance(s, p), pick: (s, a) => pick(s, a), clamp, money, nm: (p) => nm(p) };
   function skillCheck(s, p, ok, bad) {
     const I = BALANCE.incidents;
     return chance(s, I.skillBase + I.skillPer * (p.skill + tierBonus(p))) ? ok(p) : bad(p);
@@ -1815,6 +1912,7 @@
     if (!staff.length) return { ok: false, msg: tx('msg.lleva_persona') };
     if (!equip.some((e) => itemOf(e).cat === 'cam')) return { ok: false, msg: tx('msg.lleva_camara') };
     staff.forEach((p) => { p.role = normRole(p.role); if (!p.tier) p.tier = 'junior'; });
+    if (esIntento(s)) s.intento = true; // se queda marcado para todo el intento (finishEvent cambia stats y día)
     if (contract.internacional) {
       const reqs = requisitosInternacional(s, contract, staffIds, equipIds);
       const falta = reqs.find((r) => r.obligatorio && !r.ok);
@@ -2070,6 +2168,7 @@
     if (duel === 'won') log(s, 'log.duelo_ganado', { q: quality, rq: rivalQuality, n: BALANCE.rival.winRep, frase: { k: pick(s, D.TAUNTS.duelWin) } });
     if (duel === 'lost') log(s, 'log.duelo_perdido', { q: quality, rq: rivalQuality, n: BALANCE.rival.loseRep, frase: { k: pick(s, D.TAUNTS.duelLose) } });
     storyMilestone(s, c.type, stars, duel);
+    cadaExt(s, 'alTerminarEvento', (h) => h(s, result, c));
     s.currentEvent = null;
     s.lastResult = result;
     // El premio del capítulo entra antes de pasar el día (así cuenta para la caja frente a la quiebra)
@@ -2178,6 +2277,7 @@
       if (s.currentEvent) s.currentEvent.incidents = s.currentEvent.incidents.filter((i) => INCIDENTS[i.key]);
       s.log = (s.log || []).filter((l) => l && typeof l.text === 'string');
       s.v = SAVE_VERSION;
+      migrarExt(s);
       return s;
     } catch (e) { return null; }
   }
@@ -2271,6 +2371,9 @@
     takeAvisos, takeChapterDone, venue, venueName, qualityRange,
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
+    // Extensiones
+    registrarExtension, extensiones, esIntento, extActivas, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
+    registrarImprevisto, incAyuda, itemOf,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.Game = API;
