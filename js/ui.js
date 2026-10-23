@@ -1067,7 +1067,7 @@
     const ev = evS().currentEvent;
     return ev && ev.incidents[ev.step] ? ev.incidents[ev.step].key : null;
   }
-  const viTag = () => (VI ? `<span class="tag ${VI.modo === 'festival' ? 'amber' : ''}" style="margin:0">${I(VI.modo === 'festival' ? 'festival' : 'shield')}${T(VI.modo === 'festival' ? 'online.festival' : 'online.liga')}</span>` : '');
+  const viTag = () => (VI ? `<span class="tag ${VI.modo === 'festival' || VI.modo === 'copa' ? 'amber' : ''}" style="margin:0">${I(VI.modo === 'festival' ? 'festival' : VI.modo === 'copa' ? 'crown' : 'shield')}${VI.modo === 'copa' ? (window.Copas ? window.Copas.T('titulo') : 'Copa de Servidores') : T(VI.modo === 'festival' ? 'online.festival' : 'online.liga')}</span>` : '');
 
   function showIncident() {
     const s = evS();
@@ -1350,6 +1350,7 @@
     { k: 'festival', mod: 'Festival', icon: 'festival', tono: 'amber' },
     { k: 'duelos', mod: 'Duelos', icon: 'rival', tono: 'red' },
     { k: 'desafio', mod: 'Desafio', icon: 'target', tono: 'green' },
+    { k: 'copa', mod: 'Copas', icon: 'crown', tono: 'red' },
   ];
   const enLinea = () => Api.disponible === true && Api.logueado();
   function avisosOnline() {
@@ -1361,10 +1362,11 @@
   }
   function desmontarOnline() {
     try { if (montado === 'festival' && window.Festival && window.Festival.detener) window.Festival.detener(); } catch (e) { /* nada */ }
+    try { if (montado === 'copa' && window.Copas && window.Copas.detener) window.Copas.detener(); } catch (e) { /* nada */ }
     montado = null;
   }
   function invalidarOnline() {
-    ['Liga', 'Duelos', 'Desafio'].forEach((m) => { try { if (window[m] && window[m].invalidar) window[m].invalidar(); } catch (e) { /* nada */ } });
+    ['Liga', 'Duelos', 'Desafio', 'Copas'].forEach((m) => { try { if (window[m] && window[m].invalidar) window[m].invalidar(); } catch (e) { /* nada */ } });
     desmontarOnline();
   }
   function estadoModo(k) {
@@ -1432,8 +1434,14 @@
       return { A, estado: () => S, vip: !!(Pm && Pm.vip), toast, snd: (n) => snd.play(n),
         jugarIntento: (seed, contrato, it) => jugarIntento(it || { seed, contrato }, 'festival') };
     }
+    if (k === 'copa') {
+      return { Api, A, G, estado: () => S, guardar: save, toast, ask, vip: !!(Pm && Pm.vip), snd: (n) => snd.play(n),
+        jugarIntento: (it) => jugarIntento(it, 'copa'),
+        sincronizar: () => { Api.refrescar().then(() => sincronizarEntregas()).catch(() => {}); } };
+    }
     return base;
   }
+  window.EnVivoAbrirOnline = (k) => { if (VI) return; tab = 'online'; vistaOnline = k || 'hub'; desmontarOnline(); render(); window.scrollTo(0, 0); };
 
   /* ---------- Discord: código para /vincular (server/INTEGRAR_DISCORD.md) ---------- */
   let discordOff = false;   // el servidor dijo que el bot no está configurado

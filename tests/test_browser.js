@@ -141,19 +141,20 @@ const { chromium } = require('playwright');
       return G.serialize(s);
     });
     await p2.addInitScript((x) => { if (!sessionStorage.getItem('cap')) { localStorage.setItem('envivo_tycoon_save_v1', x); sessionStorage.setItem('cap', '1'); } }, st);
-    await p2.reload({ waitUntil: 'domcontentloaded' });
-    await p2.waitForTimeout(300);
+    await p2.reload({ waitUntil: 'load' });
+    await p2.waitForFunction(() => window.__game && window.__game.state && window.__game.state.chapter === 1);
+    await p2.waitForTimeout(500);
     for (let k = 0; k < 3; k++) { const b = p2.locator('#overlay.on [data-act="close"], #overlay.on [data-act="close-dia"]'); if (await b.count()) await b.first().click(); else break; }
     await p2.click('nav button[data-tab="personal"]');
     await p2.locator('[data-act="hire"]:not([disabled])').first().click();
     const cap = p2.locator('#overlay.on [data-act="close-story"]');
     await cap.first().waitFor({ timeout: 10000 }).catch(() => {});
-    if (!(await cap.count())) fail('al contratar se completó el capítulo pero no apareció "Capítulo completado"');
+    if (!(await cap.count())) { console.log('DIAG1', JSON.stringify(await p2.evaluate(() => ({ ov: (document.querySelector('#overlay.on') || {}).innerText || '(sin ventana)', staff: window.__game.state.staff.length, ch: window.__game.state.chapter, pend: window.__game.state.capCompletados, msg: (document.querySelector('.toast') || {}).innerText }))).slice(0, 900)); fail('al contratar se completó el capítulo pero no apareció "Capítulo completado"'); }
     await p2.reload({ waitUntil: 'domcontentloaded' });
     await p2.waitForSelector('#overlay.on [data-act="close-story"]', { timeout: 10000 }).catch(() => {});
     if (!(await p2.locator('#overlay.on [data-act="close-story"]').count())) {
       const diag = await p2.evaluate(() => ({ ov: (document.querySelector('#overlay.on') || {}).innerText || '(sin ventana)', pend: (window.__game && window.__game.state && window.__game.state.capCompletados) || null, ls: Object.keys(localStorage) }));
-      fail('"Capítulo completado" no volvió a aparecer al recargar: ' + JSON.stringify(diag).slice(0, 600));
+      console.log('DIAG', JSON.stringify(diag).slice(0, 900)); fail('"Capítulo completado" no volvió a aparecer al recargar: ' + JSON.stringify(diag).slice(0, 600));
     }
     await p2.locator('#overlay.on [data-act="close-story"]').click();
     const quedan = await p2.evaluate(() => (window.__game.state.capCompletados || []).length);

@@ -1006,6 +1006,8 @@
     "online.duelos_det": "Fordere eine andere Firma heraus: gleicher Vertrag, gleiches Glück.",
     "online.desafio": "Tageschallenge",
     "online.desafio_det": "Dieselbe Herausforderung für alle, einmal am Tag.",
+    "online.copa": "Server-Pokal",
+    "online.copa_det": "Dein Server gegen die anderen, jede Woche.",
     "online.duelos_hoy": {"one":"{n} Duell heute","other":"{n} Duelle heute"},
     "online.desafio_jugado": "Heute schon gespielt",
     "online.entra": "Melde dich an, um online zu spielen",

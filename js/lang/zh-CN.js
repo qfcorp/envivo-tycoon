@@ -1006,6 +1006,8 @@
     "online.duelos_det": "挑战另一家公司：同样的合同，同样的运气。",
     "online.desafio": "每日挑战",
     "online.desafio_det": "所有人同一个挑战，每天一次。",
+    "online.copa": "服务器杯",
+    "online.copa_det": "你的服务器对战其他服务器，每周一届。",
     "online.duelos_hoy": "今天还有 {n} 场对决",
     "online.desafio_jugado": "今天已玩过",
     "online.entra": "登录账号即可在线游戏",

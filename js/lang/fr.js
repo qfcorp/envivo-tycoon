@@ -1006,6 +1006,8 @@
     "online.duelos_det": "Défie une autre société : même contrat, même chance.",
     "online.desafio": "Défi du jour",
     "online.desafio_det": "Le même défi pour tous, une fois par jour.",
+    "online.copa": "Coupe des Serveurs",
+    "online.copa_det": "Ton serveur contre les autres, chaque semaine.",
     "online.duelos_hoy": {"one":"{n} duel aujourd'hui","other":"{n} duels aujourd'hui"},
     "online.desafio_jugado": "Déjà joué aujourd'hui",
     "online.entra": "Connecte-toi pour jouer en ligne",

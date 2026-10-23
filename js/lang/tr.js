@@ -1006,6 +1006,8 @@
     "online.duelos_det": "Başka bir şirkete meydan oku: aynı sözleşme, aynı şans.",
     "online.desafio": "Günün Görevi",
     "online.desafio_det": "Herkese aynı görev, günde bir kez.",
+    "online.copa": "Sunucular Kupası",
+    "online.copa_det": "Sunucun diğerlerine karşı, her hafta.",
     "online.duelos_hoy": {"one":"Bugün {n} düello","other":"Bugün {n} düello"},
     "online.desafio_jugado": "Bugün oynadın",
     "online.entra": "Çevrimiçi oynamak için giriş yap",

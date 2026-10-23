@@ -1006,6 +1006,8 @@
     "online.duelos_det": "Tantang rumah produksi lain: kontrak sama, hoki sama.",
     "online.desafio": "Tantangan Harian",
     "online.desafio_det": "Tantangan yang sama untuk semua, sekali sehari.",
+    "online.copa": "Piala Server",
+    "online.copa_det": "Server-mu melawan yang lain, setiap minggu.",
     "online.duelos_hoy": "{n} duel hari ini",
     "online.desafio_jugado": "Sudah main hari ini",
     "online.entra": "Masuk ke akunmu untuk main online",

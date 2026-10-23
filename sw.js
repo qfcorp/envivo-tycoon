@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v7';
+const VERSION = 'envivo-v8';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -32,6 +32,8 @@ const SHELL = [
   './js/festival.js',   // Mega Festival
   './js/duelos.js',     // Duelo de Productoras
   './js/desafio.js',    // Desafío del Día
+  './js/copas.js',      // Copa de Servidores
+  './js/servidores.js', // Tu servidor: salud, mudanza y fusiones
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',

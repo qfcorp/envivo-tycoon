@@ -1006,6 +1006,8 @@
     "online.duelos_det": "Desafie outra produtora: mesmo contrato, mesma sorte.",
     "online.desafio": "Desafio do Dia",
     "online.desafio_det": "O mesmo desafio para todos, uma vez por dia.",
+    "online.copa": "Copa de Servidores",
+    "online.copa_det": "Seu servidor contra os outros, toda semana.",
     "online.duelos_hoy": {"one":"{n} duelo hoje","other":"{n} duelos hoje"},
     "online.desafio_jugado": "Você já jogou hoje",
     "online.entra": "Entre na sua conta para jogar online",

@@ -1029,6 +1029,8 @@
     "online.duelos_det": "Reta a otra productora: mismo contrato, misma suerte.",
     "online.desafio": "Desafío del Día",
     "online.desafio_det": "El mismo reto para todos, una vez al día.",
+    "online.copa": "Copa de Servidores",
+    "online.copa_det": "Tu servidor contra los demás, cada semana.",
     "online.duelos_hoy": {"one":"{n} duelo hoy","other":"{n} duelos hoy"},
     "online.desafio_jugado": "Ya jugaste hoy",
     "online.entra": "Entra a tu cuenta para jugar en línea",
