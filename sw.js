@@ -39,6 +39,7 @@ const SHELL = [
   './js/servidores.js', // Tu servidor: salud, mudanza y fusiones
   './js/vip.js',        // nivel VIP 1–10, regalos de asociación y Mecenas
   './js/pase.js',       // Pase de Temporada
+  './js/misiones.js',   // Misiones del día y de la semana
   './js/estrellas.js',  // Personal estrella y Pase de Copa
   './js/guia.js',       // guía "toca aquí" del primer evento
   './js/escena.js',     // franja animada del evento en vivo (opcional)

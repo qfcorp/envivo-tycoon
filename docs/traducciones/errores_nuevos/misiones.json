@@ -1,0 +1,58 @@
+{
+  "_info": "Códigos nuevos del módulo de misiones (server/src/Misiones.php, server/INTEGRAR_MISIONES.md). Misma estructura que docs/traducciones/errores.json: { idioma: { codigo: texto } }. falta_periodo y falta_clave usan el prefijo falta_ (clave falta_dato) que ya existe; ya_reclamado, limite_intentos y cuenta_suspendida ya existen.",
+  "_codigos": {
+    "periodo_invalido": "existe · Misiones.php · 400 · el periodo no es d:AAAA-MM-DD ni s:AAAA-MM-DD",
+    "misiones_vencidas": "existe · Misiones.php · 409 · el día no es hoy ±1, o la semana ya pasó",
+    "mision_invalida": "existe · Misiones.php · 400/404 · la misión no es de ese periodo o no existe"
+  },
+  "es": {
+    "periodo_invalido": "Ese periodo de misiones no es válido.",
+    "misiones_vencidas": "Esas misiones ya vencieron. Mira las de hoy.",
+    "mision_invalida": "Esa misión ya no está disponible."
+  },
+  "en": {
+    "periodo_invalido": "That mission period isn’t valid.",
+    "misiones_vencidas": "Those missions have expired. Check today’s.",
+    "mision_invalida": "That mission is no longer available."
+  },
+  "pt-BR": {
+    "periodo_invalido": "Esse período de missões não é válido.",
+    "misiones_vencidas": "Essas missões já venceram. Veja as de hoje.",
+    "mision_invalida": "Essa missão não está mais disponível."
+  },
+  "fr": {
+    "periodo_invalido": "Cette période de missions n’est pas valide.",
+    "misiones_vencidas": "Ces missions ont expiré. Regarde celles du jour.",
+    "mision_invalida": "Cette mission n’est plus disponible."
+  },
+  "de": {
+    "periodo_invalido": "Dieser Missionszeitraum ist ungültig.",
+    "misiones_vencidas": "Diese Missionen sind abgelaufen. Schau dir die von heute an.",
+    "mision_invalida": "Diese Mission gibt es nicht mehr."
+  },
+  "it": {
+    "periodo_invalido": "Questo periodo di missioni non è valido.",
+    "misiones_vencidas": "Quelle missioni sono scadute. Guarda quelle di oggi.",
+    "mision_invalida": "Questa missione non è più disponibile."
+  },
+  "ru": {
+    "periodo_invalido": "Неверный период заданий.",
+    "misiones_vencidas": "Эти задания уже истекли. Посмотри сегодняшние.",
+    "mision_invalida": "Это задание больше недоступно."
+  },
+  "tr": {
+    "periodo_invalido": "Bu görev dönemi geçerli değil.",
+    "misiones_vencidas": "Bu görevlerin süresi doldu. Bugünkülere bak.",
+    "mision_invalida": "Bu görev artık yok."
+  },
+  "id": {
+    "periodo_invalido": "Periode misi itu tidak valid.",
+    "misiones_vencidas": "Misi itu sudah kedaluwarsa. Lihat misi hari ini.",
+    "mision_invalida": "Misi itu sudah tidak tersedia."
+  },
+  "zh-CN": {
+    "periodo_invalido": "这个任务周期无效。",
+    "misiones_vencidas": "这些任务已过期，看看今天的吧。",
+    "mision_invalida": "这个任务已经不可用了。"
+  }
+}
