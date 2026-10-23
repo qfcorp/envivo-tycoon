@@ -1103,6 +1103,7 @@
     "discord.copiado": "已复制",
     "discord.desvincular": "解除 Discord 绑定",
     "discord.desvinculado": "已解除 Discord 绑定",
+    "discord.unirse": "加入我们的 Discord",
     "prep.peor_mejor": "最差与最好情况",
     "prep.duelo_dificil": "形势艰难",
     "prep.duelo_det_dificil": "只有运气很好且没有严重突发状况才能赢。加强团队或摄像机吧。",

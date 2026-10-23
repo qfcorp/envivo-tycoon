@@ -1103,6 +1103,7 @@
     "discord.copiado": "Copied",
     "discord.desvincular": "Unlink Discord",
     "discord.desvinculado": "Discord unlinked",
+    "discord.unirse": "Join our Discord",
     "prep.peor_mejor": "Worst and best case",
     "prep.duelo_dificil": "Uphill battle",
     "prep.duelo_det_dificil": "You only win with a lot of luck and no serious incidents. Improve your crew or cameras.",

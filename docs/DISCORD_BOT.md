@@ -1,5 +1,8 @@
 # Bot de Discord de EN VIVO Tycoon — guía para el dueño
 
+> **¿Todavía no existe el servidor de Discord?** Empieza por `docs/DISCORD_CREAR_SERVIDOR.md`: crea el servidor y conecta este
+> bot paso a paso (Parte 9). Esta guía queda como referencia del bot.
+
 El bot conecta el Discord oficial con el juego:
 
 - **/vincular codigo:XXXXXXXX** — el jugador une su productora con su Discord y recibe sus roles solo:
@@ -96,6 +99,9 @@ DISCORD_WEBHOOK_EVENTOS=https://discord.com/api/webhooks/...
 DISCORD_WEBHOOK_ESTADO=https://discord.com/api/webhooks/...
 DISCORD_INVITACION=https://discord.gg/tu-invitacion
 ```
+
+`DISCORD_INVITACION` es la invitación que nunca vence (`docs/DISCORD_CREAR_SERVIDOR.md`, Parte 8). Con ella puesta, el juego
+muestra el botón **Únete a nuestro Discord** en Inicio y en Tienda → Tu cuenta; vacía, el botón no sale.
 
 Guarda (Ctrl+O, Enter, Ctrl+X) y recarga PHP:
 

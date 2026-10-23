@@ -1103,6 +1103,7 @@
     "discord.copiado": "Kopiert",
     "discord.desvincular": "Discord trennen",
     "discord.desvinculado": "Discord getrennt",
+    "discord.unirse": "Tritt unserem Discord bei",
     "prep.peor_mejor": "Schlechtester und bester Fall",
     "prep.duelo_dificil": "Schwer",
     "prep.duelo_det_dificil": "Du gewinnst nur mit viel Glück und ohne schwere Pannen. Verbessere Team oder Kameras.",

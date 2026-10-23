@@ -1103,6 +1103,7 @@
     "discord.copiado": "Kopyalandı",
     "discord.desvincular": "Discord bağlantısını kaldır",
     "discord.desvinculado": "Discord bağlantısı kaldırıldı",
+    "discord.unirse": "Discord sunucumuza katıl",
     "prep.peor_mejor": "En kötü ve en iyi durum",
     "prep.duelo_dificil": "Zorlu",
     "prep.duelo_det_dificil": "Ancak çok şansla ve ciddi aksilik olmadan kazanırsın. Ekibini ya da kameralarını güçlendir.",

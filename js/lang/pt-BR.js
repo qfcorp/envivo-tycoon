@@ -1103,6 +1103,7 @@
     "discord.copiado": "Copiado",
     "discord.desvincular": "Desvincular Discord",
     "discord.desvinculado": "Discord desvinculado",
+    "discord.unirse": "Entre no nosso Discord",
     "prep.peor_mejor": "Pior e melhor caso",
     "prep.duelo_dificil": "Ladeira acima",
     "prep.duelo_det_dificil": "Você só ganha com muita sorte e sem imprevistos graves. Melhore sua equipe ou suas câmeras.",

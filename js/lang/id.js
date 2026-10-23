@@ -1103,6 +1103,7 @@
     "discord.copiado": "Disalin",
     "discord.desvincular": "Putuskan Discord",
     "discord.desvinculado": "Discord diputus",
+    "discord.unirse": "Gabung ke Discord kami",
     "prep.peor_mejor": "Kasus terburuk dan terbaik",
     "prep.duelo_dificil": "Berat",
     "prep.duelo_det_dificil": "Kamu hanya menang dengan banyak hoki dan tanpa insiden berat. Tingkatkan kru atau kameramu.",
