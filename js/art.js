@@ -25,6 +25,16 @@
     raincover: '<path d="M3 12a9 9 0 0118 0z"/><path d="M12 12v6.5a2 2 0 01-4 0"/>',
     cable: '<path d="M4 20c4 0 4-8 8-8s4-6 8-6"/><rect x="17" y="3" width="5" height="6" rx="1" transform="rotate(30 19.5 6)"/><circle cx="4" cy="20" r="1.5"/>',
     battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10.5v3"/><path d="M6 10v4M9 10v4"/>',
+    dron: '<rect x="9" y="10" width="6" height="4" rx="1.5"/><path d="M9 11H5M15 11h4M5 11V9M19 11V9"/><path d="M2.5 8.5h5M16.5 8.5h5"/><circle cx="12" cy="16.5" r="1.6"/><path d="M12 14v1"/>',
+    grua: '<path d="M4 21h8M8 21l-2-9 14-7"/><path d="M6 12l3-1"/><rect x="16.5" y="3" width="5" height="4" rx="1" transform="rotate(-25 19 5)"/><path d="M8 21l2-9"/>',
+    unidad_movil: '<rect x="2" y="8" width="13" height="9" rx="1.5"/><path d="M15 11h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M7 8V5M4.5 3.5a3.5 3.5 0 015 0"/>',
+    generador: '<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M7 7V4h4v3"/><path d="M13.5 10l-2.5 3.5h3l-2.5 3.5"/><path d="M6 19v2M18 19v2"/>',
+    gem: '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l-1.5 5L12 20l4.5-11L15 4"/>',
+    crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/><path d="M5 19h14"/>',
+    cart: '<path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
+    cloud: '<path d="M7 18a4.5 4.5 0 01-.5-9 6 6 0 0111.5 2A3.5 3.5 0 0117.5 18z"/><path d="M12 11v5M9.5 13.5L12 11l2.5 2.5"/>',
+    gift: '<rect x="3" y="9" width="18" height="4" rx="1"/><path d="M5 13v8h14v-8M12 9v12"/><path d="M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6-.5 6-1.5S14 5 12 9z"/>',
     // Roles
     role_cam: '<rect x="3" y="7" width="12" height="9" rx="2"/><path d="M15 10l6-3v9l-6-3"/><path d="M7 16l-2 5M11 16l2 5"/>',
     role_dir: '<path d="M3 9h18v11H3z"/><path d="M3 9l2-5 16 0-2 5"/><path d="M7.5 4.2L9.5 9M13 4.2L15 9"/>',
@@ -75,8 +85,9 @@
     stream: '<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>',
   };
 
+  const ALIAS = { dron4k: 'dron', kit_reparacion: 'wrench', caja_chica: 'money', estrella: 'role_cam', inicio: 'gift', vip30: 'crown' };
   function icon(name, cls, size) {
-    const body = P[name] || P.box;
+    const body = P[name] || P[ALIAS[name]] || (/^creditos/.test(name) ? P.gem : P.box);
     const dim = size ? ` width="${size}" height="${size}"` : '';
     return `<svg class="ico ${cls || ''}"${dim} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
   }

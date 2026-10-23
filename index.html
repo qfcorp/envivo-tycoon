@@ -168,11 +168,29 @@
   @keyframes glitch{0%{transform:translateX(0)}33%{transform:translateX(-4px)}66%{transform:translateX(3px)}}
   .cam-off{opacity:.35}
   @media (prefers-reduced-motion:reduce){.blink,.bulb,.crowd,.beam,.fx-rain path,.fx-dark,.fx-spark,.fx-blink,.fx-wave circle,.fx-confetti,.fx-glitch,.starsvg .on{animation:none}.fx-flash{display:none}}
+
+  /* ---- Tienda ---- */
+  nav button{font-size:10.5px}
+  .vipbadge{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:12px;font-weight:800;letter-spacing:1px;color:#1a1205;background:var(--amber);border-radius:6px;padding:1px 7px}
+  .wallet{display:flex;align-items:center;gap:12px}
+  .wallet .big{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:28px;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums}
+  .wallet .ico{color:var(--amber);width:30px;height:30px}
+  .prod{position:relative}
+  .prod.dest{border-color:var(--amber);background:linear-gradient(160deg,#2a2210,var(--panel) 60%)}
+  .ribbon{position:absolute;top:-9px;right:12px;background:var(--amber);color:#1a1205;font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:6px;font-family:"Barlow Condensed","Arial Narrow",sans-serif}
+  .price{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:20px;color:var(--text);font-variant-numeric:tabular-nums}
+  .cr{font-family:"JetBrains Mono",ui-monospace,monospace;color:var(--amber);font-variant-numeric:tabular-nums}
+  .field{display:flex;flex-direction:column;gap:5px;margin-top:10px;font-size:13px;color:var(--muted)}
+  .field input{font:inherit;font-size:16px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  .field input:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+  .legal{display:flex;gap:14px;justify-content:center;font-size:12px;margin:14px 0 22px}
+  .legal a{color:var(--muted)}
+  .tag.excl{border-color:var(--amber);color:#ffd78a}
 </style>
 </head>
 <body>
 <header class="gut">
-  <div class="brand"><span class="tally"></span> En Vivo Tycoon<button class="iconbtn" id="muteBtn" data-act="mute" aria-label="Sonido"></button></div>
+  <div class="brand"><span class="tally"></span> En Vivo Tycoon<span class="vipbadge" id="vipBadge" hidden>VIP</span><button class="iconbtn" id="muteBtn" data-act="mute" aria-label="Sonido"></button></div>
   <div class="stats">
     <div class="chip"><small data-ico="money">Dinero</small><b id="hMoney">$0</b></div>
     <div class="chip"><small data-ico="star">Fama</small><b id="hRep">0</b></div>
@@ -185,6 +203,7 @@
   <section id="tab-clientes"></section>
   <section id="tab-personal"></section>
   <section id="tab-bodega"></section>
+  <section id="tab-tienda"></section>
   <section id="tab-registro"></section>
 </main>
 
@@ -193,6 +212,7 @@
   <button data-tab="clientes"><span data-ico="clients"></span>Clientes <b class="badge" id="badgeC"></b></button>
   <button data-tab="personal"><span data-ico="people"></span>Personal</button>
   <button data-tab="bodega"><span data-ico="box"></span>Bodega</button>
+  <button data-tab="tienda"><span data-ico="gem"></span>Tienda</button>
   <button data-tab="registro"><span data-ico="log"></span>Registro</button>
 </nav>
 
@@ -201,6 +221,8 @@
 
 <script src="js/logic.js"></script>
 <script src="js/art.js"></script>
+<script src="js/api.js"></script>
+<script src="js/premium.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/ui.js"></script>
 </body>

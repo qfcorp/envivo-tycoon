@@ -30,7 +30,25 @@
   let afterResult = null;  // capítulo completado pendiente de mostrar
 
   /* ---------- Guardado ---------- */
-  function save() { try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ } }
+  function save() {
+    try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
+    nubeLuego();
+  }
+  /* ---------- Partida en la nube ---------- */
+  const Api = window.Api || { disponible: false, logueado: () => false };
+  const Pm = window.Premium;
+  let nubeT = null, nubeEstado = '';
+  function nubeLuego() {
+    if (!Api.disponible || !Api.logueado() || cloudPendiente) return;
+    clearTimeout(nubeT);
+    nubeT = setTimeout(subirNube, 4000);
+  }
+  async function subirNube() {
+    if (!Api.disponible || !Api.logueado() || cloudPendiente) return;
+    try { await Api.subirPartida(G.serialize(S)); nubeEstado = 'ok'; } catch (e) { nubeEstado = 'error'; }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { clearTimeout(nubeT); subirNube(); } });
+  let cloudPendiente = false;   // mientras el jugador elige entre la partida de la nube y la del celular
   function load() {
     try { const raw = localStorage.getItem(SAVE_KEY); return raw ? G.deserialize(raw) : null; } catch (e) { return null; }
   }
@@ -104,13 +122,15 @@
     $('muteBtn').setAttribute('aria-label', snd.muted() ? 'Activar sonido' : 'Silenciar');
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
     document.querySelectorAll('main section').forEach((s) => s.classList.toggle('on', s.id === 'tab-' + tab));
-    ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, registro: renderRegistro })[tab]();
+    if (Pm && Pm.tickVip(S)) { try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* nada */ } }
+    $('vipBadge').hidden = !(Pm && Pm.vip);
+    ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, tienda: renderTienda, registro: renderRegistro })[tab]();
     if (S.gameOver && !$('overlay').classList.contains('on')) showGameOver();
   }
 
   function renderInicio() {
     const ch = G.CHAPTERS[S.chapter];
-    const rent = 20 + 4 * (S.staff.length - 1);
+    const rent = G.dailyCost ? G.dailyCost(S) : 20 + 4 * (S.staff.length - 1);
     let story;
     if (S.storyDone) {
       story = `<div class="card"><div class="story-tag">Modo historia</div><h2>¡Historia completada!</h2>
@@ -225,9 +245,9 @@
         <div class="grow"><b>${esc(e.nick || it.name)}</b><div class="small muted">Estado ${e.condition}%</div>${condBar(e.condition)}</div></div>
         <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px">
           <button class="btn sm" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')} Reparar ${rc > 0 ? M(rc) : ''}</button>
-          <button class="btn sm" data-act="sell" data-id="${e.id}">Vender ${M(G.sellPrice(e))}</button></div></div>`;
+          ${it.premium ? '<span class="tag excl">Exclusivo</span>' : `<button class="btn sm" data-act="sell" data-id="${e.id}">Vender ${M(G.sellPrice(e))}</button>`}</div></div>`;
     }).join('');
-    const shop = Object.keys(G.CATALOG).map((k) => {
+    const shop = Object.keys(G.CATALOG).filter((k) => !G.CATALOG[k].premium).map((k) => {
       const it = G.CATALOG[k];
       const locked = it.minRep > S.rep;
       const owned = S.equip.filter((e) => e.type === k).length;
@@ -241,6 +261,177 @@
       <div class="sectitle">Tus equipos (${S.equip.length})</div>${mine}
       <p class="small muted">El equipo se gasta en cada evento. Por debajo de 40% puede fallar en vivo.</p>
       <div class="sectitle">Tienda</div>${shop}<div style="height:20px"></div>`;
+  }
+
+
+  /* ---------- Tienda (dinero real y créditos) ---------- */
+  const precio = (n) => '$' + Number(n).toFixed(2).replace('.', ',');
+  function fechaCorta(iso) {
+    try { return new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long' }); } catch (e) { return ''; }
+  }
+  function renderTienda() {
+    const el = $('tab-tienda');
+    if (Api.disponible === null) { el.innerHTML = '<div class="sectitle">Tienda</div><div class="card muted">Conectando con la tienda…</div>'; return; }
+    if (!Api.disponible || !Api.estado) {
+      el.innerHTML = `<div class="sectitle">Tienda</div><div class="card">${tile('gem', 'amber')}
+        <h3 style="margin-top:10px">La tienda funciona en juego.tukanec.com</h3>
+        <p class="small muted">Desde aquí puedes jugar todo gratis. Para comprar créditos, el pase VIP o equipos exclusivos, abre el juego en <b>juego.tukanec.com</b> e ingresa con tu cuenta.</p></div>`;
+      return;
+    }
+    const E = Api.estado;
+    const log = E.logueado;
+    let cuenta;
+    if (!log) {
+      cuenta = `<div class="card">${tile('user', 'blue')}
+        <h3 style="margin-top:10px">Crea tu cuenta gratis</h3>
+        <p class="small muted">Con tu cuenta tus compras quedan guardadas y tu partida se respalda en la nube para jugar en cualquier celular.</p>
+        <button class="btn main" data-act="cuenta" data-modo="registro">${I('user')}Crear cuenta</button>
+        <button class="btn" data-act="cuenta" data-modo="entrar">Ya tengo cuenta: entrar</button></div>`;
+    } else {
+      const vip = E.vip_activo
+        ? `<p class="small" style="color:var(--amber)">${I('crown', 'sm')} VIP activo hasta el ${esc(fechaCorta(E.vip_hasta))}</p>
+           ${E.vip_bono_hoy ? '<p class="small muted">Ya reclamaste tu bono VIP de hoy. Vuelve mañana.</p>' : `<button class="btn" data-act="vip-bono" style="border-color:var(--amber)">${I('gift')}Reclamar bono VIP de hoy ($150 + 10 créditos)</button>`}`
+        : '';
+      cuenta = `<div class="card">
+        <div class="row between"><div class="wallet">${I('gem')}<div><div class="big">${Number(E.creditos).toLocaleString('es-EC')}</div><div class="small muted">créditos</div></div></div>
+          <div class="small muted" style="text-align:right">${esc(E.jugador.nombre)}<br>${esc(E.jugador.email)}</div></div>
+        ${vip}
+        <p class="small muted">${I('cloud', 'sm')} Tu partida se guarda en la nube${nubeEstado === 'error' ? ' (sin conexión: se guardará al volver internet)' : ''}.</p>
+        <button class="btn sm" data-act="salir">Cerrar sesión</button></div>`;
+    }
+    const prueba = E.plux && E.plux.ambiente === 'sandbox' ? '<p class="small" style="color:var(--amber)">Modo de pruebas: los pagos no son reales.</p>' : '';
+    const productos = (E.tienda.productos || []).map((p) => {
+      const dest = p.id === 'inicio';
+      const hecho = dest && E.inicio_comprado;
+      return `<div class="card prod ${dest ? 'dest' : ''}">${dest ? '<span class="ribbon">Oferta única</span>' : p.id === 'vip30' ? '<span class="ribbon">VIP</span>' : ''}
+        <div class="row">${tile(p.id, dest || p.id === 'vip30' ? 'amber' : 'blue')}
+          <div class="grow"><h3>${esc(p.nombre)}</h3><div class="small muted">${esc(p.detalle || '')}</div></div></div>
+        <div class="row between" style="margin-top:10px"><span class="price">${precio(p.precio)}</span>
+          <button class="btn sm main" data-act="comprar" data-k="${esc(p.id)}" ${hecho || !(E.plux && E.plux.disponible) ? 'disabled' : ''}>${hecho ? 'Ya lo tienes' : 'Comprar'}</button></div></div>`;
+    }).join('');
+    const premium = (E.tienda.premium || []).map((p) => {
+      const alcanza = log && E.creditos >= p.creditos;
+      return `<div class="card"><div class="row">${tile(p.id, 'amber')}
+          <div class="grow"><h3>${esc(p.nombre)}</h3><div class="small muted">${esc(p.detalle || '')}</div></div></div>
+        <div class="row between" style="margin-top:10px"><span class="cr">${I('gem', 'sm')} ${Number(p.creditos).toLocaleString('es-EC')}</span>
+          <button class="btn sm ${alcanza ? 'green' : ''}" data-act="canjear" data-k="${esc(p.id)}" ${log ? '' : 'disabled'}>${alcanza ? 'Canjear' : log ? 'Te faltan créditos' : 'Entra para canjear'}</button></div></div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="sectitle">Tu cuenta</div>${cuenta}
+      <div class="sectitle">Comprar</div>
+      <p class="small muted">Precios en dólares con IVA incluido. Pago con tarjeta por Pago Plux.</p>${prueba}
+      ${productos}
+      ${E.plux && E.plux.disponible ? '' : '<div class="card small muted">El pago con tarjeta todavía no está activo. Vuelve pronto.</div>'}
+      <div class="sectitle">Exclusivos con créditos</div>${premium}
+      <p class="small muted">Todo se puede conseguir jugando gratis; los créditos solo te ayudan a avanzar más rápido. Si eres menor de edad, pide permiso a tus padres antes de comprar.</p>
+      <div class="legal"><a href="/terminos.html">Términos y condiciones</a><a href="/privacidad.html">Privacidad</a></div>`;
+  }
+
+  function abrirCuenta(modo, nota) {
+    const reg = modo === 'registro';
+    openModal(`<div class="row between"><h2>${reg ? 'Crear cuenta' : 'Entrar'}</h2><button class="btn sm" data-act="close" aria-label="Cerrar">${I('close', 'sm')}</button></div>
+      ${nota ? `<p class="small" style="color:var(--amber)">${esc(nota)}</p>` : ''}
+      <form id="formCuenta" data-modo="${modo}">
+        ${reg ? '<label class="field">Tu nombre<input id="cu-nombre" autocomplete="name" maxlength="60" required></label>' : ''}
+        <label class="field">Correo<input id="cu-email" type="email" autocomplete="email" maxlength="120" required></label>
+        <label class="field">Contraseña${reg ? ' (mínimo 8 caracteres)' : ''}<input id="cu-clave" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" minlength="${reg ? 8 : 1}" required></label>
+        <p class="small neg" id="cu-error" aria-live="polite"></p>
+        <button class="btn main" type="submit" id="cu-btn">${reg ? 'Crear mi cuenta' : 'Entrar'}</button>
+      </form>
+      <button class="btn" data-act="cuenta" data-modo="${reg ? 'entrar' : 'registro'}">${reg ? 'Ya tengo cuenta' : 'No tengo cuenta: crear una'}</button>
+      <p class="small muted">¿Olvidaste tu contraseña? Escríbenos por WhatsApp y te ayudamos.</p>`);
+  }
+
+  async function enviarCuenta(form) {
+    const reg = form.dataset.modo === 'registro';
+    const email = $('cu-email').value.trim(), clave = $('cu-clave').value;
+    const btn = $('cu-btn'); btn.disabled = true; $('cu-error').textContent = '';
+    try {
+      if (reg) await Api.registro(email, $('cu-nombre').value.trim(), clave);
+      else await Api.entrar(email, clave);
+      closeModal();
+      snd.play('hire');
+      toast(reg ? '¡Cuenta creada!' : `¡Hola, ${Api.estado.jugador.nombre}!`);
+      await alConectar(true);
+    } catch (e) {
+      $('cu-error').textContent = e.message; btn.disabled = false; snd.play('error');
+    }
+  }
+
+  // Después de iniciar sesión o al abrir el juego con sesión: entregas, VIP y partida en la nube
+  async function alConectar(recienEntro) {
+    const E = Api.estado;
+    if (!E) { render(); return; }
+    if (Pm) Pm.setVip(E.vip_activo);
+    if (E.logueado && recienEntro) await elegirPartida();
+    aplicarEntregas();
+    render();
+  }
+
+  function aplicarEntregas() {
+    if (!Pm || !Api.estado || !Api.estado.logueado) return;
+    const hechos = Pm.aplicarEntregas(S, Api.estado.entregas);
+    if (hechos.length) { save(); toast(hechos[0] + (hechos.length > 1 ? ` (+${hechos.length - 1} más)` : '')); snd.play('chapter'); }
+  }
+
+  const resumen = (x) => `Día ${x.day} · ${G.CHAPTERS[x.chapter] ? esc(G.CHAPTERS[x.chapter].title.split('·')[0].trim()) : 'Historia completa'} · ${M(x.money)} · ${x.stats.events} eventos`;
+  async function elegirPartida() {
+    let nube = null;
+    try { const r = await Api.partida(); nube = r.datos ? G.deserialize(r.datos) : null; } catch (e) { return; }
+    const localNueva = S.stats.events === 0 && S.day <= 1;
+    if (!nube) { await subirNube(); return; }
+    if (localNueva) { S = nube; save(); return; }
+    if (nube.day === S.day && nube.money === S.money && nube.stats.events === S.stats.events) return;
+    cloudPendiente = true;
+    await new Promise((listo) => {
+      eleccion = (cual) => {
+        if (cual === 'nube') { S = nube; }
+        cloudPendiente = false;
+        save(); subirNube(); closeModal(); render(); listo();
+      };
+      openModal(`<h2>¿Qué partida quieres usar?</h2>
+        <p class="small muted">Tienes una partida guardada en tu cuenta y otra en este celular.</p>
+        <button class="btn" data-act="partida" data-k="nube">${I('cloud')}En la nube<br><span class="small muted">${resumen(nube)}</span></button>
+        <button class="btn" data-act="partida" data-k="local">${I('social')}En este celular<br><span class="small muted">${resumen(S)}</span></button>
+        <p class="small muted">La que no elijas se reemplaza.</p>`);
+    });
+  }
+  let eleccion = null;
+
+  async function comprar(id) {
+    if (!Api.logueado()) { abrirCuenta('registro', 'Crea tu cuenta para comprar: así tus compras quedan guardadas.'); return; }
+    try {
+      save(); await subirNube();
+      const r = await Api.orden(id);
+      snd.play('tap');
+      location.href = r.url;
+    } catch (e) { toast(e.message); snd.play('error'); }
+  }
+
+  function canjear(id) {
+    const p = Api.estado.tienda.premium.find((x) => x.id === id);
+    if (!p) return;
+    if (Api.estado.creditos < p.creditos) {
+      toast(`Te faltan ${(p.creditos - Api.estado.creditos).toLocaleString('es-EC')} créditos.`); snd.play('error'); return;
+    }
+    ask(`¿Canjear <b>${esc(p.nombre)}</b> por ${Number(p.creditos).toLocaleString('es-EC')} créditos?`, 'Sí, canjear', async () => {
+      try {
+        const r = await Api.gastar(id);
+        Api.estado.creditos = r.creditos;
+        if (r.entrega) Api.estado.entregas.push(r.entrega);
+        aplicarEntregas();
+        render();
+      } catch (e) { toast(e.message); snd.play('error'); }
+    });
+  }
+
+  async function bonoVip() {
+    try {
+      const r = await Api.bonoVip();
+      Api.estado.creditos = r.creditos; Api.estado.vip_bono_hoy = true;
+      if (r.entrega) Api.estado.entregas.push(r.entrega);
+      aplicarEntregas(); render();
+    } catch (e) { toast(e.message); snd.play('error'); }
   }
 
   function renderRegistro() {
@@ -413,6 +604,12 @@
     const id = el.dataset.id ? Number(el.dataset.id) : null;
     switch (a) {
       case 'mute': snd.toggle(); render(); break;
+      case 'cuenta': abrirCuenta(el.dataset.modo); break;
+      case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); toast('Cerraste sesión. Tu partida sigue en este celular.'); render(); }).catch((err) => toast(err.message)); break;
+      case 'comprar': comprar(el.dataset.k); break;
+      case 'canjear': canjear(el.dataset.k); break;
+      case 'vip-bono': bonoVip(); break;
+      case 'partida': if (eleccion) { const f = eleccion; eleccion = null; f(el.dataset.k); } break;
       case 'install':
         try { window.PWA.install().then((r) => { if (r === 'accepted') toast('¡Listo! El juego quedó instalado.'); render(); }); } catch (err) { toast('Este navegador no permite instalar.'); }
         break;
@@ -447,9 +644,13 @@
         else { closeModal(); render(); if (S.gameOver) showGameOver(); }
         break;
       case 'close-story': closeModal(); render(); if (!showChapterIntro() && S.gameOver) showGameOver(); break;
-      case 'new-game': ask('Se borrará tu partida actual.', 'Sí, empezar de nuevo', () => { S = G.newGame(); save(); tab = 'inicio'; render(); showChapterIntro(); }); break;
-      case 'restart': S = G.newGame(); save(); closeModal(); tab = 'inicio'; render(); showChapterIntro(); break;
+      case 'new-game': ask('Se borrará tu partida actual.', 'Sí, empezar de nuevo', () => { S = G.newGame(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; render(); showChapterIntro(); }); break;
+      case 'restart': S = G.newGame(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; render(); showChapterIntro(); break;
     }
+  });
+
+  document.addEventListener('submit', (e) => {
+    if (e.target && e.target.id === 'formCuenta') { e.preventDefault(); enviarCuenta(e.target); }
   });
 
   document.addEventListener('change', (e) => {
@@ -469,5 +670,18 @@
   render();
   if (S.currentEvent) showIncident();       // si cerraste la app en pleno evento, sigue donde quedó
   else showChapterIntro();
+  // Conectar con la tienda (si hay servidor). Si volvemos de un pago aprobado, avisar.
+  (async () => {
+    const volvioDePago = /[?&]compra=ok\b/.test(location.search);
+    if (volvioDePago) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ } }
+    if (window.Api && window.Api.iniciar) await window.Api.iniciar();
+    await alConectar(false);
+    if (Api.estado && Api.estado.logueado) {
+      // Si este celular no tiene partida avanzada pero la cuenta sí, traerla
+      if (S.stats.events === 0 && S.day <= 1) await elegirPartida();
+      aplicarEntregas(); render();
+    }
+    if (volvioDePago) { tab = 'tienda'; render(); toast('¡Compra aprobada! Ya está en tu cuenta.'); snd.play('chapter'); }
+  })();
   window.__game = { get state() { return S; } }; // para las pruebas automáticas
 })();

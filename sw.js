@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v1';
+const VERSION = 'envivo-v2';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -16,6 +16,8 @@ const SHELL = [
   './js/art.js',
   './js/sound.js',      // opcional: si no existe, no rompe la instalación
   './js/pwa.js',
+  './js/api.js',
+  './js/premium.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -67,14 +69,21 @@ async function networkFirstFont(request) {
   }
 }
 
-async function cacheFirstShell(request) {
+// Archivos del juego: se muestran al instante desde la caché y, en segundo plano, se baja la
+// versión nueva para la próxima vez (así las actualizaciones llegan solas).
+async function cacheFirstShell(request, event) {
   const cache = await caches.open(SHELL_CACHE);
   const hit = await cache.match(request, { ignoreSearch: true });
-  if (hit) return hit;
-  try {
-    const res = await fetch(request);
+  const update = fetch(request).then((res) => {
     if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
     return res;
+  });
+  if (hit) {
+    if (event) event.waitUntil(update.catch(() => {}));
+    return hit;
+  }
+  try {
+    return await update;
   } catch (e) {
     // Sin internet y navegando a una página: mostrar el juego.
     if (request.mode === 'navigate') {
@@ -96,6 +105,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin === self.location.origin) {
-    event.respondWith(cacheFirstShell(req));
+    // La tienda, los pagos, el panel y las páginas legales SIEMPRE van al servidor (nunca desde la caché):
+    // así el saldo de créditos y las compras están siempre al día.
+    if (/^\/(api\/|pago\.php|admin\.php|terminos\.html|privacidad\.html)/.test(url.pathname)) return;
+    event.respondWith(cacheFirstShell(req, event));
   }
 });
