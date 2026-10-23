@@ -15,7 +15,7 @@ declare(strict_types=1);
 const ENVIVO_CONTROL = true;
 require dirname(__DIR__, 2) . '/src/arranque.php';
 require __DIR__ . '/lib/base.php';
-foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'soporte', 'ajustes', 'servidores', 'facturacion', 'errores'] as $f) require __DIR__ . '/lib/' . $f . '.php';
+foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'soporte', 'ajustes', 'servidores', 'facturacion', 'errores', 'push'] as $f) require __DIR__ . '/lib/' . $f . '.php';
 require __DIR__ . '/lib/analitica.php';   // pestaña Analítica (server/INTEGRAR_ANALITICA.md)
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};

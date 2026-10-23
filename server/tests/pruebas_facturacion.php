@@ -417,7 +417,7 @@ require $SRV . '/public/control/lib/base.php';
 foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'soporte', 'ajustes', 'servidores', 'facturacion'] as $lib) require_once $SRV . '/public/control/lib/' . $lib . '.php';
 $idx = (string) file_get_contents($SRV . '/public/control/index.php');
 check('Registrada en index.php (require, pestaña, acciones) y base.php (nombre e insignia)', [true, true, true, true, true],
-    [str_contains($idx, "'servidores', 'facturacion'] as \$f"), str_contains($idx, "'facturacion' => cc_t_facturacion()"), str_contains($idx, "str_starts_with(\$accion, 'facturacion_') => cc_a_facturacion(\$accion, \$q)"),
+    [(bool) preg_match("/foreach \\(\\[[^\\]]*'facturacion'[^\\]]*\\] as \\\$f\\)/", $idx), str_contains($idx, "'facturacion' => cc_t_facturacion()"), str_contains($idx, "str_starts_with(\$accion, 'facturacion_') => cc_a_facturacion(\$accion, \$q)"),
      (CC_PESTANAS['facturacion'] ?? '') === 'Facturación', array_key_exists('facturacion', cc_insignias())]);
 check('Insignia = atrasadas + fallidas', Facturacion::resumen()['atrasadas'] + Facturacion::resumen()['fallida'], cc_facturacion_insignia());
 $_GET = ['t' => 'facturacion'];
