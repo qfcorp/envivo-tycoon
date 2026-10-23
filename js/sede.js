@@ -1341,7 +1341,9 @@
     const bl = s ? listaBonos(s) : [];
     const bonosHtml = `<div class="sectitle" style="margin-top:14px">${esc(t('bonos'))}</div>
       ${bl.length ? bl.map((b) => `<div class="sd-bono">${iconoEd(b.ed, 20)}<span>${esc(b.txt)}</span></div>`).join('') : `<div class="small muted">${esc(t('sin_bonos'))}</div>`}`;
-    return `<div class="sd-modal sd-of">${head}${obras}${lista}${ayudas}${bonosHtml}
+    // Equipo de obra extra (js/impulsos.js): botón discreto junto a la cola solo si todos los equipos están ocupados
+    const colaExtra = (() => { try { return root.Impulsos && root.Impulsos.avisoCola ? root.Impulsos.avisoCola(sd) || '' : ''; } catch (err) { return ''; } })();
+    return `<div class="sd-modal sd-of">${head}${obras}${colaExtra}${lista}${ayudas}${bonosHtml}
       <div class="small muted" style="margin-top:14px">${esc(t('of_fuentes'))}</div>
       <button class="btn" data-act="close" style="margin-top:14px">✕</button></div>`;
   }

@@ -187,7 +187,10 @@ final class SedeOficial
         return $fin !== null ? $n + 1 : $n;
     }
 
-    /** Equipos de obra: 1, 2 desde el nivel 5 y lo que dé Vip::slotsObra (si esa clase existe). Máximo 3. */
+    /**
+     * Equipos de obra: 1, 2 desde el nivel 5 y lo que dé Vip::slotsObra (si esa clase existe), sin sumarse entre sí;
+     * más 1 del equipo extra de Impulsos (comprado para siempre o alquilado; server/INTEGRAR_MONETIZACION2.md). Máximo 3.
+     */
     public static function obreros(int $j, int $nivel): int
     {
         $n = $nivel >= self::SEGUNDO_OBRERO ? 2 : 1;
@@ -197,6 +200,7 @@ final class SedeOficial
                 $n = max($n, is_bool($v) ? ($v ? 2 : 1) : (int) $v);
             }
         } catch (\Throwable) {}
+        try { if (class_exists(Impulsos::class)) $n += Impulsos::obrerosExtra($j); } catch (\Throwable) {}
         return max(1, min(3, $n));
     }
 
@@ -230,6 +234,26 @@ final class SedeOficial
             Db::q('INSERT INTO sede_libro (jugador_id, material, cambio, motivo, ref, dia, creado) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [$j, $k, $n, $motivo, $ref === null ? null : mb_substr($ref, 0, 200), $dia, $t]);
         }
+    }
+
+    /**
+     * Materiales desde otro módulo (Impulsos: Fondo de crecimiento, Tarjeta semanal), con libro. Con $hastaCero, lo que se
+     * resta se recorta a lo que haya (reembolsos: lo ya gastado no se puede quitar). Devuelve lo que se aplicó.
+     */
+    public static function sumarDesdeModulo(int $j, array $bolsa, string $motivo, string $ref, bool $hastaCero = false): array
+    {
+        return Db::tx(function () use ($j, $bolsa, $motivo, $ref, $hastaCero): array {
+            $f = self::fila($j);
+            $o = [];
+            foreach ($bolsa as $k => $n) {
+                if (!in_array($k, self::MATS, true) && $k !== 'acelera_min') continue;
+                $n = (int) $n;
+                if ($hastaCero && $n < 0) $n = -min((int) $f[$k], -$n);
+                if ($n !== 0) $o[$k] = $n;
+            }
+            self::sumar($j, $o, $motivo, $ref);
+            return $o;
+        });
     }
 
     private static function materiales(array $f): array

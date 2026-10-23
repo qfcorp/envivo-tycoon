@@ -38,6 +38,8 @@ try {
     if (class_exists(\EnVivo\EstrellasApi::class) && \EnVivo\EstrellasApi::esRuta($ruta)) \EnVivo\EstrellasApi::responder($ruta, $metodo, requiere_sesion());
     // Sede oficial (server/INTEGRAR_SEDE_OFICIAL.md): /api/sede*
     if (class_exists(\EnVivo\SedeApi::class) && \EnVivo\SedeApi::esRuta($ruta)) \EnVivo\SedeApi::responder($ruta, $metodo, requiere_sesion());
+    // Impulsos: equipo de obra extra, Fondo de crecimiento y Tarjeta semanal (server/INTEGRAR_MONETIZACION2.md): /api/impulsos*
+    if (class_exists(\EnVivo\ImpulsosApi::class) && \EnVivo\ImpulsosApi::esRuta($ruta)) \EnVivo\ImpulsosApi::responder($ruta, $metodo, requiere_sesion());
     // Liga Semanal de Productoras (server/INTEGRAR_LIGA.md): responde y termina
     if (\EnVivo\LigaApi::esRuta($ruta)) \EnVivo\LigaApi::responder($ruta, $metodo, requiere_sesion());
     // Duelo de Productoras y Desafío Técnico del Día (server/INTEGRAR_DUELOS_DESAFIO.md): /api/duelos* y /api/desafio*
