@@ -31161,6 +31161,8 @@
   /* Partida de demostración: ?demo=cap4 (ver docs/DEMO.md). Nunca pisa una partida sin preguntar. */
   function demoPedido() {
     try {
+      // Copia "demo" publicada (sin parámetros en la dirección): carga la partida preparada solo la primera vez
+      if (window.__ENVIVO_DEMO && !lsGet('envivo_demo_cargado')) { lsSet('envivo_demo_cargado', 1); return String(window.__ENVIVO_DEMO); }
       const m = /[?&]demo=([\w-]+)/.exec(location.search || '');
       if (!m) return null;
       // Se quita de la dirección para que recargar no lo vuelva a pedir

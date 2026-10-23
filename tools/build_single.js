@@ -34,3 +34,6 @@ const art = html.replace(/<!doctype html>\s*/i, '').replace(/<html[^>]*>\s*/i, '
   .replace(/<meta name="viewport"[^>]*>\s*/i, '');
 fs.writeFileSync(path.join(root, 'dist', 'artifact.html'), art);
 console.log('✅ dist/artifact.html creado');
+// Copia para el demo: arranca una sola vez con la partida preparada del capítulo 4 (ver docs/DEMO.md)
+fs.writeFileSync(path.join(root, 'dist', 'artifact_demo.html'), "<script>window.__ENVIVO_DEMO='cap4';</script>\n" + art);
+console.log('✅ dist/artifact_demo.html creado');
