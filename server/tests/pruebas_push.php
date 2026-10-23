@@ -354,7 +354,7 @@ $ENV = [];
 $idM = P::encolarPlantilla($hugo, 'obra', 'obra', [], '/?ir=sede', 'obra:prueba-muertas');
 $r = $procesar();
 check('3 aparatos: 410 y 404 se borran, el bueno recibe', ['enviado', 2, 1], [$cola($idM)['estado'], $r['muertas'], (int) Db::valor('SELECT COUNT(*) FROM push_suscripciones WHERE jugador_id = ?', [$hugo])]);
-$ultimo = null; foreach ($ENV as $e) if (str_contains($e['url'], '/ok/')) $ultimo = $e;   // el envío al aparato bueno (el orden de los envíos puede variar)
+$ultimo = null; foreach ($ENV as $e) if ($e['url'] === $hok['endpoint']) $ultimo = $e;   // el envío al aparato bueno (el orden de los envíos puede variar)
 $m = $ultimo ? $leer($ultimo, $hok) : null;
 si('El aparato en inglés recibió el texto en inglés (variante de la plantilla)', in_array([$m['t'], $m['b']], PT::T['en']['obra'], true));
 $ivan = $nuevo('IvanTV');

@@ -63,10 +63,10 @@ final class Duelos
         'cam_pro' => [true, 2, 'Kanon XA65'], 'switch_basic' => [false, 0, 'Laptop con vMax Básico HD'],
         'audio_basic' => [false, 0, 'Yamaka MG10XV'], 'mics' => [false, 0, 'Inalámbrico de mano doble Behringa ULM'],
         'encoder' => [false, 0, 'Blackmagia Web Presentador 4K'], 'router4g' => [false, 0, 'Hotspot 5G NetGir M7'],
-        'ups' => [false, 0, 'APZ Smart-UPS 1500 VA'], 'raincover' => [false, 0, 'Cobertor de lluvia básico'],
+        'ups' => [false, 0, 'APZ VoltGuard 1500 VA'], 'raincover' => [false, 0, 'Cobertor de lluvia básico'],
         'dron4k' => [true, 5, 'DGI Inspira 3X Cine (dron) Exclusivo'], 'grua' => [true, 4, 'Grúa telescópica de 12 m con cabeza remota'],
         'unidad_movil' => [false, 0, 'Sprinto OB equipada (4 a 6 cámaras)'], 'generador' => [false, 0, 'Kummins 22 kVA diésel insonorizado'],
-        'vip_cam8k' => [true, 6, 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)'], 'vip_switcher' => [false, 0, 'Rosco Carbonita Ultra Edición VIP'],
+        'vip_cam8k' => [true, 6, 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)'], 'vip_switcher' => [false, 0, 'Rozz Carbonita Ultra Edición VIP'],
         'vip_satelital' => [false, 0, 'Enlace satelital portátil (flyaway) Edición VIP'],
     ];
     public const VIP_ITEMS = ['vip_cam8k', 'vip_switcher', 'vip_satelital'];

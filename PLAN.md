@@ -222,3 +222,4 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - [ ] Publicar las traducciones legales (`/terminos_en.html`, etc.: falta su `location` en nginx).
 - [ ] Hook de `repairCost` en `logic.js` para la investigación "Taller compartido" de la asociación (hoy no tiene efecto).
 - 2026-10-23 (17:45): todo probado junto: servidor `correr.sh` 104/0, 48 pruebas del juego en verde, ensayo del VPS 87/0. Esta vez se actualiza con `instalar.sh` (agrega las tareas programadas nuevas, las páginas `/recuperar.html` y `/canjear.html` en nginx, el grupo PHP propio y los límites). Capturas nuevas de Google Play (8 × 10 idiomas).
+- 2026-10-23 (18:10): sin marcas reales en textos visibles: Steadicam → estabilizador corporal (10 idiomas); Osmo → Ozmo; Steadikam Aéreo → Estabilio Aéreo; Smart-UPS → VoltGuard; Rosco → Rozz. dist/ reconstruido.

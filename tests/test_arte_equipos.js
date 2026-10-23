@@ -20,7 +20,7 @@ function bien(c, msg) { if (c) { aciertos++; console.log('✅', msg); } else { f
 
 // Marcas (reales y parodia del catálogo) que nunca pueden aparecer escritas dentro de un dibujo
 const MARCAS = ['zony', 'sony', 'kanon', 'canon', 'panasonika', 'panasonic', 'blackmagia', 'blackmagic', 'jvk', 'jvc', 'fantomas', 'phantom', 'marchall', 'marshall',
-  'gopra', 'gopro', 'dgi', 'dji', 'osmo', 'manfrotti', 'manfrotto', 'vinter', 'vinten', 'steadikam', 'steadicam', 'proeme', 'vmax', 'vmix', 'rosco', 'ross', 'glass valley',
+  'gopra', 'gopro', 'dgi', 'dji', 'osmo', 'manfrotti', 'manfrotto', 'vinter', 'vinten', 'steadikam', 'steadicam', 'estabilio', 'proeme', 'vmax', 'vmix', 'rosco', 'rozz', 'ross', 'glass valley',
   'kayena', 'kayenne', 'trikaster', 'tricaster', 'evx', 'evs', 'kasparcg', 'casparcg', 'vizart', 'vizrt', 'yamaka', 'yamaha', 'mydas', 'midas', 'behringa', 'behringer',
   'kalrek', 'calrec', 'shur', 'shure', 'sennhauser', 'sennheiser', 'roade', 'rode', 'hollyband', 'hollyland', 'clearkom', 'clearcom', 'kilovista', 'kiloview', 'liveyou',
   'liveu', 'netgir', 'netgear', 'terradek', 'teradek', 'apz', 'apc', 'jonda', 'honda', 'pelikano', 'pelican', 'sprinto', 'sprinter', 'atom', 'atem', 'urso', 'ursa', 'fujinox', 'fujinon'];

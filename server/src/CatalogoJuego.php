@@ -233,7 +233,7 @@ final class CatalogoJuego
   array (
     'cat' => 'support',
     'fama' => 28,
-    'nombre' => 'Steadikam Aéreo 32 (chaleco y brazo)',
+    'nombre' => 'Estabilio Aéreo 32 (chaleco y brazo)',
   ),
   'sop_jib_proeme_4m' => 
   array (
@@ -287,7 +287,7 @@ final class CatalogoJuego
   array (
     'cat' => 'switcher',
     'fama' => 45,
-    'nombre' => 'Rosco Carbonita Ultra + panel',
+    'nombre' => 'Rozz Carbonita Ultra + panel',
   ),
   'sw_glass_valley_kayena' => 
   array (
@@ -329,7 +329,7 @@ final class CatalogoJuego
   array (
     'cat' => 'graphics',
     'fama' => 28,
-    'nombre' => 'Rosco XPresión Estudio Go',
+    'nombre' => 'Rozz XPresión Estudio Go',
   ),
   'gfx_vizart_ar' => 
   array (
@@ -497,7 +497,7 @@ final class CatalogoJuego
   array (
     'cat' => 'power',
     'fama' => 4,
-    'nombre' => 'APZ Smart-UPS 1500 VA',
+    'nombre' => 'APZ VoltGuard 1500 VA',
   ),
   'pw_jonda_eu2300i' => 
   array (
@@ -1111,7 +1111,7 @@ final class CatalogoJuego
   ),
   'vip_switcher' => 
   array (
-    'nombre' => 'Rosco Carbonita Ultra Edición VIP',
+    'nombre' => 'Rozz Carbonita Ultra Edición VIP',
     'detalle' => 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.',
   ),
   'vip_satelital' => 

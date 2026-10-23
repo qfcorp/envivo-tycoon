@@ -91,7 +91,7 @@ final class Desafio
         'switch_pro' => ['switcher', 'Blackmagia ATOM 2 M/E Constelación 4K + panel'], 'switch_basic' => ['switcher', 'Laptop con vMax Básico HD'],
         'audio_pro' => ['audio', 'Mydas MR19 (digital 18 canales)'], 'audio_basic' => ['audio', 'Yamaka MG10XV'],
         'mics' => ['mics', 'Inalámbrico de mano doble Behringa ULM'], 'encoder' => ['encoder', 'Blackmagia Web Presentador 4K'], 'router4g' => ['internet', 'Hotspot 5G NetGir M7'],
-        'ups' => ['power', 'APZ Smart-UPS 1500 VA'], 'raincover' => ['rain', 'Cobertor de lluvia básico'],
+        'ups' => ['power', 'APZ VoltGuard 1500 VA'], 'raincover' => ['rain', 'Cobertor de lluvia básico'],
     ];
 
     /** Premio por terminar (una vez por día) según estrellas: [cables, baterías, dinero, pases]. */

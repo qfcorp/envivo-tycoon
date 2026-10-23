@@ -29,7 +29,7 @@
     vip_cam8k:     { name: 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', icon: 'cam_cine', creditos: 800, cat: 'cam', subtipo: 'sistema_4k', q: 6, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
                      requiere: ['lente_b4', 'cable_fibra_smpte', 'shader'], incluyeLente: true, incluyeFibra: true, eventos: ['final', 'ligapro'], premium: true, vip: true, repairBase: 4000,
                      desc: 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.' },
-    vip_switcher:  { name: 'Rosco Carbonita Ultra Edición VIP', icon: 'switch_pro', creditos: 1000, cat: 'switcher', subtipo: 'sdi_me', q: 5, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
+    vip_switcher:  { name: 'Rozz Carbonita Ultra Edición VIP', icon: 'switch_pro', creditos: 1000, cat: 'switcher', subtipo: 'sdi_me', q: 5, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
                      eventos: ['ligapro', 'final', 'concierto'], premium: true, vip: true, repairBase: 4200,
                      desc: 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.' },
     vip_satelital: { name: 'Enlace satelital portátil (flyaway) Edición VIP', icon: 'stream', creditos: 700, cat: 'internet', subtipo: 'satelite', q: 5, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,

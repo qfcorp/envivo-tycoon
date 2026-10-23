@@ -49,7 +49,7 @@ const ZH_LATIN_OK = SOLO_MARCA.filter((k) => !/^item\.(lente_kanon_kx21x8_2|lent
 // Marcas parodia y personas: si están en el español, tienen que estar igual en la traducción
 const PROTEGIDOS = ['MegaVisión', 'LigaPrima', 'Don Ramiro', 'Don Aurelio', 'Lucía Mena', 'Germán Vélez', 'ATOM 2 M/E',
   'Kanon', 'Zony', 'Blackmagia', 'Panasonika', 'JVK', 'Fantomas', 'Marchall', 'GoPra', 'DGI', 'Fujinox', 'Manfrotti', 'Vinter',
-  'Steadikam', 'Proeme', 'vMax', 'Rosco', 'Glass Valley', 'TriKaster', 'EVX', 'KasparCG', 'Vizart', 'Yamaka', 'Mydas', 'Behringa',
+  'Steadikam', 'Estabilio', 'Proeme', 'vMax', 'Rozz', 'Glass Valley', 'TriKaster', 'EVX', 'KasparCG', 'Vizart', 'Yamaka', 'Mydas', 'Behringa',
   'Kalrek', 'Shur', 'Sennhauser', 'Roade', 'Hollyband', 'ClearKom', 'Kilovista', 'LiveYou', 'NetGir', 'Terradek', 'APZ', 'Jonda',
   'Kummins', 'Pelikano', 'Sprinto'];
 

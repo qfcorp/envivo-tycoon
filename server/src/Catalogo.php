@@ -94,7 +94,7 @@ final class Catalogo
         'unidad_movil'   => ['nombre' => 'Sprinto OB equipada (4 a 6 cámaras)', 'detalle' => 'Unidad móvil con switcher, audio e intercom adentro. Cuenta como switcher de calidad 4.', 'creditos' => 900, 'entrega' => ['tipo' => 'item', 'item' => 'unidad_movil', 'cantidad' => 1]],
         // Equipos VIP: se canjean solo con VIP activo; siguen siendo del jugador cuando el VIP vence (el juego los guarda)
         'vip_cam8k'      => ['nombre' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'detalle' => 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.', 'creditos' => 800, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_cam8k', 'cantidad' => 1]],
-        'vip_switcher'   => ['nombre' => 'Rosco Carbonita Ultra Edición VIP', 'detalle' => 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.', 'creditos' => 1000, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_switcher', 'cantidad' => 1]],
+        'vip_switcher'   => ['nombre' => 'Rozz Carbonita Ultra Edición VIP', 'detalle' => 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.', 'creditos' => 1000, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_switcher', 'cantidad' => 1]],
         'vip_satelital'  => ['nombre' => 'Enlace satelital portátil (flyaway) Edición VIP', 'detalle' => 'Tu transmisión sale por satélite: el internet nunca te deja mal.', 'creditos' => 700, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_satelital', 'cantidad' => 1]],
         // Edición Exclusiva: una por categoría (js/datos.js, MONETIZACION.md §5). Misma calidad que el mejor normal; también se compran
         // gratis con dinero del juego (más fama). Se entregan al inventario del servidor (número de serie, mercado). Contenido fijo: 1 equipo.
@@ -123,7 +123,7 @@ final class Catalogo
     /** Nombre de cada equipo que vive en el inventario del servidor (para el mercado y el panel). */
     public const EQUIPOS = [
         'cam_pro' => 'Kanon XA65', 'generador' => 'Kummins 22 kVA diésel insonorizado', 'dron4k' => 'DGI Inspira 3X Cine (dron) Exclusivo', 'grua' => 'Grúa telescópica de 12 m con cabeza remota',
-        'unidad_movil' => 'Sprinto OB equipada (4 a 6 cámaras)', 'vip_cam8k' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'vip_switcher' => 'Rosco Carbonita Ultra Edición VIP',
+        'unidad_movil' => 'Sprinto OB equipada (4 a 6 cámaras)', 'vip_cam8k' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'vip_switcher' => 'Rozz Carbonita Ultra Edición VIP',
         'vip_satelital' => 'Enlace satelital portátil (flyaway) Edición VIP',
         // Edición Exclusiva (los mismos nombres que js/datos.js)
         'ex_lente_box' => 'Fujinox UX125x Oro (box 4K 125x) Edición Exclusiva',
