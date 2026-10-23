@@ -39,6 +39,7 @@ if ($ruta === '/' || $ruta === '/index.html' || $ruta === '/sw.js') $csp('juego'
 if (in_array($ruta, ['/terminos.html', '/privacidad.html', '/borrar-cuenta.html'], true)) $csp('legal');
 if ($ruta === '/recuperar.html') { $csp('juego'); header('Cache-Control: no-store'); return $enviar($pub . $ruta); }   // INTEGRAR_CORREO.md
 if (in_array($ruta, ['/terminos.html', '/privacidad.html', '/borrar-cuenta.html'], true)) return $enviar($pub . $ruta);
+if ($ruta === '/canjear.html') { $csp('juego'); return $enviar($pub . $ruta); }   // canjear un código de regalo (server/INTEGRAR_BUZON.md)
 if ($ruta === '/.well-known/assetlinks.json') return $enviar($raiz . $ruta);
 if ($ruta === '/') return $enviar($raiz . '/index.html');
 if (in_array($ruta, ['/index.html', '/sw.js', '/manifest.webmanifest', '/robots.txt'], true)) return $enviar($raiz . $ruta);

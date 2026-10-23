@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  Canjear un código de regalo desde la web (server/INTEGRAR_BUZON.md). Se entra con la MISMA cuenta del juego
+  (correo y clave, /api/entrar, con sus límites de intentos) y el premio llega al buzón del juego. Nada de datos de pago.
+  Enlace para influencers: /canjear.html?codigo=DIMI2026 (el código ya aparece escrito).
+  Solo scripts propios (CSP del juego): js/canjear.js.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0f14">
+<meta name="robots" content="noindex">
+<title>Canjear código · EN VIVO Tycoon</title>
+<link rel="icon" href="/icons/favicon-32.png">
+<link rel="stylesheet" href="/pago-assets/estilo.css?v=2">
+<style>
+  .cj-paso[hidden] { display: none; }
+  .cj-form { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .cj-form label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--tenue); }
+  .cj-codigo { text-transform: uppercase; letter-spacing: .12em; font-weight: 800; font-size: 20px !important; text-align: center; }
+  .cj-quien { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .cj-premios { margin: 10px 0 0; padding-left: 20px; }
+  .cj-sobre { font-size: 44px; line-height: 1; margin: 6px 0 2px; }
+  .cj-idioma { float: right; width: auto; padding: 6px 8px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main class="caja">
+  <select class="cj-idioma" id="cj-idioma" aria-label="Idioma"></select>
+  <div class="marca">EN VIVO <b>Tycoon</b></div>
+  <h1 id="cj-titulo">Canjear un código de regalo</h1>
+  <p class="tenue" id="cj-intro">Entra con la misma cuenta del juego. El regalo llega al buzón del juego.</p>
+
+  <section class="cj-paso" id="cj-cargando"><p class="tenue" id="cj-t-cargando">Conectando…</p></section>
+
+  <section class="cj-paso" id="cj-entrar" hidden>
+    <form class="cj-form" id="cj-form-entrar" autocomplete="on">
+      <label><span id="cj-t-correo">Correo</span><input type="email" id="cj-email" autocomplete="email" maxlength="120" required></label>
+      <label><span id="cj-t-clave">Clave</span><input type="password" id="cj-clave" autocomplete="current-password" maxlength="200" required></label>
+      <button class="boton grande" type="submit" id="cj-btn-entrar">Entrar</button>
+    </form>
+    <p class="tenue" id="cj-t-sin-cuenta">¿No tienes cuenta? Créala gratis dentro del juego (Tienda → Cuenta).</p>
+  </section>
+
+  <section class="cj-paso" id="cj-canjear" hidden>
+    <div class="cj-quien"><span id="cj-quien"></span><button class="boton sec chico" type="button" id="cj-salir">No soy yo</button></div>
+    <form class="cj-form" id="cj-form-canjear">
+      <label><span id="cj-t-codigo">Código</span><input class="cj-codigo" id="cj-codigo" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
+      <button class="boton grande" type="submit" id="cj-btn-canjear">Canjear</button>
+    </form>
+  </section>
+
+  <section class="cj-paso" id="cj-listo" hidden>
+    <div class="cj-sobre" aria-hidden="true">✉️</div>
+    <h2 id="cj-t-listo">¡Listo!</h2>
+    <p id="cj-t-listo-txt">Tu regalo está en el buzón del juego. Abre EN VIVO Tycoon y toca el sobre para reclamarlo.</p>
+    <ul class="cj-premios" id="cj-premios"></ul>
+    <p><a class="boton grande" href="/" id="cj-abrir">Abrir el juego</a></p>
+    <p><button class="boton sec" type="button" id="cj-otro">Canjear otro código</button></p>
+  </section>
+
+  <p class="aviso aviso-error" id="cj-error" role="alert" aria-live="polite"></p>
+  <p class="pie tenue" id="cj-t-pie">Los códigos son gratis: nadie te los vende. Nunca te pediremos tu tarjeta para canjear un código.</p>
+  <p class="pie"><a href="/terminos.html" id="cj-terminos">Términos</a> · <a href="/privacidad.html" id="cj-privacidad">Privacidad</a></p>
+</main>
+<script src="/js/buzon.js"></script>
+<script src="/js/canjear.js"></script>
+</body>
+</html>

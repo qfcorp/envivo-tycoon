@@ -43,6 +43,8 @@ try {
     if (class_exists(\EnVivo\VipApi::class) && \EnVivo\VipApi::esRuta($ruta)) \EnVivo\VipApi::responder($ruta, $metodo, requiere_sesion());
     // Premio diario de 7 días (server/INTEGRAR_DIARIO.md): /api/diario*
     if (class_exists(\EnVivo\DiarioApi::class) && \EnVivo\DiarioApi::esRuta($ruta)) \EnVivo\DiarioApi::responder($ruta, $metodo, requiere_sesion());
+    // Buzón y códigos de regalo (server/INTEGRAR_BUZON.md): /api/buzon*
+    if (class_exists(\EnVivo\BuzonApi::class) && \EnVivo\BuzonApi::esRuta($ruta)) \EnVivo\BuzonApi::responder($ruta, $metodo, requiere_sesion());
     // Copa de Servidores (server/INTEGRAR_COPAS.md): /api/copa*
     if (\EnVivo\CopasApi::esRuta($ruta)) \EnVivo\CopasApi::responder($ruta, $metodo, requiere_sesion());
     // Personal estrella y Pase de Copa (server/INTEGRAR_ESTRELLAS.md): /api/estrellas* y /api/pase_copa/comprar

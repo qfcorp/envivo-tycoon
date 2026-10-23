@@ -17,6 +17,7 @@ require dirname(__DIR__, 2) . '/src/arranque.php';
 require __DIR__ . '/lib/base.php';
 foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'soporte', 'ajustes', 'servidores', 'facturacion', 'errores', 'push'] as $f) require __DIR__ . '/lib/' . $f . '.php';
 require __DIR__ . '/lib/analitica.php';   // pestaña Analítica (server/INTEGRAR_ANALITICA.md)
+require __DIR__ . '/lib/buzon.php';   // Buzón y códigos (server/INTEGRAR_BUZON.md)
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 
@@ -65,6 +66,7 @@ try {
         'errores' => cc_t_errores(),
         'analitica' => cc_t_analitica(),
         'push' => cc_t_push(),
+        'buzon' => cc_t_buzon(),
     };
     cc_pagina(CC_PESTANAS[$t], $t, $cuerpo);
 } catch (\Throwable $e) {
@@ -152,6 +154,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'errores_') => cc_a_errores($accion, $q),
             str_starts_with($accion, 'analitica_') => cc_a_analitica($accion, $q),
             str_starts_with($accion, 'push_') => cc_a_push($accion, $q),
+            str_starts_with($accion, 'buzon_') => cc_a_buzon($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);

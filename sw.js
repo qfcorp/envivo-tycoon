@@ -54,6 +54,7 @@ const SHELL = [
   './js/visitas.js',    // visitar productoras de otros jugadores
   './js/compartir.js',  // compartir por WhatsApp, calificar y novedades (opcional)
   './js/push.js',       // notificaciones push: aviso previo y ajustes (opcional)
+  './js/buzon.js',      // buzón y códigos de regalo
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',
@@ -164,7 +165,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin) {
     // La tienda, los pagos, los paneles, el bot y las páginas legales SIEMPRE van al servidor (nunca desde la caché):
     // así el saldo de créditos y las compras están siempre al día (auditoría A-16).
-    if (/^\/(api\/|pago\.php|pago-assets\/|admin\.php|control(\/|$)|discord(\/|$)|\.well-known\/|terminos\.html|privacidad\.html)/.test(url.pathname)) return;
+    if (/^\/(api\/|pago\.php|pago-assets\/|admin\.php|control(\/|$)|discord(\/|$)|\.well-known\/|terminos\.html|privacidad\.html|canjear\.html)/.test(url.pathname)) return;
     event.respondWith(cacheFirstShell(req, event));
   }
 });
