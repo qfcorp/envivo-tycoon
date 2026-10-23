@@ -4,3 +4,9 @@ node_modules/
 
 # copias de trabajo de los ayudantes
 .claude/
+
+# llaves y secretos de Android / Google Play (nunca a GitHub)
+*.keystore
+*.jks
+keystore_base64.txt
+google-play*.json
