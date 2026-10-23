@@ -286,7 +286,7 @@ else echo "5) Centro de Control /control/: SIN clave (borra $CONF y corre otra v
 if grep -qE '^PLUX_CLAVE_SECRETA=.+' "$CONF"; then echo "6) Plux: credenciales puestas (ambiente: $(grep -E '^PLUX_AMBIENTE=' "$CONF" | cut -d= -f2))"
 else echo "6) Plux: SIN credenciales (la tienda muestra 'pago no disponible' hasta ponerlas)"; fi
 [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ] && echo "7) HTTPS: si" || echo "7) HTTPS: todavia no"
-echo " d) Terminos y privacidad ya tienen RUC, domicilio (Quito 170511) y correo: que un abogado los revise (docs/LEGAL_REVISION.md)."
+[ "$VALIDADOR" = "si" ] && echo "8) Validador de partidas: activo" || echo "8) Validador de partidas: NO activo (mira el paso 8 de arriba; el juego usa Node directo, mas lento)"
 [ -n "$POOL_SOCK" ] && echo "9) PHP del juego: grupo propio envivo ($POOL_SOCK)" || echo "9) PHP del juego: compartido con los otros sitios (mira el paso 8b de arriba)"
 echo "================================="
 echo
@@ -298,7 +298,7 @@ echo " b) Certificado:   sudo certbot --nginx -d $DOMINIO     y despues otra vez
 echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_CLIENTE, PLUX_CLAVE_SECRETA y PLUX_LLAVE_PUBLICA"
 echo "    (claves de PRODUCCION; PLUX_AMBIENTE=produccion ya viene puesto), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
 echo " c2) Codigo del celular (2FA) del Centro de Control: docs/DESPLIEGUE.md, paso 6"
-echo " d) Completa [DIRECCION] en terminos.html y privacidad.html y que un abogado los revise (docs/LEGAL_REVISION.md)."
+echo " d) Terminos y privacidad ya tienen RUC, domicilio (Quito 170511) y correo: que un abogado los revise (docs/LEGAL_REVISION.md)."
 echo " d2) Soporte: crea soporte@tukanec.com (Cloudflare Email Routing) y revisa en $CONF SOPORTE_CORREO y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00"
 echo "     Correo del juego (recuperar la contraseña): llena las líneas SMTP_ de $CONF siguiendo docs/CORREO.md"
 echo "     y luego:  sudo systemctl reload php$PHPV-fpm   (el juego lo muestra en Ayuda y soporte)"
