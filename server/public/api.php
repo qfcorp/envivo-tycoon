@@ -23,6 +23,8 @@ try {
     if (class_exists(\EnVivo\FacturacionApi::class) && \EnVivo\FacturacionApi::esRuta($ruta)) \EnVivo\FacturacionApi::responder($ruta, $metodo);
     // Errores del juego (server/INTEGRAR_ERRORES.md): /api/error va ANTES de X-Envivo (sendBeacon no manda cabeceras; revisa el origen él mismo)
     if (class_exists(\EnVivo\ErroresApi::class) && \EnVivo\ErroresApi::esRuta($ruta)) \EnVivo\ErroresApi::responder($ruta, $metodo);
+    // Analítica propia (server/INTEGRAR_ANALITICA.md): /api/eventos va ANTES de X-Envivo (sendBeacon no pone cabeceras; revisa el mismo sitio)
+    if (class_exists(\EnVivo\AnaliticaApi::class) && \EnVivo\AnaliticaApi::esRuta($ruta)) \EnVivo\AnaliticaApi::responder($ruta, $metodo, Sesiones::jugadorId());
 
     // Protección simple contra peticiones desde otros sitios (junto con SameSite=Lax de la galleta).
     if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.', [], 'cabecera_requerida');

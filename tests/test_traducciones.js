@@ -103,7 +103,11 @@ console.log('errores.json');
     }
     for (const m of php.join('\n').matchAll(/match \(\(int\) \$e->getCode\(\)\) \{([^}]*)\}/g)) for (const x of m[1].matchAll(/'([a-z_]+)'/g)) usados.add(x[1]);
     ok(usados.size > 40, `se esperaban más de 40 códigos en el servidor (hay ${usados.size})`);
-    for (const c of usados) ok(claves.includes(c), `errores.json: falta el código del servidor "${c}"`);
+    // Códigos de módulos que todavía esperan unirse a errores.json (docs/traducciones/errores_nuevos/<modulo>.json, mismo formato)
+    const pendientes = new Set();
+    const dirNuevos = path.join(ROOT, 'docs/traducciones/errores_nuevos');
+    if (fs.existsSync(dirNuevos)) for (const f of fs.readdirSync(dirNuevos)) if (f.endsWith('.json')) { try { Object.keys(JSON.parse(leer('docs/traducciones/errores_nuevos/' + f)).es || {}).forEach((k) => pendientes.add(k)); } catch (e) { ok(false, 'errores_nuevos/' + f + ' no es JSON válido'); } }
+    for (const c of usados) ok(claves.includes(c) || pendientes.has(c), `errores.json: falta el código del servidor "${c}"`);
     // Prefijos dinámicos: falta_<campo> y google_<estado>
     for (const p of prefijos) {
       if (p === 'falta_') ok(claves.includes('falta_dato'), 'errores.json: falta "falta_dato" para el prefijo falta_<campo>');

@@ -26,6 +26,7 @@ const SHELL = [
   './js/soporte.js',    // ayuda y soporte (opcional)
   './js/googleplay.js', // compras de Google Play dentro de la app de Android (opcional)
   './js/cuenta.js',     // borrar la cuenta y aceptar términos (Google Play)
+  './js/analitica.js',  // analítica propia (opcional)
   './js/pwa.js',
   './js/errores.js',   // reporte de errores del juego (opcional)
   './js/api.js',

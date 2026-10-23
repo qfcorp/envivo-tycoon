@@ -21,6 +21,7 @@ const CC_PESTANAS = [
     'resumen' => 'Resumen', 'jugadores' => 'Jugadores', 'compras' => 'Compras', 'productos' => 'Productos',
     'mercado' => 'Mercado', 'chat' => 'Chat', 'soporte' => 'Soporte', 'ajustes' => 'Ajustes',
     'servidores' => 'Servidores', 'facturacion' => 'Facturación', 'errores' => 'Errores',
+    'analitica' => 'Analítica',
 ];
 
 function e(mixed $t): string { return Http::e($t === null ? '' : (string) $t); }

@@ -157,6 +157,13 @@ for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas impuls
 done
 
 echo
+echo "== 3e. Analítica propia (server/INTEGRAR_ANALITICA.md): eventos, resúmenes y la pestaña del Centro de Control"
+env -u ENVIVO_CONFIG P_APP="$(puerto)" CAPTURAS="$TMP/capturas_analitica" php "$SRV/tests/pruebas_analitica.php" > "$TMP/modulo_analitica.log" 2>&1; RM=$?
+grep -E "FALLA" "$TMP/modulo_analitica.log" | sed 's/^/  /'
+echo "  ($(tail -1 "$TMP/modulo_analitica.log"))"
+check "pruebas_analitica.php sin fallas" 0 "$RM"
+
+echo
 echo "== 4. Navegador de verdad (Playwright + Chromium, celular 390x844)"
 php -r '$p = new PDO("sqlite:" . $argv[1]); $p->exec("DELETE FROM intentos");' "$TMP/datos/envivo.sqlite"
 NP="${NODE_PATH:-/opt/npm-tools/node_modules}"

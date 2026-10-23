@@ -58,6 +58,10 @@
     toggle() { try { if (window.Musica) window.Musica.setMuted(!window.Musica.isMuted()); } catch (e) { /* sin música */ } },
     actual() { try { return window.Musica && window.Musica.temaActual ? window.Musica.temaActual() : null; } catch (e) { return null; } },
   };
+  /* ---------- Analítica propia (opcional: js/analitica.js, server/INTEGRAR_ANALITICA.md) ---------- */
+  const AN = (n, d) => { try { if (window.Analitica) window.Analitica.evento(n, d); else if ((window.__anCola = window.__anCola || []).length < 100) window.__anCola.push([n, d]); } catch (e) { /* sin analítica */ } };
+  let anVistaPrev = '';   // tienda_abierta y modo_online_abierto: una vez por cada vez que se entra
+  function anVista() { const k = tab === 'online' ? 'online:' + vistaOnline : tab; if (k === anVistaPrev) return; anVistaPrev = k; if (tab === 'tienda') AN('tienda_abierta'); else if (tab === 'online') AN('modo_online_abierto', { modo: String(vistaOnline || 'hub') }); }
   const temaDeEvento = (type) => (type === 'concierto' ? 'concierto' : 'en_vivo');
   const esFuneral = (type) => /funeral|velorio|sepelio/.test(type || '');
   // Imprevistos graves: la música pasa a tensión. Los demás solo llevan un golpe ("última hora").
@@ -562,6 +566,7 @@
     const bo = $('badgeO');
     if (bo) bo.textContent = avisosOnline() || '';
     if (tab !== 'online' && montado) desmontarOnline();
+    anVista();
     ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, tienda: renderTienda, registro: renderRegistro, online: renderOnline })[tab]();
     if (S.gameOver && !$('overlay').classList.contains('on')) showGameOver();
     else avisoCuentaTal();
@@ -1535,6 +1540,7 @@
     try {
       if (reg) await Api.registro(email, $('cu-nombre').value.trim(), clave, window.Cuenta ? window.Cuenta.datosRegistro() : undefined);
       else await Api.entrar(email, clave);
+      if (reg) AN('cuenta_creada');
       closeModal();
       invalidarOnline(); vistaOnline = 'hub';
       snd.play('hire');
@@ -1599,6 +1605,7 @@
   // Se llama directo desde el clic: en la app, GooglePlay.comprar() va primero (sin nada esperado antes),
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
   function comprar(id) {
+    AN('compra_iniciada', { producto: id, canal: enApp() ? 'google_play' : 'web_plux' });
     if (enApp()) { comprarPlay(id); return; }
     comprarWeb(id);
   }
@@ -1619,6 +1626,7 @@
       r = r || { ok: false, estado: 'error' };
       if (r.ok) {
         snd.play('buy');
+        AN('compra_aprobada', { producto: id, canal: 'google_play' });
         try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
         aplicarEntregas(); save(); render(); trasCompra();
         toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : T('tienda.gp_ok'));
@@ -1942,6 +1950,7 @@
     snd.amb(null);
     if (!f.ok) { toast(TL(f.msg)); closeModal(); render(); return; }
     const r = f.result;
+    AN('evento_terminado', { tipo: ty, estrellas: r.stars, capitulo: S.chapter, dia: S.day });
     const caja = caja0 === null ? null : S.money - caja0;   // cuánto cambió la caja desde que empezó el día
     // Si se recarga en esta pantalla, el resultado se vuelve a mostrar (QA-09)
     try { resDanos = evEq ? danosFin(evEq.ids, evEq.cid) : null; } catch (e) { resDanos = null; }
@@ -2079,6 +2088,7 @@
     capDeCola = !!deCola;
     const idx = typeof d.chapter === 'number' ? d.chapter : Math.max(0, G.CHAPTERS.findIndex((c) => c.title === d.title));
     const ch = G.CHAPTERS[idx] || {};
+    AN('capitulo_completado', { capitulo: idx });
     // Título y texto en el idioma actual (si la lógica ya los traduce); si no, los que se guardaron
     const titulo = ch.title && typeof d.chapter === 'number' ? ch.title : d.title;
     const texto = ch.done && typeof d.chapter === 'number' ? ch.done : d.text;
@@ -2446,6 +2456,7 @@
         save(); render();
         snd.play('live');
         const ty = S.currentEvent.contract.type;
+        AN('evento_iniciado', { tipo: ty, capitulo: S.chapter, dia: S.day });
         snd.amb(['barrial', 'ligapro', 'final', 'concierto', 'boxeo', 'lucha_libre', 'internacional_host', 'internacional_unilateral'].includes(ty) ? 'crowd' : 'room');
         mus.go(esFuneral(ty) ? 'funeral' : temaDeEvento(ty));
         if (ty === 'final' || ty === 'ligapro') setTimeout(() => mus.stinger(), 900);
@@ -2576,6 +2587,7 @@
       // La partida de la nube ya se revisó en alConectar (más nueva, igual o hay que elegir): solo las entregas
       aplicarEntregas(); render();
     }
+    if (volvioDePago && !enApp()) AN('compra_aprobada', { canal: 'web_plux' });
     if (volvioDePago && !enApp()) { tab = 'tienda'; trasCompra(); render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
     else if (sinLeerSoporte()) toast(T('soporte.nuevas', { n: sinLeerSoporte() }));
     // Google Play (solo en la app de Android): precios y compras que quedaron sin confirmar
