@@ -1,0 +1,50 @@
+{
+  "packageId": "com.tukanec.envivo",
+  "host": "juego.tukanec.com",
+  "name": "EN VIVO Tycoon",
+  "launcherName": "EN VIVO",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0d0f14",
+  "themeColorDark": "#0d0f14",
+  "navigationColor": "#0d0f14",
+  "navigationColorDark": "#0d0f14",
+  "navigationDividerColor": "#0d0f14",
+  "navigationDividerColorDark": "#0d0f14",
+  "backgroundColor": "#0d0f14",
+  "enableNotifications": true,
+  "startUrl": "/index.html?origen=android",
+  "iconUrl": "https://juego.tukanec.com/icons/icon-512.png",
+  "maskableIconUrl": "https://juego.tukanec.com/icons/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionCode": 1,
+  "appVersion": "1.0.0",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://juego.tukanec.com/manifest.webmanifest",
+  "fullScopeUrl": "https://juego.tukanec.com/",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 24,
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": []
+}
