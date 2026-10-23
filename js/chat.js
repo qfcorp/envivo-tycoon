@@ -69,7 +69,7 @@
     const yo = E.jugador ? E.jugador.id : null;
     const ms = st.mensajes[st.canal];
     el.innerHTML = ms.length ? ms.map((m) => `<div class="chat-msg ${m.jugador_id === yo ? 'yo' : ''}" data-msg="${m.id}">
-        <div class="quien">${m.siglas ? '[' + esc(m.siglas) + '] ' : ''}${esc(m.alias || T('chat.productora'))}${m.vip ? ' ⭐' : ''}<span>${hora(m.creado)}</span></div>
+        <div class="quien">${m.siglas ? '[' + esc(m.siglas) + '] ' : ''}${esc(m.alias || T('chat.productora'))}${m.vip ? ' ⭐' : ''}${window.Vip && m.vip_nivel ? ' ' + window.Vip.insignia(m.vip_nivel) : ''}<span>${hora(m.creado)}</span></div>
         <p>${esc(m.texto)}</p></div>`).join('')
       : `<p class="chat-vacio">${st.canal === 'servidor' ? T('chat.vacio_servidor') : T('chat.vacio_asoc')}</p>`;
     el.scrollTop = el.scrollHeight;
