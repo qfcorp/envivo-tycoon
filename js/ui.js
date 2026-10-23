@@ -649,6 +649,7 @@
       ${plegablesInicio(story)}
       <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
       ${soporteBtn()}
+      ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}
       <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}${T('inicio.nueva')}</button>`;
   }
 
@@ -731,7 +732,7 @@
     // "Lo último" es nuevo cuando cambia la última línea
     if (ult) { const k = 'u' + ult.day + (ult.text || '').length; const i = filas.length - 1; const abierta = ab['*'] === true || !!ab.ultimo;
       if (abierta) { if (vis.ultimo !== k) { vis.ultimo = k; cambio = true; } } else if (vis.ultimo !== k) filas[i] = filas[i].replace('<span class="pl-fl"', `<span class="pl-nuevo">${T('inicio.nuevo')}</span><span class="pl-fl"`); }
-    fila('ayuda', `<div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}</div>`, { sinNuevo: true, resumen: '' });
+    fila('ayuda', `<div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`, { sinNuevo: true, resumen: '' });
     if (cambio) lsSet(PL_VISTOS, vis);
     return `<div class="pls">${filas.join('')}</div>`;
   }
@@ -2049,6 +2050,7 @@
         ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(gtx(i, i.text)))}<br><span class="muted">→ ${esc(gtx(x, x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
       </details>
       <p class="small muted">${T('res.desgaste')}</p>
+      ${window.Compartir ? window.Compartir.resultado(r, fresh, ctxInicio()) : ''}
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
     if (!fresh) return;
     countUp($('resNet'), neto, 1000);
@@ -2435,6 +2437,7 @@
         tomarAvisos();   // ya se vieron en el resultado
         if (afterResult) { const d = afterResult; afterResult = null; lsSet(RES_KEY, { chapter: d, ev: S.stats.events }); showChapterDone(d); }
         else { lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); continuar(); }
+        if (window.Compartir) window.Compartir.trasResultado(ctxInicio());   // calificar tras un 5⭐ (espera a que la pantalla esté libre)
         break;
       case 'close-story':
         if (capDeCola && Array.isArray(S.capCompletados) && S.capCompletados.length) { S.capCompletados.shift(); save(); }
