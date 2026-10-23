@@ -43,6 +43,7 @@ function cc_t_resumen(): string
 
     $h = '<h1>Resumen</h1><p class="tenue">Solo se suman compras <b>pagadas</b> (las revertidas no cuentan). Hora del juego: ' . e(date('d/m/Y H:i'))
        . ' · Pago Plux: <b>' . e(Plux::ambiente()) . (Plux::configurado() ? '' : ', sin credenciales') . '</b> · Google Play: <b>' . (Google::configurado() ? 'configurado' : 'sin configurar') . '</b>.</p>';
+    if (function_exists('cc_errores_alerta')) $h .= cc_errores_alerta();   // errores nuevos del juego (lib/errores.php)
     $h .= '<div class="kpis">'
         . cc_tarjeta('Ventas hoy', cc_dinero($vHoy['t']), $vHoy['n'] . ' compras · sin IVA ' . cc_dinero($vHoy['s']), 'kpi-hoy')
         . cc_tarjeta('Últimos 7 días', cc_dinero($v7['t']), $v7['n'] . ' compras · ' . $v7['pagadores'] . ' pagadores', 'kpi-7d')
