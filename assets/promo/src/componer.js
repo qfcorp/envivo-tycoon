@@ -11,23 +11,25 @@ const sharp = require('sharp');
 
 const PROMO = path.resolve(__dirname, '..');
 const ROOT = path.resolve(process.env.GAME_ROOT || path.join(PROMO, '..', '..'));
-const RAW = path.join(__dirname, 'raw');
-// Capturas del juego en inglés (si existen, se usan para screens_en)
-const rawDir = (lang) => (lang === 'en' && fs.existsSync(path.join(__dirname, 'raw_en', 'rects.json')) ? path.join(__dirname, 'raw_en') : RAW);
+const RAW = path.resolve(process.env.RAW_DIR || path.join(__dirname, 'raw'));
+// Capturas en crudo de cada idioma (capturar.js): raw/<idioma>/*.png + rects.json
+const rawDir = (lang) => path.join(RAW, lang);
+const IDIOMAS = ['es', 'en', 'pt-BR', 'fr', 'de', 'it', 'ru', 'tr', 'id', 'zh-CN'];
+const LANGS = (process.env.PROMO_LANGS ? process.env.PROMO_LANGS.split(',') : IDIOMAS).map((x) => x.trim()).filter(Boolean);
 const BUILD = path.join(require('os').tmpdir(), 'envivo-promo-build'); // HTML intermedio (no se guarda en el repo)
 fs.mkdirSync(BUILD, { recursive: true });
 const ONLY = process.argv[2] || '';
 
-const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">';
-const SCRIPTS = ['js/logic.js', 'js/art.js', 'js/premium.js'].map((f) => `<script src="file://${path.join(ROOT, f)}"></script>`).join('');
+const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Roboto+Condensed:wght@700;800&display=swap" rel="stylesheet">';
+const SCRIPTS = ['js/datos.js', 'js/logic.js', 'js/art.js', 'js/premium.js'].map((f) => `<script src="file://${path.join(ROOT, f)}"></script>`).join('');
 const dataUri = (f) => 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
 
 const BASE_CSS = `
   :root{--bg:#0d0f14;--panel:#161a22;--line:#2a3242;--text:#e9edf5;--muted:#9aa4b8;--red:#ff3b3b;--amber:#ffb020;--blue:#4da3ff;--green:#2ecc71}
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text)}
-  .D{font-family:"Barlow Condensed","Arial Narrow",sans-serif}
-  .B{font-family:"IBM Plex Sans",system-ui,sans-serif}
+  .D{font-family:"Barlow Condensed","Roboto Condensed","Noto Sans CJK SC","Arial Narrow",sans-serif}
+  .B{font-family:"IBM Plex Sans","Noto Sans CJK SC",system-ui,sans-serif}
   .M{font-family:"JetBrains Mono",ui-monospace,monospace}
   .art svg{display:block;width:100%;height:100%;overflow:visible}
   .blink,.twinkle,.rays,.hover,.spin,.pulse,.flicker,.puff,.cloud,.jib,.fx-rain,.crowd,.beam,.bulb{animation:none!important}
@@ -127,30 +129,105 @@ function featureHtml(lang) {
 /* =========================================================
    2) Capturas para la tienda (1080 x 1920)
    ========================================================= */
+/* Las 8 capturas, en orden. t[idioma] = [etiqueta, título (con <em> en la parte destacada), subtítulo].
+   Los nombres inventados del juego (MegaVisión, Llévame) quedan igual en todos los idiomas. */
+const AL_AIRE = { es: 'AL AIRE', en: 'ON AIR', 'pt-BR': 'NO AR', fr: 'À L’ANTENNE', de: 'ON AIR', it: 'IN ONDA', ru: 'В ЭФИРЕ', tr: 'YAYINDA', id: 'ON AIR', 'zh-CN': '直播中' };
 const SCREENS = [
-  { raw: '01_en_vivo', accent: '#ff3b3b', kick: { es: 'IMPREVISTOS', en: 'LIVE INCIDENTS' },
-    es: ['Resuelve imprevistos <em>en vivo</em>', 'Lluvia, apagones, cables rotos: tú decides cómo salvar la transmisión.'],
-    en: ['Handle disasters <em>live on air</em>', 'Rain, blackouts, broken cables: you decide how to save the broadcast.'] },
-  { raw: '02_personal', accent: '#4da3ff', kick: { es: 'PERSONAL', en: 'YOUR CREW' },
-    es: ['Arma tu equipo de <em>producción</em>', 'Camarógrafos, directores, sonidistas y técnicos que suben de nivel contigo.'],
-    en: ['Build your <em>production crew</em>', 'Camera operators, directors, sound and streaming techs who level up with you.'] },
-  { raw: '03_resultado', accent: '#2ecc71', kick: { es: 'DUELOS', en: 'RIVALRY' },
-    es: ['Compite contra <em>MegaVisión</em>', 'Gana los contratos disputados superando la calidad de la productora rival.'],
-    en: ['Beat <em>MegaVisión</em> to the contract', 'Win contested jobs by out-producing your rival broadcast company.'] },
-  { raw: '04_bodega', accent: '#ff8a3d', kick: { es: 'BODEGA', en: 'GEAR' },
-    es: ['Equipos de nivel <em>broadcast</em>', 'Dron 4K, grúa telescópica, unidad móvil y más, cada uno con su número de serie.'],
-    en: ['<em>Broadcast-grade</em> gear', '4K drone, telescopic jib, OB van and more, each with its own serial number.'] },
-  { raw: '05_inicio', accent: '#ffb020', kick: { es: 'HISTORIA', en: 'STORY' },
-    es: ['Crece de garaje a <em>unidad móvil</em>', 'Empieza con una cámara vieja y termina transmitiendo la gran final.'],
-    en: ['From garage to <em>OB&nbsp;van</em>', 'Start with one old camera and end up broadcasting the big final.'] },
-  { raw: '06_comunidad', accent: '#b57bff', kick: { es: 'EN LÍNEA', en: 'ONLINE' },
-    es: ['Juega con otras <em>productoras</em>', 'Únete a una asociación, coordina por chat y compite en eventos en línea.'],
-    en: ['Team up with <em>other companies</em>', 'Join an alliance, plan in chat and compete in online events.'] },
+  { raw: '01_inicio', accent: '#ffb020', t: {
+    es: ['TU PRODUCTORA', 'Tu productora,<br><em>tu nombre</em>', 'Pon tu marca en el letrero y crece de garaje a centro de producción.'],
+    en: ['YOUR COMPANY', 'Your company,<br><em>your name</em>', 'Put your brand on the sign and grow from garage to production center.'],
+    'pt-BR': ['SUA PRODUTORA', 'Sua produtora,<br><em>seu nome</em>', 'Coloque sua marca no letreiro e cresça da garagem a um centro de produção.'],
+    fr: ['TA SOCIÉTÉ', 'Ta boîte, <em>ton nom</em>', 'Affiche ta marque et passe du garage au centre de production.'],
+    de: ['DEINE FIRMA', 'Deine Firma,<br><em>dein Name</em>', 'Dein Name am Schild – von der Garage bis zum Produktionszentrum.'],
+    it: ['IL TUO STUDIO', 'Il tuo studio,<br><em>il tuo nome</em>', 'Metti il tuo marchio sull’insegna e cresci dal garage a un centro di produzione.'],
+    ru: ['ТВОЯ СТУДИЯ', 'Твоя студия,<br><em>твоё имя</em>', 'Повесь свою вывеску и вырасти из гаража в продакшн-центр.'],
+    tr: ['ŞİRKETİN', 'Senin şirketin,<br><em>senin adın</em>', 'Tabelaya adını yaz, garajdan yapım merkezine büyü.'],
+    id: ['RUMAH PRODUKSIMU', 'Rumah produksimu,<br><em>namamu</em>', 'Pasang namamu di papan dan tumbuh dari garasi ke pusat produksi.'],
+    'zh-CN': ['你的公司', '你的公司，<br><em>你的名字</em>', '挂上自己的招牌，从车库成长为专业制作中心。'] } },
+  { raw: '02_clientes', accent: '#4da3ff', t: {
+    es: ['CLIENTES', 'Elige a tus <em>clientes</em>', 'Bodas, conciertos, boxeo y contratos internacionales. Pelea los disputados con MegaVisión.'],
+    en: ['CLIENTS', 'Pick your <em>clients</em>', 'Weddings, concerts, boxing and international deals. Fight MegaVisión for contested jobs.'],
+    'pt-BR': ['CLIENTES', 'Escolha seus <em>clientes</em>', 'Casamentos, shows, boxe e contratos internacionais. Dispute com a MegaVisión.'],
+    fr: ['CLIENTS', 'Choisis tes <em>clients</em>', 'Mariages, concerts, boxe et contrats internationaux. Affronte MegaVisión.'],
+    de: ['KUNDEN', 'Wähle deine <em>Kunden</em>', 'Hochzeiten, Konzerte, Boxen und Auslandsaufträge. Schlag MegaVisión.'],
+    it: ['CLIENTI', 'Scegli i tuoi <em>clienti</em>', 'Matrimoni, concerti, boxe e contratti internazionali. Sfida MegaVisión.'],
+    ru: ['КЛИЕНТЫ', 'Выбирай <em>клиентов</em>', 'Свадьбы, концерты, бокс и зарубежные контракты. Обойди MegaVisión.'],
+    tr: ['MÜŞTERİLER', '<em>Müşterilerini</em> seç', 'Düğünler, konserler, boks ve uluslararası işler. MegaVisión ile yarış.'],
+    id: ['KLIEN', 'Pilih <em>klienmu</em>', 'Pernikahan, konser, tinju, dan kontrak internasional. Kalahkan MegaVisión.'],
+    'zh-CN': ['客户', '挑选你的<em>客户</em>', '婚礼、演唱会、拳击和国际合同，与 MegaVisión 争夺订单。'] } },
+  { raw: '03_preparar', accent: '#2dd4bf', t: {
+    es: ['PREPARACIÓN', 'Planifica cada <em>cámara</em>', 'Ubica las cámaras en el plano, arma tu equipo y pide transporte en Llévame.'],
+    en: ['PREP', 'Plan every <em>camera</em>', 'Place cameras on the venue map, pick your crew and book a ride on Llévame.'],
+    'pt-BR': ['PREPARAÇÃO', 'Planeje cada <em>câmera</em>', 'Posicione as câmeras no mapa, monte a equipe e peça transporte no Llévame.'],
+    fr: ['PRÉPARATION', 'Place chaque <em>caméra</em>', 'Positionne les caméras sur le plan, choisis ton équipe et réserve un Llévame.'],
+    de: ['VORBEREITUNG', 'Plane jede <em>Kamera</em>', 'Kameras auf den Lageplan, Crew wählen, Transport per Llévame buchen.'],
+    it: ['PREPARAZIONE', 'Pianifica ogni <em>camera</em>', 'Posiziona le camere sulla mappa, scegli la troupe e prenota un Llévame.'],
+    ru: ['ПОДГОТОВКА', 'Расставь каждую <em>камеру</em>', 'Камеры на схеме площадки, своя команда и транспорт через Llévame.'],
+    tr: ['HAZIRLIK', 'Her <em>kamerayı</em> planla', 'Kameraları plana yerleştir, ekibini kur, Llévame ile ulaşımı ayarla.'],
+    id: ['PERSIAPAN', 'Atur setiap <em>kamera</em>', 'Tempatkan kamera di denah, pilih kru, dan pesan transport di Llévame.'],
+    'zh-CN': ['准备', '规划每一个<em>机位</em>', '在场地图上布置机位，组建团队，用 Llévame 叫车运设备。'] } },
+  { raw: '04_en_vivo', accent: '#ff3b3b', t: {
+    es: ['EN VIVO', 'Resuelve imprevistos <em>en vivo</em>', 'Lluvia, apagones, cables rotos: tú decides cómo salvar la transmisión.'],
+    en: ['LIVE', 'Handle disasters <em>live on air</em>', 'Rain, blackouts, broken cables: you decide how to save the broadcast.'],
+    'pt-BR': ['AO VIVO', 'Resolva imprevistos <em>ao vivo</em>', 'Chuva, apagões, cabos rompidos: você decide como salvar a transmissão.'],
+    fr: ['EN DIRECT', 'Gère les imprévus <em>en direct</em>', 'Pluie, coupures, câbles cassés : à toi de sauver la diffusion.'],
+    de: ['LIVE', 'Pannen <em>live</em> lösen', 'Regen, Stromausfall, Kabelbruch: Du rettest die Übertragung.'],
+    it: ['IN DIRETTA', 'Risolvi imprevisti <em>in diretta</em>', 'Pioggia, blackout, cavi rotti: decidi tu come salvare la diretta.'],
+    ru: ['ПРЯМОЙ ЭФИР', 'Спасай эфир <em>вживую</em>', 'Дождь, отключения, оборванные кабели — решать тебе.'],
+    tr: ['CANLI', 'Sorunları <em>canlı</em> çöz', 'Yağmur, elektrik kesintisi, kopan kablolar: yayını sen kurtar.'],
+    id: ['LIVE', 'Atasi masalah <em>secara live</em>', 'Hujan, listrik padam, kabel putus: kamu yang menyelamatkan siaran.'],
+    'zh-CN': ['直播', '<em>直播</em>化解突发状况', '下雨、停电、断线：由你决定如何挽救直播。'] } },
+  { raw: '05_resultado', accent: '#2ecc71', t: {
+    es: ['RESULTADO', 'Gana <em>5&nbsp;estrellas</em>', 'Cobra, sube tu fama, gana el duelo a MegaVisión y comparte tu transmisión.'],
+    en: ['RESULTS', 'Earn <em>5&nbsp;stars</em>', 'Get paid, grow your fame, beat MegaVisión and share your broadcast.'],
+    'pt-BR': ['RESULTADO', 'Ganhe <em>5&nbsp;estrelas</em>', 'Receba, aumente sua fama, vença a MegaVisión e compartilhe a transmissão.'],
+    fr: ['RÉSULTAT', 'Décroche <em>5&nbsp;étoiles</em>', 'Encaisse, gagne en renommée, bats MegaVisión et partage ta diffusion.'],
+    de: ['ERGEBNIS', 'Hol dir <em>5&nbsp;Sterne</em>', 'Kassiere, werde berühmt, schlag MegaVisión und teile deine Übertragung.'],
+    it: ['RISULTATO', 'Conquista <em>5&nbsp;stelle</em>', 'Incassa, aumenta la fama, batti MegaVisión e condividi la tua diretta.'],
+    ru: ['РЕЗУЛЬТАТ', 'Получай <em>5&nbsp;звёзд</em>', 'Зарабатывай, расти в славе, обходи MegaVisión и делись трансляцией.'],
+    tr: ['SONUÇ', '<em>5&nbsp;yıldız</em> kazan', 'Ödemeni al, ünün artsın, MegaVisión’ı yen ve yayınını paylaş.'],
+    id: ['HASIL', 'Raih <em>5&nbsp;bintang</em>', 'Dapat bayaran, naikkan ketenaran, kalahkan MegaVisión, dan bagikan siaranmu.'],
+    'zh-CN': ['结果', '拿下<em>五星</em>好评', '赚取报酬、提升名气，击败 MegaVisión，分享你的直播。'] } },
+  { raw: '06_bodega', accent: '#ffcf4d', t: {
+    es: ['BODEGA', 'Equipos de <em>Edición Exclusiva</em>', 'Cámaras, lentes, drones y grúas. Las piezas exclusivas llevan su número de serie.'],
+    en: ['GEAR', '<em>Exclusive Edition</em> gear', 'Cameras, lenses, drones and jibs. Exclusive pieces carry their own serial number.'],
+    'pt-BR': ['EQUIPAMENTOS', 'Equipamentos <em>Edição Exclusiva</em>', 'Câmeras, lentes, drones e gruas. As peças exclusivas têm número de série.'],
+    fr: ['MATÉRIEL', 'Matériel <em>Édition Exclusive</em>', 'Caméras, objectifs, drones et grues. Les pièces exclusives sont numérotées.'],
+    de: ['AUSRÜSTUNG', 'Technik in <em>Exklusiv-Edition</em>', 'Kameras, Objektive, Drohnen und Kräne. Exklusive Teile haben eine Seriennummer.'],
+    it: ['ATTREZZATURA', 'Attrezzatura <em>Edizione Esclusiva</em>', 'Camere, obiettivi, droni e gru. I pezzi esclusivi hanno il numero di serie.'],
+    ru: ['ТЕХНИКА', 'Техника <em>эксклюзивной серии</em>', 'Камеры, объективы, дроны и краны. У эксклюзивных вещей свой серийный номер.'],
+    tr: ['EKİPMAN', '<em>Özel Seri</em> ekipmanlar', 'Kameralar, lensler, dronlar ve vinçler. Özel parçaların seri numarası var.'],
+    id: ['PERALATAN', 'Peralatan <em>Edisi Eksklusif</em>', 'Kamera, lensa, drone, dan crane. Barang eksklusif punya nomor seri sendiri.'],
+    'zh-CN': ['设备', '<em>限量版</em>专业设备', '摄像机、镜头、无人机和摇臂，每件限量设备都有独立编号。'] } },
+  { raw: '07_copa', accent: '#b57bff', t: {
+    es: ['EN LÍNEA', 'Copa de <em>Servidores</em>', 'Tu servidor contra los demás, cada semana. Además liga, festival, duelos y chat.'],
+    en: ['ONLINE', 'The <em>Server Cup</em>', 'Your server against the rest, every week. Plus leagues, festivals, duels and chat.'],
+    'pt-BR': ['ONLINE', 'Copa de <em>Servidores</em>', 'Seu servidor contra os outros, toda semana. E ainda liga, festival, duelos e chat.'],
+    fr: ['EN LIGNE', 'Coupe des <em>Serveurs</em>', 'Ton serveur contre les autres, chaque semaine. Et aussi ligue, festival, duels et chat.'],
+    de: ['ONLINE', 'Der <em>Server-Pokal</em>', 'Dein Server gegen die anderen, jede Woche. Dazu Liga, Festival, Duelle und Chat.'],
+    it: ['ONLINE', 'Coppa dei <em>Server</em>', 'Il tuo server contro gli altri, ogni settimana. E poi lega, festival, duelli e chat.'],
+    ru: ['ОНЛАЙН', 'Кубок <em>серверов</em>', 'Твой сервер против остальных каждую неделю. А ещё лига, фестиваль, дуэли и чат.'],
+    tr: ['ÇEVRİMİÇİ', '<em>Sunucular</em> Kupası', 'Her hafta sunucun diğerlerine karşı. Ayrıca lig, festival, düellolar ve sohbet.'],
+    id: ['ONLINE', 'Piala <em>Server</em>', 'Server-mu melawan yang lain setiap minggu. Ada juga liga, festival, duel, dan chat.'],
+    'zh-CN': ['在线', '<em>服务器杯</em>', '每周与其他服务器一决高下，还有联赛、音乐节、对决和聊天。'] } },
+  { raw: '08_decoracion', accent: '#ff8a3d', t: {
+    es: ['SEDE', 'Decora tu <em>local</em>', 'Recepción, sofá, neón con tu nombre y trofeos: buena imagen, mejores ofertas.'],
+    en: ['HQ', 'Decorate your <em>HQ</em>', 'Reception desk, sofa, a neon sign with your name and trophies: better image, better offers.'],
+    'pt-BR': ['SEDE', 'Decore sua <em>sede</em>', 'Recepção, sofá, neon com seu nome e troféus: imagem melhor, ofertas melhores.'],
+    fr: ['QG', 'Décore ton <em>QG</em>', 'Accueil, canapé, néon à ton nom et trophées : meilleure image, meilleures offres.'],
+    de: ['HQ', 'Gestalte dein <em>Studio</em>', 'Empfang, Sofa, Neonschild mit deinem Namen und Pokale: besseres Image, bessere Angebote.'],
+    it: ['SEDE', 'Arreda la tua <em>sede</em>', 'Reception, divano, insegna al neon col tuo nome e trofei: immagine migliore, offerte migliori.'],
+    ru: ['ОФИС', 'Обустрой <em>студию</em>', 'Ресепшен, диван, неон с твоим именем и кубки: лучше имидж — лучше заказы.'],
+    tr: ['MERKEZ', '<em>Merkezini</em> süsle', 'Resepsiyon, kanepe, adınla neon tabela ve kupalar: daha iyi imaj, daha iyi teklifler.'],
+    id: ['MARKAS', 'Hias <em>markasmu</em>', 'Resepsionis, sofa, neon bernama studiomu, dan piala: citra makin baik, tawaran makin bagus.'],
+    'zh-CN': ['总部', '装修你的<em>总部</em>', '前台、沙发、印着你名字的霓虹灯和奖杯：形象越好，订单越好。'] } },
 ];
 
 function screenHtml(sc, lang, idx, rect) {
-  const [head, sub] = sc[lang];
+  const [kick, head, sub] = sc.t[lang] || sc.t.en;
   const shot = dataUri(path.join(rawDir(lang), sc.raw + '.png'));
+  // El recuadro ampliado puede salir de otra captura del mismo momento (rect.src: p. ej. la tarjeta de Llévame, más abajo)
+  const zoomShot = rect && rect.src ? dataUri(path.join(rawDir(lang), rect.src + '.png')) : shot;
   // Teléfono
   const SW = 690, k = SW / 1080, SH = Math.round(1920 * k), BZ = 16;
   const PW = SW + BZ * 2, PH = SH + BZ * 2, PX = Math.round((1080 - PW) / 2), PY = 610;
@@ -158,21 +235,23 @@ function screenHtml(sc, lang, idx, rect) {
   let callout = '';
   if (rect) {
     const inW = rect.w * k, inH = rect.h * k;
-    const zoom = Math.min(1.42, 930 / inW);
+    const zoom = Math.min(1.42, 930 / inW, 640 / inH);   // nunca tapa todo el teléfono
     const cw = Math.round(inW * zoom), ch = Math.round(inH * zoom);
     const cxIn = PX + BZ + (rect.x + rect.w / 2) * k, cyIn = PY + BZ + (rect.y + rect.h / 2) * k;
     let cx = Math.round(cxIn - cw / 2);
     cx = Math.max(40, Math.min(1080 - 40 - cw, cx));
-    let cy = Math.round(cyIn - ch / 2);
+    // rect.pos = 'bottom': abajo del teléfono (cuando el recuadro sale de otra captura y no debe tapar lo de arriba)
+    let cy = rect.pos === 'bottom' ? 1920 - 70 - ch : Math.round(cyIn - ch / 2);
     cy = Math.max(PY + 40, Math.min(1920 - 60 - ch, cy));
     const s = cw / rect.w;
     callout = `<div style="position:absolute;left:${cx}px;top:${cy}px;width:${cw}px;height:${ch}px;border-radius:${Math.round(22 * s * 1.4)}px;overflow:hidden;
         box-shadow:0 0 0 3px ${sc.accent},0 0 0 9px ${sc.accent}26,0 40px 80px #000000e0,0 0 90px ${sc.accent}40">
-        <div style="position:absolute;left:${-rect.x * s}px;top:${-rect.y * s}px;width:${1080 * s}px;height:${1920 * s}px;background:url(${shot}) 0 0/100% 100% no-repeat"></div>
+        <div style="position:absolute;left:${-rect.x * s}px;top:${-rect.y * s}px;width:${1080 * s}px;height:${1920 * s}px;background:url(${zoomShot}) 0 0/100% 100% no-repeat"></div>
       </div>`;
   }
   const num = String(idx + 1).padStart(2, '0');
-  return `<!doctype html><html><head><meta charset="utf-8">${FONTS}<style>${BASE_CSS}
+  const cjk = lang === 'zh-CN';
+  return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8">${FONTS}<style>${BASE_CSS}
     .stage{position:relative;width:1080px;height:1920px;overflow:hidden;
       background:radial-gradient(90% 55% at 50% 72%,${sc.accent}22 0%,transparent 65%),radial-gradient(130% 60% at 50% 0%,#1b2130 0%,#0d0f14 60%)}
     .grid{position:absolute;inset:0;background-image:linear-gradient(#ffffff07 1px,transparent 1px),linear-gradient(90deg,#ffffff07 1px,transparent 1px);background-size:60px 60px;
@@ -182,7 +261,7 @@ function screenHtml(sc, lang, idx, rect) {
     .kick .n{color:#0d0f14;background:${sc.accent};padding:4px 12px 3px;border-radius:8px;letter-spacing:.06em}
     .kick .live{display:inline-flex;align-items:center;gap:10px;margin-left:auto;color:#ff3b3b;letter-spacing:.2em;font-size:22px}
     .kick .live i{width:14px;height:14px;border-radius:50%;background:#ff3b3b;box-shadow:0 0 12px #ff3b3b}
-    h1{margin:26px 0 0;font-size:${lang === 'en' ? 118 : 116}px;line-height:.92;font-weight:800;text-transform:uppercase;letter-spacing:.005em;color:#fff}
+    h1{margin:26px 0 0;font-size:${cjk ? 104 : 116}px;line-height:${cjk ? 1.08 : 0.92};font-weight:800;text-transform:uppercase;letter-spacing:.005em;color:#fff}
     h1 em{font-style:normal;color:${sc.accent}}
     p.sub{margin:26px 0 0;font-size:37px;line-height:1.3;color:#b9c1d1;font-weight:500;max-width:880px}
     .phone{position:absolute;left:${PX}px;top:${PY}px;width:${PW}px;height:${PH}px;border-radius:78px;background:linear-gradient(160deg,#2c3446,#0a0c11 40%,#1c2230);padding:${BZ}px;
@@ -194,7 +273,7 @@ function screenHtml(sc, lang, idx, rect) {
   <div class="stage">
     <div class="grid"></div>
     <div class="cap">
-      <div class="kick M"><span class="n">${num}</span>${sc.kick[lang]}<span class="live"><i></i>${lang === 'en' ? 'ON AIR' : 'AL AIRE'}</span></div>
+      <div class="kick M"><span class="n">${num}</span><span class="${cjk ? 'B' : ''}">${kick}</span><span class="live ${cjk ? 'B' : ''}"><i></i>${AL_AIRE[lang] || AL_AIRE.en}</span></div>
       <h1 class="D">${head}</h1>
       <p class="sub B">${sub}</p>
     </div>
@@ -209,7 +288,7 @@ function screenHtml(sc, lang, idx, rect) {
         let f = parseFloat(getComputedStyle(el).fontSize);
         while (el.getBoundingClientRect().height > lines * f * lh + 4 && f > min) { f -= 2; el.style.fontSize = f + 'px'; }
       };
-      fit(document.querySelector('h1'), 2, 0.92, 72);
+      fit(document.querySelector('h1'), 2, ${cjk ? 1.08 : 0.92}, 64);
       fit(document.querySelector('p.sub'), 2, 1.3, 28);
     };
   </script></body></html>`;
@@ -221,7 +300,7 @@ function screenHtml(sc, lang, idx, rect) {
 function socialHtml(kind) {
   const story = kind === 'story';
   const W = 1080, H = story ? 1920 : 1080;
-  const phoneShot = story ? dataUri(path.join(RAW, '01_en_vivo.png')) : '';
+  const phoneShot = story ? dataUri(path.join(rawDir('es'), '04_en_vivo.png')) : '';
   const tags = ['Imprevistos en vivo', 'Equipos broadcast', 'Rival: MegaVisión'];
   // Monitor de programa (escena del juego nítida, con el gol)
   const MW = story ? 0 : 744, MH = Math.round(MW * 170 / 360);
@@ -316,7 +395,7 @@ async function main() {
     await render(page, featureHtml('en'), path.join(PROMO, 'feature_graphic_en.png'), 1024, 500);
   }
   if (!ONLY || ONLY === 'screens') {
-    for (const lang of ['es', 'en']) {
+    for (const lang of LANGS) {
       const rects = JSON.parse(fs.readFileSync(path.join(rawDir(lang), 'rects.json'), 'utf8'));
       const dir = path.join(PROMO, 'screens_' + lang);
       fs.mkdirSync(dir, { recursive: true });
