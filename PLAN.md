@@ -123,7 +123,7 @@ Decisiones (23 oct 2026): VPS de OVH, dirección **juego.tukanec.com** (luego un
 - [x] Pruebas: `bash server/tests/correr.sh` (230 + 32) y `bash tests/tienda_e2e.sh` (compra de punta a punta desde el juego)
 - [ ] Publicar en el VPS (lo hace Dimitry con `docs/DESPLIEGUE.md`) y agregar `/var/lib/envivo` y `/etc/envivo` al respaldo restic
 - [ ] Certificación de Plux para juego.tukanec.com antes de cobrar de verdad (hasta entonces: sandbox)
-- [ ] Completar RUC/correo/WhatsApp en las páginas legales y revisión de abogado (también de los nombres de marcas)
+- [ ] Completar RUC/correo/dirección en las páginas legales (sin WhatsApp: soporte solo por correo y en el juego) y revisión de abogado (también de los nombres de marcas)
 
 ### Fase 5 — Mercado entre jugadores (en curso)
 Reglas: `server/MERCADO.md`. Comisión 5% (se quema), solo quien compró créditos, máx. 10 publicaciones, vencen a los 7 días,

@@ -19,6 +19,7 @@
     'soporte.cat.sugerencia': 'Una sugerencia', 'soporte.cat.reporte': 'Reportar a un jugador', 'soporte.cat.otro': 'Otra cosa',
     'soporte.falta': 'Escribe el asunto y el mensaje.', 'soporte.horario': 'Horario: {horario}',
     'soporte.nuevas': '{n} respuesta(s) nueva(s) de soporte',
+    'soporte.correo': 'Correo: {correo}', 'soporte.error_red': 'No se pudo completar. Intenta de nuevo.',
   };
   const T = (k, p) => {
     try { if (root.I18N && root.I18N.T && (!root.I18N.T.has || root.I18N.T.has(k))) return root.I18N.T(k, p); } catch (e) { /* español */ }
@@ -33,7 +34,11 @@
     try { if (root.I18N && root.I18N.idioma) h['X-Envivo-Idioma'] = root.I18N.idioma; } catch (e) { /* nada */ }
     const r = await fetch(ruta, { method, headers: h, credentials: 'same-origin', cache: 'no-store', body: body ? JSON.stringify(body) : undefined });
     let j = null; try { j = await r.json(); } catch (e) { j = null; }
-    if (!j || !r.ok || j.ok === false) throw new Error((j && j.error) || 'No se pudo completar. Intenta de nuevo.');
+    if (!j || !r.ok || j.ok === false) {
+      let m = (j && j.error) || T('soporte.error_red');
+      try { if (j && j.codigo && root.I18N && root.I18N.T.has && root.I18N.T.has('error.' + j.codigo)) m = root.I18N.T('error.' + j.codigo); else if (root.I18N && root.I18N.TL) m = root.I18N.TL(m); } catch (e) { /* español */ }
+      throw new Error(m);
+    }
     return j;
   }
   function diagnostico() {
@@ -54,7 +59,7 @@
   function bloqueContacto() {
     if (!contacto || !contacto.correo) return '';
     return `<div class="card small"><b>${esc(T('soporte.contacto'))}</b>
-      ${contacto.correo ? `<p style="margin:6px 0">Correo: <span style="user-select:all">${esc(contacto.correo)}</span></p>` : ''}
+      ${contacto.correo ? `<p style="margin:6px 0;user-select:all">${esc(T('soporte.correo', { correo: contacto.correo }))}</p>` : ''}
       ${contacto.horario ? `<p class="muted" style="margin:6px 0">${esc(T('soporte.horario', { horario: contacto.horario }))}</p>` : ''}</div>`;
   }
 
