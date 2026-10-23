@@ -46,6 +46,8 @@
     muted() { try { return window.Sound ? window.Sound.isMuted() : true; } catch (e) { return true; } },
     toggle() { try { if (window.Sound) window.Sound.setMuted(!window.Sound.isMuted()); } catch (e) { /* sin sonido */ } },
   };
+  // Para los módulos: sirve como snd('buy') y como snd.play('buy')
+  const sndCtx = Object.assign((n, x) => snd.play(n, x), snd);
   /* ---------- Música (opcional: si js/musica.js no está, no pasa nada) ---------- */
   const mus = {
     go(t) { try { if (window.Musica) window.Musica.tema(t); } catch (e) { /* sin música */ } },
@@ -110,8 +112,30 @@
      Sus botones llevan data-ext="<id>" data-acc="<acción>". */
   window.EnVivoInicio = window.EnVivoInicio || [];
   function ctxInicio() {
-    return { G, S: () => S, get estado() { return S; }, A, T, TL, M, money: M, N, esc, I, toast, openModal, closeModal, ask,
-      render: () => render(), save: () => save(), snd, mus };
+    // Lo mismo que ctxModulo (VIP, pase, estrellas...), pero `estado` es la partida misma (como siempre en Inicio)
+    return { ...ctxModulo(), G, S: () => S, get estado() { return S; }, A, T, TL, M, money: M, N, esc, I, toast, openModal, closeModal, ask,
+      render: () => render(), save: () => save(), snd: sndCtx, mus };
+  }
+  /* ---------- Contexto para los módulos de monetización (js/vip.js, js/pase.js, js/estrellas.js) ----------
+     server/MONETIZACION.md: onComprar(productoId) abre el pago de siempre (Pago Plux en la web, Google Play en la app);
+     precio(productoId) da el precio REAL que se cobra en este canal (null si en la app Google Play no lo tiene). */
+  function ctxModulo() {
+    return { Api, A, G, T, TL, I18N: I18, M, money: M, N, esc, I,
+      estado: () => S, S: () => S, guardar: () => save(), save: () => save(), render: () => render(),
+      toast, ask, openModal, closeModal, snd: sndCtx, mus,
+      vip: !!(Pm && Pm.vip), enApp: () => enApp(),
+      onComprar: (id) => comprar(id), comprar: (id) => comprar(id),
+      precio: (id, usd) => precioReal(id, usd),
+      sincronizar: () => sincronizarNube(),
+      alReclamar: () => sincronizarNube(),
+      pedir: (method, ruta, body) => apiReq(method, ruta, body) };
+  }
+  // Estrellas usa el mismo contexto: su botón de dinero muestra ctx.precio (Google Play dentro de la app)
+  const ctxEstrellas = () => ctxModulo();
+  // Trae /api/estado otra vez y aplica las entregas nuevas en la partida (después de reclamar o de una compra)
+  async function sincronizarNube() {
+    try { if (Api.refrescar) await Api.refrescar(); } catch (e) { /* se aplica la próxima vez */ }
+    try { aplicarEntregas(); save(); render(); } catch (e) { /* nada */ }
   }
   function modulosInicio() {
     return (window.EnVivoInicio || []).filter((m) => m && m.id).slice().sort((a, b) => (a.orden || 0) - (b.orden || 0));
@@ -619,6 +643,223 @@
     try { return new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long' }); } catch (e) { return ''; }
   }
   let vistaTienda = 'tienda';
+  /* Tienda v2 (server/MONETIZACION.md): Pase de Temporada, VIP, Personal estrella y Pase de Copa, packs de obra, créditos.
+     Reglas: todo muestra su contenido (nada al azar), siempre el precio real que se cobra (Google Play en la app, Pago Plux
+     en la web) y nada de cuentas regresivas inventadas: solo fechas reales que manda el servidor. */
+  // Packs de obra: contenido FIJO, igual a SedeOficial::PACKS (el precio lo manda el servidor o Google Play)
+  const PACKS_OBRA = {
+    pack_obra_s: { letra: 'S', min: 600, mat: { cables: 12, placas: 12, paneles: 12, credenciales: 12, planos: 12, chips: 1 } },
+    pack_obra_m: { letra: 'M', min: 1800, mat: { cables: 32, placas: 32, paneles: 32, credenciales: 32, planos: 32, chips: 3 } },
+    pack_obra_l: { letra: 'L', min: 4800, mat: { cables: 70, placas: 70, paneles: 70, credenciales: 70, planos: 70, chips: 8 } },
+  };
+  const MATS_OBRA = ['cables', 'placas', 'paneles', 'credenciales', 'planos', 'chips'];
+  // Productos con pantalla propia que Google Play también vende (sus precios se piden aunque no salgan en /api/estado)
+  const PLAY_EXTRA = ['pase_premium', 'pase_premium_plus', 'pack_obra_s', 'pack_obra_m', 'pack_obra_l', 'pase_copa'];
+  const playPedidos = new Set();
+  const ICO_PASE = svgIco('<path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h13A1.5 1.5 0 0 1 20 7.5V10a2 2 0 0 0 0 4v2.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5V14a2 2 0 0 0 0-4z"/><path d="M14.5 6.5v11" stroke-dasharray="1.6 2.2"/><path d="M8.5 10.2l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z"/>');
+  const ICO_OBRA = svgIco('<path d="M3.5 17a8.5 8.5 0 0 1 17 0"/><path d="M2.5 17h19v2.5h-19z"/><path d="M10 8.7V5.5h4v3.2"/><path d="M8 12v5M16 12v5"/>');
+  const tipoProd = (p) => p.tipo || (/^creditos_/.test(p.id) ? 'creditos' : p.id === 'vip30' ? 'vip' : p.id === 'tarjeta_mensual' ? 'tarjeta'
+    : /^pack_obra_/.test(p.id) ? 'pack_obra' : /^pase_premium/.test(p.id) ? 'pase' : ['inicio', 'bienvenida', 'pase_copa'].includes(p.id) ? p.id : 'otro');
+  const prodPorId = (id) => { try { return ((Api.estado && Api.estado.tienda && Api.estado.tienda.productos) || []).find((p) => p.id === id) || null; } catch (e) { return null; } };
+  const puedePagarAhora = () => (enApp() ? playOk : !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible));
+  // Precio REAL de un producto en este canal: en la app solo el de Google Play (si no lo tiene: null, no se vende aquí)
+  function precioReal(id, usd) {
+    if (enApp()) return playOk && preciosPlay[id] && preciosPlay[id].precio ? String(preciosPlay[id].precio) : null;
+    if (usd !== undefined && usd !== null && usd !== '' && isFinite(Number(usd))) return precio(Number(usd));
+    const p = prodPorId(id);
+    return p && isFinite(Number(p.precio)) ? precio(Number(p.precio)) : null;
+  }
+  // Precios de Google Play que todavía no se pidieron (ofertas VIP que llegan después)
+  function pedirPreciosPlay(ids) {
+    if (!enApp() || !playOk || !GP) return;
+    const faltan = ids.filter((id) => id && !preciosPlay[id] && !playPedidos.has(id));
+    if (!faltan.length) return;
+    faltan.forEach((id) => playPedidos.add(id));
+    Promise.resolve(GP.productos(faltan)).then((l) => { (l || []).forEach((p) => { preciosPlay[p.id] = p; }); if (tab === 'tienda') render(); }).catch(() => { /* sin precio: no se muestra */ });
+  }
+  // Pide los datos de un módulo (pase, estrellas) como mucho una vez por minuto y vuelve a pintar la tienda
+  const pedidosModulo = {};
+  function pedirDatosModulo(k, fn) {
+    if (Date.now() - (pedidosModulo[k] || 0) < 60000) return;
+    pedidosModulo[k] = Date.now();
+    setTimeout(() => { let pr; try { pr = fn(); } catch (e) { return; } Promise.resolve(pr).then(() => { if (tab === 'tienda') render(); }).catch(() => { /* sin datos: la sección queda corta */ }); }, 0);
+  }
+  const seguro = (fn, def) => { try { const v = fn(); return v === undefined || v === null ? def : v; } catch (e) { return def; } };
+  const enRegistro = (id) => modulosInicio().some((m) => m.id === id && typeof m.clic === 'function');
+  const incluye = (lista) => (lista.length ? `<ul class="tv-inc" aria-label="${esc(T('tienda.incluye'))}">${lista.map((x) =>
+    `<li${x.cls ? ` class="${x.cls}"` : ''}>${I(x.ico || 'check', 'sm')}<span>${x.html}</span></li>`).join('')}</ul>` : '');
+  function botonCompra(id, o) {
+    o = o || {};
+    const valor = precioReal(id, o.usd);
+    if (!valor) return '';
+    const hecho = !!o.hecho;
+    return `<div class="tv-foot"><span class="price" data-precio="${esc(id)}">${esc(valor)}</span>
+      <button class="btn sm main" data-act="comprar" data-k="${esc(id)}" ${hecho || !puedePagarAhora() ? 'disabled' : ''}>${hecho ? T('tienda.ya_tienes') : T('tienda.comprar')}</button></div>`;
+  }
+  const lineaBono = (p) => (p.oferta && Number(p.oferta.bono_pct) > 0 ? T('tienda.bono_hasta', { p: N(Number(p.oferta.bono_pct)), fecha: esc(fechaCorta(p.oferta.fin)) }) : '');
+  function cardProd(p, o) {
+    o = o || {};
+    const lis = (o.lis || []).slice();
+    if (!o.lis && p.detalle) lis.push({ html: esc(TL(p.detalle)) });
+    const bono = lineaBono(p);
+    if (bono) lis.push({ html: bono, cls: 'amber', ico: 'gift' });
+    return `<div class="card tv-prod ${o.cls || ''}" data-prod="${esc(p.id)}">${o.ribbon ? `<span class="ribbon">${esc(o.ribbon)}</span>` : ''}
+      <div class="tv-head">${o.art || itemArt(p.id, 56)}<div class="grow"><h3>${esc(o.nombre || TL(p.nombre))}</h3>${o.sub ? `<div class="small muted">${o.sub}</div>` : ''}</div></div>
+      ${incluye(lis)}${botonCompra(p.id, { usd: p.precio, hecho: o.hecho })}</div>`;
+  }
+  function cardCreditos(p) {
+    const bono = lineaBono(p);
+    return `<div class="card tv-cred" data-prod="${esc(p.id)}">${itemArt(p.id, 56)}
+      <div class="tv-cn num">${N(Number(p.creditos) || 0)}</div><div class="small muted">${T('tienda.creditos_lbl')}</div>
+      ${p.detalle ? `<div class="tv-cd small muted">${esc(TL(p.detalle))}</div>` : ''}${bono ? `<div class="tv-bono">${bono}</div>` : ''}
+      <div class="grow2"></div>${botonCompra(p.id, { usd: p.precio })}</div>`;
+  }
+  // Nombre de cada cosa que trae un pack u oferta (las entregas del servidor)
+  function nombreEntrega(e) {
+    const n = Number(e && e.cantidad) || 1;
+    try {
+      switch (e.tipo) {
+        case 'dinero': return T('tienda.ent_dinero', { m: M(n) });
+        case 'creditos': return T('tienda.ent_creditos', { n });
+        case 'reparar_todo': return T('tienda.ent_reparar');
+        case 'materiales': if (I18 && I18.T.has('tienda.mat.' + e.item)) return T('tienda.ent_mat', { n: N(n), mat: T('tienda.mat.' + e.item) }); break;
+        case 'acelerador': return T('tienda.obra_acel', { h: N(Math.round(n / 6) / 10) });
+        case 'consumible': return `${N(n)} × ${TL((G.CONSUMABLES[e.item] || {}).name || e.item)}`;
+        case 'item': return (n > 1 ? N(n) + ' × ' : '') + itemName(e.item);
+        default: break;
+      }
+    } catch (err) { /* abajo */ }
+    return e && e.nombre ? TL(e.nombre) : String((e && (e.item || e.tipo)) || '');
+  }
+  const seccion = (id, ico, titulo, html) => (html ? `<div class="tv-sec" id="${id}" role="region" aria-label="${esc(titulo)}"><div class="sectitle">${ico}<span>${titulo}</span></div>${html}</div>` : '');
+
+  // Pase de Temporada (js/pase.js): la ficha del módulo y los dos productos con lo que traen
+  function seccionPase(log) {
+    const P = window.Pase;
+    if (!P) return '';
+    let ficha = '';
+    if (log && typeof P.fichaTienda === 'function') { try { ficha = P.fichaTienda(ctxInicio()) || ''; } catch (e) { console.error('[tienda pase]', e); } }
+    const abrir = !log ? '' : enRegistro('pase') ? 'data-ext="pase" data-acc="abrir"' : typeof P.abrir === 'function' ? 'data-act="tienda-pase"' : '';
+    if (!ficha && abrir) {
+      ficha = `<div class="card tv-prod tv-hero"><div class="tv-head"><div class="tv-badge">${ICO_PASE}</div><div class="grow"><h3>${T('tienda.sec_pase')}</h3>
+        <div class="small muted">${T('tienda.pase_det')}</div></div></div><button class="btn" ${abrir}>${T('tienda.ver_pase')}</button></div>`;
+    }
+    const pd = seguro(() => P.datos || (P._st && P._st.datos), null);
+    // Los precios del pase salen de /api/pase (el servidor no los pone en la lista general): se piden una vez si faltan
+    if (log && !pd) pedirDatosModulo('pase', () => P.recargar(ctxInicio()));
+    const prodsPd = (pd && pd.productos) || {};
+    const ya = !!(pd && pd.premium);
+    const niveles = Number(pd && pd.niveles) || 40, tope = Number(pd && pd.creditos_tope) || 420;
+    const plusN = Number(prodsPd.pase_premium_plus && prodsPd.pase_premium_plus.niveles) || 10;
+    const items = [
+      { id: 'pase_premium', nombre: T('tienda.pase_premium'), lis: [T('tienda.pase_inc_niveles', { n: niveles }), T('tienda.pase_inc_creditos', { n: tope }), T('tienda.pase_inc_cosmeticos'), T('tienda.pase_inc_tarde')] },
+      { id: 'pase_premium_plus', nombre: T('tienda.pase_plus'), lis: [T('tienda.pase_inc_todo'), T('tienda.pase_inc_saltos', { n: plusN })] },
+    ].map((x) => {
+      const p = prodPorId(x.id) || (prodsPd[x.id] ? { id: x.id, precio: prodsPd[x.id].precio } : null);
+      if (!p || prodsPd[x.id] && prodsPd[x.id].activo === false) return '';
+      if (!precioReal(x.id, p.precio)) return '';
+      return cardProd({ id: x.id, precio: p.precio }, { nombre: x.nombre, art: `<div class="tv-badge ${x.id === 'pase_premium_plus' ? 't-plus' : ''}">${ICO_PASE}</div>`,
+        lis: x.lis.map((t) => ({ html: t })), hecho: ya, cls: 'tv-pase' });
+    }).join('');
+    if (!ficha && !items) return '';
+    return seccion('tv-pase', ICO_PASE, T('tienda.sec_pase'), ficha + items + (items ? `<p class="small muted tv-nota">${T('tienda.no_renueva')}</p>` : ''));
+  }
+
+  // VIP: tu nivel y avance (js/vip.js), las ofertas para ti, el Pase VIP de 30 días y la tarjeta mensual
+  let vipPedidoEn = 0;
+  function tarjetaVipNivel(V) {
+    const E = Api.estado || {};
+    const d = seguro(() => V.datos, null);
+    if (!d && typeof V.recargar === 'function' && Date.now() - vipPedidoEn > 60000) {
+      vipPedidoEn = Date.now();
+      setTimeout(() => { Promise.resolve(V.recargar()).then(() => { if (tab === 'tienda') render(); }).catch(() => { /* sin datos: queda el nivel de /api/estado */ }); }, 0);
+    }
+    const vt = (k, p) => seguro(() => V.T(k, p), '');
+    const n = Math.max(0, Math.min(10, Math.floor(Number(d ? d.nivel : E.vip_nivel) || 0)));
+    const col = seguro(() => V.color(n), '#ffd34d');
+    const pr = (d && d.progreso) || {};
+    const max = n >= 10 || (!!d && n > 0 && (pr.siguiente === null || pr.siguiente === undefined));
+    const pct = max ? 100 : Math.max(0, Math.min(100, Number(pr.pct) || 0));
+    const nombre = n ? (vt('vip_n', { n }) || T('tienda.vip_n', { n })) + (vt('insignia.' + n) ? ' · ' + vt('insignia.' + n) : '') : (vt('sin_nivel') || T('tienda.vip_sin'));
+    const det = !n ? vt('sin_nivel_txt') : max ? vt('maximo') : d && pr.faltan !== undefined ? vt('faltan', { n: N(Number(pr.faltan) || 0), s: pr.siguiente }) : '';
+    const abrir = enRegistro('vip') ? 'data-ext="vip" data-acc="abrir"' : typeof V.abrir === 'function' ? 'data-act="tienda-vip"' : '';
+    return `<div class="card tv-vipcard" data-vip-nivel="${n}" style="--vc:${esc(col)}">
+      <div class="tv-head"><div class="tv-medal">${I('crown')}${n ? `<b class="num">${n}</b>` : ''}</div>
+        <div class="grow"><div class="tv-lbl">${esc(vt('tu_vip') || T('tienda.sec_vip'))}</div><h3>${esc(nombre)}</h3></div>
+        ${abrir ? `<button class="btn sm" ${abrir}>${esc(vt('ver') || T('tienda.ver'))}</button>` : ''}</div>
+      ${n ? `<div class="tv-bar" role="progressbar" aria-label="${esc(T('tienda.vip_progreso'))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3, pct)}%"></i></div>` : ''}
+      ${det ? `<p class="small muted tv-nota">${esc(det)}</p>` : ''}
+      ${vt('modal.puntos') ? `<p class="small muted tv-nota">${esc(vt('modal.puntos'))}</p>` : ''}</div>`;
+  }
+  function cardOfertaVip(o) {
+    const lis = [];
+    if (Number(o.creditos) > 0) lis.push({ html: esc(T('tienda.ent_creditos', { n: Number(o.creditos) })) });
+    (Array.isArray(o.entregas) ? o.entregas : []).forEach((e) => lis.push({ html: esc(nombreEntrega(e)) }));
+    if (!lis.length && o.detalle) lis.push({ html: esc(TL(o.detalle)) });
+    const meta = [o.vence ? T('tienda.disponible_hasta', { fecha: esc(fechaCorta(o.vence)) }) : '',
+      o.quedan !== undefined && o.quedan !== null ? T('tienda.quedan', { n: Number(o.quedan) || 0 }) : ''].filter(Boolean).join(' · ');
+    return `<div class="card tv-prod tv-of" data-prod="${esc(o.producto)}"><span class="ribbon">${T('tienda.oferta_vip')}</span>
+      <div class="tv-head">${itemArt(o.producto, 52)}<div class="grow"><h3>${esc(TL(o.nombre || ''))}</h3>${meta ? `<div class="small muted">${meta}</div>` : ''}</div></div>
+      ${incluye(lis)}${botonCompra(o.producto, { usd: o.precio })}</div>`;
+  }
+  function seccionVip(log, lista) {
+    const V = window.Vip;
+    const prods = lista.filter((p) => ['vip', 'tarjeta'].includes(tipoProd(p)));
+    const nivel = log && V ? tarjetaVipNivel(V) : '';
+    let ofertas = [];
+    if (log && V) {
+      ofertas = seguro(() => (Array.isArray(V.datos.ofertas) ? V.datos.ofertas : []), []).filter((o) => o && o.producto && o.quedan !== 0);
+      pedirPreciosPlay(ofertas.map((o) => o.producto));
+      ofertas = ofertas.filter((o) => precioReal(o.producto, o.precio));
+    }
+    const aparte = V ? seguro(() => V.T('modal.pase'), '') : '';
+    const html = nivel + ofertas.map(cardOfertaVip).join('') + prods.map((p) => cardProd(p, {
+      cls: p.id === 'vip30' ? 'rf r-vip' : '', ribbon: p.id === 'vip30' ? 'VIP' : '', sub: p.id === 'vip30' && aparte ? esc(aparte) : '' })).join('');
+    return seccion('tv-vip', I('crown', 'sm'), T('tienda.sec_vip'), html);
+  }
+
+  // Personal estrella y Pase de Copa (js/estrellas.js): se contratan y se compran en su pantalla (depende de la copa)
+  function abrirEstrellas() {
+    const ES = window.Estrellas;
+    try { if (ES && typeof ES.abrir === 'function') { ES.abrir(ctxEstrellas()); return; } } catch (e) { console.error('[tienda estrellas]', e); }
+    if (hayEstrellas() && window.EnVivoAbrirOnline) window.EnVivoAbrirOnline('estrellas');
+    else toast(T('online.no_disponible'));
+  }
+  function seccionEstrellas(log) {
+    const ES = window.Estrellas;
+    if (!ES || !log || !(typeof ES.abrir === 'function' || hayEstrellas())) return '';
+    const d = seguro(() => ES.datos || (ES._st && ES._st.datos), null);
+    if (!d) pedirDatosModulo('estrellas', () => ES.recargar());
+    const pc = (d && d.pase_copa) || {};
+    const prod = prodPorId('pase_copa');
+    const usd = prod ? prod.precio : pc.precio_usd;
+    const valor = usd !== undefined && usd !== null ? precioReal('pase_copa', usd) : enApp() ? precioReal('pase_copa') : null;
+    const extra = Number(pc.extra) || 5;
+    const cred = Number(pc.precio_creditos) > 0 ? T('tienda.pase_copa_cred_n', { n: N(Number(pc.precio_creditos)) }) : T('tienda.pase_copa_cred');
+    return seccion('tv-copa', I('star', 'sm'), T('tienda.sec_competencia'), `<div class="card tv-comp">
+      <div class="tv-row"><div class="tv-badge t-amber">${I('star')}</div>
+        <div class="grow"><h3>${T('tienda.estrella_t')}</h3><p class="small muted">${T('tienda.estrella_det')}</p></div></div>
+      <div class="tv-row"><div class="tv-badge t-red">${I('crown')}</div>
+        <div class="grow"><h3>${T('tienda.pase_copa_t')}</h3><p class="small muted">${T('tienda.pase_copa_det', { n: extra })}</p>
+          <p class="small tv-precios">${valor ? `<span class="price sm" data-precio="pase_copa">${esc(valor)}</span><span class="muted"> · </span>` : ''}<span class="cr">${I('gem', 'sm')} ${cred}</span></p>
+          ${valor && pc.puede_comprar !== false && !pc.activo ? `<button class="btn sm main tv-copa-btn" data-act="comprar" data-k="pase_copa" ${puedePagarAhora() ? '' : 'disabled'}>${T('tienda.comprar')} · ${esc(valor)}</button>` : ''}</div></div>
+      <p class="small muted tv-nota">${T('tienda.techo')}</p>
+      <button class="btn" data-act="tienda-estrellas">${I('star', 'sm')} ${T('tienda.ver_estrellas')}</button></div>`);
+  }
+
+  function seccionObra(lista) {
+    const packs = lista.filter((p) => tipoProd(p) === 'pack_obra').sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
+    const html = packs.map((p) => {
+      const k = PACKS_OBRA[p.id];
+      if (!k) return cardProd(p, { art: `<div class="tv-badge">${ICO_OBRA}</div>` });
+      const mats = `<div class="tv-mats">${MATS_OBRA.filter((m) => k.mat[m]).map((m) => `<span class="tv-mat${m === 'chips' ? ' rare' : ''}"><b class="num">${N(k.mat[m])}</b><span>${esc(T('tienda.mat.' + m))}</span></span>`).join('')}</div>`;
+      return `<div class="card tv-prod tv-obra" data-prod="${esc(p.id)}"><div class="tv-head"><div class="tv-badge">${ICO_OBRA}<b>${k.letra}</b></div>
+        <div class="grow"><h3>${T('tienda.obra_nombre', { t: k.letra })}</h3><div class="small muted">${T('tienda.obra_fijo')}</div></div></div>
+        ${incluye([{ html: esc(T('tienda.obra_acel', { h: N(Math.round(k.min / 6) / 10) })), ico: 'bolt' }])}${mats}${botonCompra(p.id, { usd: p.precio })}</div>`;
+    }).join('');
+    return seccion('tv-obra', ICO_OBRA, T('tienda.sec_obra'), html ? html + `<p class="small muted tv-nota">${T('tienda.obra_det')}</p>` : '');
+  }
+
   function renderTienda() {
     const el = $('tab-tienda');
     if (vistaTienda === 'mercado' && Api.disponible && Api.estado && Api.estado.logueado && window.Mercado) {
@@ -642,7 +883,7 @@
       return;
     }
     const E = Api.estado;
-    const log = E.logueado;
+    const log = !!E.logueado;
     let cuenta;
     if (!log) {
       cuenta = `<div class="card">${tile('user', 'blue')}
@@ -657,7 +898,7 @@
         : '';
       cuenta = `<div class="card">
         <div class="row between"><div class="wallet">${I('gem')}<div><div class="big">${N(E.creditos)}</div><div class="small muted">${T('tienda.creditos_lbl')}</div></div></div>
-          <div class="small muted" style="text-align:right">${esc(E.jugador.nombre)}<br>${esc(E.jugador.email)}</div></div>
+          <div class="small muted" style="text-align:end;min-width:0;overflow-wrap:anywhere">${esc(E.jugador.nombre)}<br>${esc(E.jugador.email)}</div></div>
         ${vip}
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
         ${discordBtn('sm')}
@@ -665,22 +906,25 @@
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
     // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta
-    const lista = (E.tienda.productos || []).filter((p) => !app || (playOk && preciosPlay[p.id] && p.id !== 'transferencia_cuenta'));
-    const puedePagar = app ? playOk : !!(E.plux && E.plux.disponible);
-    const productos = lista.map((p) => {
-      const dest = p.id === 'inicio';
-      const hecho = dest && E.inicio_comprado;
-      const valor = app ? esc(preciosPlay[p.id].precio) : precio(p.precio);
-      return `<div class="card prod ${dest ? 'dest' : ''} ${p.id === 'vip30' ? 'rf r-vip' : ''}">${dest ? `<span class="ribbon">${T('tienda.oferta_unica')}</span>` : p.id === 'vip30' ? '<span class="ribbon">VIP</span>' : ''}
-        <div class="prodrow">${itemArt(p.id, 64)}
-          <div class="grow"><h3>${esc(TL(p.nombre))}</h3><div class="small muted">${esc(TL(p.detalle || ''))}</div></div></div>
-        <div class="row between" style="margin-top:10px"><span class="price">${valor}</span>
-          <button class="btn sm main" data-act="comprar" data-k="${esc(p.id)}" ${hecho || !puedePagar ? 'disabled' : ''}>${hecho ? T('tienda.ya_tienes') : T('tienda.comprar')}</button></div></div>`;
-    }).join('');
+    const lista = ((E.tienda && E.tienda.productos) || []).filter((p) => p && p.id && p.id !== 'transferencia_cuenta' && (!app || (playOk && preciosPlay[p.id])));
     const sinPago = app
       ? (playOk ? '' : `<div class="card small muted">${T('tienda.play_no_disp')}</div>`)
       : (E.plux && E.plux.disponible ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
-    const premium = (E.tienda.premium || []).map((p) => {
+    // Para empezar: ofertas de una sola vez (bienvenida y paquete de inicio)
+    const empezar = lista.filter((p) => ['inicio', 'bienvenida'].includes(tipoProd(p))).map((p) => cardProd(p, {
+      cls: 'dest', ribbon: T('tienda.oferta_unica'), hecho: (p.id === 'inicio' && !!E.inicio_comprado) || (p.id === 'bienvenida' && !!E.bienvenida_comprada) })).join('');
+    const creditos = lista.filter((p) => tipoProd(p) === 'creditos').sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
+    const otros = lista.filter((p) => tipoProd(p) === 'otro');
+    const secs = [
+      { id: 'tv-empezar', ico: I('gift', 'sm'), t: T('tienda.sec_empezar'), html: seccion('tv-empezar', I('gift', 'sm'), T('tienda.sec_empezar'), empezar) },
+      { id: 'tv-pase', ico: ICO_PASE, t: T('tienda.nav_pase'), html: seccionPase(log) },
+      { id: 'tv-vip', ico: I('crown', 'sm'), t: T('tienda.sec_vip'), html: seccionVip(log, lista) },
+      { id: 'tv-copa', ico: I('star', 'sm'), t: T('tienda.nav_copa'), html: seccionEstrellas(log) },
+      { id: 'tv-obra', ico: ICO_OBRA, t: T('tienda.nav_obra'), html: seccionObra(lista) },
+      { id: 'tv-creditos', ico: I('gem', 'sm'), t: T('tienda.sec_creditos'), html: seccion('tv-creditos', I('gem', 'sm'), T('tienda.sec_creditos'),
+        (creditos.length ? `<div class="tv-cgrid">${creditos.map(cardCreditos).join('')}</div>` : '') + otros.map((p) => cardProd(p)).join('')) },
+    ].filter((x) => x.html);
+    const premium = ((E.tienda && E.tienda.premium) || []).map((p) => {
       const alcanza = log && E.creditos >= p.creditos;
       const esEquipo = !!G.CATALOG[p.id];
       const rk = p.vip ? 'vip' : esEquipo ? rar(p.id).key : 'comun';
@@ -692,16 +936,26 @@
         <div class="cr" style="margin-top:8px">${I('gem', 'sm')} ${N(p.creditos)}</div>
         <button class="btn sm ${alcanza ? 'green' : ''}" data-act="canjear" data-k="${esc(p.id)}" ${log ? '' : 'disabled'}>${alcanza ? T('tienda.canjear') : log ? T('tienda.faltan') : T('tienda.entra_canjear')}</button></div>`;
     }).join('');
+    secs.push({ id: 'tv-exclusivos', ico: I('sparkle', 'sm'), t: T('tienda.nav_exclusivos'),
+      html: seccion('tv-exclusivos', I('sparkle', 'sm'), T('tienda.exclusivos'), premium ? `<div class="ggrid">${premium}</div>` : emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))) });
+    // Atajos a cada sección (fila que se desliza, como las categorías de la Bodega)
+    const atajos = secs.length > 2 ? `<div class="catrow tv-nav" role="navigation" aria-label="${esc(T('tienda.secciones'))}">${secs.map((x) =>
+      `<button class="catchip" data-act="tienda-ir" data-k="${x.id}">${x.ico}<span>${esc(x.t)}</span></button>`).join('')}</div>` : '';
     el.innerHTML = `${log && window.Mercado ? selectorTienda() : ''}
       <div class="sectitle">${T('tienda.tu_cuenta')}</div>${cuenta}
-      <div class="sectitle">${T('tienda.comprar')}</div>
+      ${atajos}
+      <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
       ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : T('tienda.precios')}</p>`}${prueba}
-      ${productos}
       ${sinPago}
-      <div class="sectitle">${T('tienda.exclusivos')}</div>${premium ? `<div class="ggrid">${premium}</div>` : emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))}
+      ${secs.map((x) => x.html).join('')}
       <p class="small muted">${T('tienda.aviso')}</p>
       ${soporteBtn()}
       <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div>`;
+  }
+  function irSeccionTienda(id) {
+    const s = id && document.getElementById(id);
+    if (!s) return;
+    try { s.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { s.scrollIntoView(); }
   }
 
   function selectorTienda() {
@@ -803,6 +1057,12 @@
     if (enApp()) { comprarPlay(id); return; }
     comprarWeb(id);
   }
+  // Después de una compra: el pase (premium), el nivel VIP y el Pase de Copa se ven al momento (INTEGRAR_PASE.md §7)
+  function trasCompra() {
+    try { if (window.Pase && window.Pase.recargar) window.Pase.recargar(ctxInicio()); } catch (e) { /* sin pase */ }
+    try { if (window.Vip && window.Vip.invalidar) { window.Vip.invalidar(); if (window.Vip.recargar) Promise.resolve(window.Vip.recargar()).then(() => { if (tab === 'tienda') render(); }).catch(() => {}); } } catch (e) { /* sin VIP */ }
+    try { if (window.Estrellas && window.Estrellas.invalidar) window.Estrellas.invalidar(); } catch (e) { /* sin estrellas */ }
+  }
   function comprarPlay(id) {
     if (!GP || !playOk) { toast(T('tienda.play_no_disp')); snd.play('error'); return; }
     if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
@@ -814,7 +1074,7 @@
       if (r.ok) {
         snd.play('buy');
         try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
-        aplicarEntregas(); save(); render();
+        aplicarEntregas(); save(); render(); trasCompra();
         toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : T('tienda.gp_ok'));
         subirNube();
         return;
@@ -833,7 +1093,8 @@
     if (!GP || !Api.disponible || !Api.estado) return;
     try { playOk = !!(await GP.disponible()); } catch (e) { playOk = false; }
     if (playOk) {
-      const ids = ((Api.estado.tienda && Api.estado.tienda.productos) || []).map((p) => p.id);
+      const ids = [...new Set(((Api.estado.tienda && Api.estado.tienda.productos) || []).map((p) => p.id).concat(PLAY_EXTRA))];
+      ids.forEach((id) => playPedidos.add(id));
       try { (await GP.productos(ids)).forEach((p) => { preciosPlay[p.id] = p; }); } catch (e) { /* sin precios */ }
     }
     await restaurarPlay();
@@ -1352,6 +1613,10 @@
     { k: 'desafio', mod: 'Desafio', icon: 'target', tono: 'green' },
     { k: 'copa', mod: 'Copas', icon: 'crown', tono: 'red' },
   ];
+  // Personal estrella y Pase de Copa (js/estrellas.js, server/INTEGRAR_ESTRELLAS.md): solo si el módulo se puede pintar
+  const MODO_ESTRELLAS = { k: 'estrellas', mod: 'Estrellas', icon: 'star', tono: 'amber' };
+  const hayEstrellas = () => { try { return !!(window.Estrellas && typeof window.Estrellas.render === 'function'); } catch (e) { return false; } };
+  const modos = () => (hayEstrellas() ? MODOS.concat([MODO_ESTRELLAS]) : MODOS);
   const enLinea = () => Api.disponible === true && Api.logueado();
   function avisosOnline() {
     try {
@@ -1363,10 +1628,11 @@
   function desmontarOnline() {
     try { if (montado === 'festival' && window.Festival && window.Festival.detener) window.Festival.detener(); } catch (e) { /* nada */ }
     try { if (montado === 'copa' && window.Copas && window.Copas.detener) window.Copas.detener(); } catch (e) { /* nada */ }
+    try { if (montado === 'estrellas' && window.Estrellas && window.Estrellas.detener) window.Estrellas.detener(); } catch (e) { /* nada */ }
     montado = null;
   }
   function invalidarOnline() {
-    ['Liga', 'Duelos', 'Desafio', 'Copas'].forEach((m) => { try { if (window[m] && window[m].invalidar) window[m].invalidar(); } catch (e) { /* nada */ } });
+    ['Liga', 'Duelos', 'Desafio', 'Copas', 'Estrellas', 'Pase', 'Vip'].forEach((m) => { try { if (window[m] && window[m].invalidar) window[m].invalidar(); } catch (e) { /* nada */ } });
     desmontarOnline();
   }
   function estadoModo(k) {
@@ -1378,7 +1644,7 @@
     return '';
   }
   function hubOnline(activo) {
-    return `<div class="onl-grid">${MODOS.map((m) => {
+    return `<div class="onl-grid">${modos().map((m) => {
       const extra = activo ? estadoModo(m.k) : '';
       const nuevo = activo && m.k === 'duelos' && Api.estado && Api.estado.duelos && Api.estado.duelos.defensas_nuevas;
       return `<button class="onl-tile t-${m.tono}" data-act="online" data-k="${m.k}" ${activo ? '' : 'disabled'}>
@@ -1411,7 +1677,8 @@
         <div class="card"><p class="small muted" style="margin:0">${T('discord.det')}</p>${discordBtn()}</div>`;
       return;
     }
-    const m = MODOS.find((x) => x.k === vistaOnline);
+    const m = modos().find((x) => x.k === vistaOnline);
+    if (!m) { vistaOnline = 'hub'; renderOnline(); return; }
     const cont = $('online-cont');
     if (montado === vistaOnline && cont && el.contains(cont)) return;   // ya está pintado: el módulo se actualiza solo
     desmontarOnline();
@@ -1439,15 +1706,20 @@
         jugarIntento: (it) => jugarIntento(it, 'copa'),
         sincronizar: () => { Api.refrescar().then(() => sincronizarEntregas()).catch(() => {}); } };
     }
+    if (k === 'estrellas') return ctxEstrellas();
     return base;
   }
   window.EnVivoAbrirOnline = (k) => { if (VI) return; tab = 'online'; vistaOnline = k || 'hub'; desmontarOnline(); render(); window.scrollTo(0, 0); };
 
   /* ---------- Discord: código para /vincular (server/INTEGRAR_DISCORD.md) ---------- */
   let discordOff = false;   // el servidor dijo que el bot no está configurado
-  async function apiPost(ruta, body) {
-    const r = await fetch(ruta, { method: 'POST', credentials: 'same-origin', cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'Accept-Language': (I18 && I18.idioma) || 'es' }, body: JSON.stringify(body || {}) });
+  const apiPost = (ruta, body) => apiReq('POST', ruta, body || {});
+  // Petición al servidor con la cabecera X-Envivo y los errores traducidos (la usan Discord y los módulos: ctx.pedir)
+  async function apiReq(method, ruta, body) {
+    const m = String(method || 'GET').toUpperCase();
+    const r = await fetch(ruta, { method: m, credentials: 'same-origin', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'Accept-Language': (I18 && I18.idioma) || 'es' },
+      body: m === 'GET' || m === 'HEAD' ? undefined : JSON.stringify(body || {}) });
     let j = null;
     try { j = await r.json(); } catch (e) { j = null; }
     if (!j || !r.ok || j.ok === false) {
@@ -1526,6 +1798,10 @@
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
       case 'comprar': comprar(el.dataset.k); break;
+      case 'tienda-ir': snd.play('tap'); irSeccionTienda(el.dataset.k); break;
+      case 'tienda-estrellas': snd.play('tap'); abrirEstrellas(); break;
+      case 'tienda-pase': snd.play('tap'); try { window.Pase.abrir(ctxInicio()); } catch (err) { console.error('[tienda pase]', err); toast(T('err.no_completo')); } break;
+      case 'tienda-vip': snd.play('tap'); try { window.Vip.abrir(ctxInicio()); } catch (err) { console.error('[tienda vip]', err); toast(T('err.no_completo')); } break;
       case 'canjear': canjear(el.dataset.k); break;
       case 'vip-bono': bonoVip(); break;
       case 'partida': if (eleccion) { const f = eleccion; eleccion = null; f(el.dataset.k); } break;
@@ -1706,7 +1982,7 @@
       if (S.stats.events === 0 && S.day <= 1) await elegirPartida();
       aplicarEntregas(); render();
     }
-    if (volvioDePago && !enApp()) { tab = 'tienda'; render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
+    if (volvioDePago && !enApp()) { tab = 'tienda'; trasCompra(); render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
     else if (sinLeerSoporte()) toast(T('soporte.nuevas', { n: sinLeerSoporte() }));
     // Google Play (solo en la app de Android): precios y compras que quedaron sin confirmar
     await iniciarPlay();

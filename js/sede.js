@@ -372,6 +372,150 @@
     q_label: '总部：{ed}', segundo: '{n} 级解锁第二支施工队', tienes: '你有', max: '你的总部已满级！',
     ed_nivel: '{n} 级', estado: '状态 {n}%', obra_n: '施工 {n}',
   };
+  /* Textos de la sede oficial (servidor: con cuenta y conexión). Mismas claves en los 10 idiomas. */
+  const TRAD_OF = {
+    es: {
+      of_titulo: 'Sede oficial', of_tag: 'Oficial', of_info: 'Cuenta en la Copa y los Duelos: +{n} de calidad', of_conectando: 'Conectando con tu sede oficial…',
+      of_fuentes: 'En tu sede oficial los materiales salen de la entrega diaria, los eventos en línea, la Copa, las ayudas y los packs.',
+      of_acelerar: 'Terminar ya · {n} créditos', of_acelerar_q: '¿Terminar ya {que}? Cuesta {n} créditos (tienes {c}).', of_acelerar_si: 'Terminar ya',
+      of_acelerado: 'Obra terminada: {que}', of_acel: 'Aceleradores: {t}', of_usar_acel: 'Usar aceleradores', of_acel_ok: 'Usaste {t} de aceleradores',
+      of_ayudas_t: 'Ayuda a tu asociación', of_ayudas_info: 'Cada ayuda le quita 1 % o 5 minutos a una obra (máximo {m} por obra) y te da 1 material.',
+      of_ayudas_nada: 'Nadie de tu asociación tiene obras para ayudar ahora.', of_sin_asoc: 'Únete a una asociación para dar y recibir ayudas.',
+      of_ayudar: 'Ayudar', of_ayuda_ok: 'Ayudaste: −{t}', of_ayuda_premio: 'Ayudaste: −{t}. Recibiste {lista}', of_ayudas_hoy: 'Hoy: {n}/{m} ayudas',
+      of_ayudas_obra: 'Ayudas {n}/{m}', of_migrado: 'Tu sede pasó a tu cuenta: nivel {n}', of_migrado_tope: 'Tu sede pasó a tu cuenta con tope: nivel {n}',
+      of_t_h: '{h} h', of_t_hm: '{h} h {m} min', of_t_m: '{m} min', of_t_0: 'menos de 1 min', of_cofre_vuelve: 'Entrega reclamada · vuelve en {t}',
+      of_red: 'No se pudo conectar con tu sede oficial. Intenta de nuevo.', of_costo_cambio: 'El costo cambió: ahora son {n} créditos.',
+      of_sin_creditos: 'Te faltan créditos: necesitas {n}.', of_ya_ayudaste: 'Ya ayudaste en esa obra.', of_ayudas_completas: 'Esa obra ya recibió todas las ayudas.',
+      of_tope_dia: 'Ya diste todas tus ayudas de hoy. Vuelve mañana.', of_espera: 'Espera a que termine la acción anterior.',
+    },
+    en: {
+      of_titulo: 'Official HQ', of_tag: 'Official', of_info: 'Counts in the Cup and Duels: +{n} quality', of_conectando: 'Connecting to your official HQ…',
+      of_fuentes: 'In your official HQ, materials come from the daily delivery, online events, the Cup, helps and packs.',
+      of_acelerar: 'Finish now · {n} credits', of_acelerar_q: 'Finish {que} now? It costs {n} credits (you have {c}).', of_acelerar_si: 'Finish now',
+      of_acelerado: 'Build finished: {que}', of_acel: 'Speed-ups: {t}', of_usar_acel: 'Use speed-ups', of_acel_ok: 'You used {t} of speed-ups',
+      of_ayudas_t: 'Help your association', of_ayudas_info: 'Each help takes 1% or 5 minutes off a build (up to {m} per build) and gives you 1 material.',
+      of_ayudas_nada: 'Nobody in your association has builds to help right now.', of_sin_asoc: 'Join an association to give and get helps.',
+      of_ayudar: 'Help', of_ayuda_ok: 'You helped: −{t}', of_ayuda_premio: 'You helped: −{t}. You got {lista}', of_ayudas_hoy: 'Today: {n}/{m} helps',
+      of_ayudas_obra: 'Helps {n}/{m}', of_migrado: 'Your HQ moved to your account: level {n}', of_migrado_tope: 'Your HQ moved to your account with a cap: level {n}',
+      of_t_h: '{h} h', of_t_hm: '{h} h {m} min', of_t_m: '{m} min', of_t_0: 'under 1 min', of_cofre_vuelve: 'Delivery claimed · back in {t}',
+      of_red: 'Couldn\'t reach your official HQ. Try again.', of_costo_cambio: 'The cost changed: it\'s now {n} credits.',
+      of_sin_creditos: 'Not enough credits: you need {n}.', of_ya_ayudaste: 'You already helped on that build.', of_ayudas_completas: 'That build already got every help.',
+      of_tope_dia: 'You gave all your helps for today. Come back tomorrow.', of_espera: 'Wait for the last action to finish.',
+    },
+    'pt-BR': {
+      of_titulo: 'Sede oficial', of_tag: 'Oficial', of_info: 'Conta na Copa e nos Duelos: +{n} de qualidade', of_conectando: 'Conectando com sua sede oficial…',
+      of_fuentes: 'Na sede oficial os materiais vêm da entrega do dia, dos eventos online, da Copa, das ajudas e dos pacotes.',
+      of_acelerar: 'Terminar já · {n} créditos', of_acelerar_q: 'Terminar {que} agora? Custa {n} créditos (você tem {c}).', of_acelerar_si: 'Terminar já',
+      of_acelerado: 'Obra concluída: {que}', of_acel: 'Aceleradores: {t}', of_usar_acel: 'Usar aceleradores', of_acel_ok: 'Você usou {t} de aceleradores',
+      of_ayudas_t: 'Ajude sua associação', of_ayudas_info: 'Cada ajuda tira 1% ou 5 minutos de uma obra (até {m} por obra) e te dá 1 material.',
+      of_ayudas_nada: 'Ninguém da sua associação tem obras para ajudar agora.', of_sin_asoc: 'Entre numa associação para dar e receber ajudas.',
+      of_ayudar: 'Ajudar', of_ayuda_ok: 'Você ajudou: −{t}', of_ayuda_premio: 'Você ajudou: −{t}. Recebeu {lista}', of_ayudas_hoy: 'Hoje: {n}/{m} ajudas',
+      of_ayudas_obra: 'Ajudas {n}/{m}', of_migrado: 'Sua sede passou para sua conta: nível {n}', of_migrado_tope: 'Sua sede passou para sua conta com limite: nível {n}',
+      of_t_h: '{h} h', of_t_hm: '{h} h {m} min', of_t_m: '{m} min', of_t_0: 'menos de 1 min', of_cofre_vuelve: 'Entrega pega · volte em {t}',
+      of_red: 'Não deu para conectar com sua sede oficial. Tente de novo.', of_costo_cambio: 'O custo mudou: agora são {n} créditos.',
+      of_sin_creditos: 'Faltam créditos: você precisa de {n}.', of_ya_ayudaste: 'Você já ajudou nessa obra.', of_ayudas_completas: 'Essa obra já recebeu todas as ajudas.',
+      of_tope_dia: 'Você já deu todas as ajudas de hoje. Volte amanhã.', of_espera: 'Espere a ação anterior terminar.',
+    },
+    fr: {
+      of_titulo: 'QG officiel', of_tag: 'Officiel', of_info: 'Compte dans la Coupe et les Duels : +{n} de qualité', of_conectando: 'Connexion à ton QG officiel…',
+      of_fuentes: 'Dans ton QG officiel, les matériaux viennent de la livraison du jour, des événements en ligne, de la Coupe, des aides et des packs.',
+      of_acelerar: 'Finir maintenant · {n} crédits', of_acelerar_q: 'Finir {que} maintenant ? Ça coûte {n} crédits (tu en as {c}).', of_acelerar_si: 'Finir maintenant',
+      of_acelerado: 'Chantier terminé : {que}', of_acel: 'Accélérateurs : {t}', of_usar_acel: 'Utiliser les accélérateurs', of_acel_ok: 'Tu as utilisé {t} d\'accélérateurs',
+      of_ayudas_t: 'Aide ton association', of_ayudas_info: 'Chaque aide retire 1 % ou 5 minutes à un chantier (jusqu\'à {m} par chantier) et te donne 1 matériau.',
+      of_ayudas_nada: 'Personne de ton association n\'a de chantier à aider pour l\'instant.', of_sin_asoc: 'Rejoins une association pour donner et recevoir des aides.',
+      of_ayudar: 'Aider', of_ayuda_ok: 'Tu as aidé : −{t}', of_ayuda_premio: 'Tu as aidé : −{t}. Tu as reçu {lista}', of_ayudas_hoy: 'Aujourd\'hui : {n}/{m} aides',
+      of_ayudas_obra: 'Aides {n}/{m}', of_migrado: 'Ton QG est passé sur ton compte : niveau {n}', of_migrado_tope: 'Ton QG est passé sur ton compte avec plafond : niveau {n}',
+      of_t_h: '{h} h', of_t_hm: '{h} h {m} min', of_t_m: '{m} min', of_t_0: 'moins d\'1 min', of_cofre_vuelve: 'Livraison récupérée · reviens dans {t}',
+      of_red: 'Impossible de joindre ton QG officiel. Réessaie.', of_costo_cambio: 'Le coût a changé : c\'est maintenant {n} crédits.',
+      of_sin_creditos: 'Pas assez de crédits : il t\'en faut {n}.', of_ya_ayudaste: 'Tu as déjà aidé sur ce chantier.', of_ayudas_completas: 'Ce chantier a déjà reçu toutes les aides.',
+      of_tope_dia: 'Tu as donné toutes tes aides du jour. Reviens demain.', of_espera: 'Attends la fin de l\'action précédente.',
+    },
+    de: {
+      of_titulo: 'Offizielle Zentrale', of_tag: 'Offiziell', of_info: 'Zählt im Cup und in den Duellen: +{n} Qualität', of_conectando: 'Verbinde mit deiner offiziellen Zentrale…',
+      of_fuentes: 'In der offiziellen Zentrale kommen Materialien aus der Tageslieferung, Online-Events, dem Cup, Hilfen und Paketen.',
+      of_acelerar: 'Sofort fertig · {n} Credits', of_acelerar_q: '{que} sofort fertigstellen? Kostet {n} Credits (du hast {c}).', of_acelerar_si: 'Sofort fertig',
+      of_acelerado: 'Bau fertig: {que}', of_acel: 'Beschleuniger: {t}', of_usar_acel: 'Beschleuniger nutzen', of_acel_ok: 'Du hast {t} Beschleuniger genutzt',
+      of_ayudas_t: 'Hilf deiner Vereinigung', of_ayudas_info: 'Jede Hilfe zieht 1 % oder 5 Minuten von einem Bau ab (bis {m} pro Bau) und gibt dir 1 Material.',
+      of_ayudas_nada: 'Gerade hat niemand aus deiner Vereinigung einen Bau zum Helfen.', of_sin_asoc: 'Tritt einer Vereinigung bei, um Hilfen zu geben und zu bekommen.',
+      of_ayudar: 'Helfen', of_ayuda_ok: 'Du hast geholfen: −{t}', of_ayuda_premio: 'Du hast geholfen: −{t}. Du bekommst {lista}', of_ayudas_hoy: 'Heute: {n}/{m} Hilfen',
+      of_ayudas_obra: 'Hilfen {n}/{m}', of_migrado: 'Deine Zentrale ist jetzt in deinem Konto: Stufe {n}', of_migrado_tope: 'Deine Zentrale ist mit Obergrenze in deinem Konto: Stufe {n}',
+      of_t_h: '{h} Std.', of_t_hm: '{h} Std. {m} Min.', of_t_m: '{m} Min.', of_t_0: 'unter 1 Min.', of_cofre_vuelve: 'Lieferung abgeholt · wieder in {t}',
+      of_red: 'Deine offizielle Zentrale ist nicht erreichbar. Versuch es nochmal.', of_costo_cambio: 'Der Preis hat sich geändert: jetzt {n} Credits.',
+      of_sin_creditos: 'Zu wenig Credits: du brauchst {n}.', of_ya_ayudaste: 'Bei diesem Bau hast du schon geholfen.', of_ayudas_completas: 'Dieser Bau hat schon alle Hilfen.',
+      of_tope_dia: 'Du hast heute alle Hilfen gegeben. Komm morgen wieder.', of_espera: 'Warte, bis die letzte Aktion fertig ist.',
+    },
+    it: {
+      of_titulo: 'Sede ufficiale', of_tag: 'Ufficiale', of_info: 'Conta nella Coppa e nei Duelli: +{n} di qualità', of_conectando: 'Connessione alla tua sede ufficiale…',
+      of_fuentes: 'Nella sede ufficiale i materiali arrivano dalla consegna del giorno, dagli eventi online, dalla Coppa, dagli aiuti e dai pacchetti.',
+      of_acelerar: 'Finisci ora · {n} crediti', of_acelerar_q: 'Finire {que} ora? Costa {n} crediti (ne hai {c}).', of_acelerar_si: 'Finisci ora',
+      of_acelerado: 'Cantiere finito: {que}', of_acel: 'Acceleratori: {t}', of_usar_acel: 'Usa acceleratori', of_acel_ok: 'Hai usato {t} di acceleratori',
+      of_ayudas_t: 'Aiuta la tua associazione', of_ayudas_info: 'Ogni aiuto toglie l\'1% o 5 minuti a un cantiere (fino a {m} per cantiere) e ti dà 1 materiale.',
+      of_ayudas_nada: 'Nessuno della tua associazione ha cantieri da aiutare ora.', of_sin_asoc: 'Entra in un\'associazione per dare e ricevere aiuti.',
+      of_ayudar: 'Aiuta', of_ayuda_ok: 'Hai aiutato: −{t}', of_ayuda_premio: 'Hai aiutato: −{t}. Hai ricevuto {lista}', of_ayudas_hoy: 'Oggi: {n}/{m} aiuti',
+      of_ayudas_obra: 'Aiuti {n}/{m}', of_migrado: 'La tua sede è passata al tuo account: livello {n}', of_migrado_tope: 'La tua sede è passata al tuo account con limite: livello {n}',
+      of_t_h: '{h} h', of_t_hm: '{h} h {m} min', of_t_m: '{m} min', of_t_0: 'meno di 1 min', of_cofre_vuelve: 'Consegna ritirata · torna tra {t}',
+      of_red: 'Impossibile collegarsi alla tua sede ufficiale. Riprova.', of_costo_cambio: 'Il costo è cambiato: ora sono {n} crediti.',
+      of_sin_creditos: 'Crediti insufficienti: te ne servono {n}.', of_ya_ayudaste: 'Hai già aiutato in quel cantiere.', of_ayudas_completas: 'Quel cantiere ha già ricevuto tutti gli aiuti.',
+      of_tope_dia: 'Hai dato tutti gli aiuti di oggi. Torna domani.', of_espera: 'Aspetta che finisca l\'azione precedente.',
+    },
+    ru: {
+      of_titulo: 'Официальный штаб', of_tag: 'Официально', of_info: 'Учитывается в Кубке и Дуэлях: +{n} к качеству', of_conectando: 'Подключаемся к официальному штабу…',
+      of_fuentes: 'В официальном штабе материалы дают поставка дня, онлайн-события, Кубок, помощь и наборы.',
+      of_acelerar: 'Завершить сейчас · {n} кредитов', of_acelerar_q: 'Завершить {que} сейчас? Стоит {n} кредитов (у тебя {c}).', of_acelerar_si: 'Завершить сейчас',
+      of_acelerado: 'Стройка завершена: {que}', of_acel: 'Ускорители: {t}', of_usar_acel: 'Использовать ускорители', of_acel_ok: 'Ты использовал ускорители: {t}',
+      of_ayudas_t: 'Помоги своей ассоциации', of_ayudas_info: 'Каждая помощь убирает 1% или 5 минут со стройки (до {m} на стройку) и даёт тебе 1 материал.',
+      of_ayudas_nada: 'Сейчас ни у кого в ассоциации нет строек для помощи.', of_sin_asoc: 'Вступи в ассоциацию, чтобы помогать и получать помощь.',
+      of_ayudar: 'Помочь', of_ayuda_ok: 'Ты помог: −{t}', of_ayuda_premio: 'Ты помог: −{t}. Получено: {lista}', of_ayudas_hoy: 'Сегодня: {n}/{m} помощи',
+      of_ayudas_obra: 'Помощь {n}/{m}', of_migrado: 'Штаб перенесён в аккаунт: уровень {n}', of_migrado_tope: 'Штаб перенесён в аккаунт с ограничением: уровень {n}',
+      of_t_h: '{h} ч', of_t_hm: '{h} ч {m} мин', of_t_m: '{m} мин', of_t_0: 'меньше 1 мин', of_cofre_vuelve: 'Поставка получена · снова через {t}',
+      of_red: 'Не удалось связаться с официальным штабом. Попробуй ещё раз.', of_costo_cambio: 'Цена изменилась: теперь {n} кредитов.',
+      of_sin_creditos: 'Не хватает кредитов: нужно {n}.', of_ya_ayudaste: 'Ты уже помог на этой стройке.', of_ayudas_completas: 'Эта стройка уже получила всю помощь.',
+      of_tope_dia: 'Ты уже отдал всю помощь на сегодня. Возвращайся завтра.', of_espera: 'Подожди, пока закончится прошлое действие.',
+    },
+    tr: {
+      of_titulo: 'Resmî merkez', of_tag: 'Resmî', of_info: 'Kupa ve Düellolarda sayılır: +{n} kalite', of_conectando: 'Resmî merkezine bağlanılıyor…',
+      of_fuentes: 'Resmî merkezde malzemeler günlük teslimattan, çevrim içi etkinliklerden, Kupadan, yardımlardan ve paketlerden gelir.',
+      of_acelerar: 'Hemen bitir · {n} kredi', of_acelerar_q: '{que} hemen bitsin mi? {n} kredi tutar (sende {c} var).', of_acelerar_si: 'Hemen bitir',
+      of_acelerado: 'İnşaat bitti: {que}', of_acel: 'Hızlandırıcılar: {t}', of_usar_acel: 'Hızlandırıcı kullan', of_acel_ok: '{t} hızlandırıcı kullandın',
+      of_ayudas_t: 'Derneğine yardım et', of_ayudas_info: 'Her yardım bir inşaattan %1 ya da 5 dakika düşer (inşaat başına en çok {m}) ve sana 1 malzeme verir.',
+      of_ayudas_nada: 'Şu an derneğinde yardım edilecek inşaat yok.', of_sin_asoc: 'Yardım verip almak için bir derneğe katıl.',
+      of_ayudar: 'Yardım et', of_ayuda_ok: 'Yardım ettin: −{t}', of_ayuda_premio: 'Yardım ettin: −{t}. Aldığın: {lista}', of_ayudas_hoy: 'Bugün: {n}/{m} yardım',
+      of_ayudas_obra: 'Yardımlar {n}/{m}', of_migrado: 'Merkezin hesabına taşındı: seviye {n}', of_migrado_tope: 'Merkezin sınırla hesabına taşındı: seviye {n}',
+      of_t_h: '{h} sa', of_t_hm: '{h} sa {m} dk', of_t_m: '{m} dk', of_t_0: '1 dakikadan az', of_cofre_vuelve: 'Teslimat alındı · {t} sonra gel',
+      of_red: 'Resmî merkezine ulaşılamadı. Tekrar dene.', of_costo_cambio: 'Fiyat değişti: şimdi {n} kredi.',
+      of_sin_creditos: 'Kredin yetmiyor: {n} gerekiyor.', of_ya_ayudaste: 'Bu inşaata zaten yardım ettin.', of_ayudas_completas: 'Bu inşaat tüm yardımları aldı.',
+      of_tope_dia: 'Bugünkü tüm yardımlarını verdin. Yarın tekrar gel.', of_espera: 'Önceki işlemin bitmesini bekle.',
+    },
+    id: {
+      of_titulo: 'Markas resmi', of_tag: 'Resmi', of_info: 'Dihitung di Piala dan Duel: +{n} kualitas', of_conectando: 'Menghubungkan ke markas resmimu…',
+      of_fuentes: 'Di markas resmi, bahan datang dari kiriman harian, acara online, Piala, bantuan, dan paket.',
+      of_acelerar: 'Selesaikan sekarang · {n} kredit', of_acelerar_q: 'Selesaikan {que} sekarang? Biayanya {n} kredit (kamu punya {c}).', of_acelerar_si: 'Selesaikan sekarang',
+      of_acelerado: 'Bangunan selesai: {que}', of_acel: 'Percepatan: {t}', of_usar_acel: 'Pakai percepatan', of_acel_ok: 'Kamu memakai {t} percepatan',
+      of_ayudas_t: 'Bantu asosiasimu', of_ayudas_info: 'Tiap bantuan memotong 1% atau 5 menit dari bangunan (maks. {m} per bangunan) dan memberimu 1 bahan.',
+      of_ayudas_nada: 'Belum ada bangunan anggota asosiasimu yang bisa dibantu.', of_sin_asoc: 'Gabung ke asosiasi untuk memberi dan menerima bantuan.',
+      of_ayudar: 'Bantu', of_ayuda_ok: 'Kamu membantu: −{t}', of_ayuda_premio: 'Kamu membantu: −{t}. Kamu dapat {lista}', of_ayudas_hoy: 'Hari ini: {n}/{m} bantuan',
+      of_ayudas_obra: 'Bantuan {n}/{m}', of_migrado: 'Markasmu pindah ke akunmu: level {n}', of_migrado_tope: 'Markasmu pindah ke akunmu dengan batas: level {n}',
+      of_t_h: '{h} j', of_t_hm: '{h} j {m} mnt', of_t_m: '{m} mnt', of_t_0: 'kurang dari 1 mnt', of_cofre_vuelve: 'Kiriman sudah diambil · kembali dalam {t}',
+      of_red: 'Tidak bisa terhubung ke markas resmimu. Coba lagi.', of_costo_cambio: 'Biayanya berubah: sekarang {n} kredit.',
+      of_sin_creditos: 'Kreditmu kurang: perlu {n}.', of_ya_ayudaste: 'Kamu sudah membantu bangunan itu.', of_ayudas_completas: 'Bangunan itu sudah dapat semua bantuan.',
+      of_tope_dia: 'Semua bantuan hari ini sudah kamu berikan. Kembali besok.', of_espera: 'Tunggu aksi sebelumnya selesai.',
+    },
+    'zh-CN': {
+      of_titulo: '官方总部', of_tag: '官方', of_info: '计入杯赛和对决：质量 +{n}', of_conectando: '正在连接你的官方总部…',
+      of_fuentes: '官方总部的材料来自每日补给、在线活动、杯赛、协助和礼包。',
+      of_acelerar: '立即完成 · {n} 积分', of_acelerar_q: '立即完成{que}？需要 {n} 积分（你有 {c}）。', of_acelerar_si: '立即完成',
+      of_acelerado: '施工完成：{que}', of_acel: '加速：{t}', of_usar_acel: '使用加速', of_acel_ok: '你使用了 {t} 的加速',
+      of_ayudas_t: '帮助你的协会', of_ayudas_info: '每次协助让施工减少 1% 或 5 分钟（每项最多 {m} 次），你还能得到 1 个材料。',
+      of_ayudas_nada: '现在协会里没有可以协助的施工。', of_sin_asoc: '加入协会就能协助别人，也能得到协助。',
+      of_ayudar: '协助', of_ayuda_ok: '你协助了：−{t}', of_ayuda_premio: '你协助了：−{t}。获得 {lista}', of_ayudas_hoy: '今天：{n}/{m} 次协助',
+      of_ayudas_obra: '协助 {n}/{m}', of_migrado: '你的总部已转到账号：{n} 级', of_migrado_tope: '你的总部已按上限转到账号：{n} 级',
+      of_t_h: '{h} 小时', of_t_hm: '{h} 小时 {m} 分钟', of_t_m: '{m} 分钟', of_t_0: '不到 1 分钟', of_cofre_vuelve: '已领取 · {t}后再来',
+      of_red: '连不上你的官方总部，请再试一次。', of_costo_cambio: '价格变了：现在是 {n} 积分。',
+      of_sin_creditos: '积分不够：需要 {n}。', of_ya_ayudaste: '你已经协助过这项施工。', of_ayudas_completas: '这项施工的协助已满。',
+      of_tope_dia: '今天的协助次数用完了，明天再来。', of_espera: '请等上一个操作完成。',
+    },
+  };
+  Object.keys(TRAD_OF).forEach((c) => { if (TRAD[c]) Object.assign(TRAD[c], TRAD_OF[c]); });
   const PREF = 'sedehq.';
   function idioma() { try { const c = root.I18N && root.I18N.idioma; return c && TRAD[c] ? c : 'es'; } catch (e) { return 'es'; } }
   function fill(str, p) { return p ? String(str).replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined && p[k] !== null ? String(p[k]) : m)) : String(str); }
@@ -673,7 +817,8 @@
   function alTerminarEvento(s, result, contrato) {
     migrar(s);
     actualizar(s);
-    const extras = botinEvento(s, result, contrato || {});
+    // Sede oficial: los materiales los da el servidor (eventos en línea validados), no los eventos de este celular
+    const extras = s.sede.oficial ? [] : botinEvento(s, result, contrato || {});
     if (result) {
       result.extras = Array.isArray(result.extras) ? result.extras : [];
       extras.forEach((x) => {
@@ -780,6 +925,15 @@
   .sd-bono{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13px}
   .sd-btn[disabled]{opacity:.55}
   #modal .sd-item .btn{margin-top:8px}
+  .sd-of-tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;border:1px solid #2ecc7188;color:#7ee2a8;background:#2ecc7114;margin-inline-start:6px;vertical-align:middle;line-height:1.5}
+  .sd-of-info{margin-top:6px;color:#7ee2a8}
+  .sd-of-obra .bar{margin:6px 0 0}
+  .sd-of-obra .bar i{background:var(--amber)}
+  .sd-of-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  #modal .sd-of-btns .btn{margin:0;flex:1 1 140px;min-width:0}
+  .sd-of-ayuda{display:flex;align-items:center;gap:8px}
+  .sd-of-ayuda .grow{flex:1;min-width:0;overflow-wrap:anywhere}
+  #modal .sd-of-ayuda .btn{margin:0;flex:none}
   `;
   function ponerCss() {
     try {
@@ -790,8 +944,8 @@
   }
   const estadoDe = (ctx) => { try { return typeof ctx.S === 'function' ? ctx.S() : ctx.S; } catch (e) { return null; } };
   const plata = (ctx, n) => { try { return ctx && ctx.money ? ctx.money(n) : dinero(n); } catch (e) { return dinero(n); } };
-  function tiraMateriales(s) {
-    const m = est(s).materiales;
+  function tiraMateriales(s) { return tiraMat(est(s).materiales); }
+  function tiraMat(m) {
     return `<div class="sd-mats">${MATS.map((k) => `<div class="sd-mat${k === 'chips' ? ' rare' : ''}" title="${esc(t('mat.' + k))}">${iconoMat(k, 20)}<b class="num">${m[k] || 0}</b></div>`).join('')}</div>`;
   }
   function textoObras(s, e) {
@@ -808,6 +962,7 @@
     const s = estadoDe(ctx);
     if (!s) return '';
     migrar(s);
+    if (enOficial(s)) return tarjetaOficial(ctx, s);
     const e = etapa(s);
     const bars = e.max ? '' : `<div class="sd-bars" style="grid-template-columns:repeat(${e.mejoras.length + 1},minmax(0,1fr))">${e.mejoras.map((m) =>
       `<div class="sd-bar${m.hecha ? ' done' : m.obra ? ' obra' : ''}" title="${esc(t('ed.' + m.ed))}">${iconoEd(m.ed, 16)}<div class="bar"><i style="width:${Math.round(m.avance * 100)}%"></i></div></div>`).join('')}
@@ -889,6 +1044,9 @@
     const guardar = () => { try { if (ctx.save) ctx.save(); } catch (e) { /* sin guardar */ } };
     const abierto = () => { try { const m = root.document && root.document.querySelector('#modal .sd-modal'); return !!m; } catch (e) { return false; } };
     const repintar = () => { try { if (ctx.render) ctx.render(); } catch (e) { /* nada */ } if (abierto()) ctx.openModal(modalHtml(ctx)); };
+    // Con cuenta y servidor: todo pasa por /api/sede. Con la copia oficial pero sin saber todavía si hay red: esperar.
+    if (enOficial(s)) { accionOficial(ctx, s, accion, el); return; }
+    if (s.sede && s.sede.oficial) { avisar(resp(false, 'of_conectando')); return; }
     let r = null;
     switch (accion) {
       case 'abrir': ctx.openModal(modalHtml(ctx)); return;
@@ -911,8 +1069,351 @@
     repintar();
   }
 
+  /* ---------- Sede oficial (servidor: server/src/SedeOficial.php, rutas /api/sede) ----------
+     Con cuenta y servidor (Api.disponible y Api.logueado()), la tarjeta y la ventana leen y escriben por /api/sede y
+     s.sede queda como COPIA del servidor (s.sede.oficial), así los bonos del juego (bonoCalidad, gastos, pago, cupos)
+     salen del nivel oficial. La sede local se guarda aparte en s.sedeLocal y vuelve si no hay cuenta o no hay servidor.
+     La primera vez, si la sede oficial está sin usar, se manda la local (POST /api/sede/migrar; el servidor le pone tope). */
+  // Pedidos al servidor: NUNCA desde el pintado. Un solo vigilante (un temporizador) pide la sede al entrar en modo oficial,
+  // cuando termina la próxima obra y cada 10 minutos; abrir la ventana pide como mucho una vez. Después de un error
+  // (o una respuesta sin la forma esperada) espera 1 minuto, después 5 (ESPERAS) antes de volver a pedir.
+  const ESPERAS = [60000, 300000];
+  const REFRESCO = 600000, FRESCO = 30000;
+  const OF_INICIO = () => ({ estado: null, cuenta: null, sync: 0, offset: 0, cargando: null, errorEn: 0, error: '', noDisponible: false,
+    ayudas: null, ocupado: false, timer: null, migrado: false, errores: 0, bloqueoHasta: 0, vigilando: false, ayudasEn: 0 });
+  const OF = OF_INICIO();
+  function red() {
+    try {
+      const A = root.Api;
+      if (!A || OF.noDisponible) return 'no';
+      if (A.disponible !== true && A.disponible !== false) return 'espera';   // todavía no se sabe si hay servidor
+      return A.disponible === true && typeof A.logueado === 'function' && A.logueado() ? 'si' : 'no';
+    } catch (e) { return 'no'; }
+  }
+  function cuentaId() { try { const j = root.Api.estado.jugador; return j && j.id !== undefined && j.id !== null ? String(j.id) : '?'; } catch (e) { return '?'; } }
+  const copia = (o) => JSON.parse(JSON.stringify(o));
+  function salirOficial(s) {
+    s.sede = s.sedeLocal && typeof s.sedeLocal === 'object' ? s.sedeLocal : nuevo(s);
+    delete s.sedeLocal;
+    migrar(s);
+  }
+  /** ¿Modo oficial? (cambia de cuenta o vuelve a la sede local cuando hace falta) */
+  function enOficial(s) {
+    const r = red();
+    if (r === 'si' && OF.cuenta !== cuentaId()) {
+      if (OF.timer) clearTimeout(OF.timer);
+      Object.assign(OF, { estado: null, ayudas: null, sync: 0, errorEn: 0, error: '', migrado: false, errores: 0, bloqueoHasta: 0, timer: null, vigilando: false, ayudasEn: 0, cuenta: cuentaId() });
+    }
+    if (r === 'no' && s && s.sede && s.sede.oficial) salirOficial(s);
+    return r === 'si';
+  }
+  function ponerCache(s, j) {
+    if (!s || !j || !j.sede) return;
+    const d = est(s);
+    if (!d.oficial) s.sedeLocal = copia(d);
+    const sd = j.sede;
+    d.nivel = sd.nivel;
+    d.mejoras = Object.assign({}, sd.mejoras || {});
+    d.materiales = Object.assign({}, sd.materiales || {});
+    d.obras = [];
+    d.oficial = { ahora: j.ahora, cuenta: OF.cuenta };
+  }
+  const ahoraSrv = () => (Date.now() + OF.offset) / 1000;
+  const restante = (o) => Math.max(0, Math.round(o.fin - ahoraSrv()));
+  function costoAc(seg) {
+    const R = (OF.estado && OF.estado.reglas) || { seg_por_credito: 360, costo_min: 5 };
+    return seg <= 0 ? 0 : Math.max(R.costo_min, Math.ceil(seg / R.seg_por_credito));
+  }
+  function fmt(seg) {
+    if (seg < 60) return t('of_t_0');
+    const min = Math.ceil(seg / 60), h = Math.floor(min / 60);
+    return h > 0 ? (min % 60 ? t('of_t_hm', { h, m: min % 60 }) : t('of_t_h', { h })) : t('of_t_m', { m: min });
+  }
+  // Errores del servidor con su código -> texto en el idioma del juego (si no, el texto del servidor)
+  const ERR = {
+    sin_obrero: () => t('sin_equipo'), faltan_mejoras: (d) => t('faltan_mejoras', { h: d.hechas, n: d.total }), requisito: () => t('req_no'),
+    cofre_ya: () => t('cofre_ya'), max: () => t('max'), ya_hecha: () => t('listo'), en_obra: () => t('listo'),
+    faltan_materiales: (d) => (d.falta ? t('falta', { lista: listaTxt(d.falta) }) : null), costo_cambio: (d) => t('of_costo_cambio', { n: d.costo }),
+    sin_creditos: (d) => t('of_sin_creditos', { n: d.costo }), ya_ayudaste: () => t('of_ya_ayudaste'), ayudas_completas: () => t('of_ayudas_completas'),
+    tope_ayudas_dia: () => t('of_tope_dia'), sin_asociacion: () => t('of_sin_asoc'),
+  };
+  function textoErr(j) {
+    try { const f = j && j.codigo && ERR[j.codigo]; const v = f ? f(j) : null; if (v) return v; } catch (e) { /* texto del servidor */ }
+    try { if (j && j.error) return root.I18N && root.I18N.TL ? root.I18N.TL(j.error) : j.error; } catch (e) { /* español */ }
+    return (j && j.error) || t('of_red');
+  }
+  async function pedir(metodo, ruta, cuerpo) {
+    let r, j = null;
+    try {
+      r = await root.fetch(ruta, { method: metodo, credentials: 'same-origin', cache: 'no-store', body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' } });
+    } catch (e) { const x = new Error(t('of_red')); x.status = 0; throw x; }
+    try { j = await r.json(); } catch (e) { j = null; }
+    if (!j || typeof j !== 'object' || !r.ok || j.ok === false) {
+      const x = new Error(textoErr(j || {}));
+      x.status = r.status; x.codigo = (j && j.codigo) || null; x.datos = j || {};
+      throw x;
+    }
+    return j;
+  }
+  function modalAbierto() { try { return !!(root.document && root.document.querySelector('#modal .sd-modal.sd-of')); } catch (e) { return false; } }
+  function repintarOf(ctx) {
+    try { if (ctx && ctx.render) ctx.render(); } catch (e) { /* nada */ }
+    try { if (ctx && modalAbierto()) ctx.openModal(modalOficial(ctx)); } catch (e) { /* nada */ }
+  }
+  /** Guarda la vista del servidor. false si no tiene la forma esperada (no se usa: cuenta como error). */
+  function recibir(ctx, j) {
+    const sd = j && j.sede;
+    if (!sd || typeof sd !== 'object' || typeof sd.nivel !== 'number' || !Array.isArray(sd.obras) || !sd.materiales || !sd.cofre) return false;
+    OF.estado = j; OF.sync = Date.now(); OF.error = ''; OF.errorEn = 0;
+    if (typeof j.ahora === 'number') OF.offset = j.ahora * 1000 - Date.now();
+    const s = estadoDe(ctx);
+    if (s && enOficial(s)) ponerCache(s, j);
+    if (OF.vigilando) vigilar(ctx);
+    return true;
+  }
+  /** Un solo temporizador: próxima obra que termina, fin de la espera tras un error o 10 minutos. */
+  function vigilar(ctx) {
+    try {
+      if (OF.timer) clearTimeout(OF.timer);
+      OF.timer = null; OF.vigilando = true;
+      const ahora = Date.now();
+      let ms = REFRESCO;
+      if (ahora < OF.bloqueoHasta) ms = OF.bloqueoHasta - ahora + 50;
+      else if (OF.estado && OF.estado.sede.obras.length) ms = Math.min(REFRESCO, (Math.min.apply(null, OF.estado.sede.obras.map(restante)) + 1) * 1000);
+      ms = Math.max(2000, ms);
+      OF.timer = setTimeout(() => {
+        OF.timer = null;
+        const s = estadoDe(ctx);
+        if (s && enOficial(s)) cargar(ctx, true); else OF.vigilando = false;
+      }, ms);
+      if (OF.timer && OF.timer.unref) OF.timer.unref();
+    } catch (e) { /* sin reloj */ }
+  }
+  /** Lo llama la tarjeta: arranca el vigilante UNA vez (el primer pedido va fuera del pintado). */
+  function asegurarVigilante(ctx) {
+    if (OF.vigilando) return;
+    OF.vigilando = true;
+    try {
+      OF.timer = setTimeout(() => { OF.timer = null; const s = estadoDe(ctx); if (s && enOficial(s)) cargar(ctx, false); else OF.vigilando = false; }, 0);
+    } catch (e) { OF.vigilando = false; }
+  }
+  function tieneProgreso(d) {
+    return !!(d && typeof d === 'object' && (d.nivel > 1 || (d.mejoras && Object.keys(d.mejoras).length) || (Array.isArray(d.obras) && d.obras.length)
+      || (d.materiales && MATS.some((m) => d.materiales[m] > 0))));
+  }
+  // Primera vez con cuenta: la sede de este celular pasa a la cuenta (el servidor pone el tope)
+  async function quizasMigrar(ctx) {
+    const j = OF.estado, s = estadoDe(ctx);
+    if (OF.migrado || !j || !j.sede.migracion || !j.sede.migracion.posible || !s) return;
+    OF.migrado = true;
+    const loc = s.sedeLocal;
+    if (!tieneProgreso(loc)) return;
+    try {
+      const r = await pedir('POST', '/api/sede/migrar', { local: { nivel: loc.nivel, mejoras: loc.mejoras, materiales: loc.materiales, obras: loc.obras } });
+      recibir(ctx, r);
+      try { if (ctx.toast) ctx.toast(t(r.recortado ? 'of_migrado_tope' : 'of_migrado', { n: r.sede.nivel })); } catch (e) { /* sin aviso */ }
+      try { if (ctx.save) ctx.save(); } catch (e) { /* sin guardar */ }
+    } catch (e) { /* se queda en nivel 1: la sede local sigue guardada en s.sedeLocal */ }
+  }
+  function errorCarga(e) {
+    // Sin el módulo en el servidor (404/405) o la sesión se cerró (401): la sede local, como siempre
+    if (e && (e.status === 404 || e.status === 405 || e.status === 401)) OF.noDisponible = true;
+    OF.error = (e && e.message) || t('of_red'); OF.errorEn = Date.now();
+    OF.errores += 1;
+    OF.bloqueoHasta = Date.now() + ESPERAS[Math.min(OF.errores, ESPERAS.length) - 1];
+  }
+  /** Pide la vista (GET /api/sede). Nunca durante la espera tras un error; sin forzar, tampoco si se pidió hace menos de 30 s. */
+  function cargar(ctx, forzar) {
+    if (OF.cargando) return OF.cargando;
+    if (Date.now() < OF.bloqueoHasta) { if (!OF.timer) vigilar(ctx); return Promise.resolve(null); }
+    if (!forzar && OF.estado && Date.now() - OF.sync < FRESCO) return Promise.resolve(OF.estado);
+    OF.cargando = pedir('GET', '/api/sede')
+      .then((j) => {
+        if (!recibir(ctx, j)) { const x = new Error(t('of_red')); x.status = 200; throw x; }
+        OF.errores = 0; OF.bloqueoHasta = 0;
+        return quizasMigrar(ctx);
+      })
+      .catch(errorCarga)
+      .then(() => { OF.cargando = null; if (!OF.noDisponible) vigilar(ctx); repintarOf(ctx); });
+    return OF.cargando;
+  }
+  /** Lista de ayudas: al abrir la ventana, como mucho una vez cada 30 s y nunca durante la espera tras un error. */
+  function cargarAyudas(ctx) {
+    if (Date.now() < OF.bloqueoHasta || (OF.ayudasEn && Date.now() - OF.ayudasEn < FRESCO)) return Promise.resolve(null);
+    OF.ayudasEn = Date.now();
+    return pedir('GET', '/api/sede/ayudas').then((j) => { if (j && Array.isArray(j.obras) && j.hoy) OF.ayudas = j; else errorCarga(null); })
+      .catch(errorCarga).then(() => { if (modalAbierto()) ctx.openModal(modalOficial(ctx)); });
+  }
+
+  function tarjetaOficial(ctx, s) {
+    const j = OF.estado;
+    asegurarVigilante(ctx);   // no pide nada aquí: solo arranca (una vez) el vigilante
+    if (j && (!s.sede.oficial || s.sede.oficial.ahora !== j.ahora)) ponerCache(s, j);
+    const tit = `<div class="small muted">${esc(t('titulo'))}<span class="sd-of-tag">${esc(t('of_tag'))}</span></div>`;
+    if (!j) {
+      return `<div class="card sd-card" data-ext="sede" data-acc="abrir" role="button" tabindex="0" aria-label="${esc(t('modal_titulo'))}">
+        <div class="sd-head">${iconoEd('sede', 40)}<div class="grow">${tit}<div class="small">${esc(OF.error || t('of_conectando'))}</div></div></div></div>`;
+    }
+    const sd = j.sede, e = sd.etapa;
+    const av = (o) => (o ? Math.min(0.95, Math.max(0.05, 1 - restante(o) / Math.max(1, o.duracion))) : 0);
+    const obraDe = (id) => sd.obras.find((o) => o.id === id) || null;
+    const bars = !e ? '' : `<div class="sd-bars" style="grid-template-columns:repeat(${e.mejoras.length + 1},minmax(0,1fr))">${e.mejoras.map((m) =>
+      `<div class="sd-bar${m.hecha ? ' done' : m.obra_id ? ' obra' : ''}" title="${esc(t('ed.' + m.ed))}">${iconoEd(m.ed, 16)}<div class="bar"><i style="width:${m.hecha ? 100 : Math.round(av(obraDe(m.obra_id)) * 100)}%"></i></div></div>`).join('')}
+      <div class="sd-bar${e.sede.obra_id ? ' obra' : ''}" title="${esc(t('ed.sede'))}">${iconoEd('sede', 16)}<div class="bar"><i style="width:${Math.round(av(obraDe(e.sede.obra_id)) * 100)}%"></i></div></div></div>`;
+    const items = [];
+    for (let i = 0; i < sd.obreros; i++) {
+      const o = sd.obras[i];
+      items.push(o ? `<span class="tag amber">${iconoEd(o.ed, 14)} ${esc(t('ed.' + o.ed))} · ${esc(fmt(restante(o)))}</span>` : `<span class="tag">${esc(t('obra_libre'))}</span>`);
+    }
+    const obras = sd.max ? '' : `<div class="sd-obra small"><span class="muted">${esc(t('obra'))}:</span>${items.join('')}</div>`;
+    const cofre = sd.cofre.disponible
+      ? `<button class="btn green sd-btn" data-ext="sede" data-acc="cofre">${iconoMat('planos', 18).replace('class="sd-ico"', 'class="sd-ico" style="display:inline-block;vertical-align:-4px;margin-inline-end:6px"')}${esc(t('cofre'))}</button>`
+      : `<button class="btn sd-btn" disabled>${esc(t('of_cofre_vuelve', { t: fmt(Math.max(0, sd.cofre.proximo - ahoraSrv())) }))}</button>`;
+    return `<div class="card sd-card sd-of" data-ext="sede" data-acc="abrir" role="button" tabindex="0" aria-label="${esc(t('modal_titulo'))}">
+      <div class="sd-head">${iconoEd('sede', 40)}<div class="grow">${tit}
+        <div class="sd-lv">${esc(t('nivel', { n: sd.nivel }))}</div></div>
+        <span class="tag">${esc(sd.max ? t('nivel_max') : t('abrir') + ' ›')}</span></div>
+      ${bars}${obras}${tiraMat(sd.materiales)}${cofre}
+    </div>`;
+  }
+  function costoOf(mat, have, seg) {
+    const parts = Object.keys(mat).map((m) => `<span class="sd-c ${(have[m] || 0) >= mat[m] ? 'ok' : 'no'}" title="${esc(t('mat.' + m))}">${iconoMat(m, 16)}${have[m] || 0}/${mat[m]}</span>`);
+    parts.push(`<span class="sd-c">⏱ ${esc(fmt(seg))}</span>`);
+    return `<div class="sd-cost">${parts.join('')}</div>`;
+  }
+  function modalOficial(ctx) {
+    const s = estadoDe(ctx), j = OF.estado;
+    const cerrar = `<div class="row between"><h2 style="margin:0">${esc(t('modal_titulo'))}</h2><button class="btn sm" data-act="close" aria-label="×">✕</button></div>`;
+    if (!j) return `<div class="sd-modal sd-of">${cerrar}<p class="small muted">${esc(OF.error || t('of_conectando'))}</p><button class="btn" data-act="close" style="margin-top:14px">✕</button></div>`;
+    const sd = j.sede, e = sd.etapa, have = sd.materiales;
+    const libre = sd.obras.length < sd.obreros;
+    const head = `${cerrar}
+      <div class="sd-head" style="margin-top:8px">${iconoEd('sede', 34)}<div class="grow"><div class="sd-lv">${esc(t('nivel', { n: sd.nivel }))}<span class="sd-of-tag">${esc(t('of_tag'))}</span></div>
+      <div class="small muted">${esc(sd.max ? t('max') : t('modal_intro', { n: e.objetivo }))}</div></div></div>
+      <div class="small sd-of-info">${esc(t('of_info', { n: sd.bono_competencia }))}</div>
+      ${tiraMat(have)}
+      ${sd.aceleradores_min > 0 ? `<div class="small" style="margin-top:6px">⏩ ${esc(t('of_acel', { t: fmt(sd.aceleradores_min * 60) }))}</div>` : ''}
+      ${sd.obreros < 2 ? `<div class="small muted" style="margin-top:4px">${esc(t('segundo', { n: AJUSTE.segundoObrero }))}</div>` : ''}`;
+    // Obras en curso: tiempo real, ayudas y acelerar (el costo se ve antes de confirmar)
+    const obras = sd.obras.map((o) => {
+      const rest = restante(o), c = costoAc(rest);
+      const nom = o.tipo === 'nivel' ? t('subiendo', { n: o.nivel }) : t('ed.' + o.ed);
+      return `<div class="sd-item sd-of-obra" style="border-color:var(--amber)"><div class="sd-head">${iconoEd(o.ed, 30)}<div class="grow"><b>${esc(nom)}</b>
+        <div class="small muted">${esc(t('en_obra', { d: fmt(rest) }))} · ${esc(t('of_ayudas_obra', { n: o.ayudas, m: o.ayudas_max }))}</div></div></div>
+        <div class="bar"><i style="width:${Math.round(100 * Math.min(1, Math.max(0, 1 - rest / Math.max(1, o.duracion))))}%"></i></div>
+        <div class="sd-of-btns"><button class="btn main sd-btn" data-ext="sede" data-acc="acelerar" data-obra="${o.id}" data-costo="${c}">⚡ ${esc(t('of_acelerar', { n: c }))}</button>
+        ${sd.aceleradores_min > 0 ? `<button class="btn sd-btn" data-ext="sede" data-acc="acel_min" data-obra="${o.id}">⏩ ${esc(t('of_usar_acel'))}</button>` : ''}</div></div>`;
+    }).join('');
+    let lista = '';
+    if (e) {
+      lista = e.mejoras.map((m) => {
+        const ok = !Object.keys(m.falta || {}).length;
+        const o = m.obra_id ? sd.obras.find((x) => x.id === m.obra_id) : null;
+        const btn = m.hecha ? `<span class="tag" style="margin-top:8px">✓ ${esc(t('listo'))}</span>`
+          : o ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: fmt(restante(o)) }))}</span>`
+          : `<button class="btn ${ok && libre ? 'main' : ''} sd-btn" data-ext="sede" data-acc="mejorar" data-ed="${m.ed}">${esc(t('mejorar'))}</button>
+             ${!libre ? `<div class="small muted">${esc(t('sin_equipo'))}</div>` : ''}`;
+        return `<div class="sd-item${m.hecha ? ' done' : ''}"><div class="sd-head">${iconoEd(m.ed, 30)}<div class="grow"><b>${esc(t('ed.' + m.ed))}</b> <span class="small muted">${esc(t('ed_nivel', { n: m.nivel_ed }))}${m.hecha ? '' : ' → ' + (m.nivel_ed + 1)}</span>
+          <div class="small muted">${esc(t('desc.' + m.ed))}</div></div></div>${m.hecha || o ? '' : costoOf(m.mat, have, m.segundos)}${btn}</div>`;
+      }).join('');
+      const x = e.sede, ox = x.obra_id ? sd.obras.find((y) => y.id === x.obra_id) : null;
+      const todas = e.hechas === e.mejoras.length;
+      const btn = ox ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: fmt(restante(ox)) }))}</span>`
+        : `<button class="btn ${x.listo && libre && !Object.keys(x.falta || {}).length ? 'main' : ''} sd-btn" data-ext="sede" data-acc="subir">${esc(t('subir', { n: e.objetivo }))}</button>
+           ${!todas ? `<div class="small muted">${esc(t('faltan_mejoras', { h: e.hechas, n: e.mejoras.length }))}</div>` : ''}`;
+      lista += `<div class="sd-item" style="border-color:var(--amber)"><div class="sd-head">${iconoEd('sede', 30)}<div class="grow"><b>${esc(t('ed.sede'))}</b> <span class="small muted">→ ${esc(t('nivel', { n: e.objetivo }))}</span>
+        ${x.req.length ? `<div class="sd-req small"><span class="muted">${esc(t('req_titulo'))}:</span>${x.req.map((r) => `<span class="tag ${r.ok ? '' : 'red'}">${r.ok ? '✓' : '✗'} ${esc(t(r.k, r.p))}</span>`).join('')}</div>` : ''}
+        </div></div>${ox ? '' : costoOf(x.mat, have, x.segundos)}${btn}</div>`;
+    }
+    // Ayudas a la asociación
+    const A = OF.ayudas;
+    let ayudas = `<div class="sectitle" style="margin-top:14px">${esc(t('of_ayudas_t'))}</div><div class="small muted">${esc(t('of_ayudas_info', { m: (j.reglas && j.reglas.ayudas_max) || 10 }))}</div>`;
+    if (!A) ayudas += `<div class="small muted" style="margin-top:6px">${esc(t('of_conectando'))}</div>`;
+    else if (A.asociacion === null) ayudas += `<div class="small muted" style="margin-top:6px">${esc(t('of_sin_asoc'))}</div>`;
+    else {
+      ayudas += `<div class="small" style="margin-top:6px">${esc(t('of_ayudas_hoy', { n: A.hoy.ayudas, m: A.hoy.max }))}</div>`;
+      ayudas += A.obras.length ? A.obras.slice(0, 20).map((o) => `<div class="sd-item"><div class="sd-of-ayuda">${iconoEd(o.ed, 28)}<div class="grow"><b>${esc(o.nombre)}</b>
+          <div class="small muted">${esc(o.tipo === 'nivel' ? t('subiendo', { n: o.nivel }) : t('ed.' + o.ed))} · ${esc(fmt(o.restante))} · ${esc(t('of_ayudas_obra', { n: o.ayudas, m: o.ayudas_max }))}</div></div>
+          <button class="btn sm green sd-btn" data-ext="sede" data-acc="ayudar" data-jugador="${o.jugador_id}" data-obra="${o.obra_id}"${A.hoy.ayudas >= A.hoy.max ? ' disabled' : ''}>🤝 ${esc(t('of_ayudar'))}</button></div></div>`).join('')
+        : `<div class="small muted" style="margin-top:6px">${esc(t('of_ayudas_nada'))}</div>`;
+    }
+    const bl = s ? listaBonos(s) : [];
+    const bonosHtml = `<div class="sectitle" style="margin-top:14px">${esc(t('bonos'))}</div>
+      ${bl.length ? bl.map((b) => `<div class="sd-bono">${iconoEd(b.ed, 20)}<span>${esc(b.txt)}</span></div>`).join('') : `<div class="small muted">${esc(t('sin_bonos'))}</div>`}`;
+    return `<div class="sd-modal sd-of">${head}${obras}${lista}${ayudas}${bonosHtml}
+      <div class="small muted" style="margin-top:14px">${esc(t('of_fuentes'))}</div>
+      <button class="btn" data-act="close" style="margin-top:14px">✕</button></div>`;
+  }
+  function accionOficial(ctx, s, accion, el) {
+    const j = OF.estado;
+    const aviso = (m) => { try { if (m && ctx.toast) ctx.toast(m); } catch (e) { /* sin aviso */ } };
+    const error = () => { try { if (ctx.snd && ctx.snd.play) ctx.snd.play('error'); } catch (e) { /* sin sonido */ } };
+    const attr = (k) => (el && el.getAttribute ? el.getAttribute(k) : null);
+    if (accion === 'abrir') { ctx.openModal(modalOficial(ctx)); cargarAyudas(ctx); cargar(ctx, false); return; }
+    if (!j) { aviso(t('of_conectando')); return; }
+    if (OF.ocupado) { aviso(t('of_espera')); return; }
+    const abrirDespues = modalAbierto();
+    const hacer = (promesa, texto, despues) => {
+      OF.ocupado = true;
+      promesa.then((r) => {
+        if (r && r.sede) recibir(ctx, r);
+        aviso(texto ? texto(r) : '');
+        try { if (ctx.save) ctx.save(); } catch (e) { /* sin guardar */ }
+        return despues ? despues(r) : null;
+      }).catch((e) => {
+        aviso(e && e.message); error();
+        if (e && ['costo_cambio', 'ya_terminada', 'obra_no_existe', 'en_obra', 'ya_hecha', 'cofre_ya'].includes(e.codigo)) return cargar(ctx, true);
+        return null;
+      }).then(() => {
+        OF.ocupado = false;
+        try { if (ctx.render) ctx.render(); } catch (e) { /* nada */ }
+        if (abrirDespues || modalAbierto()) ctx.openModal(modalOficial(ctx));
+      });
+    };
+    switch (accion) {
+      case 'cofre': hacer(pedir('POST', '/api/sede/cofre', {}), (r) => t('cofre_ok', { lista: listaTxt(r.bolsa || {}) })); return;
+      case 'mejorar': {
+        const ed = attr('data-ed');
+        const m = j.sede.etapa && j.sede.etapa.mejoras.find((x) => x.ed === ed);
+        hacer(pedir('POST', '/api/sede/mejorar', { clave: ed }), () => t('empezaste', { que: t('ed.' + ed), d: fmt(m ? m.segundos : 0) }));
+        return;
+      }
+      case 'subir': {
+        const x = j.sede.etapa && j.sede.etapa.sede;
+        hacer(pedir('POST', '/api/sede/subir', {}), () => t('empezaste', { que: t('ed.sede'), d: fmt(x ? x.segundos : 0) }));
+        return;
+      }
+      case 'acelerar': {
+        const id = Number(attr('data-obra'));
+        const o = j.sede.obras.find((x) => x.id === id);
+        if (!o) return;
+        const costo = costoAc(restante(o));
+        const que = o.tipo === 'nivel' ? t('ed.sede') : t('ed.' + o.ed);
+        const ir = () => hacer(pedir('POST', '/api/sede/acelerar', { obra_id: id, confirmar_costo: costo }), () => t('of_acelerado', { que }));
+        // Siempre se muestra el costo antes de cobrar
+        if (ctx.ask) ctx.ask(esc(t('of_acelerar_q', { que, n: costo, c: j.creditos })), esc(t('of_acelerar_si')), () => { ir(); });
+        else ir();
+        return;
+      }
+      case 'acel_min': {
+        const id = Number(attr('data-obra'));
+        hacer(pedir('POST', '/api/sede/acelerar', { obra_id: id, usar: 'aceleradores' }), (r) => t('of_acel_ok', { t: fmt((r.minutos || 0) * 60) }));
+        return;
+      }
+      case 'ayudar': {
+        const jid = Number(attr('data-jugador')), oid = Number(attr('data-obra'));
+        hacer(pedir('POST', '/api/sede/ayudar', { jugador_id: jid, obra_id: oid }),
+          (r) => (r.premio ? t('of_ayuda_premio', { t: fmt(r.segundos), lista: listaTxt(r.premio) }) : t('of_ayuda_ok', { t: fmt(r.segundos) })),
+          (r) => { if (r && r.lista) { OF.ayudas = r.lista; OF.ayudasEn = Date.now(); } return cargar(ctx, true); });
+        return;
+      }
+      default: return;
+    }
+  }
+
   /* ---------- Registro ---------- */
-  const EXT = { id: 'sede', migrar, alNuevoDia, alTerminarEvento, bonoCalidad, multPago, multGastos, limites };
+  const EXT ={ id: 'sede', migrar, alNuevoDia, alTerminarEvento, bonoCalidad, multPago, multGastos, limites };
   const TARJETA = { id: 'sede', orden: 10, tarjeta, clic };
   let registrada = false, tarjetaPuesta = false;
   function registrar() {
@@ -936,6 +1437,9 @@
 
   const Sede = { AJUSTE, MATS, TRAD, EXT, TARJETA, requisito, edificiosDe, costo, etapa, mejorar, subirNivel, reclamarCofre, cofreDisponible,
     reciclar, reciclables, bonos, listaBonos, nivelEdificio, actualizar, migrar, nuevo, tarjeta, modalHtml, clic, registrar, t, iconoMat, iconoEd,
+    // Sede oficial (servidor)
+    oficial: { enOficial, cargar, modalOficial, costoAc, fmt, ponerCache, salirOficial, get estado() { return OF.estado; }, get ayudas() { return OF.ayudas; },
+      reiniciar() { if (OF.timer) clearTimeout(OF.timer); Object.assign(OF, OF_INICIO()); } },
     get registrada() { return registrada; } };
   root.Sede = Sede;
   if (typeof module !== 'undefined' && module.exports) module.exports = Sede;

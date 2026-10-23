@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v8';
+const VERSION = 'envivo-v9';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -34,6 +34,9 @@ const SHELL = [
   './js/desafio.js',    // Desafío del Día
   './js/copas.js',      // Copa de Servidores
   './js/servidores.js', // Tu servidor: salud, mudanza y fusiones
+  './js/vip.js',        // nivel VIP 1–10, regalos de asociación y Mecenas
+  './js/pase.js',       // Pase de Temporada
+  './js/estrellas.js',  // Personal estrella y Pase de Copa
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',
