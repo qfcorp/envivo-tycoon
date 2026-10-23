@@ -56,7 +56,7 @@ final class Cuentas
             $s = Monedero::saldo($jugador);   // el saldo se da de baja en el libro (así el libro siempre cuadra)
             if ($s !== 0) Monedero::mover($jugador, -$s, 'cuenta_borrada', 'borrado', true);
             Db::q("UPDATE mercado_retenciones SET estado = 'recuperado', cerrado = ? WHERE jugador_id = ? AND estado = 'retenido'", [time(), $jugador]);
-            foreach (['partidas', 'sesiones', 'entregas', 'bonos_vip', 'tarjeta_reclamos', 'asociacion_solicitudes', 'chat_bloqueos', 'chat_reportes' => 'reportante_id', 'chat_mensajes', 'soporte_casos', 'actividad'] as $k => $v) {
+            foreach (['partidas', 'partida_activa', 'sesiones', 'entregas', 'bonos_vip', 'tarjeta_reclamos', 'asociacion_solicitudes', 'chat_bloqueos', 'chat_reportes' => 'reportante_id', 'chat_mensajes', 'soporte_casos', 'actividad'] as $k => $v) {
                 [$tabla, $col] = is_string($k) ? [$k, $v] : [$v, 'jugador_id'];
                 Db::q("DELETE FROM $tabla WHERE $col = ?", [$jugador]);
             }

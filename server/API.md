@@ -45,9 +45,25 @@ los ids aplicados dentro de su partida (`s.premium.aplicadas`).
 - `POST /api/entrar` `{ "email", "clave" }` → estado. Límite de intentos por IP y por email.
 - `POST /api/salir` → `{ "ok": true }`
 
-## Partida en la nube (requiere sesión)
-- `GET /api/partida` → `{ "ok": true, "datos": "<texto JSON de la partida>" | null, "actualizado": "ISO" | null }`
-- `POST /api/partida` `{ "datos": "<texto JSON>" }` (máx. 300 KB) → `{ "ok": true, "actualizado": "ISO" }`
+## Partida en la nube (requiere sesión) — con versión y un solo dispositivo activo (`src/Partidas.php`)
+Una partida por cuenta. Cada guardado sube `rev` en 1. `dispositivo` es un código al azar de la pestaña (8–64 de
+`A-Z a-z 0-9 - _`; el juego crea uno nuevo cada vez que se abre). Solo el dispositivo activo de la cuenta puede guardar:
+así una pestaña vieja (la computadora que quedó abierta mientras se jugaba en el celular) nunca pisa avance más nuevo.
+`nube` / meta = `{ "hay": bool, "rev": n, "actualizado": "ISO"|null, "guardo": "<dispositivo>"|null, "activo": { "dispositivo", "desde": "ISO" }|null }`
+(+ `"eres_activo": bool` si se pidió con `dispositivo`).
+- `GET /api/partida` → `{ "ok": true, "datos": "<texto JSON>" | null, ...meta }`
+- `GET /api/partida/meta?dispositivo=<código>` → `{ "ok": true, ...meta, "eres_activo" }` (sin los datos; el juego la mira al
+  volver a la pestaña, al volver internet y cada minuto mientras se ve).
+- `POST /api/partida/activar` `{ "base": n, "dispositivo" }` → `{ "ok": true, ...meta }`: este dispositivo pasa a ser el activo
+  (al abrir el juego o al elegir "Usar la partida más nueva"). Solo si `base` = `rev` de la nube; si no → 409 `partida_desactualizada`.
+- `POST /api/partida` `{ "datos": "<texto JSON>", "base": n, "dispositivo", "tomar"?: true }` (máx. 300 KB) → `{ "ok": true, "actualizado": "ISO", "rev": n+1 }`
+  - `base` ≠ `rev` de la nube (otro dispositivo guardó) → 409 `partida_desactualizada` con `nube` (no se guarda nada).
+  - Hay otro dispositivo activo → 409 `otro_dispositivo` con `nube`, salvo `"tomar": true` (el jugador eligió quedarse con la
+    partida de este aparato después de ver las dos; igual exige `base` al día).
+  - `base` o `dispositivo` no válidos → 400 `partida_invalida`.
+  - Juego viejo (sin `base`, en la caché de algún celular): se acepta solo mientras la cuenta nunca usó el juego con versión
+    (la partida no tiene `dispositivo` y no hay activo); si no → 409 `partida_desactualizada` (y queda anotado en el registro
+    de PHP como "EN VIVO partida: juego viejo sin versión rechazado"). Aceptarlo siempre volvería a abrir el error.
 
 ## Gastar créditos (requiere sesión)
 `POST /api/gastar` `{ "item": "dron4k" }` → `{ "ok": true, "creditos": 120, "entrega": { ...entrega creada... } }`

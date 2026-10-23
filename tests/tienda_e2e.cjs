@@ -100,7 +100,9 @@ const bodega = (p) => p.evaluate(() => window.__game.state.equip.map((e) => e.ty
   ok(await p.locator('[data-act="comprar"][data-k="inicio"][disabled]').count() === 1, 'El paquete de inicio ya no se puede volver a comprar');
   await p.screenshot({ path: 'tests/capturas/tienda_04_inicio.png' });
   // Guardar en la nube ya
-  await p.evaluate(async () => { await window.Api.subirPartida(window.Game.serialize(window.__game.state)); });
+  // (con versión y dispositivo, como lo hace el juego: js/ui.js subirNube → src/Partidas.php)
+  await p.evaluate(async () => { await window.__nube.subir(); });
+  ok(await p.evaluate(async () => (await window.Api.partida()).rev > 0), 'La partida quedó en la nube con su versión');
 
   // 5) Otro celular: entra y recupera la partida
   const ctx2 = await browser.newContext(opciones);
