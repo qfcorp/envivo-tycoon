@@ -27,6 +27,8 @@ try {
     $soloGet = fn() => $metodo === 'GET' || Http::error(405, 'Usa GET.');
     $soloPost = fn() => $metodo === 'POST' || Http::error(405, 'Usa POST.');
 
+    // Edad del servidor (server/INTEGRAR_EDAD_SERVIDOR.md): POST a un modo que el servidor todavía no abre → 403 edad_servidor; GET /api/servidor/calendario; /api/estado + edad_servidor
+    if (class_exists(\EnVivo\EdadServidor::class)) { \EnVivo\EdadServidor::revisarRuta($ruta, $metodo, fn() => Sesiones::jugadorId()); \EnVivo\EdadServidor::decorarEstado($ruta, $metodo, fn() => Sesiones::jugadorId()); if (\EnVivo\EdadServidor::esRuta($ruta)) Http::json(200, \EnVivo\EdadServidor::responder($ruta, $metodo, requiere_sesion())); }
     // Módulos de monetización (server/MONETIZACION.md): cada línea solo responde si su módulo está instalado (class_exists)
     // Pase de Temporada (server/INTEGRAR_PASE.md): /api/pase*
     if (class_exists(\EnVivo\PaseApi::class) && \EnVivo\PaseApi::esRuta($ruta)) \EnVivo\PaseApi::responder($ruta, $metodo, requiere_sesion());

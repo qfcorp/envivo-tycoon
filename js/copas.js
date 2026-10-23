@@ -994,6 +994,7 @@
       ${st.trabajo ? `<div class="card" data-copa="trabajando"><p class="small" style="margin:0">${icon('clock')} ${esc(st.trabajo)}</p></div>` : ''}
       ${tarjetaUltimo()}${tarjetaCampeon(d)}
       ${marcador(d)}
+      ${root.EdadServidor && root.EdadServidor.tarjetaTema ? root.EdadServidor.tarjetaTema(d) : ''}
       ${fase === 'preparacion' ? preparacion(d) + tarjetaYo(d) + cruces : cruces + tarjetaYo(d) + preparacion(d)}
       ${tarjetaTop(d)}${tarjetaHistorial(d)}${tarjetaPremios(d)}${como()}</div>`;
   }
