@@ -370,6 +370,8 @@
     olvidar: () => { try { root.localStorage.removeItem(KEY); } catch (e) { /* nada */ } },
     TEXTOS,
     KEY,
+    CSS,    // lo reusa js/guias.js (recorridos de cada sección) con el mismo aspecto
+    MANO,
   };
   // ui.js llamó antes de que este archivo cargara (script con defer): se arranca ahora
   try { if (root.__guiaCtx) { const c = root.__guiaCtx; root.__guiaCtx = null; iniciar(c); } } catch (e) { /* nada */ }
