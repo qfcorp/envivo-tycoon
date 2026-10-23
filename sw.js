@@ -24,6 +24,7 @@ const SHELL = [
   './js/sound.js',      // opcional: si no existe, no rompe la instalación
   './js/musica.js',     // música de fondo (opcional)
   './js/soporte.js',    // ayuda y soporte (opcional)
+  './js/recuperar.js',  // "¿Olvidaste tu contraseña?" (opcional, server/INTEGRAR_CORREO.md)
   './js/googleplay.js', // compras de Google Play dentro de la app de Android (opcional)
   './js/cuenta.js',     // borrar la cuenta y aceptar términos (Google Play)
   './js/analitica.js',  // analítica propia (opcional)

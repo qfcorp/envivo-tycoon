@@ -37,6 +37,7 @@ if ($var('PERMISOS') !== '') header('Permissions-Policy: ' . $var('PERMISOS'));
 $csp = function (string $cual) use ($var): void { header('Content-Security-Policy: ' . $var($cual === 'juego' ? 'CSP_JUEGO' : 'CSP_LEGAL')); };
 if ($ruta === '/' || $ruta === '/index.html' || $ruta === '/sw.js') $csp('juego');
 if (in_array($ruta, ['/terminos.html', '/privacidad.html', '/borrar-cuenta.html'], true)) $csp('legal');
+if ($ruta === '/recuperar.html') { $csp('juego'); header('Cache-Control: no-store'); return $enviar($pub . $ruta); }   // INTEGRAR_CORREO.md
 if (in_array($ruta, ['/terminos.html', '/privacidad.html', '/borrar-cuenta.html'], true)) return $enviar($pub . $ruta);
 if ($ruta === '/.well-known/assetlinks.json') return $enviar($raiz . $ruta);
 if ($ruta === '/') return $enviar($raiz . '/index.html');

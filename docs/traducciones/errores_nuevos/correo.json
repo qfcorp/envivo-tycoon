@@ -1,0 +1,47 @@
+{
+  "_info": "Códigos de error NUEVOS del módulo correo (recuperar la contraseña). Mismo formato que docs/traducciones/errores.json: el coordinador los pasa a ese archivo. clave_corta (con {min}), clave_larga, email_invalido y limite_intentos ya existen.",
+  "_codigos": {
+    "recuperar_limite": "existe · Recuperar.php · 429 · más de 3 pedidos de enlace por correo en una hora",
+    "recuperar_enlace_invalido": "existe · Recuperar.php · 410 · enlace vencido (30 min), ya usado, inventado o de una cuenta baneada"
+  },
+  "es": {
+    "recuperar_limite": "Ya te enviamos varios enlaces a ese correo. Revisa tu bandeja de entrada y el spam, o espera una hora para pedir otro.",
+    "recuperar_enlace_invalido": "Este enlace ya no sirve: venció o ya se usó. Pide uno nuevo desde «¿Olvidaste tu contraseña?»."
+  },
+  "en": {
+    "recuperar_limite": "We already sent several links to that email. Check your inbox and spam, or wait an hour to ask for another.",
+    "recuperar_enlace_invalido": "This link no longer works: it expired or was already used. Ask for a new one from \"Forgot your password?\"."
+  },
+  "pt-BR": {
+    "recuperar_limite": "Já enviamos vários links para esse e-mail. Veja a caixa de entrada e o spam, ou espere uma hora para pedir outro.",
+    "recuperar_enlace_invalido": "Este link não serve mais: venceu ou já foi usado. Peça um novo em \"Esqueceu a senha?\"."
+  },
+  "fr": {
+    "recuperar_limite": "Nous avons déjà envoyé plusieurs liens à cet e-mail. Regarde ta boîte et les spams, ou attends une heure pour en demander un autre.",
+    "recuperar_enlace_invalido": "Ce lien ne marche plus : il a expiré ou a déjà servi. Demande-en un nouveau depuis « Mot de passe oublié ? »."
+  },
+  "de": {
+    "recuperar_limite": "Wir haben schon mehrere Links an diese E-Mail geschickt. Schau in Posteingang und Spam oder warte eine Stunde.",
+    "recuperar_enlace_invalido": "Dieser Link geht nicht mehr: abgelaufen oder schon benutzt. Fordere über „Passwort vergessen?\" einen neuen an."
+  },
+  "it": {
+    "recuperar_limite": "Abbiamo già mandato vari link a quell'e-mail. Controlla posta e spam, o aspetta un'ora per chiederne un altro.",
+    "recuperar_enlace_invalido": "Questo link non funziona più: è scaduto o è già stato usato. Chiedine uno nuovo da \"Password dimenticata?\"."
+  },
+  "ru": {
+    "recuperar_limite": "Мы уже отправили несколько ссылок на эту почту. Проверь входящие и спам или подожди час.",
+    "recuperar_enlace_invalido": "Ссылка больше не работает: срок истёк или её уже использовали. Запроси новую через «Забыл пароль?»."
+  },
+  "tr": {
+    "recuperar_limite": "Bu e-postaya zaten birkaç bağlantı gönderdik. Gelen kutunu ve spam'i kontrol et ya da bir saat bekle.",
+    "recuperar_enlace_invalido": "Bu bağlantı artık çalışmıyor: süresi doldu ya da kullanıldı. \"Şifreni mi unuttun?\" bölümünden yenisini iste."
+  },
+  "id": {
+    "recuperar_limite": "Kami sudah mengirim beberapa tautan ke email itu. Cek kotak masuk dan spam, atau tunggu satu jam.",
+    "recuperar_enlace_invalido": "Tautan ini tidak berlaku lagi: sudah kedaluwarsa atau sudah dipakai. Minta yang baru lewat \"Lupa kata sandi?\"."
+  },
+  "zh-CN": {
+    "recuperar_limite": "我们已向这个邮箱发送了多个链接。请查看收件箱和垃圾邮件，或一小时后再申请。",
+    "recuperar_enlace_invalido": "这个链接已失效：已过期或已被使用。请在“忘记密码？”中重新申请。"
+  }
+}

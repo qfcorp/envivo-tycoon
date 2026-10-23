@@ -1528,7 +1528,7 @@
         <button class="btn main" type="submit" id="cu-btn">${reg ? T('cuenta.crear_mia') : T('cuenta.entrar')}</button>
       </form>
       <button class="btn" data-act="cuenta" data-modo="${reg ? 'entrar' : 'registro'}">${reg ? T('cuenta.ya_tengo') : T('cuenta.no_tengo')}</button>
-      <p class="small muted">${T('cuenta.olvido')}</p>`);
+      ${window.Recuperar ? window.Recuperar.enlace() : `<p class="small muted">${T('cuenta.olvido')}</p>`}`);
   }
 
   async function enviarCuenta(form) {
