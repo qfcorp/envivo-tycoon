@@ -410,6 +410,11 @@ sudo bash /var/www/envivo/server/deploy/ops/instalar_ops.sh
 | La tienda dice "pago no disponible" | Faltan las claves de Plux (paso 4) o no recargaste PHP. |
 | El RESULTADO dice `8) Validador de partidas: NO activo` | Mira el paso 5. |
 | Llegó una alerta a Telegram | Mira la tabla "Qué avisos te pueden llegar" en `docs/OPERACION.md`. |
+| Algo se rompió después de actualizar | `sudo bash /var/www/envivo/server/deploy/actualizar.sh --anterior` (vuelve a la versión de antes; ver `docs/INCIDENTES.md`). |
+
+**Para producción** (después del demo): nube naranja de Cloudflare `docs/CLOUDFLARE_PRODUCCION.md`, monitor externo
+`docs/MONITOREO.md`, qué hacer en un incidente `docs/INCIDENTES.md`, prueba de carga `docs/PRUEBA_CARGA.md` y el
+simulacro mensual de restauración (`docs/OPERACION.md`, paso 5).
 
 ---
 

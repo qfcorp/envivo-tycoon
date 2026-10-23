@@ -89,7 +89,7 @@ const sinDesborde = (p) => p.evaluate(() => document.documentElement.scrollWidth
   console.log('Juego en un celular (390x844)');
   const ctx = await nuevoContexto(browser, MOVIL);
   const email = 'buzon' + Date.now() + '@prueba.example';
-  const reg = await ctx.request.post(BASE + '/api/registro', { headers: { 'X-Envivo': '1', 'Content-Type': 'application/json' }, data: { email, nombre: 'Productora Buzón', clave: 'ClaveBuena123' } });
+  const reg = await ctx.request.post(BASE + '/api/registro', { headers: { 'X-Envivo': '1', 'Content-Type': 'application/json' }, data: { email, nombre: 'Productora Buzón', clave: 'ClaveBuena123', acepta_terminos: true, edad_16: true } });
   const J = (await reg.json()).jugador.id;
   ok(reg.ok() && J > 0, 'Cuenta creada (la galleta queda en el navegador)');
   php(`\\EnVivo\\Buzon::enviar(${J}, 'Perdón por la caída del servidor', "Ayer el servidor se cayó 20 minutos.\\nGracias por tu paciencia: aquí va una compensación.", [['tipo' => 'creditos', 'cantidad' => 40], ['tipo' => 'dinero', 'cantidad' => 3000], ['tipo' => 'item', 'item' => 'cam_pro']], ['tipo' => 'compensacion']);

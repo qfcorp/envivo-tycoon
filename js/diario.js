@@ -226,7 +226,10 @@
     if (srv.cargando) return srv.datos;
     srv.cargando = true;
     try {
-      srv.datos = await pedir(ctx, 'GET', '/api/diario');
+      const r = await pedir(ctx, 'GET', '/api/diario');
+      // Respuesta sin la forma esperada (servidor viejo o de pruebas): se juega como invitado, sin romper Inicio
+      if (!r || !Array.isArray(r.premios) || !r.premios.length || !Number.isFinite(Number(r.dia))) { srv.noDisponible = true; srv.datos = null; }
+      else srv.datos = r;
       srv.cargadoEn = Date.now(); srv.error = '';
     } catch (e) {
       if (e && e.status === 404) srv.noDisponible = true;   // servidor sin el módulo: se juega como invitado

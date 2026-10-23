@@ -25,6 +25,8 @@ try {
     if (class_exists(\EnVivo\ErroresApi::class) && \EnVivo\ErroresApi::esRuta($ruta)) \EnVivo\ErroresApi::responder($ruta, $metodo);
     // Analítica propia (server/INTEGRAR_ANALITICA.md): /api/eventos va ANTES de X-Envivo (sendBeacon no pone cabeceras; revisa el mismo sitio)
     if (class_exists(\EnVivo\AnaliticaApi::class) && \EnVivo\AnaliticaApi::esRuta($ruta)) \EnVivo\AnaliticaApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Monitor externo (docs/MONITOREO.md): sin sesión ni cabecera, GET o HEAD; prueba que PHP y la base respondan.
+    if ($ruta === '/salud') api_salud($metodo);
 
     // Protección simple contra peticiones desde otros sitios (junto con SameSite=Lax de la galleta).
     if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.', [], 'cabecera_requerida');
@@ -57,6 +59,8 @@ try {
     if (class_exists(\EnVivo\ImpulsosApi::class) && \EnVivo\ImpulsosApi::esRuta($ruta)) \EnVivo\ImpulsosApi::responder($ruta, $metodo, requiere_sesion());
     // Visitas a otras productoras (server/INTEGRAR_VISITAS.md): /api/visitas/*
     if (\EnVivo\VisitasApi::esRuta($ruta)) \EnVivo\VisitasApi::responder($ruta, $metodo, requiere_sesion());
+    // Ayudas de la asociación, Investigación y Tienda de fichas (server/INTEGRAR_AYUDA_ASOC.md): /api/asoc/*
+    if (class_exists(\EnVivo\AyudaAsocApi::class) && \EnVivo\AyudaAsocApi::esRuta($ruta)) \EnVivo\AyudaAsocApi::responder($ruta, $metodo, requiere_sesion());
     // Liga Semanal de Productoras (server/INTEGRAR_LIGA.md): responde y termina
     if (\EnVivo\LigaApi::esRuta($ruta)) \EnVivo\LigaApi::responder($ruta, $metodo, requiere_sesion());
     // Duelo de Productoras y Desafío Técnico del Día (server/INTEGRAR_DUELOS_DESAFIO.md): /api/duelos* y /api/desafio*
@@ -131,6 +135,16 @@ try {
 } catch (\Throwable $e) {
     error_log('EN VIVO api ' . $ruta . ': ' . get_class($e) . ' en ' . basename($e->getFile()) . ':' . $e->getLine() . ' ' . mb_substr($e->getMessage(), 0, 300));
     Http::error(500, 'Ocurrió un error en el servidor. Intenta otra vez en un momento.');
+}
+
+/** GET /api/salud: {"ok":true,"servicio":"envivo","db":"ok","mantenimiento":false,"hora":...}; 503 si la base no responde. */
+function api_salud(string $metodo): never
+{
+    if ($metodo !== 'GET' && $metodo !== 'HEAD') Http::error(405, 'Usa GET.');
+    $ok = false;
+    try { $ok = (int) Db::valor('SELECT 1') === 1; } catch (\Throwable $e) { error_log('EN VIVO salud: ' . mb_substr($e->getMessage(), 0, 200)); }
+    Http::json($ok ? 200 : 503, ['ok' => $ok, 'servicio' => 'envivo', 'db' => $ok ? 'ok' : 'falla',
+        'mantenimiento' => is_file('/etc/envivo/MANTENIMIENTO'), 'hora' => time()]);
 }
 
 function requiere_sesion(): int

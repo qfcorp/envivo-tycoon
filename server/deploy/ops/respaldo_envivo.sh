@@ -62,11 +62,15 @@ DIA_HOY="${DIA_HOY:-$(date +%u)}"
 LOCK="${LOCK:-/run/lock/envivo-respaldo.lock}"
 
 dice() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+# Aviso externo opcional (docs/MONITOREO.md, Healthchecks.io): HC_RESPALDO=https://hc-ping.com/... en ops.env.
+# Si el respaldo no avisa en 26 h (o avisa /fail), Healthchecks manda un correo aunque el VPS entero este caido.
+hc() { [ -n "${HC_RESPALDO:-}" ] && [ "$DRY_RUN" != "1" ] && [[ "$HC_RESPALDO" =~ ^https:// ]] && curl -fsS -m 10 --retry 3 -o /dev/null "$HC_RESPALDO$1" 2> /dev/null; return 0; }
 falla() {
   dice "ERROR: $*"
   if [ "$DRY_RUN" != "1" ] && [ -d "$DESTINO" ]; then
     printf 'FALLA %s %s\n' "$(date +%s)" "$*" > "$DESTINO/ULTIMO_RESULTADO.tmp" && mv -f "$DESTINO/ULTIMO_RESULTADO.tmp" "$DESTINO/ULTIMO_RESULTADO"
   fi
+  hc /fail
   [ -n "${TRABAJO_TMP:-}" ] && rm -rf "$TRABAJO_TMP"
   exit 1
 }
@@ -248,6 +252,7 @@ if [ "$DRY_RUN" = "1" ]; then
   dice "PRUEBA TERMINADA: la copia salio bien y no se guardo ni borro nada."
 else
   printf 'OK %s %s\n' "$(date +%s)" "$DESTINO/diario/$NOMBRE" > "$DESTINO/ULTIMO_RESULTADO.tmp" && mv -f "$DESTINO/ULTIMO_RESULTADO.tmp" "$DESTINO/ULTIMO_RESULTADO"
+  hc ""
   dice "LISTO."
 fi
 exit 0

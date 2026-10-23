@@ -267,7 +267,7 @@ final class Cli {
 $B_URL = 'http://127.0.0.1:' . $P;
 $j = new Cli($B_URL, 'jugador');
 check('Sin sesión: GET /api/buzon -> 401 sesion_requerida', [401, 'sesion_requerida'], [($r = $j->api('GET', '/buzon')) ? $j->http : 0, $r['codigo'] ?? null]);
-$r = $j->api('POST', '/registro', ['email' => 'web@prueba.example', 'nombre' => 'Web Uno', 'clave' => 'ClaveBuena1']);
+$r = $j->api('POST', '/registro', ['email' => 'web@prueba.example', 'nombre' => 'Web Uno', 'clave' => 'ClaveBuena1', 'acepta_terminos' => true, 'edad_16' => true]);
 $W = (int) ($r['jugador']['id'] ?? 0);
 check('Registro por HTTP', true, $W > 0);
 Buzon::enviar($W, 'Hola por HTTP', 'Texto <b>con</b> etiquetas', [['tipo' => 'creditos', 'cantidad' => 15]]);

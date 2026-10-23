@@ -131,7 +131,7 @@ check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo r
 
 echo
 echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo, Partida en la nube (versión y dispositivo activo)"
-for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta facturacion visitas errores misiones push buzon; do
+for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta facturacion visitas errores misiones push buzon edad_servidor; do
   # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
   env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
   grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'
@@ -141,9 +141,9 @@ for suite in discord festival liga control control_servidores duelos_desafio uni
 done
 
 echo
-echo "== 3d. Monetización (server/MONETIZACION.md): VIP y regalos, Sede oficial, Pase de temporada, Personal estrella"
+echo "== 3d. Monetización (server/MONETIZACION.md): VIP y regalos, Sede oficial, Pase de temporada, Personal estrella, Ayudas de asociación"
 echo "   (cada suite corre solo si su módulo ya está en server/: si falta el archivo de pruebas o la clase, se salta con aviso)"
-for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas impulsos:Impulsos diario:Diario; do
+for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas impulsos:Impulsos diario:Diario ayuda_asoc:AyudaAsoc; do
   suite=${par%%:*}; clase=${par##*:}
   if [ ! -f "$SRV/tests/pruebas_$suite.php" ] || [ ! -f "$SRV/src/$clase.php" ]; then
     echo "  AVISO pruebas_$suite.php: se salta (todavía no está el módulo: falta tests/pruebas_$suite.php o src/$clase.php)"

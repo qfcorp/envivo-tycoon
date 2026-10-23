@@ -1,7 +1,9 @@
 # Material para la tienda y redes — EN VIVO Tycoon
 
 Todo es original: dibujos del propio juego (`js/art.js`), capturas del juego real y textos propios.
-No hay marcas, personas ni personajes reales (MegaVisión, los clubes y las productoras del chat son inventados).
+No hay marcas, personas ni personajes reales: el juego usa solo nombres parodia (MegaVisión, Llévame, Kanon, Zony,
+LigaPrima...). `src/capturar.js` revisa el texto de cada pantalla y **falla** si aparece una marca real (LigaPro, Sony,
+Canon, Blackmagic, GoPro, DJI, Uber...). Los botones "Compartir por WhatsApp" / Google Play del juego sí pueden salir.
 
 ## Archivos y dónde subirlos
 
@@ -11,58 +13,55 @@ No hay marcas, personas ni personajes reales (MegaVisión, los clubes y las prod
 |---|---|---|---|
 | `icon_512.png` | 512 × 512, PNG 32 bits (con alfa) | **Ícono de la app** | Cuadrado completo, sin esquinas redondeadas: Play aplica su propia máscara. Sale de `icons/icon.svg`. |
 | `feature_graphic.png` | 1024 × 500, PNG 24 bits (sin alfa) | **Gráfico de funciones** (ficha en español) | Título y letrero dentro de la zona segura central-izquierda. |
-| `feature_graphic_en.png` | 1024 × 500, PNG 24 bits | **Gráfico de funciones** de la traducción **en-US** | Lema: "Run your own live broadcast company". |
-| `screens_es/01.png` … `06.png` | 1080 × 1920 (9:16), PNG 24 bits | **Capturas de pantalla del teléfono** (ficha en español) | Súbelas en este orden. Play pide de 2 a 8; estas 6 también sirven para "tablet de 7 pulgadas" si te lo pide. |
-| `screens_en/01.png` … `06.png` | 1080 × 1920, PNG 24 bits | **Capturas de pantalla del teléfono** de la traducción **en-US** | Ver la nota de idioma más abajo. |
+| `feature_graphic_en.png` | 1024 × 500, PNG 24 bits | **Gráfico de funciones** de las demás traducciones | Lema: "Run your own live broadcast company". |
+| `screens_<idioma>/01.png` … `08.png` | 1080 × 1920 (9:16), PNG 24 bits | **Capturas de pantalla del teléfono** de esa ficha | 8 por idioma (el máximo de Play), súbelas en orden. El teléfono y los títulos están en ese idioma. |
 
-Las capturas en orden:
+Carpetas de capturas y ficha de Play a la que van (textos de la ficha en `docs/play_store/ficha_<idioma>.md`):
+`screens_es` (es-419 / es-ES), `screens_en` (en-US), `screens_pt-BR` (pt-BR), `screens_fr` (fr-FR), `screens_de` (de-DE),
+`screens_it` (it-IT), `screens_ru` (ru-RU), `screens_tr` (tr-TR), `screens_id` (id), `screens_zh-CN` (zh-CN).
+En Play Console: *Ficha principal → Administrar traducciones → Agregar traducción*, y en cada una sube su carpeta.
 
-| # | Español | Inglés | Pantalla del juego |
+Las capturas en orden (partida del capítulo 4 de la productora **Tukán Producciones**, día 47):
+
+| # | Título (es) | Pantalla del juego | Recuadro ampliado |
 |---|---|---|---|
-| 01 | Resuelve imprevistos en vivo | Handle disasters live on air | Lluvia en un partido de LigaPro |
-| 02 | Arma tu equipo de producción | Build your production crew | Personal con avatares |
-| 03 | Compite contra MegaVisión | Beat MegaVisión to the contract | Resultado: 5 estrellas y duelo ganado |
-| 04 | Equipos de nivel broadcast | Broadcast-grade gear | Bodega con equipos exclusivos numerados |
-| 05 | Crece de garaje a unidad móvil | From garage to OB van | Inicio con el centro de producción |
-| 06 | Juega con otras productoras | Team up with other companies | Chat de la asociación |
-
-Para la traducción en inglés: en Play Console, ve a *Ficha principal → Administrar traducciones → Agregar traducción → Inglés (Estados Unidos)*.
-En esa ficha sube `feature_graphic_en.png` y `screens_en/`.
+| 01 | Tu productora, tu nombre | Inicio: la sede (centro de producción) con el letrero y la van de la flota | El dibujo de la sede |
+| 02 | Elige a tus clientes | Clientes: lanzamiento de marca y graduación disputada con MegaVisión | "Disputado" y la calidad que promete MegaVisión |
+| 03 | Planifica cada cámara | Preparar un concierto: plano de cámaras | La tarjeta de transporte "Llévame" |
+| 04 | Resuelve imprevistos en vivo | En vivo: franja animada y lluvia en el concierto, con las 3 decisiones | La franja animada |
+| 05 | Gana 5 estrellas | Resultado: 5 estrellas, +$2.249 y duelo ganado a MegaVisión | "Compartir por WhatsApp" |
+| 06 | Equipos de Edición Exclusiva | Bodega → Lentes: el lente Edición Exclusiva | La tarjeta exclusiva |
+| 07 | Copa de Servidores | En línea: la copa en plena batalla del sábado (servidor simulado) | El marcador |
+| 08 | Decora tu local | Decorar el local: recepción, sofá, neón con el nombre, trofeos... | El dibujo del local |
 
 ### Redes sociales
 
 | Archivo | Tamaño | Dónde |
 |---|---|---|
 | `social_post_1080.png` | 1080 × 1080 | Publicación del feed de Instagram y Facebook ("Muy pronto · Próximamente en Android y web"). |
-| `social_story_1080x1920.png` | 1080 × 1920 | Historias de Instagram y Facebook, estado de WhatsApp, TikTok. Deja libres unos 250 px arriba y abajo para la interfaz de la app (ya está pensado así). |
-
-## Nota de idioma (capturas en inglés)
-
-Cuando se hicieron estas piezas, el juego solo tenía la interfaz en español (`js/lang/es.js`).
-Por eso, en `screens_en/` los títulos están en inglés pero la pantalla del teléfono se ve en español.
-Cuando exista `js/lang/en.js`, vuelve a generar las capturas en inglés (ver abajo) para que el teléfono también salga en inglés.
+| `social_story_1080x1920.png` | 1080 × 1920 | Historias de Instagram y Facebook, estado de WhatsApp, TikTok (usa la captura en vivo en español). Deja libres unos 250 px arriba y abajo para la interfaz de la app. |
 
 ## Cómo volver a generarlo todo
 
 Requiere Playwright y sharp (en este servidor: `NODE_PATH=/opt/npm-tools/node_modules`) e internet para las fuentes de Google.
 
 ```bash
-# 1) Capturas en crudo del juego real (360x640 a 3x) → assets/promo/src/raw/
+# 1) Capturas en crudo del juego real (360x640 a 3x) en los 10 idiomas → assets/promo/src/raw/<idioma>/ (no van a git)
 NODE_PATH=/opt/npm-tools/node_modules node assets/promo/src/capturar.js
+#    solo algunos idiomas:
+GAME_LANGS=es,en NODE_PATH=/opt/npm-tools/node_modules node assets/promo/src/capturar.js
 
 # 2) Armar todas las piezas → assets/promo/
 NODE_PATH=/opt/npm-tools/node_modules node assets/promo/src/componer.js
-#    o solo una parte: feature | screens | social | icon
+#    o solo una parte: feature | screens | social | icon  (PROMO_LANGS=es,en para algunos idiomas)
 NODE_PATH=/opt/npm-tools/node_modules node assets/promo/src/componer.js screens
 ```
 
-- `src/capturar.js` arma una partida avanzada con las reglas del juego (capítulo 4, $18.000, fama 48, 8 personas,
-  equipos exclusivos, ofertas disputadas con MegaVisión) y toma las pantallas. La pantalla de comunidad usa un servidor
-  simulado solo para mostrar el chat. También guarda `raw/rects.json` (la zona que se amplía en cada captura).
-- Variables opcionales: `GAME_ROOT=<carpeta del juego>` (usar otra copia del juego),
-  `GAME_LANG=en` (abre el juego en inglés cuando exista la traducción) y `RAW_DIR=<carpeta>`.
-  Para las capturas en inglés, cuando ya exista la traducción:
-  `GAME_LANG=en RAW_DIR=assets/promo/src/raw_en node assets/promo/src/capturar.js` y luego el paso 2:
-  `componer.js` usa `src/raw_en/` para `screens_en/` automáticamente si esa carpeta existe.
-- `src/componer.js` contiene los textos de cada captura (lista `SCREENS`), el diseño del gráfico de funciones,
-  los posts y el ícono. Para cambiar un título, edítalo ahí y vuelve a correr el paso 2.
+- `src/capturar.js` arma la partida con las reglas del juego (`Game.demoGame('cap4')` + 13 personas, grúa, dron, lente
+  Edición Exclusiva, van de 12 pasajeros, decoración y sede nivel 7), abre el juego desde un origen http simulado con
+  `?fecha=2026-11-10` (sin temporada especial) y `?lang=`, sin la guía "toca aquí" (`envivo_guia_v1`), sin el aviso de
+  cuenta y con las filas de Inicio plegadas; cierra cualquier ventana que aparezca sola. La Copa de Servidores usa un
+  servidor simulado (`/api/estado` y `/api/copa`). Guarda `raw/<idioma>/rects.json` (la zona que se amplía en cada
+  captura; con `src` cuando sale de otra captura del mismo momento y `pos: "bottom"` para ponerla abajo).
+- `src/componer.js` contiene los títulos de cada captura en los 10 idiomas (lista `SCREENS`), el diseño del gráfico de
+  funciones, los posts y el ícono. Para cambiar un título, edítalo ahí y vuelve a correr el paso 2.

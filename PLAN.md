@@ -191,3 +191,33 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-23 (14:30): la barra de arriba (dinero, fama, créditos, día) ahora SÍ queda fija al bajar (overflow-x:hidden en body rompía position:sticky) y queda encima de las ventanas abiertas, para ver cuánto tienes al comprar.
 - 2026-10-23 (14:40): decisión de Dimitry: el juego arranca en el idioma del celular/navegador (como estaba); el jugador puede cambiarlo con 🌐.
 - 2026-10-23 (16:30): **avisos de equipos dañados** (resultado, Inicio, Bodega, preparación) y **partida en la nube con versión + un solo dispositivo activo** (una pestaña vieja ya no pisa el progreso; 'Tu partida se abrió en otro dispositivo'). Servidor 77/0, pruebas del juego y de dos dispositivos en verde. En curso: 20 ayudantes con las fases 1–4 del documento de lanzamiento (RUC 1793135099001, edad 16+, sin Brasil al inicio, Discord sí).
+- 2026-10-23 (17:30): **fases 1–4 del lanzamiento, con 20 ayudantes**, ya unidas en main:
+  - Cuenta: borrar cuenta, términos y edad mínima de 16 años.
+  - Facturación SRI de cada venta, para el ERP (HMAC, `docs/FACTURACION_SRI.md`).
+  - Reporte de errores y analítica propia (retención, embudo), cada una con su pestaña en el Centro de Control.
+  - Notificaciones push, correo para recuperar la contraseña (`docs/CORREO.md`), misiones del día y de la semana, premio diario de 7 días.
+  - Logros y libro de combos, buzón con códigos de regalo para influencers (`/canjear.html`).
+  - Impulsos: equipo de obra extra, Fondo de crecimiento y Tarjeta semanal.
+  - Visitar la productora de otros jugadores y aplaudirla.
+  - Ayuda de asociación con un toque, investigación y tienda de fichas.
+  - Contenido por edad del servidor (Duelos día 3, Festival día 5, Copa día 7) y Copa con tema por día.
+  - Guías por sección, páginas legales completas (RUC, 16+, 27 traducciones, `docs/LEGAL_REVISION.md`).
+  - Operación: pool PHP propio, Cloudflare, simulacro de respaldo, `/api/salud`, modo mantenimiento, prueba de carga.
+  - Nombre en Google Play: **"EN VIVO Tycoon: Productora TV"**. Marca "Tycoon" revisada: riesgo bajo, salvo México (`docs/MARCA_NOMBRE.md`).
+- Herramienta nueva: `python3 tools/fusionar_errores.py` copia `docs/traducciones/errores_nuevos/*.json` a `errores.json` y a `js/lang`.
+
+## ⏭️ Pendiente para salir (lanzamiento)
+- [ ] Dimitry: dirección de la empresa para [DIRECCIÓN] en los términos y la privacidad; revisión de abogado (`docs/LEGAL_REVISION.md`).
+- [ ] Dimitry: crear el servidor de Discord (`docs/DISCORD_CREAR_SERVIDOR.md`).
+- [ ] Dimitry: correo (Cloudflare Email Routing + Brevo, `docs/CORREO.md`).
+- [ ] Dimitry: claves push (`sudo php server/bin/push_claves.php --escribir`).
+- [ ] Dimitry: clave de facturación para el ERP (`FACTURACION_CLAVE`).
+- [ ] Dimitry: Cloudflare naranja (`docs/CLOUDFLARE_PRODUCCION.md`).
+- [ ] Dimitry: UptimeRobot y Healthchecks (`docs/MONITOREO.md`).
+- [ ] Dimitry: Google Play (`docs/PUBLICAR_GOOGLE_PLAY.md`), con productos nuevos `equipo_obra_2`, `fondo_crecimiento` y `tarjeta_semanal`.
+- [ ] Dimitry: registrar la marca en SENADI (clases 9 y 41).
+- [ ] Dimitry: claves de Plux de producción al salir en vivo.
+- [ ] Preguntar al contador: ¿las ventas de Google Play se facturan al jugador (consumidor final) o a Google? ¿Cómo se devuelven las de consumidor final?
+- [ ] Capturas de la tienda sin marcas reales (en curso); cambiar "Steadicam" por un término genérico en los textos (en curso).
+- [ ] Publicar las traducciones legales (`/terminos_en.html`, etc.: falta su `location` en nginx).
+- [ ] Hook de `repairCost` en `logic.js` para la investigación "Taller compartido" de la asociación (hoy no tiene efecto).

@@ -9,7 +9,8 @@
 #   1. https://juego.tukanec.com/api/estado responde 200 con el JSON del juego y rapido (menos de 3 s).
 #      Se consulta directo a este servidor (curl --resolve ...:127.0.0.1), sin pasar por Cloudflare,
 #      igual que el arreglo del chequeo del ERP.
-#   2. PHP (php8.3-fpm) prendido y su socket /run/php/php8.3-fpm.sock existe.
+#   2. PHP (php8.3-fpm) prendido y el socket del juego existe (/run/php/php8.3-fpm-envivo.sock si tiene su grupo
+#      propio de PHP; si no, el compartido /run/php/php8.3-fpm.sock). En modo mantenimiento avisa cada 12 h.
 #   3. Disco: mas de 15 % libre donde esta la base y donde estan los respaldos.
 #   4. Base de datos: que exista, que no crezca de golpe (mas de 100 MB en 24 h), que no pase de 1 GB
 #      y que el archivo -wal no pase de 64 MB.
@@ -58,7 +59,11 @@ if [ -z "${DB:-}" ] && [ -r "$CONF_DIR/config.env" ]; then
 fi
 DB="${DB:-/var/lib/envivo/envivo.sqlite}"
 PHPV="${PHPV:-8.3}"
-FPM_SOCK="${FPM_SOCK:-/run/php/php$PHPV-fpm.sock}"
+# Si el juego tiene su grupo propio de PHP (ops/pool_fpm.sh) se revisa ese socket; si no, el compartido
+if [ -z "${FPM_SOCK:-}" ]; then
+  [ -f "/etc/php/$PHPV/fpm/pool.d/envivo.conf" ] && FPM_SOCK="/run/php/php$PHPV-fpm-envivo.sock" || FPM_SOCK="/run/php/php$PHPV-fpm.sock"
+fi
+MANT="${MANT:-$CONF_DIR/MANTENIMIENTO}"   # modo mantenimiento (ops/mantenimiento.sh): /api/estado da 503 a proposito
 FPM_SERVICIO="${FPM_SERVICIO:-php$PHPV-fpm}"
 CERT="${CERT:-/etc/letsencrypt/live/$DOMINIO/fullchain.pem}"
 # https si ya hay certificado; si no, http (igual que la prueba final de instalar.sh)
@@ -182,6 +187,8 @@ if [ "$RC" != "0" ]; then
     35|51|58|60) problema api "El juego NO responde por HTTPS: problema con el certificado (curl error $RC)" ;;
     *) problema api "El juego NO responde: curl error $RC ($(head -c 150 <<< "$SALIDA"))" ;;
   esac
+elif [ "$COD" = "503" ] && [ -f "$MANT" ]; then
+  problema mantenimiento "El juego esta en MODO MANTENIMIENTO ($(tr '\n' ' ' < "$MANT")). Para apagarlo: sudo bash /var/www/envivo/server/deploy/ops/mantenimiento.sh off" "$REPETIR_HORAS_PENDIENTES"
 elif [ "$COD" != "200" ]; then
   problema api "El juego responde mal: /api/estado da HTTP $COD (debe ser 200)"
 elif ! grep -q '"ok":true' "$CUERPO" || ! grep -q '"tienda"' "$CUERPO"; then

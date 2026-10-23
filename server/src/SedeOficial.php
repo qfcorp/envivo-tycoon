@@ -19,7 +19,8 @@ namespace EnVivo;
  *   y packs con dinero real (pack_obra_s/m/l, contenido fijo).
  * - Acelerar: termina una obra ya por créditos (1 crédito cada 6 minutos que falten, mínimo 5; se muestra antes de
  *   confirmar y se cobra por Monedero, con libro). Ayudas de la asociación: −1 % de la obra o 5 minutos (lo mayor),
- *   máximo 10 por obra; el que ayuda recibe 1 material (sus primeras 10 ayudas del día).
+ *   máximo 10 por obra (de 10 a 20 con AyudaAsoc: nivel de la asociación + investigación); el que ayuda recibe 1 material
+ *   (sus primeras 10 ayudas del día) y fichas de asociación. Pedir ayuda / "Ayudar a todos": server/src/AyudaAsoc.php.
  * Todo lo que cambia algo va en Db::tx (BEGIN IMMEDIATE). Los errores son Fallo con 'codigo'.
  */
 final class SedeOficial
@@ -164,6 +165,16 @@ final class SedeOficial
         return $restante <= 0 ? 0 : max(self::COSTO_MIN, (int) ceil($restante / self::SEG_POR_CREDITO));
     }
 
+    /**
+     * Ayudas máximas por obra para las obras de $duenio: 10 de base y, con server/src/AyudaAsoc.php, de 10 a 20 según el
+     * nivel de su asociación y la investigación "Refuerzos" (server/INTEGRAR_AYUDA_ASOC.md).
+     */
+    public static function topeAyudas(int $duenio): int
+    {
+        try { if (class_exists(AyudaAsoc::class)) return AyudaAsoc::topeAyudas($duenio); } catch (\Throwable) {}
+        return self::AYUDAS_MAX;
+    }
+
     /** Lo que descuenta una ayuda en una obra de $duracion segundos. */
     public static function segundosAyuda(int $duracion): int { return max(self::AYUDA_MIN_SEG, (int) ceil($duracion * self::AYUDA_PCT)); }
 
@@ -218,6 +229,12 @@ final class SedeOficial
         $t = self::ahora();
         Db::q('INSERT OR IGNORE INTO sede_oficial (jugador_id, creado, actualizado) VALUES (?, ?, ?)', [$j, $t, $t]);
         return Db::fila('SELECT * FROM sede_oficial WHERE jugador_id = ?', [$j]);
+    }
+
+    /** Para otros módulos (AyudaAsoc: donaciones y tienda de fichas): como sumar(), con la fila creada si falta. */
+    public static function moverMateriales(int $j, array $bolsa, string $motivo, ?string $ref): void
+    {
+        Db::tx(function () use ($j, $bolsa, $motivo, $ref): void { self::fila($j); self::sumar($j, $bolsa, $motivo, $ref); });
     }
 
     /** Suma (o resta, con negativos) materiales y/o 'acelera_min', con libro. Lanza Fallo si algo quedaría negativo. */
@@ -446,22 +463,22 @@ final class SedeOficial
             'sede' => [
                 'nivel' => $nivel, 'max' => $nivel >= self::MAX_NIVEL, 'materiales' => $mat, 'aceleradores_min' => (int) $f['acelera_min'],
                 'mejoras' => $hechas, 'obreros' => self::obreros($j, $nivel), 'etapa' => $etapa,
-                'obras' => array_map(fn($o) => self::obraJson($o, $t), $activas),
+                'obras' => array_map(fn($o) => self::obraJson($o, $t, self::topeAyudas($j)), $activas),
                 'cofre' => ['disponible' => $f['ultimo_cofre'] !== $dia, 'proximo' => self::proximoDia($t)],
                 'bono_competencia' => self::bonoPorNivel($nivel),
                 'migracion' => ['posible' => (int) $f['migrado'] === 0 && $fresca, 'nivel_max' => self::nivelMaxMigracion($edad, $famaPub)],
             ],
             'creditos' => Monedero::saldo($j),
-            'reglas' => ['seg_por_credito' => self::SEG_POR_CREDITO, 'costo_min' => self::COSTO_MIN, 'ayudas_max' => self::AYUDAS_MAX,
+            'reglas' => ['seg_por_credito' => self::SEG_POR_CREDITO, 'costo_min' => self::COSTO_MIN, 'ayudas_max' => self::topeAyudas($j),
                 'ayuda_pct' => self::AYUDA_PCT, 'ayuda_min_seg' => self::AYUDA_MIN_SEG],
         ];
     }
 
-    private static function obraJson(array $o, int $t): array
+    private static function obraJson(array $o, int $t, int $tope = self::AYUDAS_MAX): array
     {
         $rest = max(0, (int) $o['fin'] - $t);
         return ['id' => (int) $o['id'], 'tipo' => $o['tipo'], 'ed' => $o['ed'], 'nivel' => (int) $o['nivel'], 'inicio' => (int) $o['inicio'], 'fin' => (int) $o['fin'],
-            'duracion' => (int) $o['duracion'], 'restante' => $rest, 'ayudas' => (int) $o['ayudas'], 'ayudas_max' => self::AYUDAS_MAX,
+            'duracion' => (int) $o['duracion'], 'restante' => $rest, 'ayudas' => (int) $o['ayudas'], 'ayudas_max' => $tope,
             'costo_creditos' => self::costoAcelerar($rest), 'segundos_ayuda' => self::segundosAyuda((int) $o['duracion'])];
     }
 
@@ -634,18 +651,22 @@ final class SedeOficial
         $a = self::asociacion($j);
         $hoy = self::ayudasHoy($j, self::dia($t));
         if ($a === null) return ['ok' => true, 'asociacion' => null, 'obras' => [], 'hoy' => $hoy];
+        $tope = self::topeAyudas($j);   // misma asociación: el mismo tope para todas sus obras
         $filas = Db::todas("SELECT o.*, j.alias, j.nombre FROM sede_obras o JOIN asociacion_miembros m ON m.jugador_id = o.jugador_id JOIN jugadores j ON j.id = o.jugador_id
                             WHERE m.asociacion_id = ? AND o.jugador_id <> ? AND o.estado = 'activa' AND o.fin > ? AND o.ayudas < ?
                             AND NOT EXISTS (SELECT 1 FROM sede_ayudas x WHERE x.obra_id = o.id AND x.ayudante_id = ?) ORDER BY o.fin, o.id LIMIT 50",
-            [$a, $j, $t, self::AYUDAS_MAX, $j]);
+            [$a, $j, $t, $tope, $j]);
         return ['ok' => true, 'asociacion' => $a, 'hoy' => $hoy, 'obras' => array_map(fn($o) => ['obra_id' => (int) $o['id'], 'jugador_id' => (int) $o['jugador_id'],
             'nombre' => Social::nombrePublico($o['alias'], $o['nombre']), 'tipo' => $o['tipo'], 'ed' => $o['ed'], 'nivel' => (int) $o['nivel'],
-            'restante' => max(0, (int) $o['fin'] - $t), 'ayudas' => (int) $o['ayudas'], 'ayudas_max' => self::AYUDAS_MAX,
+            'restante' => max(0, (int) $o['fin'] - $t), 'ayudas' => (int) $o['ayudas'], 'ayudas_max' => $tope,
             'segundos_ayuda' => min(max(0, (int) $o['fin'] - $t), self::segundosAyuda((int) $o['duracion']))], $filas)];
     }
 
-    /** Ayuda gratis a una obra de alguien de tu asociación. Devuelve lo que descontó, el premio y la lista actualizada. */
-    public static function ayudar(int $ayudante, int $duenio, int $obraId): array
+    /**
+     * Ayuda gratis a una obra de alguien de tu asociación. Devuelve lo que descontó, el premio, las fichas de asociación
+     * (AyudaAsoc) y la lista actualizada ($conLista = false: sin lista, para "Ayudar a todos").
+     */
+    public static function ayudar(int $ayudante, int $duenio, int $obraId, bool $conLista = true): array
     {
         Cuentas::exigirActiva($ayudante);
         $r = Db::tx(function () use ($ayudante, $duenio, $obraId): array {
@@ -653,11 +674,12 @@ final class SedeOficial
             $a = self::asociacion($ayudante);
             Fallo::si($a === null, 'Únete a una asociación para ayudar.', 409, ['codigo' => 'sin_asociacion']);
             Fallo::si(self::asociacion($duenio) !== $a, 'Solo puedes ayudar a gente de tu asociación.', 403, ['codigo' => 'otra_asociacion']);
+            if (class_exists(AyudaAsoc::class)) AyudaAsoc::exigirAntiguo($ayudante);   // anti cuentas alternas: más de 24 h en la asociación
             self::sincronizar($duenio);
             $o = Db::fila('SELECT * FROM sede_obras WHERE id = ? AND jugador_id = ?', [$obraId, $duenio]);
             Fallo::si(!$o, 'Esa obra no existe.', 404, ['codigo' => 'obra_no_existe']);
             Fallo::si($o['estado'] !== 'activa', 'Esa obra ya terminó.', 409, ['codigo' => 'ya_terminada']);
-            Fallo::si((int) $o['ayudas'] >= self::AYUDAS_MAX, 'Esa obra ya recibió todas las ayudas.', 409, ['codigo' => 'ayudas_completas']);
+            Fallo::si((int) $o['ayudas'] >= self::topeAyudas($duenio), 'Esa obra ya recibió todas las ayudas.', 409, ['codigo' => 'ayudas_completas']);
             Fallo::si((bool) Db::valor('SELECT 1 FROM sede_ayudas WHERE obra_id = ? AND ayudante_id = ?', [$obraId, $ayudante]), 'Ya ayudaste en esa obra.', 409, ['codigo' => 'ya_ayudaste']);
             $t = self::ahora();
             $dia = self::dia($t);
@@ -673,14 +695,15 @@ final class SedeOficial
             }
             Db::q('INSERT INTO sede_ayudas (obra_id, ayudante_id, segundos, premio, dia, creado) VALUES (?, ?, ?, ?, ?, ?)',
                 [$obraId, $ayudante, $seg, $premio ? array_key_first($premio) : null, $dia, $t]);
+            $fichas = class_exists(AyudaAsoc::class) ? AyudaAsoc::alAyudar($ayudante, $obraId) : 0;   // fichas de asociación (tope diario)
             // Pase de temporada: XP por ayudar en una obra de la asociación (misiones d_obras / s_obras)
             try {
                 if (class_exists('\EnVivo\Pase')) \EnVivo\Pase::sumarXp($ayudante, \EnVivo\Pase::XP['obra_ayuda'], 'obra_ayuda', 'obra:' . $obraId);
             } catch (\Throwable) { /* el pase nunca rompe la ayuda */ }
             self::terminarVencidas($duenio);
-            return ['segundos' => $seg, 'premio' => $premio];
+            return ['segundos' => $seg, 'premio' => $premio, 'fichas' => $fichas];
         });
-        return ['ok' => true] + $r + ['lista' => self::ayudas($ayudante)];
+        return ['ok' => true] + $r + ($conLista ? ['lista' => self::ayudas($ayudante)] : []);
     }
 
     /**
