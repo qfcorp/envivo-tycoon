@@ -170,5 +170,6 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - [ ] Dimitry: certificación de Plux para el dominio; Discord (`docs/DISCORD.md` y `docs/DISCORD_BOT.md`); Google Play (`docs/ANDROID_GOOGLE_PLAY.md`)
 - [ ] Unificar el trato en francés y ruso (menús con "vous/вы", historia con "tu/ты")
 - [ ] Copas internacionales servidor contra servidor, Gran Licitación en coalición, cadenas internacionales, Pase de Temporada
-- [ ] Borrar la rama de respaldo `wip-dificultad` cuando todo esté en main
+- [x] Borrar la rama de respaldo `wip-dificultad` (todo quedó en main)
 
+- 2026-10-23 (06:00): balance final para el demo (capítulo 3 en ~19 días, quiebra con aviso y contando lo que te deben, trabajar bien rinde más), textos del juego traducidos, enlace de demo con partida del capítulo 4. Guías `docs/DEMO.md` y `docs/DESPLIEGUE.md`. Pendiente de balance: el final del juego da mucho dinero (ajustar después).
