@@ -221,8 +221,8 @@ check "DESPLIEGUE 8: / 200"     "200"    "$(uno "curl -s -o /dev/null -w '%{http
 check "DESPLIEGUE 8: base.php"  "404"    "$(uno "curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/control/lib/base.php")"
 check "DESPLIEGUE 8: admin.php" "302 https://juego.tukanec.com/control/" "$(uno "curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://juego.tukanec.com/admin.php")"
 check "DESPLIEGUE 8: cabeceras" "5"      "$(uno "curl -sI https://juego.tukanec.com/ | grep -icE \"content-security|permissions-policy|strict-transport|x-frame|referrer\"")"
-check "DESPLIEGUE 8: soporte"   '{"ok":true,"correo":"","horario":""}' "$(uno "curl -s https://juego.tukanec.com/api/soporte/contacto")"
-check "DESPLIEGUE 8: cron www-data" "8"  "$(uno "sudo crontab -u www-data -l | grep -c envivo")"
+check "DESPLIEGUE 8: soporte"   '{"ok":true,"correo":"soporte@tukanec.com","horario":""}' "$(uno "curl -s https://juego.tukanec.com/api/soporte/contacto")"
+check "DESPLIEGUE 8: cron www-data" "13"  "$(uno "sudo crontab -u www-data -l | grep -c envivo")"
 check "DESPLIEGUE 8: http -> https" "301" "$(uno "curl -s -o /dev/null -w '%{http_code}' http://juego.tukanec.com/")"
 
 echo "== 7. Paso 9: actualizar.sh con versiones nuevas en GitHub (dos veces)"
@@ -241,7 +241,7 @@ check "2a: sin cambios de logica no reinicia; validador OK" "1 1" "$(grep -c 'no
 check "2a: en el VPS quedo la ultima version" "$(git -C "$S/trabajo" rev-parse --short HEAD)" "$(git -C $APP rev-parse --short HEAD)"
 sudo bash /var/www/envivo/server/deploy/instalar.sh < /dev/null > "$S/inst2.txt" 2>&1; echo "rc=$?" >> "$S/inst2.txt"
 check "instalar.sh otra vez: rc=0, 5) con codigo del celular, 6) Plux puestas, HTTPS si" "1 1 1 1" "$(grep -c '^rc=0$' "$S/inst2.txt") $(grep -c '5) Centro de Control /control/: con usuario, clave y codigo del celular' "$S/inst2.txt") $(grep -c '6) Plux: credenciales puestas (ambiente: sandbox)' "$S/inst2.txt") $(grep -c '7) HTTPS: si' "$S/inst2.txt")"
-check "instalar.sh otra vez: el cron sigue con 8 lineas, sitio con HTTPS" "8 1" "$(crontab -u www-data -l | grep -c envivo) $(grep -c 'listen 443 ssl' /etc/nginx/sites-available/$D)"
+check "instalar.sh otra vez: el cron sigue con 13 lineas, sitio con HTTPS" "13 1" "$(crontab -u www-data -l | grep -c envivo) $(grep -c 'listen 443 ssl' /etc/nginx/sites-available/$D)"
 check "actualizar.sh mantiene el grupo envivo (2 veces) e instalar.sh otra vez lo deja igual" "2 1" "$(cat "$S/act1.txt" "$S/act2.txt" | grep -c 'grupo envivo: ya estaba') $(grep -c '9) PHP del juego: grupo propio envivo' "$S/inst2.txt")"
 
 echo "== 7b. INCIDENTES: volver a una version anterior con actualizar.sh --version / --anterior, y regresar"
