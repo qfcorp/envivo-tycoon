@@ -520,7 +520,11 @@ final class Db
         $sql = (string) $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compras'")->fetchColumn();
         if ($sql === '' || str_contains($sql, "'web_paypal'")) return;
         $nuevo = str_replace("CHECK (canal IN ('web_plux', 'google_play'))", "CHECK (canal IN ('web_plux', 'google_play', 'web_paypal'))", $sql, $n);
-        if ($n !== 1 || !preg_match('/^CREATE TABLE "?compras"?\s*\(/i', $nuevo)) throw new \RuntimeException('compras: no se pudo ampliar la regla del canal');
+        if ($n !== 1 || !preg_match('/^CREATE TABLE "?compras"?\s*\(/i', $nuevo)) {
+            // Esquema distinto al esperado: NO se toca nada (el juego sigue funcionando; solo PayPal no podrá guardar compras)
+            error_log('EN VIVO: compras: no se pudo ampliar la regla del canal para PayPal (esquema inesperado); se deja como está');
+            return;
+        }
         $indices = $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'compras' AND sql IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
         $antes = (int) $pdo->query('SELECT COUNT(*) FROM compras')->fetchColumn();
         $pdo->exec((string) preg_replace('/^CREATE TABLE "?compras"?/i', 'CREATE TABLE compras_nueva', $nuevo));

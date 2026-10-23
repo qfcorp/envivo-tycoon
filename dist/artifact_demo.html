@@ -233,6 +233,16 @@
   .tv-cred .tv-foot{flex-direction:column;align-items:stretch;width:100%;gap:6px;margin-top:10px}
   .tv-cred .tv-foot .price{text-align:center}
   .tv-cred .tv-foot .btn.sm{width:100%;margin:0}
+  /* Dos formas de pago en la web (tarjeta y PayPal, server/src/PayPal.php): los botones se acomodan solos al ancho */
+  .tv-pagos{display:flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto;min-width:0}
+  .tv-foot2 .tv-pagos .btn.sm{margin:0;padding:9px 12px;font-size:13px;flex:1 1 auto}
+  .tv-cred .tv-pagos{flex-direction:column;flex-wrap:nowrap;width:100%;margin:0}
+  .tv-cred .tv-pagos .btn.sm{width:100%}
+  .card .tv-pagos .btn.sm + .btn.sm{margin-inline-start:0}   /* el espacio lo pone gap */
+  .tv-pagos-modal{flex-direction:column;flex-wrap:nowrap;width:100%;margin:8px 0 0}
+  .tv-pagos-modal .btn{width:100%;margin:0}
+  .btn.paypal{background:#ffc439;border-color:#ffc439;color:#111;font-weight:800}
+  .btn.paypal:hover{background:#f2b52e}
   .tv-vipcard{--vc:#ffd34d;border-color:color-mix(in srgb,var(--vc) 45%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--vc) 13%,var(--panel)),var(--panel) 65%)}
   .tv-medal{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--vc);border:2px solid var(--vc);background:color-mix(in srgb,var(--vc) 14%,transparent);position:relative}
   .tv-medal .ico{width:24px;height:24px;margin:0}
@@ -870,6 +880,11 @@
     "tienda.tu_cuenta": "Your account",
     "tienda.precios": "Prices in US dollars, tax included. Card payment via Pago Plux.",
     "tienda.pago_inactivo": "Card payment isn't active yet. Check back soon.",
+    "tienda.pagar_tarjeta": "Pay by card",
+    "tienda.pagar_paypal": "Pay with PayPal",
+    "tienda.como_pagar": "How do you want to pay?",
+    "tienda.precios_paypal": "Prices in US dollars, tax included. Pay by card (Pago Plux) or, for purchases from {p}, with PayPal.",
+    "tienda.paypal_sandbox": "PayPal in test mode: no real money is charged.",
     "tienda.exclusivos": "Exclusives for credits",
     "tienda.pronto_t": "Exclusives coming soon",
     "tienda.pronto": "Check back later for special gear.",
@@ -1301,6 +1316,11 @@
     "error.material_invalido": "That material doesn’t exist.",
     "error.item_invalido": "That item doesn’t exist.",
     "error.tope_tienda": "You already bought that the maximum times today.",
+    "error.paypal_no_disponible": "PayPal isn't available yet. Pay by card or try again later.",
+    "error.paypal_minimo": "PayPal is only available for larger purchases. Pay for this item by card.",
+    "error.paypal_metodo_distinto": "This purchase was started for card payment. Go back to the shop and choose PayPal.",
+    "error.paypal_error": "Couldn't connect to PayPal. Nothing was charged: try again in a few minutes.",
+    "error.pago_metodo_distinto": "This purchase was started for PayPal. Go back to the shop and choose \"Pay by card\".",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Music",
     "head.musica_on": "Turn music on",
@@ -3538,6 +3558,11 @@
     "tienda.tu_cuenta": "Sua conta",
     "tienda.precios": "Preços em dólares com impostos incluídos. Pagamento com cartão pela Pago Plux.",
     "tienda.pago_inactivo": "O pagamento com cartão ainda não está ativo. Volte em breve.",
+    "tienda.pagar_tarjeta": "Pagar com cartão",
+    "tienda.pagar_paypal": "Pagar com PayPal",
+    "tienda.como_pagar": "Como você quer pagar?",
+    "tienda.precios_paypal": "Preços em dólares com impostos incluídos. Pague com cartão (Pago Plux) ou, em compras a partir de {p}, com PayPal.",
+    "tienda.paypal_sandbox": "PayPal em modo de teste: nenhum dinheiro real é cobrado.",
     "tienda.exclusivos": "Exclusivos com créditos",
     "tienda.pronto_t": "Em breve haverá exclusivos",
     "tienda.pronto": "Volte mais tarde para ver equipamentos especiais.",
@@ -3969,6 +3994,11 @@
     "error.material_invalido": "Esse material não existe.",
     "error.item_invalido": "Esse item não existe.",
     "error.tope_tienda": "Você já comprou isso o máximo de vezes hoje.",
+    "error.paypal_no_disponible": "O pagamento com PayPal ainda não está disponível. Pague com cartão ou tente mais tarde.",
+    "error.paypal_minimo": "O PayPal só está disponível em compras maiores. Pague este produto com cartão.",
+    "error.paypal_metodo_distinto": "Esta compra foi iniciada para pagar com cartão. Volte à loja e escolha PayPal.",
+    "error.paypal_error": "Não foi possível conectar ao PayPal. Nada foi cobrado: tente de novo em alguns minutos.",
+    "error.pago_metodo_distinto": "Esta compra foi iniciada para pagar com PayPal. Volte à loja e escolha \"Pagar com cartão\".",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Música",
     "head.musica_on": "Ligar música",
@@ -6206,6 +6236,11 @@
     "tienda.tu_cuenta": "Ton compte",
     "tienda.precios": "Prix en dollars US, TVA incluse. Paiement par carte via Pago Plux.",
     "tienda.pago_inactivo": "Le paiement par carte n'est pas encore actif. Reviens bientôt.",
+    "tienda.pagar_tarjeta": "Payer par carte",
+    "tienda.pagar_paypal": "Payer avec PayPal",
+    "tienda.como_pagar": "Comment veux-tu payer ?",
+    "tienda.precios_paypal": "Prix en dollars US, TVA incluse. Paie par carte (Pago Plux) ou, pour les achats à partir de {p}, avec PayPal.",
+    "tienda.paypal_sandbox": "PayPal en mode test : aucun argent réel n'est débité.",
     "tienda.exclusivos": "Exclusivités en crédits",
     "tienda.pronto_t": "Bientôt des exclusivités",
     "tienda.pronto": "Reviens plus tard pour voir du matériel spécial.",
@@ -6637,6 +6672,11 @@
     "error.material_invalido": "Ce matériau n’existe pas.",
     "error.item_invalido": "Cet article n’existe pas.",
     "error.tope_tienda": "Tu l’as déjà acheté le maximum de fois aujourd’hui.",
+    "error.paypal_no_disponible": "Le paiement PayPal n'est pas encore disponible. Paie par carte ou réessaie plus tard.",
+    "error.paypal_minimo": "PayPal n'est disponible que pour les achats plus importants. Paie cet article par carte.",
+    "error.paypal_metodo_distinto": "Cet achat a été lancé pour un paiement par carte. Reviens à la boutique et choisis PayPal.",
+    "error.paypal_error": "Impossible de se connecter à PayPal. Rien n'a été débité : réessaie dans quelques minutes.",
+    "error.pago_metodo_distinto": "Cet achat a été lancé pour PayPal. Reviens à la boutique et choisis « Payer par carte ».",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Musique",
     "head.musica_on": "Activer la musique",
@@ -8874,6 +8914,11 @@
     "tienda.tu_cuenta": "Dein Konto",
     "tienda.precios": "Preise in US-Dollar inkl. MwSt. Kartenzahlung über Pago Plux.",
     "tienda.pago_inactivo": "Kartenzahlung ist noch nicht aktiv. Schau bald wieder vorbei.",
+    "tienda.pagar_tarjeta": "Mit Karte zahlen",
+    "tienda.pagar_paypal": "Mit PayPal zahlen",
+    "tienda.como_pagar": "Wie möchtest du zahlen?",
+    "tienda.precios_paypal": "Preise in US-Dollar inkl. MwSt. Zahle mit Karte (Pago Plux) oder, bei Käufen ab {p}, mit PayPal.",
+    "tienda.paypal_sandbox": "PayPal im Testmodus: Es wird kein echtes Geld abgebucht.",
     "tienda.exclusivos": "Exklusives für Credits",
     "tienda.pronto_t": "Bald gibt es Exklusives",
     "tienda.pronto": "Schau später wieder vorbei für besondere Technik.",
@@ -9305,6 +9350,11 @@
     "error.material_invalido": "Dieses Material gibt es nicht.",
     "error.item_invalido": "Diesen Artikel gibt es nicht.",
     "error.tope_tienda": "Das hast du heute schon so oft wie möglich gekauft.",
+    "error.paypal_no_disponible": "Zahlung mit PayPal ist noch nicht verfügbar. Zahle mit Karte oder versuche es später.",
+    "error.paypal_minimo": "PayPal gibt es nur bei größeren Käufen. Bezahle diesen Artikel mit Karte.",
+    "error.paypal_metodo_distinto": "Dieser Kauf wurde für Kartenzahlung gestartet. Geh zurück in den Shop und wähle PayPal.",
+    "error.paypal_error": "Keine Verbindung zu PayPal. Es wurde nichts abgebucht: Versuche es in ein paar Minuten erneut.",
+    "error.pago_metodo_distinto": "Dieser Kauf wurde für PayPal gestartet. Geh zurück in den Shop und wähle „Mit Karte zahlen“.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Musik",
     "head.musica_on": "Musik einschalten",
@@ -11542,6 +11592,11 @@
     "tienda.tu_cuenta": "Il tuo account",
     "tienda.precios": "Prezzi in dollari USA, IVA inclusa. Pagamento con carta tramite Pago Plux.",
     "tienda.pago_inactivo": "Il pagamento con carta non è ancora attivo. Torna presto.",
+    "tienda.pagar_tarjeta": "Paga con carta",
+    "tienda.pagar_paypal": "Paga con PayPal",
+    "tienda.como_pagar": "Come vuoi pagare?",
+    "tienda.precios_paypal": "Prezzi in dollari USA, IVA inclusa. Paga con carta (Pago Plux) o, per acquisti da {p}, con PayPal.",
+    "tienda.paypal_sandbox": "PayPal in modalità test: non viene addebitato denaro reale.",
     "tienda.exclusivos": "Esclusivi con crediti",
     "tienda.pronto_t": "Presto arriveranno gli esclusivi",
     "tienda.pronto": "Torna più tardi per vedere attrezzatura speciale.",
@@ -11973,6 +12028,11 @@
     "error.material_invalido": "Questo materiale non esiste.",
     "error.item_invalido": "Questo articolo non esiste.",
     "error.tope_tienda": "L’hai già comprato il massimo di volte oggi.",
+    "error.paypal_no_disponible": "Il pagamento con PayPal non è ancora disponibile. Paga con carta o riprova più tardi.",
+    "error.paypal_minimo": "PayPal è disponibile solo per acquisti più grandi. Paga questo prodotto con carta.",
+    "error.paypal_metodo_distinto": "Questo acquisto è stato avviato per il pagamento con carta. Torna al negozio e scegli PayPal.",
+    "error.paypal_error": "Impossibile collegarsi a PayPal. Non è stato addebitato nulla: riprova tra qualche minuto.",
+    "error.pago_metodo_distinto": "Questo acquisto è stato avviato per PayPal. Torna al negozio e scegli «Paga con carta».",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Musica",
     "head.musica_on": "Attiva la musica",
@@ -14210,6 +14270,11 @@
     "tienda.tu_cuenta": "Твой аккаунт",
     "tienda.precios": "Цены в долларах США с НДС. Оплата картой через Pago Plux.",
     "tienda.pago_inactivo": "Оплата картой пока недоступна. Загляни позже.",
+    "tienda.pagar_tarjeta": "Оплатить картой",
+    "tienda.pagar_paypal": "Оплатить через PayPal",
+    "tienda.como_pagar": "Как хочешь оплатить?",
+    "tienda.precios_paypal": "Цены в долларах США с налогом. Оплата картой (Pago Plux) или, для покупок от {p}, через PayPal.",
+    "tienda.paypal_sandbox": "PayPal в тестовом режиме: реальные деньги не списываются.",
     "tienda.exclusivos": "Эксклюзивы за кредиты",
     "tienda.pronto_t": "Скоро будут эксклюзивы",
     "tienda.pronto": "Загляни позже за особой техникой.",
@@ -14641,6 +14706,11 @@
     "error.material_invalido": "Такого материала нет.",
     "error.item_invalido": "Такого товара нет.",
     "error.tope_tienda": "Сегодня это уже куплено максимум раз.",
+    "error.paypal_no_disponible": "Оплата через PayPal пока недоступна. Оплати картой или попробуй позже.",
+    "error.paypal_minimo": "PayPal доступен только для более крупных покупок. Оплати этот товар картой.",
+    "error.paypal_metodo_distinto": "Эта покупка начата для оплаты картой. Вернись в магазин и выбери PayPal.",
+    "error.paypal_error": "Не удалось связаться с PayPal. Деньги не списаны: попробуй снова через несколько минут.",
+    "error.pago_metodo_distinto": "Эта покупка начата для оплаты через PayPal. Вернись в магазин и выбери «Оплатить картой».",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Музыка",
     "head.musica_on": "Включить музыку",
@@ -16878,6 +16948,11 @@
     "tienda.tu_cuenta": "Hesabın",
     "tienda.precios": "Fiyatlar ABD doları, KDV dahil. Pago Plux ile kartla ödeme.",
     "tienda.pago_inactivo": "Kartla ödeme henüz aktif değil. Yakında tekrar bak.",
+    "tienda.pagar_tarjeta": "Kartla öde",
+    "tienda.pagar_paypal": "PayPal ile öde",
+    "tienda.como_pagar": "Nasıl ödemek istersin?",
+    "tienda.precios_paypal": "Fiyatlar ABD doları, vergi dahil. Kartla (Pago Plux) ya da {p} ve üzeri alımlarda PayPal ile öde.",
+    "tienda.paypal_sandbox": "PayPal test modunda: gerçek para çekilmez.",
     "tienda.exclusivos": "Krediyle özel ürünler",
     "tienda.pronto_t": "Özel ürünler yakında",
     "tienda.pronto": "Özel ekipmanlar için daha sonra tekrar bak.",
@@ -17309,6 +17384,11 @@
     "error.material_invalido": "Böyle bir malzeme yok.",
     "error.item_invalido": "Böyle bir ürün yok.",
     "error.tope_tienda": "Bunu bugün en çok sayıda aldın.",
+    "error.paypal_no_disponible": "PayPal ile ödeme henüz yok. Kartla öde ya da daha sonra tekrar dene.",
+    "error.paypal_minimo": "PayPal yalnızca daha büyük alımlarda kullanılabilir. Bu ürünü kartla öde.",
+    "error.paypal_metodo_distinto": "Bu satın alma kartla ödeme için başlatıldı. Mağazaya dön ve PayPal'ı seç.",
+    "error.paypal_error": "PayPal'a bağlanılamadı. Hiçbir ücret alınmadı: birkaç dakika sonra tekrar dene.",
+    "error.pago_metodo_distinto": "Bu satın alma PayPal için başlatıldı. Mağazaya dön ve \"Kartla öde\"yi seç.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Müzik",
     "head.musica_on": "Müziği aç",
@@ -19546,6 +19626,11 @@
     "tienda.tu_cuenta": "Akunmu",
     "tienda.precios": "Harga dalam dolar AS termasuk pajak. Bayar dengan kartu lewat Pago Plux.",
     "tienda.pago_inactivo": "Pembayaran kartu belum aktif. Kembali lagi nanti.",
+    "tienda.pagar_tarjeta": "Bayar dengan kartu",
+    "tienda.pagar_paypal": "Bayar dengan PayPal",
+    "tienda.como_pagar": "Mau bayar pakai apa?",
+    "tienda.precios_paypal": "Harga dalam dolar AS termasuk pajak. Bayar dengan kartu (Pago Plux) atau, untuk pembelian mulai {p}, dengan PayPal.",
+    "tienda.paypal_sandbox": "PayPal dalam mode uji: tidak ada uang sungguhan yang ditagih.",
     "tienda.exclusivos": "Eksklusif dengan kredit",
     "tienda.pronto_t": "Segera hadir item eksklusif",
     "tienda.pronto": "Kembali nanti untuk melihat peralatan spesial.",
@@ -19977,6 +20062,11 @@
     "error.material_invalido": "Bahan itu tidak ada.",
     "error.item_invalido": "Barang itu tidak ada.",
     "error.tope_tienda": "Kamu sudah membeli itu sebanyak batas hari ini.",
+    "error.paypal_no_disponible": "Pembayaran PayPal belum tersedia. Bayar dengan kartu atau coba lagi nanti.",
+    "error.paypal_minimo": "PayPal hanya tersedia untuk pembelian yang lebih besar. Bayar item ini dengan kartu.",
+    "error.paypal_metodo_distinto": "Pembelian ini dimulai untuk pembayaran kartu. Kembali ke toko dan pilih PayPal.",
+    "error.paypal_error": "Tidak bisa terhubung ke PayPal. Tidak ada tagihan: coba lagi beberapa menit lagi.",
+    "error.pago_metodo_distinto": "Pembelian ini dimulai untuk PayPal. Kembali ke toko dan pilih \"Bayar dengan kartu\".",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Musik",
     "head.musica_on": "Nyalakan musik",
@@ -22214,6 +22304,11 @@
     "tienda.tu_cuenta": "你的账号",
     "tienda.precios": "价格以美元计，含增值税。通过 Pago Plux 刷卡支付。",
     "tienda.pago_inactivo": "刷卡支付尚未开放，请稍后再来。",
+    "tienda.pagar_tarjeta": "刷卡支付",
+    "tienda.pagar_paypal": "用 PayPal 支付",
+    "tienda.como_pagar": "你想怎么支付？",
+    "tienda.precios_paypal": "价格以美元计，含税。可刷卡支付（Pago Plux），满 {p} 的购买也可用 PayPal 支付。",
+    "tienda.paypal_sandbox": "PayPal 处于测试模式：不会扣除真实款项。",
     "tienda.exclusivos": "积分兑换独家品",
     "tienda.pronto_t": "独家品即将上线",
     "tienda.pronto": "稍后再来看看特别设备。",
@@ -22645,6 +22740,11 @@
     "error.material_invalido": "该材料不存在。",
     "error.item_invalido": "该物品不存在。",
     "error.tope_tienda": "今天已达到购买上限。",
+    "error.paypal_no_disponible": "PayPal 支付暂不可用。请刷卡支付或稍后再试。",
+    "error.paypal_minimo": "PayPal 仅适用于金额较大的购买。此商品请刷卡支付。",
+    "error.paypal_metodo_distinto": "这笔购买是按刷卡支付创建的。请返回商店并选择 PayPal。",
+    "error.paypal_error": "无法连接 PayPal。未扣任何款项，请几分钟后再试。",
+    "error.pago_metodo_distinto": "这笔购买是按 PayPal 支付创建的。请返回商店并选择“刷卡支付”。",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "音乐",
     "head.musica_on": "开启音乐",
@@ -25203,6 +25303,11 @@
     'tienda.tu_cuenta': 'Tu cuenta',
     'tienda.precios': 'Precios en dólares con IVA incluido. Pago con tarjeta por Pago Plux.',
     'tienda.pago_inactivo': 'El pago con tarjeta todavía no está activo. Vuelve pronto.',
+    'tienda.pagar_tarjeta': 'Pagar con tarjeta',
+    'tienda.pagar_paypal': 'Pagar con PayPal',
+    'tienda.como_pagar': '¿Cómo quieres pagar?',
+    'tienda.precios_paypal': 'Precios en dólares con IVA incluido. Paga con tarjeta (Pago Plux) o, en compras desde {p}, con PayPal.',
+    'tienda.paypal_sandbox': 'PayPal en modo de pruebas: no se cobra dinero real.',
     'tienda.exclusivos': 'Exclusivos con créditos',
     'tienda.pronto_t': 'Pronto habrá exclusivos',
     'tienda.pronto': 'Vuelve más tarde para ver equipos especiales.',
@@ -25646,6 +25751,11 @@
     "error.material_invalido": "Ese material no existe.",
     "error.item_invalido": "Ese artículo no existe.",
     "error.tope_tienda": "Ya compraste eso las veces de hoy.",
+    "error.paypal_no_disponible": "El pago con PayPal todavía no está disponible. Paga con tarjeta o intenta más tarde.",
+    "error.paypal_minimo": "PayPal está disponible solo en compras más grandes. Paga este producto con tarjeta.",
+    "error.paypal_metodo_distinto": "Esta compra es para pagar con tarjeta. Vuelve a la tienda y elige PayPal.",
+    "error.paypal_error": "No se pudo conectar con PayPal. No se hizo ningún cobro: intenta otra vez en unos minutos.",
+    "error.pago_metodo_distinto": "Esta compra es para pagar con PayPal. Vuelve a la tienda y elige «Pagar con tarjeta».",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Música",
     "head.musica_on": "Activar música",
@@ -32973,6 +33083,7 @@
     unidad_movil: '<rect x="2" y="8" width="13" height="9" rx="1.5"/><path d="M15 11h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M7 8V5M4.5 3.5a3.5 3.5 0 015 0"/>',
     generador: '<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M7 7V4h4v3"/><path d="M13.5 10l-2.5 3.5h3l-2.5 3.5"/><path d="M6 19v2M18 19v2"/>',
     gem: '<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l-1.5 5L12 20l4.5-11L15 4"/>',
+    card: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/>',
     crown: '<path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/><path d="M5 19h14"/>',
     cart: '<path d="M3 4h2l2.5 11h11L21 7H6.5"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
@@ -35985,7 +36096,8 @@
   Api.subirPartida = (datos, o) => req('POST', '/api/partida', o ? { datos, base: o.base, dispositivo: o.dispositivo, tomar: !!o.tomar } : { datos }, 20000);
   Api.gastar = (item) => req('POST', '/api/gastar', { item });
   Api.bonoVip = () => req('POST', '/api/vip/bono', {});
-  Api.orden = (producto) => req('POST', '/api/orden', { producto });
+  // metodo: undefined = tarjeta (Pago Plux) · 'paypal' = PayPal (solo web, server/src/PayPal.php)
+  Api.orden = (producto, metodo) => req('POST', '/api/orden', metodo === 'paypal' ? { producto, metodo } : { producto });
 
   // Mercado entre jugadores (server/MERCADO.md)
   Api.mercado = (item, orden) => req('GET', '/api/mercado?' + new URLSearchParams({ item: item || '', orden: orden || 'precio' }).toString());
@@ -38035,7 +38147,17 @@
   const tipoProd = (p) => p.tipo || (/^creditos_/.test(p.id) ? 'creditos' : p.id === 'vip30' ? 'vip' : p.id === 'tarjeta_mensual' ? 'tarjeta'
     : /^pack_obra_/.test(p.id) ? 'pack_obra' : /^pase_premium/.test(p.id) ? 'pase' : ['inicio', 'bienvenida', 'pase_copa'].includes(p.id) ? p.id : 'otro');
   const prodPorId = (id) => { try { return ((Api.estado && Api.estado.tienda && Api.estado.tienda.productos) || []).find((p) => p.id === id) || null; } catch (e) { return null; } };
-  const puedePagarAhora = () => (enApp() ? playOk : !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible));
+  // PayPal (server/src/PayPal.php, docs/PAYPAL.md): SOLO en la web, nunca en la app de Google Play (enApp) ni en la versión
+  // de un solo archivo (dist/, sin servidor: no llega "paypal" en /api/estado). Desde paypal.minimo (la comisión se come las ventas chicas).
+  const pluxDisp = () => !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible);
+  const paypalDisp = () => !enApp() && !!(Api.disponible && Api.estado && Api.estado.paypal && Api.estado.paypal.disponible);
+  function paypalPara(id, usd) {
+    if (!paypalDisp()) return false;
+    let v = usd !== undefined && usd !== null && usd !== '' && isFinite(Number(usd)) ? Number(usd) : null;
+    if (v === null) { const p = prodPorId(id); v = p && isFinite(Number(p.precio)) ? Number(p.precio) : null; }
+    return v !== null && v + 0.001 >= (Number(Api.estado.paypal.minimo) || 0);
+  }
+  const puedePagarAhora = () => (enApp() ? playOk : pluxDisp() || paypalDisp());
   // Precio REAL de un producto en este canal: en la app solo el de Google Play (si no lo tiene: null, no se vende aquí)
   function precioReal(id, usd) {
     if (enApp()) return playOk && preciosPlay[id] && preciosPlay[id].precio ? String(preciosPlay[id].precio) : null;
@@ -38067,6 +38189,12 @@
     const valor = precioReal(id, o.usd);
     if (!valor) return '';
     const hecho = !!o.hecho;
+    // En la web, con PayPal: dos botones (tarjeta y PayPal). En la app o sin PayPal: el botón de siempre.
+    if (!hecho && paypalPara(id, o.usd)) {
+      return `<div class="tv-foot tv-foot2"><span class="price" data-precio="${esc(id)}">${esc(valor)}</span><div class="tv-pagos">
+        <button class="btn sm main" data-act="comprar" data-k="${esc(id)}" data-metodo="tarjeta" ${pluxDisp() ? '' : 'disabled'}>${I('card', 'sm')}${T('tienda.pagar_tarjeta')}</button>
+        <button class="btn sm paypal" data-act="comprar" data-k="${esc(id)}" data-metodo="paypal">${T('tienda.pagar_paypal')}</button></div></div>`;
+    }
     return `<div class="tv-foot"><span class="price" data-precio="${esc(id)}">${esc(valor)}</span>
       <button class="btn sm main" data-act="comprar" data-k="${esc(id)}" ${hecho || !puedePagarAhora() ? 'disabled' : ''}>${hecho ? T('tienda.ya_tienes') : T('tienda.comprar')}</button></div>`;
   }
@@ -38288,12 +38416,14 @@
         ${window.Buzon && window.Buzon.botonCanjear ? window.Buzon.botonCanjear() : ''}
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
     }
-    const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
+    const conPaypal = paypalDisp();
+    const prueba = (!app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '')
+      + (conPaypal && E.paypal.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.paypal_sandbox')}</p>` : '');
     // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta
     const lista = ((E.tienda && E.tienda.productos) || []).filter((p) => p && p.id && p.id !== 'transferencia_cuenta' && (!app || (playOk && preciosPlay[p.id])));
     const sinPago = app
       ? (playOk ? '' : `<div class="card small muted">${T('tienda.play_no_disp')}</div>`)
-      : (E.plux && E.plux.disponible ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
+      : (pluxDisp() || conPaypal ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
     // Para empezar: ofertas de una sola vez (bienvenida y paquete de inicio)
     const empezar = lista.filter((p) => ['inicio', 'bienvenida'].includes(tipoProd(p))).map((p) => cardProd(p, {
       cls: 'dest', ribbon: T('tienda.oferta_unica'), hecho: (p.id === 'inicio' && !!E.inicio_comprado) || (p.id === 'bienvenida' && !!E.bienvenida_comprada) })).join('');
@@ -38337,7 +38467,7 @@
       <div class="sectitle">${T('tienda.tu_cuenta')}</div>${cuenta}
       ${atajos}
       <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
-      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : T('tienda.precios')}</p>`}${prueba}
+      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}${prueba}
       ${sinPago}
       ${secs.map((x) => x.html).join('')}
       <p class="small muted">${T('tienda.aviso')}</p>
@@ -38455,10 +38585,25 @@
 
   // Se llama directo desde el clic: en la app, GooglePlay.comprar() va primero (sin nada esperado antes),
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
-  function comprar(id) {
-    AN('compra_iniciada', { producto: id, canal: enApp() ? 'google_play' : 'web_plux' });
-    if (enApp()) { comprarPlay(id); return; }
-    comprarWeb(id);
+  function comprar(id, metodo) {
+    if (enApp()) { AN('compra_iniciada', { producto: id, canal: 'google_play' }); comprarPlay(id); return; }   // en la app: solo Google Play
+    // Botón sin método (pase, VIP, Copa...) y el producto se puede pagar con PayPal: se pregunta cómo pagar
+    if (metodo !== 'tarjeta' && metodo !== 'paypal' && paypalPara(id)) { elegirPago(id); return; }
+    if (metodo === 'paypal' && !paypalPara(id)) metodo = 'tarjeta';
+    closeModal();
+    AN('compra_iniciada', { producto: id, canal: metodo === 'paypal' ? 'web_paypal' : 'web_plux' });
+    comprarWeb(id, metodo === 'paypal' ? 'paypal' : undefined);
+  }
+  // ¿Cómo quieres pagar? (tarjeta con Pago Plux o PayPal). Solo en la web.
+  function elegirPago(id) {
+    if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
+    const p = prodPorId(id);
+    const valor = precioReal(id);
+    openModal(`<div class="row between"><h2>${T('tienda.como_pagar')}</h2><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      ${p || valor ? `<p class="small muted">${p ? esc(TL(p.nombre)) : ''}${p && valor ? ' · ' : ''}${valor ? `<b>${esc(valor)}</b>` : ''}</p>` : ''}
+      <div class="tv-pagos tv-pagos-modal">
+        <button class="btn main" data-act="comprar" data-k="${esc(id)}" data-metodo="tarjeta" ${pluxDisp() ? '' : 'disabled'}>${I('card', 'sm')}${T('tienda.pagar_tarjeta')}</button>
+        <button class="btn paypal" data-act="comprar" data-k="${esc(id)}" data-metodo="paypal">${T('tienda.pagar_paypal')}</button></div>`);
   }
   // Después de una compra: el pase (premium), el nivel VIP y el Pase de Copa se ven al momento (INTEGRAR_PASE.md §7)
   function trasCompra() {
@@ -38515,11 +38660,11 @@
     } catch (e) { /* se reintenta la próxima vez */ }
   }
 
-  async function comprarWeb(id) {
+  async function comprarWeb(id, metodo) {
     if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
     try {
       save(); await subirNube();
-      const r = await Api.orden(id);
+      const r = await Api.orden(id, metodo);
       snd.play('tap');
       location.href = r.url;
     } catch (e) { toast(TL(e.message)); snd.play('error'); }
@@ -39235,7 +39380,7 @@
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
-      case 'comprar': comprar(el.dataset.k); break;
+      case 'comprar': comprar(el.dataset.k, el.dataset.metodo); break;
       case 'tienda-ir': snd.play('tap'); irSeccionTienda(el.dataset.k); break;
       case 'tienda-estrellas': snd.play('tap'); abrirEstrellas(); break;
       case 'tienda-pase': snd.play('tap'); try { window.Pase.abrir(ctxInicio()); } catch (err) { console.error('[tienda pase]', err); toast(T('err.no_completo')); } break;
