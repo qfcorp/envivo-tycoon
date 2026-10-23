@@ -44,7 +44,8 @@ final class Pase
     ];
 
     /** XP por cada intento validado (lo que el integrador pasa a sumarXp). */
-    public const XP = ['liga' => 40, 'festival' => 30, 'copa' => 40, 'duelo' => 40, 'desafio' => 60, 'obra_ayuda' => 25, 'copa_equipo' => 50];
+    public const XP = ['liga' => 40, 'festival' => 30, 'copa' => 40, 'duelo' => 40, 'desafio' => 60, 'obra_ayuda' => 25, 'copa_equipo' => 50,
+        'misiones' => 15];   // Misiones del día/semana (server/INTEGRAR_MISIONES.md): 15 por misión del día, 40 por semanal
     /** Fuentes que cuentan como "evento en línea" para las misiones. */
     public const EVENTOS = ['liga', 'festival', 'copa', 'duelo', 'desafio'];
     /** Fuentes internas (no pasan por el tope diario). */

@@ -38,6 +38,7 @@ try {
     if (class_exists(\EnVivo\TerminosApi::class) && \EnVivo\TerminosApi::esRuta($ruta)) \EnVivo\TerminosApi::responder($ruta, $metodo, requiere_sesion());
     // Pase de Temporada (server/INTEGRAR_PASE.md): /api/pase*
     if (class_exists(\EnVivo\PaseApi::class) && \EnVivo\PaseApi::esRuta($ruta)) \EnVivo\PaseApi::responder($ruta, $metodo, requiere_sesion());
+    if (class_exists(\EnVivo\MisionesApi::class) && \EnVivo\MisionesApi::esRuta($ruta)) \EnVivo\MisionesApi::responder($ruta, $metodo, requiere_sesion());   // Misiones del día (server/INTEGRAR_MISIONES.md)
     // VIP 1–10, regalos de asociación y Mecenas (server/INTEGRAR_VIP.md): /api/vip* y /api/mecenas
     if (class_exists(\EnVivo\VipApi::class) && \EnVivo\VipApi::esRuta($ruta)) \EnVivo\VipApi::responder($ruta, $metodo, requiere_sesion());
     // Copa de Servidores (server/INTEGRAR_COPAS.md): /api/copa*
