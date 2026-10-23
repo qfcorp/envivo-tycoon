@@ -275,6 +275,17 @@
   .chip.c-money .ci{background:#0e2e1d;color:#7fe0a8}
   .chip.c-fame .ci{background:#3a2a0d;color:#ffcf6e}
   .chip.c-day .ci{background:#0f2440;color:#8cc4ff}
+  .chip.c-gem .ci{background:#2a1540;color:#d4a5ff}
+  .chip.c-gem{flex:.95;cursor:pointer}
+  .chip.c-gem[hidden]{display:none}
+  /* Con 4 recuadros (dinero, fama, créditos, día) en un celular: sin íconos para que quepan los números */
+  @media (max-width:520px){
+    .stats.con-gem{gap:5px}
+    .stats.con-gem .chip{padding:6px 7px;gap:0}
+    .stats.con-gem .chip .ci{display:none}
+    .stats.con-gem .chip b{font-size:15px}
+    .stats.con-gem .chip.c-money{flex:1.3}.stats.con-gem .chip.c-fame{flex:.8}.stats.con-gem .chip.c-gem{flex:1.05}.stats.con-gem .chip.c-day{flex:.7}
+  }
   .chip .cv{min-width:0;line-height:1.1}
   .chip.c-money{flex:1.45}
   .chip.c-day{flex:.8}
@@ -378,6 +389,9 @@
   .prod .art{display:flex;justify-content:center}
   .prodrow{display:flex;align-items:center;gap:12px}
   .aviso-cuenta{border-color:#5a4214}
+  .prod-nom-row{margin:-2px 0 8px;gap:8px}
+  .prod-nom{font-family:var(--f-head);font-size:20px;letter-spacing:.4px;text-transform:uppercase;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prod-nom-btn{flex:none;margin:0}
   .pls{display:flex;flex-direction:column;gap:8px;margin:4px 0 14px}
   .pl-cab{width:100%;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:9px 12px;text-align:left;color:var(--text);font:inherit;cursor:pointer;min-height:54px}
   .pl-ic{flex:none;width:34px;height:34px;border-radius:10px;background:var(--panel2);display:flex;align-items:center;justify-content:center;color:var(--amber)}
@@ -580,6 +594,7 @@
   <div class="stats">
     <div class="chip c-money" id="cMoney" data-ayuda="dinero"><span class="ci" data-ico="money"></span><span class="cv"><small data-i18n="head.dinero">Dinero</small><b id="hMoney">$0</b></span></div>
     <div class="chip c-fame" id="cRep" data-ayuda="fama"><span class="ci" data-ico="star"></span><span class="cv"><small data-i18n="head.fama">Fama</small><b id="hRep">0</b></span></div>
+    <div class="chip c-gem" id="cGem" hidden data-act="tab" data-tab="tienda" role="button" tabindex="0"><span class="ci" data-ico="gem"></span><span class="cv"><small id="lGem">Créditos</small><b id="hGem">0</b></span></div>
     <div class="chip c-day" id="cDay" data-ayuda="dia"><span class="ci" data-ico="calendar"></span><span class="cv"><small data-i18n="head.dia">Día</small><b id="hDay">1</b></span></div>
   </div>
 </header>

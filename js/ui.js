@@ -114,14 +114,14 @@
   window.EnVivoInicio = window.EnVivoInicio || [];
   function ctxInicio() {
     // Lo mismo que ctxModulo (VIP, pase, estrellas...), pero `estado` es la partida misma (como siempre en Inicio)
-    return { ...ctxModulo(), G, S: () => S, get estado() { return S; }, A, T, TL, M, money: M, N, esc, I, toast, openModal, closeModal, ask,
+    return { ...ctxModulo(), G, S: () => S, get estado() { return S; }, nombreProductora, A, T, TL, M, money: M, N, esc, I, toast, openModal, closeModal, ask,
       render: () => render(), save: () => save(), snd: sndCtx, mus };
   }
   /* ---------- Contexto para los módulos de monetización (js/vip.js, js/pase.js, js/estrellas.js) ----------
      server/MONETIZACION.md: onComprar(productoId) abre el pago de siempre (Pago Plux en la web, Google Play en la app);
      precio(productoId) da el precio REAL que se cobra en este canal (null si en la app Google Play no lo tiene). */
   function ctxModulo() {
-    return { Api, A, G, T, TL, I18N: I18, M, money: M, N, esc, I,
+    return { Api, A, G, T, TL, I18N: I18, M, money: M, N, esc, I, nombreProductora,
       estado: () => S, S: () => S, guardar: () => save(), save: () => save(), render: () => render(),
       toast, ask, openModal, closeModal, snd: sndCtx, mus,
       vip: !!(Pm && Pm.vip), enApp: () => enApp(),
@@ -350,6 +350,14 @@
     $('hMoney').classList.toggle('neg', S.money < 0);
     $('hRep').textContent = Math.floor(S.rep);
     $('hDay').textContent = S.day;
+    // Créditos (💎) arriba, solo con cuenta: tocarlos lleva a la Tienda
+    const cg = $('cGem');
+    if (cg) {
+      const conCuenta = !!(Api.disponible && Api.estado && Api.estado.logueado);
+      cg.hidden = !conCuenta;
+      if (cg.parentElement) cg.parentElement.classList.toggle('con-gem', conCuenta);
+      if (conCuenta) { $('hGem').textContent = N(Api.estado.creditos || 0); { const l = T('tienda.creditos_lbl'); $('lGem').textContent = l.charAt(0).toUpperCase() + l.slice(1); } }
+    }
     if (lastHead) {
       if (S.money !== lastHead.m) bump('cMoney', S.money > lastHead.m);
       if (Math.floor(S.rep) !== lastHead.r) bump('cRep', Math.floor(S.rep) > lastHead.r);
@@ -450,6 +458,9 @@
     $('tab-inicio').innerHTML = `${rojo}
       <div class="card hqcard">${A.hq(S)}
         <div class="in">
+          <div class="row between prod-nom-row">${S.productora
+            ? `<b class="prod-nom">${esc(S.productora)}</b><button class="btn sm prod-nom-btn" data-act="nombre" aria-label="${esc(T('inicio.nombre_cambiar'))}">✎</button>`
+            : `<button class="btn sm prod-nom-btn" data-act="nombre" style="width:100%">${I('flag', 'sm')}${T('inicio.nombre_poner')}</button>`}</div>
           <div class="row wrap small">
             <span class="tag">${I('people')}${T('inicio.personas', { n: S.staff.length })}</span>
             <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
@@ -559,6 +570,22 @@
     snd.play('tap');
     render();
     if (ab[id]) { const n = document.querySelector(`.pl[data-pl="${id}"]`); if (n && n.scrollIntoView) try { n.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); } catch (e) { /* nada */ } }
+  }
+
+  /* ---------- Nombre de la productora (S.productora): sale en el letrero del local y en los vehículos ---------- */
+  const nombreProductora = () => (typeof S.productora === 'string' && S.productora.trim()) || T('inicio.nombre_def');
+  function abrirNombre() {
+    openModal(`<div class="row between"><h2>${T('inicio.nombre_titulo')}</h2><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      <p class="small muted">${T('inicio.nombre_ayuda')}</p>
+      <form id="formNombre"><label class="field">${T('inicio.nombre_campo')}<input id="prod-nombre" maxlength="24" autocomplete="organization" value="${esc(S.productora || '')}" placeholder="${esc(T('inicio.nombre_ej'))}" required></label>
+      <button class="btn main" type="submit">${I('check')}${T('inicio.nombre_guardar')}</button></form>`);
+    setTimeout(() => { try { $('prod-nombre').focus(); } catch (e) { /* nada */ } }, 50);
+  }
+  function guardarNombre() {
+    const v = ($('prod-nombre').value || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+    if (!v) { snd.play('error'); return; }
+    S.productora = v;
+    save(); closeModal(); snd.play('hire'); toast(T('inicio.nombre_listo', { n: v })); render();
   }
 
   /* ---------- Aviso de cuenta: sin cuenta, la partida vive SOLO en este celular ----------
@@ -1971,6 +1998,7 @@
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
       case 'cuenta-info': avisoCuenta(); break;
       case 'pl': plAlternar(el.dataset.k); break;
+      case 'nombre': abrirNombre(); break;
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
@@ -2061,6 +2089,7 @@
 
   document.addEventListener('submit', (e) => {
     if (e.target && e.target.id === 'formCuenta') { e.preventDefault(); enviarCuenta(e.target); }
+    if (e.target && e.target.id === 'formNombre') { e.preventDefault(); guardarNombre(); }
   });
 
   document.addEventListener('change', (e) => {

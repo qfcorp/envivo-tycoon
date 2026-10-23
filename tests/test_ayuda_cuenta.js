@@ -30,7 +30,7 @@ async function abrir(browser, caso) {
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|favicon/.test(m.text())) errores.push(m.text()); });
   const estado = () => {
     const e = { ok: true, tienda: { productos: [], premium: [] }, logueado: !!caso.logueado, entregas: [], inventario: [], plux: { disponible: false, ambiente: 'sandbox' } };
-    if (e.logueado) Object.assign(e, { jugador: { id: 7, nombre: 'QF', email: 'qf@envivo.test' }, creditos: 0, vip_activo: false, servidor: { id: 1, nombre: 'Servidor 1' } });
+    if (e.logueado) Object.assign(e, { jugador: { id: 7, nombre: 'QF', email: 'qf@envivo.test' }, creditos: 5000, vip_activo: false, servidor: { id: 1, nombre: 'Servidor 1' } });
     return e;
   };
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
@@ -54,11 +54,13 @@ async function abrir(browser, caso) {
   // Sin la guía del primer evento (si existe) para que no tape lo que se prueba aquí
   await page.addInitScript((c) => {
     try {
+      if (sessionStorage.getItem('init')) return;   // solo en la primera carga: al recargar queda lo que guardó el juego
+      sessionStorage.setItem('init', '1');
       localStorage.setItem('envivo_guia_v1', '"hecha"');
       if (c.idioma) localStorage.setItem('envivo_lang', c.idioma);
       if (c.partida) localStorage.setItem('envivo_tycoon_save_v1', c.partida);
       if (c.aviso != null) localStorage.setItem('envivo_aviso_cuenta', String(c.aviso));
-      if (c.plegado && !sessionStorage.getItem('ya')) { localStorage.setItem('envivo_inicio_abiertos', '{}'); sessionStorage.setItem('ya', '1'); }
+      if (c.plegado) localStorage.setItem('envivo_inicio_abiertos', '{}');
     } catch (e) { /* nada */ }
   }, { plegado: !!caso.plegado, idioma: caso.idioma || 'es', partida: caso.partida || null, aviso: caso.aviso == null ? null : caso.aviso });
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
@@ -242,6 +244,37 @@ async function partida(browser, cambios) {
       bien(!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: cerrada sin cambios no vuelve a decir "Nuevo"');
       bien(!(await desborde(page)), '7: sin desborde horizontal');
       bien(errores.length === 0, '7: sin errores de JS' + (errores.length ? ': ' + errores.join(' | ') : ''));
+      await ctx.close();
+    }
+
+    /* ---------- 8. Nombre de la productora y créditos arriba ---------- */
+    {
+      const { ctx, page, errores } = await abrir(browser, { partida: p2, aviso: 3 });
+      await cerrarOtras(page);
+      bien(await page.isHidden('#cGem'), '8: sin cuenta no salen los créditos arriba');
+      await page.click('.prod-nom-btn');
+      await page.fill('#prod-nombre', 'Producciones Pichincha');
+      await page.click('#formNombre button[type="submit"]');
+      await page.waitForTimeout(300);
+      bien((await page.textContent('.prod-nom')) === 'Producciones Pichincha', '8: el nombre sale en Inicio');
+      bien(await page.evaluate(() => /PRODUCCIONES PICHINCHA/.test(document.querySelector('.hqcard').innerHTML)), '8: el nombre sale en el letrero del local');
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.Api && window.Api.estado, null, { timeout: 8000 }); await cerrarOtras(page);
+      bien((await page.textContent('.prod-nom')) === 'Producciones Pichincha', '8: el nombre se guarda');
+      await page.screenshot({ path: path.join(OUT, 'ayuda_nombre.png') });
+      bien(errores.length === 0, '8: sin errores de JS' + (errores.length ? ': ' + errores.join(' | ') : ''));
+      await ctx.close();
+    }
+    {
+      const { ctx, page, errores } = await abrir(browser, { partida: p2, logueado: true });
+      await cerrarOtras(page);
+      bien(await page.isVisible('#cGem'), '8: con cuenta salen los créditos arriba');
+      bien((await page.textContent('#hGem')).replace(/\D/g, '') === '5000', '8: muestra 5.000 créditos');
+      await page.screenshot({ path: path.join(OUT, 'ayuda_creditos_arriba.png') });
+      await page.click('#cGem');
+      bien(await page.isVisible('#tab-tienda'), '8: tocar los créditos abre la Tienda');
+      bien(!(await desborde(page)), '8: sin desborde horizontal con 4 recuadros arriba');
+      bien(errores.length === 0, '8: sin errores de JS (con cuenta)' + (errores.length ? ': ' + errores.join(' | ') : ''));
       await ctx.close();
     }
 

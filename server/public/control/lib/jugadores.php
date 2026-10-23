@@ -96,6 +96,10 @@ function cc_ficha_jugador(int $id): string
         . '<label>Motivo (obligatorio)<input name="motivo" required maxlength="300" placeholder="Ej. compra N° 12 no llegó"></label>'
         . '<label class="check"><input type="checkbox" name="confirmo" value="1"> Confirmo la cantidad (obligatorio si es más de ' . cc_num(Control::CONFIRMAR_DESDE) . ')</label>'
         . '<p class="tenue">Hoy se movieron ' . cc_num($hoy) . ($tope > 0 ? ' de ' . cc_num($tope) . ' (tope diario)' : '') . ' créditos a mano.</p><button class="btn" type="submit">Aplicar</button></form>';
+    $h .= cc_form('jugador_dinero', ['jugador_id' => $id], 'form', '¿Dar este dinero del juego?')
+        . '<h3>Dar dinero del juego</h3><label>Dinero del juego en $ (no son créditos)<input type="number" name="monto" required min="1" max="1000000" step="1" inputmode="numeric" placeholder="Ej. 50000"></label>'
+        . '<label>Motivo (obligatorio)<input name="motivo" required maxlength="300" placeholder="Ej. demo para clientes"></label>'
+        . '<p class="tenue">Le llega a la partida la próxima vez que abra o recargue el juego (con su cuenta). Sirve para demos y pruebas.</p><button class="btn" type="submit">Dar dinero</button></form>';
     $h .= cc_form('jugador_estado', ['jugador_id' => $id], 'form', '¿Cambiar el estado de la cuenta?')
         . '<h3>Estado de la cuenta</h3><label>Estado<select name="estado">' . cc_opciones(['activo' => 'Activa', 'suspendido' => 'Suspendida (no compra, no vende, no chatea)', 'baneado' => 'Baneada (no entra; cierra sus sesiones)'], $estado) . '</select></label>'
         . '<label>Motivo (obligatorio para suspender o banear)<input name="motivo" maxlength="300"></label><button class="btn btn-peligro" type="submit">Guardar estado</button></form>';
@@ -174,6 +178,14 @@ function cc_a_jugadores(string $accion, string $q): string
             Fallo::si($cambio === false, 'Escribe un número entero de créditos.', 400);
             $saldo = Control::darCreditos($id, (int) $cambio, cc_post('motivo'), $q, cc_post('confirmo') === '1');
             return ($cambio > 0 ? 'Se dieron ' : 'Se quitaron ') . cc_num(abs($cambio)) . ' créditos. Saldo nuevo: ' . cc_num($saldo) . '.';
+        case 'jugador_dinero':
+            $monto = filter_var(cc_post('monto'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 1000000]]);
+            Fallo::si($monto === false, 'Escribe un monto entre 1 y 1.000.000.', 400);
+            $motivo = trim(cc_post('motivo'));
+            Fallo::si($motivo === '', 'Escribe el motivo.', 400);
+            \EnVivo\Monedero::entregar($id, 'dinero', '-', (int) $monto, 'panel');
+            \EnVivo\Auditoria::anotar($q, 'dinero_dar', '$' . $monto . ' del juego: ' . mb_substr($motivo, 0, 300), $id);
+            return 'Se enviaron $' . cc_num($monto) . ' del juego. Le llegan al abrir o recargar el juego.';
         case 'jugador_estado':
             $estado = cc_post('estado');
             Control::cambiarEstado($id, $estado, cc_post('motivo'), $q);

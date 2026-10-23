@@ -1389,6 +1389,13 @@
       const has = (t) => equip.some((e) => e && e.type === t);
       const cams = equip.filter((e) => { if (!e) return false; const it = catalogItem(e.type); return it ? it.cat === 'cam' && !['dron4k', 'grua'].includes(e.type) : /^cam_/.test(e.type); });
       const night = ((st.day || 1) % 2) === 0;
+      // Letrero con el nombre de la productora (s.productora); si no tiene nombre, el texto de siempre. Se ajusta al ancho.
+      const nomProd = typeof st.productora === 'string' ? st.productora.trim().toUpperCase().slice(0, 24) : '';
+      const letrero = (x, y, size, fill, def, maxW) => {
+        const t = nomProd || def;
+        const largo = t.length * size * 0.56 > maxW;
+        return `<text x="${x}" y="${y}" font-size="${size}" font-family="${FONT_D}" font-weight="800" fill="${fill}" text-anchor="middle"${largo ? ` textLength="${maxW}" lengthAdjust="spacingAndGlyphs"` : ''}>${t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}</text>`;
+      };
       const u = uid('h');
       const inline = ensureShared() ? '' : sharedDefs();
       const win = night ? '#ffd27a' : '#bcd8ff';
@@ -1405,20 +1412,20 @@
           ${night ? `<rect x="95" y="128" width="170" height="12" fill="#ffd27a" opacity=".35"/>${pool(180, 146, 90, 6, true)}` : ''}
           <path d="M180 62v8" stroke="#8b95a8"/><circle cx="180" cy="74" r="4" fill="#ffd27a" class="bulb"/>
           ${glowWin(76, 50, 14, 14)}${glowWin(270, 50, 14, 14)}
-          <rect x="200" y="46" width="54" height="11" rx="2" fill="#0d0f14"/><text x="227" y="54.5" font-size="7" font-family="${FONT_D}" font-weight="800" fill="#ff3b3b" text-anchor="middle">PRODUCCIONES</text>`;
+          <rect x="200" y="46" width="54" height="11" rx="2" fill="#0d0f14"/>${letrero(227, 54.5, 7, '#ff3b3b', 'PRODUCCIONES', 50)}`;
       } else if (stage === 1) {
         label = 'Oficina alquilada'; roofY = 24; roofX = 120;
         building = `<rect x="60" y="30" width="240" height="110" fill="${W}"/><rect x="56" y="24" width="248" height="10" fill="#3a4354"/><path d="M60 34h240v5H60z" fill="#000" opacity=".25"/>
           ${[0, 1, 2].map((i) => `<rect x="${80 + i * 40}" y="48" width="30" height="40" fill="#16202e" stroke="#4a5568"/>${glowWin(82 + i * 40, 50, 26, 36, i === 1 ? 1 : 0.7)}<path d="M${95 + i * 40} 48v40" stroke="#4a5568"/>`).join('')}
           <rect x="210" y="70" width="60" height="70" fill="#1a1d24"/>${glowWin(214, 74, 52, 40, 0.6)}
-          <rect x="206" y="44" width="68" height="16" rx="3" fill="${U('red')}"/><text x="240" y="55.5" font-size="9" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">PRODUCTORA</text>`;
+          <rect x="206" y="44" width="68" height="16" rx="3" fill="${U('red')}"/>${letrero(240, 55.5, 9, '#fff', 'PRODUCTORA', 64)}`;
       } else if (stage === 2) {
         label = 'Estudio propio'; roofY = 20; roofX = 110;
         building = `<rect x="40" y="26" width="280" height="114" fill="${W}"/><rect x="36" y="20" width="288" height="10" fill="#384358"/><path d="M40 30h280v5H40z" fill="#000" opacity=".25"/>
           <rect x="60" y="44" width="120" height="56" fill="#121a26" stroke="#4a5568"/>
           ${[0, 1, 2].map((i) => `<rect x="${68 + i * 38}" y="52" width="32" height="20" fill="#203048"/><rect x="${70 + i * 38}" y="54" width="28" height="16" fill="${['#2f6fb3', '#b33a3a', '#2f8f5b'][i]}" opacity="${night ? 0.9 : 0.6}"/>`).join('')}
           <path d="M70 84h100" stroke="#3b4659" stroke-width="6"/>${glowWin(60, 100, 120, 40, 0.4)}
-          <rect x="218" y="40" width="84" height="16" rx="3" fill="${U('red')}"/><circle cx="230" cy="48" r="3" fill="#fff" class="blink"/><text x="266" y="52" font-size="9" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">EN VIVO</text>
+          <rect x="218" y="40" width="84" height="16" rx="3" fill="${U('red')}"/><circle cx="230" cy="48" r="3" fill="#fff" class="blink"/>${letrero(268, 52, 9, '#fff', 'EN VIVO', 66)}
           <rect x="225" y="70" width="70" height="70" fill="#1a1d24"/>${glowWin(229, 74, 62, 40, 0.5)}`;
       } else {
         label = 'Centro de producción'; roofY = 12; roofX = 190;
@@ -1426,7 +1433,7 @@
           ${[0, 1, 2, 3].map((i) => `<rect x="${48 + i * 52}" y="34" width="44" height="30" fill="#15202f" stroke="#41506a"/><rect x="${50 + i * 52}" y="36" width="40" height="26" fill="${['#2f6fb3', '#b33a3a', '#2f8f5b', '#b38a2f'][i]}" opacity="${night ? 0.85 : 0.5}"/>`).join('')}
           ${[0, 1, 2, 3, 4].map((i) => glowWin(48 + i * 42, 88, 34, 18, 0.55)).join('')}
           <rect x="48" y="74" width="200" height="8" rx="2" fill="#3b4659"/>
-          <rect x="262" y="34" width="56" height="16" rx="3" fill="${U('red')}"/><text x="290" y="46" font-size="9" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">EN VIVO</text>
+          <rect x="262" y="34" width="56" height="16" rx="3" fill="${U('red')}"/>${letrero(290, 46, 9, '#fff', 'EN VIVO', 52)}
           <rect x="262" y="70" width="56" height="70" fill="#1a1d24"/>${glowWin(266, 74, 48, 36, 0.5)}
           <path d="M100 12V-2" stroke="#8b95a8" stroke-width="2"/><g transform="rotate(-30 100 -6)"><ellipse cx="100" cy="-6" rx="17" ry="6.5" fill="${U('dish')}"/><path d="M100 -6v-9" stroke="#8b95a8" stroke-width="1.5"/><circle cx="100" cy="-15" r="1.8" fill="#8b95a8"/></g>
           <path d="M290 12V-10M280 -2l10 -8 10 8" stroke="#8b95a8" stroke-width="2" fill="none"/><circle cx="290" cy="-12" r="3" fill="#ff3b3b" class="blink"/>`;
