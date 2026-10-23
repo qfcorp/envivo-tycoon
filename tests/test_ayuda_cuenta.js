@@ -54,8 +54,8 @@ async function abrir(browser, caso) {
   // Sin la guía del primer evento (si existe) para que no tape lo que se prueba aquí
   await page.addInitScript((c) => {
     try {
-      if (sessionStorage.getItem('init')) return;   // solo en la primera carga: al recargar queda lo que guardó el juego
-      sessionStorage.setItem('init', '1');
+      if (localStorage.getItem('__prueba_init')) return;   // solo en la primera carga: al recargar queda lo que guardó el juego
+      localStorage.setItem('__prueba_init', '1');
       localStorage.setItem('envivo_guia_v1', '"hecha"');
       if (c.idioma) localStorage.setItem('envivo_lang', c.idioma);
       if (c.partida) localStorage.setItem('envivo_tycoon_save_v1', c.partida);
