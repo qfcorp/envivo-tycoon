@@ -32,8 +32,9 @@ final class Plux
 
     public static function urlBase(): string
     {
-        $o = Config::get('PLUX_API_BASE');   // solo para pruebas (servidor falso local)
-        if ($o !== '' && preg_match('#^https?://[^\s]+/$#', $o)) return $o;
+        // Solo para pruebas (servidor falso local). En producción se ignora, y fuera de 127.0.0.1 debe ser https (auditoría A-15).
+        $o = Config::get('PLUX_API_BASE');
+        if ($o !== '' && self::ambiente() !== 'produccion' && preg_match('#^(https://[^\s]+/|http://(127\.0\.0\.1|localhost)(:\d+)?/[^\s]*)$#', $o)) return $o;
         return self::ambiente() === 'produccion' ? self::URL_PRODUCCION : self::URL_SANDBOX;
     }
 
@@ -157,6 +158,14 @@ final class Plux
     public static function texto(array $r): string
     {
         return mb_substr((string) json_encode(self::limpiar($r), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 3000);
+    }
+
+    /** Valor que devuelve Plux en la respuesta (si lo manda), para compararlo con la compra. */
+    public static function monto(array $r): ?float
+    {
+        $d = is_array($r['detail'] ?? null) ? $r['detail'] : $r;
+        foreach (['amount', 'monto', 'total', 'valor'] as $k) if (isset($d[$k]) && is_numeric($d[$k])) return round((float) $d[$k], 2);
+        return null;
     }
 
     /** Número de transacción que manda Plux (para relacionar el aviso de pago). */

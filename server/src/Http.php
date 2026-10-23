@@ -16,9 +16,19 @@ final class Http
         exit;
     }
 
-    public static function error(int $http, string $texto, array $extra = []): never
+    /** Código estable (para que el juego traduzca el mensaje) según el estado HTTP, si no se dio uno más preciso. */
+    public const CODIGOS = [400 => 'datos_invalidos', 401 => 'sesion_requerida', 402 => 'sin_creditos', 403 => 'prohibido', 404 => 'no_encontrado',
+        405 => 'metodo_no_permitido', 409 => 'conflicto', 410 => 'vencido', 413 => 'muy_grande', 422 => 'datos_invalidos', 429 => 'limite_intentos',
+        500 => 'error_servidor', 502 => 'error_externo', 503 => 'no_disponible'];
+
+    /**
+     * Error para el juego: { ok: false, error: "texto en español", codigo: "codigo_estable", ...extra }.
+     * El texto está en español; "codigo" no cambia nunca (el juego lo usa para traducir a sus 10 idiomas).
+     */
+    public static function error(int $http, string $texto, array $extra = [], ?string $codigo = null): never
     {
-        self::json($http, ['ok' => false, 'error' => $texto] + $extra);
+        $codigo ??= is_string($extra['codigo'] ?? null) ? $extra['codigo'] : (self::CODIGOS[$http] ?? 'error');
+        self::json($http, ['ok' => false, 'error' => $texto, 'codigo' => $codigo] + $extra);
     }
 
     /** Cuerpo JSON de la petición (máximo $max bytes). Si no es JSON válido devuelve []. */

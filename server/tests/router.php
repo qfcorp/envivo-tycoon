@@ -20,8 +20,19 @@ $enviar = function (string $f) use ($no): bool {
     readfile($f);
     return true;
 };
-if ($ruta === '/terminos.html' || $ruta === '/privacidad.html') return $enviar($pub . $ruta);
 if (str_starts_with($ruta, '/pago-assets/')) return $enviar($pub . '/assets/' . substr($ruta, 13));
+// Mismas cabeceras de seguridad que nginx (deploy/nginx-sitio.sh, auditoría A-09): así las pruebas del juego corren con la CSP real
+$csp = function (string $cual): void {
+    header('X-Frame-Options: DENY'); header('Referrer-Policy: same-origin'); header('X-Content-Type-Options: nosniff');
+    $v = $cual === 'juego'
+        ? "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        : "default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+    header('Content-Security-Policy: ' . $v);
+};
+if ($ruta === '/' || $ruta === '/index.html' || $ruta === '/sw.js') $csp('juego');
+if (in_array($ruta, ['/terminos.html', '/privacidad.html', '/borrar-cuenta.html'], true)) $csp('legal');
+if (in_array($ruta, ['/terminos.html', '/privacidad.html', '/borrar-cuenta.html'], true)) return $enviar($pub . $ruta);
+if ($ruta === '/.well-known/assetlinks.json') return $enviar($raiz . $ruta);
 if ($ruta === '/') return $enviar($raiz . '/index.html');
 if (in_array($ruta, ['/index.html', '/sw.js', '/manifest.webmanifest', '/robots.txt'], true)) return $enviar($raiz . $ruta);
 if ($ruta === '/favicon.ico') return $enviar($raiz . '/icons/favicon-32.png');

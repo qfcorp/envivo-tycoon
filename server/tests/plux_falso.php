@@ -4,7 +4,9 @@
 // AES-256-ECB, el idEstablecimiento en base64, que urlRetorno3ds NO tenga parámetros y el valor final. Anota cada revisión en
 // FALSO_LOG (sin datos de tarjeta: solo los 4 últimos números).
 // Tarjetas: 4540639936908783 aprobada (0) · 4111111111111111 rechazada (2) · 36417200103608 pide OTP 123456 (100/102/0)
-//           5555555555554444 pide 3DS (103) · cualquier otra: error (1)
+//           5555555555554444 pide 3DS (103) · 4000056655665556 aprobada pero tarda 1,5 s (para probar dos pagos a la vez)
+//           cualquier otra: error (1). El 3DS se comporta como Plux: el 103 trae el número de transacción y la confirmación
+//           devuelve ese mismo número y el valor (y se puede repetir: es una consulta).
 $E = fn(string $k) => (string) getenv($k);
 $ruta = (string) parse_url((string) $_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $json = function (int $http, array $d): void { http_response_code($http); header('Content-Type: application/json'); echo json_encode($d); };
@@ -21,8 +23,10 @@ $in = json_decode((string) file_get_contents('php://input'), true) ?: [];
 
 if ($ruta === '/intv1/integrations/dataTransactionThreeDsResource') {
     $ok = $authOk && str_starts_with((string) ($in['ptk'] ?? ''), 'TK-') && ($in['pti'] ?? '') === 'PTI-1' && ($in['pcc'] ?? '') === 'PCC-1';
+    $refp = preg_replace('/\W/', '', substr((string) ($in['ptk'] ?? ''), 3));
+    $montoRef = is_file($E('FALSO_LOG') . '.ref_' . $refp) ? (float) file_get_contents($E('FALSO_LOG') . '.ref_' . $refp) : null;
     $anotar(['ruta' => '3ds', 'auth_ok' => $authOk, 'code' => $ok ? 0 : 2]);
-    $json(200, $ok ? ['code' => 0, 'description' => 'Aprobada con 3DS', 'detail' => ['id_transaccion' => 'FALSO3DS-' . substr((string) $in['ptk'], 3)]]
+    $json(200, $ok ? ['code' => 0, 'description' => 'Aprobada con 3DS', 'detail' => ['id_transaccion' => 'FALSO3DS-' . $refp] + ($montoRef !== null ? ['amount' => $montoRef] : [])]
                    : ['code' => 2, 'description' => 'Validación 3DS fallida']);
     return true;
 }
@@ -43,6 +47,7 @@ $code = match (true) {
     !$authOk => 401,
     !$claveOk || !$tarjetaOk => 1,
     $num === '4540639936908783' => 0,
+    $num === '4000056655665556' => (usleep(1500000) || true) ? 0 : 0,
     $num === '4111111111111111' => 2,
     $num === '36417200103608' => $otp === null ? 100 : (($otp['otpCode'] ?? '') === '123456' && ($otp['idTransaction'] ?? '') === 'OTP-1' ? 0 : 102),
     $num === '5555555555554444' => 103,
@@ -55,6 +60,7 @@ $anotar(['ruta' => 'pago', 'auth_ok' => $authOk, 'clave_ok' => $claveOk, 'tarjet
     'descripcion' => $in['description'] ?? '', 'documento' => $in['buyer']['documentNumber'] ?? '', 'telefono' => $in['buyer']['phone'] ?? '',
     'otp' => $otp !== null, 'code' => $code]);
 $ref = bin2hex(random_bytes(4));
+if ($code === 103) file_put_contents($E('FALSO_LOG') . '.ref_' . $ref, (string) $monto);
 match ($code) {
     401 => $json(401, ['code' => 1, 'description' => 'No autorizado']),
     0 => $json(200, ['code' => 0, 'description' => 'Transacción aprobada', 'detail' => ['id_transaccion' => 'FALSO-' . $ref, 'cardNumber' => substr($num, 0, 6) . '******' . substr($num, -4),
@@ -62,7 +68,7 @@ match ($code) {
     2 => $json(200, ['code' => 2, 'description' => 'Transacción rechazada', 'detail' => 'Fondos insuficientes']),
     100 => $json(200, ['code' => 100, 'description' => 'Requiere OTP', 'detail' => ['idTransaction' => 'OTP-1', 'sessionId' => 'S-1', 'tkn' => 'a', 'tknky' => 'b', 'tkniv' => 'c']]),
     102 => $json(200, ['code' => 102, 'description' => 'OTP incorrecto', 'detail' => ['idTransaction' => 'OTP-1', 'sessionId' => 'S-1', 'tkn' => 'a', 'tknky' => 'b', 'tkniv' => 'c']]),
-    103 => $json(200, ['code' => 103, 'description' => 'Requiere 3DS', 'detail' => ['url' => $E('FALSO_BASE') . '/banco?ref=' . $ref . '&ret=' . rawurlencode($retorno), 'parameters' => [], 'customFormChallenge' => false]]),
+    103 => $json(200, ['code' => 103, 'description' => 'Requiere 3DS', 'detail' => ['id_transaccion' => 'FALSO3DS-' . $ref, 'url' => $E('FALSO_BASE') . '/banco?ref=' . $ref . '&ret=' . rawurlencode($retorno), 'parameters' => [], 'customFormChallenge' => false]]),
     default => $json(200, ['code' => 1, 'description' => 'Tarjeta no válida']),
 };
 return true;

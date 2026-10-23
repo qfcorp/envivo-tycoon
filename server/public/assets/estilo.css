@@ -58,3 +58,28 @@ th { background: var(--panel2); color: var(--tenue); font-weight: 600; }
 @media (min-width: 720px) { .form-fila { grid-template-columns: 2fr 1fr 2fr auto; align-items: end; } h1 { font-size: 1.6rem; } }
 .separada { margin-top: 10px; }
 td.largo { white-space: normal; min-width: 260px; }
+.en-linea { display: inline-block; margin: 2px; }
+.boton.chico, .chico { padding: 6px 10px; font-size: .82rem; border-radius: 8px; }
+td.acciones { white-space: normal; min-width: 220px; }
+.palabras { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.palabra { display: inline-flex; align-items: center; gap: 2px; background: var(--panel2); border: 1px solid var(--borde); border-radius: 999px; padding: 2px 4px 2px 10px; font-size: .85rem; }
+.palabra .quitar { background: transparent; border: 0; color: var(--rojo); font-size: 1rem; cursor: pointer; padding: 0 6px; }
+/* Centro de Control */
+.tabs { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; margin: 6px 0 14px; scrollbar-width: thin; }
+.tabs a { flex: 0 0 auto; padding: 8px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--borde); color: var(--texto); text-decoration: none; font-size: .9rem; white-space: nowrap; }
+.tabs a.activo { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+.burbuja { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--ambar); color: #111; font-size: .75rem; font-weight: 700; text-align: center; }
+.estado-activo { color: var(--verde); } .estado-suspendido { color: var(--ambar); font-weight: 700; } .estado-baneado { color: var(--rojo); font-weight: 700; } .estado-revertido { color: var(--ambar); font-weight: 700; }
+.form-producto { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.form-producto label { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; color: var(--tenue); }
+.form-producto input[name=precio] { width: 90px; } .form-producto input[name=creditos] { width: 110px; }
+.form-producto .casilla { flex-direction: row; align-items: center; margin: 0; }
+textarea { width: 100%; min-width: 0; background: var(--panel2); color: var(--texto); border: 1px solid var(--borde); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 16px; }
+.conversacion { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.msg { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 8px 12px; max-width: 92%; }
+.msg p { margin: 4px 0 0; } .msg-soporte { align-self: flex-end; border-color: var(--ambar); }
+pre.diag { white-space: pre-wrap; word-break: break-word; background: var(--panel2); padding: 10px; border-radius: 10px; font-size: .8rem; }
+details summary { cursor: pointer; color: var(--ambar); }
+/* Marcadores que el dueño debe completar en las páginas legales (se ven resaltados hasta que se reemplacen) */
+mark.falta { background: var(--ambar); color: #111; padding: 0 3px; border-radius: 3px; }
+ol, ul { padding-left: 22px; }

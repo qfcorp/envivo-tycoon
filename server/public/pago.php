@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Catalogo, Compras, Cuentas, Db, Http, Plux, Sesiones};
+use EnVivo\{Ajustes, Catalogo, Compras, Cuentas, Db, Http, Plux, Sesiones};
 
 try {
     Db::pdo();
@@ -20,10 +20,12 @@ try {
     if ($c['estado'] === 'pagado') Http::redirigir('/?compra=ok');
     if ($c['estado'] !== 'pendiente') Http::pagina(409, 'Esta compra ya no está abierta', 'Vuelve al juego y empieza otra compra.');
     if (!Plux::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con tarjeta todavía no está listo. Intenta más tarde.');
-    $p = Catalogo::producto((string) $c['producto']);
+    if (Ajustes::mantenimiento()) Http::pagina(503, 'Tienda en mantenimiento', Ajustes::mensajeMantenimiento());
+    if (Cuentas::estadoCuenta($j) !== 'activo') Http::pagina(403, 'Cuenta suspendida', Cuentas::aviso(Cuentas::estadoCuenta($j)) ?? 'Tu cuenta no está activa.');
+    $p = Catalogo::productoCompra((string) $c['producto']);
     if (!$p) Http::pagina(404, 'Producto no disponible', 'Este producto ya no está en la tienda.');
-    if ($c['producto'] === 'inicio' && Compras::inicioComprado($j)) Http::pagina(409, 'Ya tienes el paquete de inicio', 'El paquete de inicio se compra una sola vez y ya lo tienes en tu cuenta.');
-    Sesiones::recordarCompra((int) $c['id']);   // para reconocer la compra al volver del banco (3DS)
+    if ($p['una_vez'] && Compras::yaComprado($j, (string) $c['producto'])) Http::pagina(409, 'Ya lo tienes', 'Este producto (' . $p['nombre'] . ') se compra una sola vez y ya lo tienes en tu cuenta.');
+    // OJO (auditoría A-02): abrir esta página NO cambia la compra que se recuerda para el regreso del banco; solo /api/plux/pago lo hace.
     $jug = Cuentas::porId($j);
 } catch (\Throwable $e) {
     error_log('EN VIVO pago.php: ' . get_class($e) . ' ' . basename($e->getFile()) . ':' . $e->getLine() . ' ' . mb_substr($e->getMessage(), 0, 300));
@@ -91,6 +93,7 @@ echo Http::inicioHtml('Pagar ' . $p['nombre']);
 
   <p class="tenue seguro">Tu tarjeta se procesa con Pago Plux; nosotros no guardamos los datos de tu tarjeta. Los datos se cifran en este navegador antes de enviarse.</p>
   <p class="tenue">Si eres menor de edad, pide permiso a tus padres antes de comprar.</p>
+  <p class="tenue">¿Problemas con un pago? Usa la opción «Ayuda y soporte» dentro del juego.</p>
   <p class="pie"><a href="/">← Volver al juego</a> · <a href="/terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
 </main>
 <script src="/pago-assets/vendor/crypto-js.min.js"></script>

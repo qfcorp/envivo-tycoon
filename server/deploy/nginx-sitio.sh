@@ -10,7 +10,8 @@
 #     (y /css/, /img/, /audio/, /sounds/, /fonts/ si algun dia existen).
 #   - /api/...            -> server/public/api.php  (PHP)
 #   - /pago.php, /admin.php -> server/public/        (PHP)
-#   - /terminos.html, /privacidad.html -> server/public/
+#   - /terminos.html, /privacidad.html, /borrar-cuenta.html -> server/public/
+#   - /.well-known/assetlinks.json (app de Android) -> la raiz del juego
 #   - /pago-assets/...    -> server/public/assets/  (estilo y JavaScript de la pagina de pago)
 #   - TODO lo demas da 404: /server/src, /server/tests, /server/deploy, /server/bin, los .env, .git, /tests,
 #     /tools, /dist, PLAN.md, README.md... Si el juego agrega una carpeta nueva, hay que sumarla aqui.
@@ -24,6 +25,18 @@ LISTEN="${LISTEN:-}"
 if [ -z "${IPV6:-}" ]; then [ -s /proc/net/if_inet6 ] && IPV6=1 || IPV6=0; fi
 v6() { [ "$IPV6" = "1" ] && echo "    listen [::]:$1;"; return 0; }
 PUB="$APP/server/public"
+HSTS="${HSTS:-}"   # se llena solo en el modo HTTPS (abajo)
+
+# Cabeceras de seguridad. OJO: en nginx, un add_header dentro de un "location" ANULA todos los de afuera; por eso
+# cada location que tiene su propio add_header repite estas lineas (auditoria A-09).
+CSP_JUEGO="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+CSP_LEGAL="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+cab() {
+  [ -n "$HSTS" ] && printf '%s ' "add_header Strict-Transport-Security \"$HSTS\" always;"
+  printf '%s' "add_header X-Content-Type-Options nosniff always; add_header Referrer-Policy same-origin always; add_header X-Frame-Options DENY always;"
+}
+cab_juego() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_JUEGO"; }
+cab_legal() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_LEGAL"; }
 
 reglas() {
 cat <<NGINX
@@ -61,13 +74,13 @@ cat <<NGINX
     set_real_ip_from 2c0f:f248::/32;
     real_ip_header CF-Connecting-IP;
 
-    add_header X-Content-Type-Options nosniff always;
-    add_header Referrer-Policy same-origin always;
+    # Para todo lo que no tiene su propio add_header (API, PHP, js, iconos...)
+    $(cab)
 
     # ---- Archivos del juego (lista blanca) ----
-    location = / { try_files /index.html =404; add_header Cache-Control "no-cache"; add_header X-Content-Type-Options nosniff always; }
-    location = /index.html { add_header Cache-Control "no-cache"; add_header X-Content-Type-Options nosniff always; }
-    location = /sw.js { add_header Cache-Control "no-cache"; add_header X-Content-Type-Options nosniff always; }
+    location = / { try_files /index.html =404; add_header Cache-Control "no-cache"; $(cab_juego) }
+    location = /index.html { add_header Cache-Control "no-cache"; $(cab_juego) }
+    location = /sw.js { add_header Cache-Control "no-cache"; $(cab_juego) }
     location = /manifest.webmanifest { default_type application/manifest+json; }
     location = /favicon.ico { try_files /icons/favicon-32.png =404; }
     location = /robots.txt { try_files \$uri =404; }
@@ -96,8 +109,21 @@ cat <<NGINX
         fastcgi_param HTTP_PROXY "";
         fastcgi_pass unix:$SOCK;
     }
-    location = /terminos.html { root $PUB; add_header Cache-Control "no-cache"; }
-    location = /privacidad.html { root $PUB; add_header Cache-Control "no-cache"; }
+    # Bot de Discord: Discord manda aquí los comandos (firmados con Ed25519; sin firma válida PHP responde 401)
+    location = /discord/interacciones {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $PUB/discord/interacciones.php;
+        fastcgi_param SCRIPT_NAME /discord/interacciones;
+        fastcgi_param HTTP_PROXY "";
+        fastcgi_read_timeout 60s;
+        client_max_body_size 256k;
+        fastcgi_pass unix:$SOCK;
+    }
+    location = /terminos.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_legal) }
+    location = /privacidad.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_legal) }
+    location = /borrar-cuenta.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_legal) }
+    # App de Android (Trusted Web Activity): Digital Asset Links. El archivo va en la raiz del juego: .well-known/assetlinks.json
+    location = /.well-known/assetlinks.json { default_type application/json; add_header Cache-Control "no-cache"; $(cab) try_files \$uri =404; }
     location ^~ /pago-assets/ {
         alias $PUB/assets/;
         try_files \$uri =404;
@@ -131,7 +157,7 @@ $(v6 "443 ssl http2")
 NGINX
   [ -f /etc/letsencrypt/options-ssl-nginx.conf ] && echo "    include /etc/letsencrypt/options-ssl-nginx.conf;"
   [ -f /etc/letsencrypt/ssl-dhparams.pem ] && echo "    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;"
-  echo '    add_header Strict-Transport-Security "max-age=31536000" always;'
+  HSTS="max-age=31536000"
   reglas
   echo "}"
 else

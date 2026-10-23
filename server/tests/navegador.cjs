@@ -9,9 +9,13 @@ const { chromium } = require('playwright');
   const [base] = process.argv.slice(2);
   const r = { ok: false, pasos: {}, errores: [] };
   const nav = await chromium.launch();
+  // Solo se cuentan errores de las páginas del servidor (pago, legales). La portada del juego ("/") la prueba su propio
+  // equipo: al volver del banco (3DS) se llega a /?compra=ok por redirecciones del servidor y ahí carga el juego real.
+  const esJuego = (u) => { try { const x = new URL(u); return x.pathname === '/' || x.pathname.startsWith('/js/') || x.pathname.startsWith('/icons/'); } catch (e) { return false; } };
   const vigilar = (p, n) => {
-    p.on('pageerror', e => r.errores.push(n + ': ' + e));
-    p.on('console', m => { if (m.type() === 'error') r.errores.push(n + ' consola: ' + m.text()); });
+    p.on('pageerror', e => { if (!esJuego(p.url())) r.errores.push(n + ': ' + e); });
+    p.on('console', m => { if (m.type() === 'error' && !esJuego(p.url())) r.errores.push(n + ' consola: ' + m.text() + ' @ ' + ((m.location() || {}).url || '')); });
+    p.on('response', x => { if (x.status() >= 400 && !esJuego(p.url()) && !esJuego(x.url()) && !/\/api\/plux\/pago/.test(x.url())) r.errores.push(n + ' HTTP ' + x.status() + ' ' + x.url()); });
     return p;
   };
   const desborde = (p) => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -30,10 +34,11 @@ const { chromium } = require('playwright');
     await p.fill('#plux-telefono', '0987654321');
   };
   try {
-    const ctx = await nav.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'es-EC' });
+    // serviceWorkers: 'block' -> esta prueba es de la página de pago; el modo sin internet del juego lo prueba su propio equipo
+    const ctx = await nav.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'es-EC', serviceWorkers: 'block' });
     // El juego (index.html) no es parte de esta prueba (lo prueba su propio equipo): la portada "/" se cambia por una
     // página mínima solo para confirmar que llegamos a /?compra=ok.
-    await ctx.route(u => u.origin === new URL(base).origin && u.pathname === '/', x => x.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>juego</title><p>juego</p>' }));
+    await ctx.route(new RegExp('^' + base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(\\?.*)?$'), x => x.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>juego</title><p>juego</p>' }));
     const email = 'nav' + Date.now() + '@prueba.example';
     const reg = await api(ctx, '/api/registro', { email, nombre: 'Nadia Navegador', clave: 'ClaveNavegador1' });
     r.pasos.registro = reg.logueado === true;

@@ -13,7 +13,7 @@
 #   2. Crea /var/lib/envivo (la base de datos; solo www-data, permisos 750).
 #   3. Crea /etc/envivo/config.env si no existe (pregunta usuario y clave del panel; Plux queda vacio en sandbox).
 #   4. Baja (git clone) o actualiza (git pull) https://github.com/qfcorp/envivo-tycoon en /var/www/envivo.
-#   5. Crea las tablas (migraciones).
+#   5. Crea las tablas (migraciones) y programa la tarea diaria (bin/tareas.php).
 #   6. Escribe el sitio de nginx /etc/nginx/sites-available/juego.tukanec.com, prueba con "nginx -t"
 #      y SOLO si la prueba sale bien recarga nginx (si sale mal, deja todo como estaba).
 #   7. Ofrece el certificado HTTPS con certbot.
@@ -122,6 +122,14 @@ PLUX_LLAVE_PUBLICA=
 ; Aviso de pago (webhook), opcional: https://$DOMINIO/api/plux/webhook con este usuario y clave
 PLUX_WEBHOOK_USUARIO=plux_aviso
 PLUX_WEBHOOK_CLAVE=$HOOK_CLAVE
+
+; Soporte (lo muestra el juego en "Ayuda y soporte"). Solo correo, sin WhatsApp.
+SOPORTE_CORREO=
+SOPORTE_HORARIO=
+
+; Google Play (app de Android). Ver server/GOOGLE_PLAY.md
+GOOGLE_PACKAGE_NAME=com.tukanec.envivo
+GOOGLE_SERVICE_ACCOUNT_JSON=/etc/envivo/google-play.json
 CONF
   umask 022
   echo "   creada"
@@ -146,6 +154,23 @@ chmod -R u+rwX,go+rX,go-w "$APP"
 
 echo "== 5. Tablas de la base de datos"
 if sudo -u www-data env ENVIVO_CONFIG="$CONF" php "$APP/server/bin/migrar.php"; then echo "   listo"; else echo "   ERROR en las migraciones (mira el mensaje de arriba)"; exit 1; fi
+
+echo "== 5b. Tareas programadas (tarea diaria 4:10, Google Play, Discord, Festival, Liga)"
+TAREA="10 4 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/tareas.php >> /var/log/envivo-tareas.log 2>&1"
+touch /var/log/envivo-tareas.log && chown www-data:www-data /var/log/envivo-tareas.log
+# Google Play: cada 6 horas reintenta avisos a Google y revisa compras anuladas (reembolsos / contracargos)
+# Todas las tareas programadas del juego (cron de www-data, con ENVIVO_CONFIG). Se reescriben cada vez (no se duplican).
+CRON_JUEGO="$(cat <<CRON
+$TAREA
+25 */6 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/google_anulados.php >> /var/log/envivo-tareas.log 2>&1
+*/10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/discord_sync.php >> /var/log/envivo-discord.log 2>&1
+*/10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/festival.php >> /var/log/envivo-festival.log 2>&1
+1 0 * * 1 ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
+15 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
+CRON
+)"
+for l in envivo-tareas envivo-discord envivo-festival envivo-liga; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
+( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
 
 echo "== 6. nginx: sitio $DOMINIO"
 NUEVO="$(mktemp)"
@@ -213,6 +238,9 @@ echo "    (con la nube gris certbot funciona directo; si luego la pones naranja,
 echo " b) Certificado:   sudo certbot --nginx -d $DOMINIO     y despues otra vez:   sudo bash $APP/server/deploy/instalar.sh"
 echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_CLIENTE, PLUX_CLAVE_SECRETA y PLUX_LLAVE_PUBLICA"
 echo "    (deja PLUX_AMBIENTE=sandbox hasta probar), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
-echo " d) Revisa con un abogado y completa terminos.html y privacidad.html ([RUC], [CORREO DE SOPORTE], [WHATSAPP])."
+echo " d) Revisa con un abogado y completa terminos.html y privacidad.html ([RUC], [CORREO DE SOPORTE], [DIRECCION], [FECHA])."
+echo " d2) Soporte: cuando tengas el correo de soporte, ponlo en $CONF (SOPORTE_CORREO=... y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00)"
+echo "     y luego:  sudo systemctl reload php$PHPV-fpm   (el juego lo muestra en Ayuda y soporte)"
+echo " d3) Google Play (cuando publiques la app): sigue server/GOOGLE_PLAY.md"
 echo " e) Panel de ventas:   https://$DOMINIO/admin.php"
 echo " f) Para actualizar mas adelante:   sudo bash $APP/server/deploy/actualizar.sh"

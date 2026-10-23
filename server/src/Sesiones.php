@@ -24,7 +24,7 @@ final class Sesiones
         self::$leida = true;
         $tok = (string) ($_COOKIE[self::GALLETA] ?? '');
         if (!preg_match('/^[a-f0-9]{64}$/', $tok)) return null;
-        $s = Db::fila('SELECT s.token_hash, s.jugador_id, s.expira, s.compra_pendiente, s.creado AS sesion_creada FROM sesiones s WHERE s.token_hash = ?', [hash('sha256', $tok)]);
+        $s = Db::fila('SELECT s.token_hash, s.jugador_id, s.expira, s.compra_pendiente, s.creado AS sesion_creada, s.ultimo_dia FROM sesiones s WHERE s.token_hash = ?', [hash('sha256', $tok)]);
         if (!$s) return null;
         if ((int) $s['expira'] < time()) {
             Db::q('DELETE FROM sesiones WHERE token_hash = ?', [$s['token_hash']]);
@@ -37,9 +37,24 @@ final class Sesiones
             Db::q('UPDATE sesiones SET expira = ? WHERE token_hash = ?', [$exp, $s['token_hash']]);
             self::ponerGalleta($tok, $exp);
         }
+        self::actividad($s);
         self::$actual = $s;
         return $s;
     }
+
+    /** Anota que el jugador jugó hoy (una vez por día y sesión): sirve para DAU / MAU del Centro de Control. */
+    private static function actividad(array $s): void
+    {
+        $hoy = date('Y-m-d');
+        if (($s['ultimo_dia'] ?? null) === $hoy) return;
+        try {
+            Db::q('UPDATE sesiones SET ultimo_dia = ? WHERE token_hash = ?', [$hoy, $s['token_hash']]);
+            Db::q('INSERT OR IGNORE INTO actividad (jugador_id, dia) VALUES (?, ?)', [$s['jugador_id'], $hoy]);
+        } catch (\Throwable) {}
+    }
+
+    /** Cierra TODAS las sesiones de un jugador (transferencia de cuenta, baneo, "cerrar sesiones" del panel). */
+    public static function revocarTodas(int $jugador): int { return Db::q('DELETE FROM sesiones WHERE jugador_id = ?', [$jugador])->rowCount(); }
 
     public static function jugadorId(): ?int
     {
@@ -58,7 +73,8 @@ final class Sesiones
         if (random_int(1, 20) === 1) Db::q('DELETE FROM sesiones WHERE expira < ?', [time()]);
         self::ponerGalleta($tok, $exp);
         self::$leida = true;
-        self::$actual = Db::fila('SELECT token_hash, jugador_id, expira, compra_pendiente, creado AS sesion_creada FROM sesiones WHERE token_hash = ?', [hash('sha256', $tok)]);
+        self::$actual = Db::fila('SELECT token_hash, jugador_id, expira, compra_pendiente, creado AS sesion_creada, ultimo_dia FROM sesiones WHERE token_hash = ?', [hash('sha256', $tok)]);
+        self::actividad(self::$actual);
     }
 
     public static function cerrar(): void

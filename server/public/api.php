@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Catalogo, Compras, Cuentas, Db, Http, Limite, Monedero, Plux, Sesiones};
+use EnVivo\{Ajustes, Catalogo, Chat, Compras, Cuentas, Db, Fallo, Google, Http, Inventario, Limite, Mercado, Monedero, Plux, Sesiones, Social, Soporte, Transferencias};
 
 $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $ruta = '/' . trim(substr($ruta, strlen('/api')), '/');
@@ -21,14 +21,17 @@ try {
     if ($ruta === '/plux/3ds') api_plux_3ds();
 
     // Protección simple contra peticiones desde otros sitios (junto con SameSite=Lax de la galleta).
-    if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.');
+    if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.', [], 'cabecera_requerida');
     if (!in_array($metodo, ['GET', 'POST'], true)) Http::error(405, 'Método no permitido.');
 
     $soloGet = fn() => $metodo === 'GET' || Http::error(405, 'Usa GET.');
     $soloPost = fn() => $metodo === 'POST' || Http::error(405, 'Usa POST.');
 
+    // Liga Semanal de Productoras (server/INTEGRAR_LIGA.md): responde y termina
+    if (\EnVivo\LigaApi::esRuta($ruta)) \EnVivo\LigaApi::responder($ruta, $metodo, requiere_sesion());
+
     match ($ruta) {
-        '/estado' => $soloGet() && Http::json(200, Cuentas::estado(Sesiones::jugadorId())),
+        '/estado' => $soloGet() && Http::json(200, Cuentas::estado(Sesiones::jugadorId()) + \EnVivo\Discord::estado(Sesiones::jugadorId())),
         '/registro' => $soloPost() && api_registro(),
         '/entrar' => $soloPost() && api_entrar(),
         '/salir' => $soloPost() && api_salir(),
@@ -37,8 +40,51 @@ try {
         '/vip/bono' => $soloPost() && api_vip_bono(),
         '/orden' => $soloPost() && api_orden(),
         '/plux/pago' => $soloPost() && api_plux_pago(),
+        // Mercado entre jugadores (server/MERCADO.md)
+        '/mercado' => $soloGet() && api_mercado(),
+        '/mercado/publicar' => $soloPost() && api_mercado_publicar(),
+        '/mercado/retirar' => $soloPost() && api_mercado_retirar(),
+        '/mercado/comprar' => $soloPost() && api_mercado_comprar(),
+        // Servidores, perfil, asociaciones y chat (server/SOCIAL.md)
+        '/perfil' => $soloPost() && Http::json(200, Social::guardarPerfil(requiere_sesion(), Http::entrada(10000))),
+        '/asociaciones' => $soloGet() && Http::json(200, Social::listar(requiere_sesion(), is_string($_GET['buscar'] ?? null) ? $_GET['buscar'] : '')),
+        '/asociaciones/crear' => $soloPost() && Http::json(200, Social::crear(requiere_sesion(), Http::entrada(10000))),
+        '/asociaciones/unirse' => $soloPost() && Http::json(200, Social::unirse(requiere_sesion(), entero_de(Http::entrada(10000), 'id'))),
+        '/asociaciones/salir' => $soloPost() && Http::json(200, Social::salir(requiere_sesion())),
+        '/asociaciones/cargo' => $soloPost() && api_asoc_cargo(),
+        '/asociaciones/expulsar' => $soloPost() && Http::json(200, Social::expulsar(requiere_sesion(), entero_de(Http::entrada(10000), 'jugador_id'))),
+        '/asociaciones/solicitud' => $soloPost() && api_asoc_solicitud(),
+        '/chat' => $metodo === 'GET' ? api_chat_leer() : api_chat_escribir(),
+        '/chat/reportar' => $soloPost() && api_chat_reportar(),
+        '/chat/bloquear' => $soloPost() && api_chat_bloquear(),
+        '/chat/rapidos' => $soloGet() && Http::json(200, ['ok' => true, 'rapidos' => array_map(fn($k, $v) => ['id' => $k, 'texto' => $v], array_keys(Chat::RAPIDOS), Chat::RAPIDOS),
+            'motivos_reporte' => array_map(fn($k, $v) => ['id' => $k, 'texto' => $v], array_keys(Chat::MOTIVOS_REPORTE), Chat::MOTIVOS_REPORTE)]),
+        // Tarjeta mensual (20 créditos por día)
+        '/tarjeta/reclamar' => $soloPost() && api_tarjeta_reclamar(),
+        // Transferencia oficial de cuenta (src/Transferencias.php)
+        '/cuenta/borrar' => $soloPost() && api_cuenta_borrar(),
+        '/cuenta/transferir/iniciar' => $soloPost() && api_transferir_iniciar(),
+        '/cuenta/transferir/confirmar' => $soloPost() && api_transferir_confirmar(),
+        '/cuenta/transferir/cancelar' => $soloPost() && api_transferir_cancelar(),
+        // Google Play (src/Google.php y GOOGLE_PLAY.md)
+        '/google/verificar' => $soloPost() && api_google_verificar(),
+        // Soporte dentro del juego (SOPORTE.md)
+        '/soporte' => $metodo === 'GET' ? Http::json(200, Soporte::listar(requiere_sesion())) : Http::json(200, Soporte::crear(requiere_sesion(), Http::entrada(20000))),
+        '/soporte/responder' => $soloPost() && api_soporte_responder(),
+        '/soporte/leido' => $soloPost() && Http::json(200, Soporte::leido(requiere_sesion(), entero_de(Http::entrada(10000), 'caso_id'))),
+        '/soporte/contacto' => $soloGet() && Http::json(200, Soporte::contacto()),
+        // Bot de Discord (server/INTEGRAR_DISCORD.md)
+        '/discord/codigo' => $soloPost() && Http::json(200, \EnVivo\Discord::codigoParaJugador(requiere_sesion())),
+        '/discord/desvincular' => $soloPost() && Http::json(200, \EnVivo\Discord::desvincularJugador(requiere_sesion())),
+        // Mega Festival (server/INTEGRAR_FESTIVAL.md)
+        '/festival' => $soloGet() && Http::json(200, \EnVivo\Festival::resumen(requiere_sesion())),
+        '/festival/intento/iniciar' => $soloPost() && Http::json(200, \EnVivo\Festival::iniciar(requiere_sesion(), Http::entrada(20000))),
+        '/festival/intento/enviar' => $soloPost() && Http::json(200, \EnVivo\Festival::enviar(requiere_sesion(), Http::entrada(20000))),
+        '/festival/pases/comprar' => $soloPost() && Http::json(200, \EnVivo\Festival::comprarPases(requiere_sesion(), Http::entrada(10000))),
         default => Http::error(404, 'No encontrado.'),
     };
+} catch (Fallo $e) {
+    Http::error($e->getCode() ?: 400, $e->getMessage(), $e->extra);
 } catch (\Throwable $e) {
     error_log('EN VIVO api ' . $ruta . ': ' . get_class($e) . ' en ' . basename($e->getFile()) . ':' . $e->getLine() . ' ' . mb_substr($e->getMessage(), 0, 300));
     Http::error(500, 'Ocurrió un error en el servidor. Intenta otra vez en un momento.');
@@ -47,21 +93,26 @@ try {
 function requiere_sesion(): int
 {
     $id = Sesiones::jugadorId();
-    if ($id === null) Http::error(401, 'Entra a tu cuenta para continuar.');
+    if ($id === null) Http::error(401, 'Entra a tu cuenta para continuar.', [], 'sesion_requerida');
     return $id;
 }
 
 function texto_de(array $in, string $k): string { return is_string($in[$k] ?? null) ? $in[$k] : ''; }
 
+/** Número entero positivo del JSON (acepta 12 o "12"); si no viene bien, 400. */
+function entero_de(array $in, string $k): int
+{
+    $v = $in[$k] ?? null;
+    if (is_int($v) && $v > 0) return $v;
+    if (is_string($v) && preg_match('/^[1-9]\d{0,12}$/', $v)) return (int) $v;
+    throw new Fallo('Falta "' . $k . '".', 400, ['codigo' => 'falta_' . $k]);
+}
+
 function api_registro(): never
 {
     $in = Http::entrada(10000);
-    if (Limite::contar('registro:' . Http::ip(), 50, 60)) Http::error(429, 'Demasiados registros desde esta conexión. Espera un rato e intenta de nuevo.');
-    try {
-        $id = Cuentas::registrar(texto_de($in, 'email'), texto_de($in, 'nombre'), texto_de($in, 'clave'));
-    } catch (\InvalidArgumentException $e) {
-        Http::error($e->getCode() ?: 400, $e->getMessage());
-    }
+    if (Limite::contar('registro:' . Http::ip(), 50, 60)) Http::error(429, 'Demasiados registros desde esta conexión. Espera un rato e intenta de nuevo.', [], 'limite_intentos');
+    $id = Cuentas::registrar(texto_de($in, 'email'), texto_de($in, 'nombre'), texto_de($in, 'clave'));
     Sesiones::abrir($id);
     Http::json(200, Cuentas::estado($id));
 }
@@ -74,11 +125,11 @@ function api_entrar(): never
     $kIp = 'entrarip:' . Http::ip();
     // Límite: 5 claves equivocadas por correo y 60 intentos por conexión cada 10 minutos (en Ecuador muchos celulares
     // comparten la misma IP de la operadora, por eso el límite por conexión es más alto).
-    if (Limite::excedido($kEmail, 5) || Limite::contar($kIp, 60)) Http::error(429, 'Demasiados intentos. Espera 10 minutos e intenta de nuevo.');
+    if (Limite::excedido($kEmail, 5) || Limite::contar($kIp, 60)) Http::error(429, 'Demasiados intentos. Espera 10 minutos e intenta de nuevo.', [], 'limite_intentos');
     $id = $email === '' ? null : Cuentas::verificar($email, texto_de($in, 'clave'));
     if ($id === null) {
         Limite::sumar($kEmail);
-        Http::error(401, 'Correo o clave incorrectos.');
+        Http::error(401, 'Correo o clave incorrectos.', [], 'credenciales_invalidas');
     }
     Sesiones::abrir($id);
     Http::json(200, Cuentas::estado($id));
@@ -100,9 +151,9 @@ function api_partida(string $metodo): never
     if ($metodo !== 'POST') Http::error(405, 'Usa GET o POST.');
     $in = Http::entrada(2 * 1024 * 1024);
     $datos = $in['datos'] ?? null;
-    if (!is_string($datos) || $datos === '') Http::error(400, 'No llegó la partida.');
-    if (strlen($datos) > 300 * 1024) Http::error(413, 'La partida es demasiado grande (máximo 300 KB).');
-    if (!json_validate($datos)) Http::error(400, 'La partida no es un JSON válido.');
+    if (!is_string($datos) || $datos === '') Http::error(400, 'No llegó la partida.', [], 'partida_vacia');
+    if (strlen($datos) > 300 * 1024) Http::error(413, 'La partida es demasiado grande (máximo 300 KB).', [], 'partida_grande');
+    if (!json_validate($datos)) Http::error(400, 'La partida no es un JSON válido.', [], 'partida_invalida');
     $t = time();
     Db::q('INSERT INTO partidas (jugador_id, datos, actualizado) VALUES (?, ?, ?) ON CONFLICT (jugador_id) DO UPDATE SET datos = excluded.datos, actualizado = excluded.actualizado', [$j, $datos, $t]);
     Http::json(200, ['ok' => true, 'actualizado' => Db::iso($t)]);
@@ -112,12 +163,21 @@ function api_gastar(): never
 {
     $j = requiere_sesion();
     $in = Http::entrada(10000);
+    Cuentas::exigirActiva($j);
     try {
-        [$saldo, $entrega] = Monedero::gastar($j, texto_de($in, 'item'));
+        [$saldo, $entrega, $equipo] = Monedero::gastar($j, texto_de($in, 'item'));
+    } catch (Fallo $e) {
+        throw $e;
     } catch (\InvalidArgumentException | \RuntimeException $e) {
-        Http::error($e->getCode() ?: 400, $e->getMessage(), ['creditos' => Monedero::saldo($j)]);
+        $extra = ['creditos' => Monedero::saldo($j)];
+        $cod = match ((int) $e->getCode()) { 402 => 'sin_creditos', 403 => 'vip_requerido', 404 => 'no_existe', default => 'error' };
+        if ($cod === 'vip_requerido') $extra['motivo'] = 'vip_requerido';
+        Http::error($e->getCode() ?: 400, $e->getMessage(), $extra, $cod);
     }
-    Http::json(200, ['ok' => true, 'creditos' => $saldo, 'entrega' => $entrega]);
+    // Equipos: "entrega" es null y llega "item" (la fila del inventario) + el inventario completo para reconciliar la bodega
+    $r = ['ok' => true, 'creditos' => $saldo, 'entrega' => $entrega];
+    if ($equipo !== null) $r += ['item' => $equipo, 'inventario' => Inventario::deJugador($j)];
+    Http::json(200, $r);
 }
 
 function api_vip_bono(): never
@@ -125,8 +185,10 @@ function api_vip_bono(): never
     $j = requiere_sesion();
     try {
         [$saldo, $entrega] = Monedero::bonoVip($j);
+    } catch (Fallo $e) {
+        throw $e;
     } catch (\RuntimeException $e) {
-        Http::error($e->getCode() ?: 400, $e->getMessage());
+        Http::error($e->getCode() ?: 400, $e->getMessage(), [], (int) $e->getCode() === 403 ? 'vip_requerido' : 'ya_reclamado');
     }
     Http::json(200, ['ok' => true, 'creditos' => $saldo, 'entrega' => $entrega]);
 }
@@ -135,17 +197,17 @@ function api_orden(): never
 {
     $j = requiere_sesion();
     $in = Http::entrada(10000);
-    if (Limite::contar('orden:' . $j, 30)) Http::error(429, 'Demasiados intentos de compra. Espera unos minutos.');
-    try {
-        $c = Compras::crear($j, texto_de($in, 'producto'));
-    } catch (\RuntimeException $e) {
-        Http::error($e->getCode() ?: 400, $e->getMessage());
-    }
+    if (Limite::contar('orden:' . $j, 30)) Http::error(429, 'Demasiados intentos de compra. Espera unos minutos.', [], 'limite_intentos');
+    $c = Compras::crear($j, texto_de($in, 'producto'));
     Http::json(200, ['ok' => true, 'url' => '/pago.php?o=' . $c['token'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'total' => (float) $c['total']]]);
 }
 
 /** Respuestas de /api/plux/pago (mismo formato que TuPass: status success|otp_required|otp_incorrecto|3ds_required|failed). */
-function pago_json(int $http, array $d): never { Http::json($http, $d); }
+function pago_json(int $http, array $d): never
+{
+    if (($d['status'] ?? '') === 'failed') { $d += ['ok' => false, 'error' => $d['message'] ?? 'El pago no se pudo procesar.']; $d['codigo'] ??= $http >= 400 ? (Http::CODIGOS[$http] ?? 'error') : 'pago_rechazado'; }
+    Http::json($http, $d);
+}
 
 function api_plux_pago(): never
 {
@@ -156,13 +218,15 @@ function api_plux_pago(): never
     if (!$c || (int) $c['jugador_id'] !== $j) pago_json(404, ['status' => 'failed', 'message' => 'Compra no encontrada.']);
     if ($c['estado'] === 'pagado') pago_json(200, ['status' => 'success', 'ir' => '/?compra=ok']);
     if ($c['estado'] !== 'pendiente') pago_json(409, ['status' => 'failed', 'message' => 'Esta compra ya no está abierta. Vuelve al juego y empieza otra.']);
-    if (!Plux::configurado()) pago_json(503, ['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible.']);
-    $p = Catalogo::producto((string) $c['producto']);
-    if ($p && $p['una_vez'] && Compras::inicioComprado($j) && $c['producto'] === 'inicio') {
-        pago_json(409, ['status' => 'failed', 'message' => 'Ya compraste el ' . $p['nombre'] . '. Solo se puede comprar una vez: no se hizo ningún cobro.']);
+    if (!Plux::configurado()) pago_json(503, ['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible.', 'codigo' => 'plux_no_disponible']);
+    if (Ajustes::mantenimiento()) pago_json(503, ['status' => 'failed', 'message' => Ajustes::mensajeMantenimiento(), 'codigo' => 'mantenimiento']);
+    if (Cuentas::estadoCuenta($j) !== 'activo') pago_json(403, ['status' => 'failed', 'message' => Cuentas::aviso(Cuentas::estadoCuenta($j)) ?? 'Tu cuenta no está activa.', 'codigo' => 'cuenta_suspendida']);
+    $p = Catalogo::productoCompra((string) $c['producto']);
+    if ($p && $p['una_vez'] && Compras::yaComprado($j, (string) $c['producto'])) {
+        pago_json(409, ['status' => 'failed', 'message' => 'Ya compraste el ' . $p['nombre'] . '. Solo se puede comprar una vez: no se hizo ningún cobro.', 'codigo' => 'ya_comprado']);
     }
     if (Limite::contar('plux:' . $c['id'], 12) || Limite::contar('pluxip:' . Http::ip(), 40)) {
-        pago_json(429, ['status' => 'failed', 'message' => 'Demasiados intentos. Espera unos minutos e intenta de nuevo.']);
+        pago_json(429, ['status' => 'failed', 'message' => 'Demasiados intentos. Espera unos minutos e intenta de nuevo.', 'codigo' => 'limite_intentos']);
     }
     $clave = texto_de($in, 'simetricKeyCifrada');
     if (!preg_match('#^[A-Za-z0-9+/=]{40,1200}$#', $clave)) pago_json(422, ['status' => 'failed', 'message' => 'No se pudo preparar el pago. Recarga la página.']);
@@ -172,9 +236,23 @@ function api_plux_pago(): never
     } catch (\RuntimeException $e) {
         pago_json(422, ['status' => 'failed', 'message' => $e->getMessage()]);
     }
+    $conOtp = isset($cuerpo['paramsOtp']);
+    // Auditoría A-03: se "toma" la compra ANTES de llamar a Plux (en un solo UPDATE). Si llega otro pedido a la vez
+    // (doble toque, dos pestañas), ese no llama a Plux: así nunca se cobra dos veces la misma compra.
+    // El código OTP solo se acepta si la compra está esperando el OTP.
+    $ahora = time();
+    $tomada = Db::q("UPDATE compras SET plux_paso = 'procesando', plux_desde = ? WHERE id = ? AND estado = 'pendiente'
+                     AND (plux_paso IS NULL OR plux_paso <> 'procesando' OR plux_desde < ?)" . ($conOtp ? " AND plux_paso = 'otp'" : ''),
+        [$ahora, $c['id'], $ahora - 120])->rowCount();
+    if ($tomada !== 1) {
+        $paso = (string) Db::valor('SELECT plux_paso FROM compras WHERE id = ?', [$c['id']]);
+        if ($paso === 'pagado') pago_json(200, ['status' => 'success', 'ir' => '/?compra=ok']);
+        pago_json(409, $conOtp && $paso !== 'procesando'
+            ? ['status' => 'failed', 'message' => 'El código ya no es válido. Vuelve a escribir los datos de tu tarjeta.', 'codigo' => 'otp_vencido']
+            : ['status' => 'failed', 'message' => 'Ya estamos procesando este pago. Espera unos segundos: no lo mandes otra vez.', 'codigo' => 'pago_en_proceso']);
+    }
     Compras::anotarComprador((int) $c['id'], $comprador);   // para la factura (sin datos de tarjeta)
     Sesiones::recordarCompra((int) $c['id']);              // para reconocerla al volver del banco (3DS)
-    $conOtp = isset($cuerpo['paramsOtp']);
     $r = Plux::llamar(Plux::RUTA_PAGO, $cuerpo, $clave);
     unset($cuerpo, $in);   // la tarjeta (cifrada) no se guarda en ningún lado
     $res = Plux::procesar($c, $r, $conOtp ? 'tarjeta con código OTP' : 'tarjeta');
@@ -197,10 +275,16 @@ function api_plux_3ds(): never
         if ($c) Http::redirigir('/pago.php?o=' . $c['token'] . '&r=incompleto');
         Http::pagina(400, 'Pago no completado', 'La respuesta del banco llegó incompleta.');
     }
+    // Auditoría A-02: cada confirmación del banco (ptk) se usa UNA sola vez, para cualquier compra.
+    $usada = Db::q('INSERT OR IGNORE INTO plux_3ds_usados (ptk_hash, compra_id, creado) VALUES (?, ?, ?)', [hash('sha256', $ptk), $c['id'] ?? null, time()])->rowCount() === 0;
+    if ($usada) {
+        if ($c) Http::redirigir('/pago.php?o=' . $c['token'] . '&r=rechazado');
+        Http::pagina(409, 'Pago no completado', 'Esa confirmación del banco ya se usó.');
+    }
     $r = Plux::llamar(Plux::RUTA_3DS, ['pti' => $pti, 'pcc' => $pcc, 'ptk' => $ptk]);
+    $tr = Plux::transaccion($r);
     if (!$c) {
         // Sin sesión (otro navegador o se borraron las galletas): se intenta por el número de transacción.
-        $tr = Plux::transaccion($r);
         $c = $tr !== '' ? Db::fila('SELECT * FROM compras WHERE plux_transaccion = ?', [$tr]) : null;
     }
     if (!$c) {
@@ -212,6 +296,24 @@ function api_plux_3ds(): never
     }
     if ($c['estado'] === 'pagado') Http::redirigir('/?compra=ok');
     if ($c['estado'] !== 'pendiente') Http::redirigir('/pago.php?o=' . $c['token']);
+    // Auditoría A-02: la aprobación debe ser de ESTA compra: tiene que estar esperando 3DS, el número de transacción
+    // debe ser el que Plux dio en el paso 103 (si lo dio) y el valor (si Plux lo manda) debe ser el de la compra.
+    if ((int) ($r['code'] ?? -1) === 0) {
+        $esperada = (string) ($c['plux_transaccion'] ?? '');
+        $monto = Plux::monto($r);
+        $motivo = match (true) {
+            $c['plux_paso'] !== '3ds' => 'la compra no estaba esperando la validación del banco (paso ' . ($c['plux_paso'] ?? 'ninguno') . ')',
+            $esperada !== '' && $tr !== $esperada => 'el número de transacción no coincide (' . $tr . ' en vez de ' . $esperada . ')',
+            $esperada === '' && $tr !== '' && (bool) Db::valor('SELECT 1 FROM compras WHERE plux_transaccion = ? AND id <> ?', [$tr, $c['id']]) => 'esa transacción ya es de otra compra',
+            $monto !== null && abs($monto - (float) $c['total']) > 0.009 => 'el valor no coincide (' . $monto . ' en vez de ' . $c['total'] . ')',
+            default => '',
+        };
+        if ($motivo !== '') {
+            Db::aviso('plux_3ds_no_coincide', 'Confirmación 3DS aprobada por Plux pero NO aplicada a la compra N° ' . $c['id'] . ': ' . $motivo . '. Respuesta: ' . Plux::texto($r), (int) $c['id']);
+            Compras::anotarPaso((int) $c['id'], 'fallido', Plux::texto($r));
+            Http::redirigir('/pago.php?o=' . $c['token'] . '&r=rechazado');
+        }
+    }
     $res = Plux::procesar($c, $r, 'validación 3DS');
     if ($res['status'] === 'success') Http::redirigir('/?compra=ok');
     Http::redirigir('/pago.php?o=' . $c['token'] . '&r=rechazado');
@@ -264,4 +366,148 @@ function api_plux_webhook(): never
     }
     $nuevo = Compras::rechazar($id, $txt);
     Http::json(200, ['ok' => true, 'compra' => $id, 'resultado' => $nuevo ? 'rechazado' : 'ya_estaba_' . $c['estado']]);
+}
+
+// ---------------------------------------------------------------------------------------------- mercado
+function api_mercado(): never
+{
+    $j = requiere_sesion();
+    $item = is_string($_GET['item'] ?? null) ? $_GET['item'] : '';
+    $orden = is_string($_GET['orden'] ?? null) ? $_GET['orden'] : 'precio';
+    $pag = is_string($_GET['pagina'] ?? null) && ctype_digit($_GET['pagina']) ? (int) $_GET['pagina'] : 1;
+    Http::json(200, Mercado::listar($j, $item, $orden, $pag));
+}
+
+function api_mercado_publicar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    if (Limite::contar('mercado:' . $j, 60)) Http::error(429, 'Demasiadas operaciones en el mercado. Espera unos minutos.');
+    $pub = Mercado::publicar($j, entero_de($in, 'inventario_id'), $in['precio'] ?? null);
+    Http::json(200, ['ok' => true, 'publicacion' => $pub, 'inventario' => Inventario::deJugador($j)]);
+}
+
+function api_mercado_retirar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    $item = Mercado::retirar($j, entero_de($in, 'publicacion_id'));
+    Http::json(200, ['ok' => true, 'item' => $item, 'inventario' => Inventario::deJugador($j)]);
+}
+
+function api_mercado_comprar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    if (Limite::contar('mercado:' . $j, 60)) Http::error(429, 'Demasiadas operaciones en el mercado. Espera unos minutos.');
+    [$saldo, $item] = Mercado::comprar($j, entero_de($in, 'publicacion_id'));
+    Http::json(200, ['ok' => true, 'creditos' => $saldo, 'item' => $item, 'inventario' => Inventario::deJugador($j)]);
+}
+
+// ---------------------------------------------------------------------------------------------- asociaciones
+function api_asoc_cargo(): never
+{
+    $in = Http::entrada(10000);
+    Http::json(200, Social::cargo(requiere_sesion(), entero_de($in, 'jugador_id'), texto_de($in, 'cargo')));
+}
+
+function api_asoc_solicitud(): never
+{
+    $in = Http::entrada(10000);
+    $a = $in['aceptar'] ?? null;
+    if (!is_bool($a)) throw new Fallo('Falta "aceptar" (true o false).', 400);
+    Http::json(200, Social::solicitud(requiere_sesion(), entero_de($in, 'jugador_id'), $a));
+}
+
+// ---------------------------------------------------------------------------------------------- chat
+function api_chat_leer(): never
+{
+    $j = requiere_sesion();
+    $canal = is_string($_GET['canal'] ?? null) ? $_GET['canal'] : 'servidor';
+    $desde = is_string($_GET['desde'] ?? null) && ctype_digit($_GET['desde']) ? (int) $_GET['desde'] : 0;
+    $coal = is_string($_GET['coalicion'] ?? null) && ctype_digit($_GET['coalicion']) ? (int) $_GET['coalicion'] : null;
+    Http::json(200, Chat::leer($j, $canal, $desde, $coal));
+}
+
+function api_chat_escribir(): never
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') Http::error(405, 'Usa GET o POST.');
+    Http::json(200, Chat::escribir(requiere_sesion(), Http::entrada(10000)));
+}
+
+function api_chat_reportar(): never
+{
+    $in = Http::entrada(10000);
+    Http::json(200, Chat::reportar(requiere_sesion(), entero_de($in, 'mensaje_id'), texto_de($in, 'motivo')));
+}
+
+function api_chat_bloquear(): never
+{
+    $in = Http::entrada(10000);
+    Http::json(200, Chat::bloquear(requiere_sesion(), entero_de($in, 'jugador_id'), ($in['desbloquear'] ?? false) === true));
+}
+
+// ---------------------------------------------------------------------------------------------- tarjeta mensual
+function api_tarjeta_reclamar(): never
+{
+    $j = requiere_sesion();
+    $saldo = Monedero::reclamarTarjeta($j);
+    Http::json(200, ['ok' => true, 'creditos' => $saldo, 'recibidos' => (int) Catalogo::PRODUCTOS['tarjeta_mensual']['creditos_dia'], 'tarjeta_reclamada_hoy' => true]);
+}
+
+// ---------------------------------------------------------------------------------------------- transferencia de cuenta
+function api_transferir_iniciar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    if (Limite::contar('transferir:' . $j, 10, 60)) Http::error(429, 'Demasiados intentos. Espera un rato.', [], 'limite_intentos');
+    $r = Transferencias::iniciar($j, texto_de($in, 'email_nuevo'));
+    Http::json(200, ['ok' => true] + $r);
+}
+
+function api_transferir_confirmar(): never
+{
+    $in = Http::entrada(10000);
+    $j = Transferencias::confirmar(texto_de($in, 'email'), texto_de($in, 'codigo'), texto_de($in, 'clave'), texto_de($in, 'nombre'));
+    Sesiones::abrir($j);   // el nuevo dueño queda con la sesión abierta
+    Http::json(200, Cuentas::estado($j));
+}
+
+function api_transferir_cancelar(): never
+{
+    $j = requiere_sesion();
+    $t = Transferencias::abierta($j);
+    if (!$t) Http::error(404, 'No tienes una transferencia en curso.', [], 'sin_transferencia');
+    Transferencias::cancelar((int) $t['id'], 'jugador', $j);
+    Http::json(200, ['ok' => true]);
+}
+
+// ---------------------------------------------------------------------------------------------- Google Play
+function api_google_verificar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    if (Limite::contar('google:' . $j, 30)) Http::error(429, 'Demasiados intentos. Espera unos minutos.', [], 'limite_intentos');
+    $r = Google::verificar($j, texto_de($in, 'producto'), texto_de($in, 'purchaseToken'), texto_de($in, 'orderId'));
+    $c = $r['compra'];
+    Http::json(200, ['ok' => true, 'nueva' => $r['nueva'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'estado' => $c['estado'], 'canal' => $c['canal']]] + Cuentas::estado($j));
+}
+
+// ---------------------------------------------------------------------------------------------- soporte
+function api_soporte_responder(): never
+{
+    $in = Http::entrada(20000);
+    Http::json(200, Soporte::responder(requiere_sesion(), entero_de($in, 'caso_id'), $in['mensaje'] ?? ''));
+}
+
+// ---------------------------------------------------------------------------------------------- borrar la cuenta
+/** POST /api/cuenta/borrar {clave, confirmar: "BORRAR"}: borra la cuenta del jugador con sesión (ver Cuentas::borrar). */
+function api_cuenta_borrar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    if (texto_de($in, 'confirmar') !== 'BORRAR') throw new Fallo('Para borrar tu cuenta escribe BORRAR en mayúsculas.', 400, ['codigo' => 'confirmacion_requerida']);
+    Cuentas::borrar($j, texto_de($in, 'clave'));
+    Sesiones::cerrar();
+    Http::json(200, ['ok' => true, 'borrada' => true]);
 }

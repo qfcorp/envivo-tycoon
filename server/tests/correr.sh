@@ -18,7 +18,9 @@ SRV="$RAIZ/server"
 TMP=$(mktemp -d)
 chmod 755 "$TMP"
 export no_proxy="127.0.0.1,localhost" NO_PROXY="127.0.0.1,localhost" TZ=America/Guayaquil
-P_APP=${P_APP:-8291}; P_SIN=${P_SIN:-8292}; P_FALSO=${P_FALSO:-8293}; P_NGINX=${P_NGINX:-8294}
+# Puertos libres al azar (otras pruebas pueden estar corriendo a la vez en la misma máquina)
+puerto() { php -r '$s = stream_socket_server("tcp://127.0.0.1:0"); echo substr(strrchr(stream_socket_get_name($s, false), ":"), 1);'; }
+P_APP=${P_APP:-$(puerto)}; P_SIN=${P_SIN:-$(puerto)}; P_FALSO=${P_FALSO:-$(puerto)}; P_NGINX=${P_NGINX:-$(puerto)}; P_GOOGLE=${P_GOOGLE:-$(puerto)}
 PIDS=()
 limpiar() {
   for p in "${PIDS[@]}"; do kill "$p" 2> /dev/null; done
@@ -47,6 +49,10 @@ openssl genrsa -out "$TMP/plux_privada.pem" 2048 2> /dev/null
 openssl rsa -in "$TMP/plux_privada.pem" -pubout -out "$TMP/plux_publica.pem" 2> /dev/null
 LLAVE=$(grep -v -- '-----' "$TMP/plux_publica.pem" | tr -d '\n')
 HOOK_CLAVE=$(openssl rand -hex 16)
+# Cuenta de servicio de Google FALSA (llaves hechas aquí; el Google falso verifica la firma del JWT con la pública)
+openssl genrsa -out "$TMP/google_privada.pem" 2048 2> /dev/null
+openssl rsa -in "$TMP/google_privada.pem" -pubout -out "$TMP/google_publica.pem" 2> /dev/null
+php -r 'echo json_encode(["type" => "service_account", "client_email" => "envivo@prueba.iam.gserviceaccount.com", "private_key" => file_get_contents($argv[1]), "token_uri" => $argv[2]]);' "$TMP/google_privada.pem" "http://127.0.0.1:$P_GOOGLE/token" > "$TMP/google-play.json"
 ADMIN_CLAVE="Panel-$(openssl rand -hex 6)"
 ADMIN_HASH=$(printf '%s' "$ADMIN_CLAVE" | php -r 'echo password_hash(stream_get_contents(STDIN), PASSWORD_BCRYPT);')
 mkdir -p "$TMP/datos"
@@ -65,27 +71,43 @@ PLUX_CLAVE_SECRETA=secreto_prueba_123
 PLUX_LLAVE_PUBLICA=$LLAVE
 PLUX_WEBHOOK_USUARIO=plux_aviso
 PLUX_WEBHOOK_CLAVE=$HOOK_CLAVE
+SOPORTE_CORREO=soporte@prueba.example
+SOPORTE_HORARIO=Lunes a viernes 9:00-18:00
+GOOGLE_PACKAGE_NAME=com.tukanec.envivo
+GOOGLE_SERVICE_ACCOUNT_JSON=$TMP/google-play.json
+GOOGLE_API_BASE=http://127.0.0.1:$P_GOOGLE/
+GOOGLE_TOKEN_URL=http://127.0.0.1:$P_GOOGLE/token
 ENV
 grep -vE '^(PLUX_ID_|PLUX_CLAVE|PLUX_LLAVE)' "$TMP/config.env" | sed "s#^ENVIVO_URL=.*#ENVIVO_URL=http://127.0.0.1:$P_SIN#; s#envivo.sqlite#envivo_sin.sqlite#" > "$TMP/config_sin.env"
 export ENVIVO_CONFIG="$TMP/config.env"
-check "Migraciones desde cero" "Base de datos al día: $TMP/datos/envivo.sqlite (versión 1 de 1, modo wal)" "$(php "$SRV/bin/migrar.php")"
+check "Migraciones desde cero" "Base de datos al día: $TMP/datos/envivo.sqlite (versión 4 de 4, modo wal)" "$(php "$SRV/bin/migrar.php")"
 check "Migraciones otra vez: igual, sin error" "0" "$(php "$SRV/bin/migrar.php" > /dev/null; echo $?)"
-check "Tablas creadas" "avisos bonos_vip compras entregas intentos jugadores movimientos_creditos partidas sesiones" \
-  "$(php -r '$p = new PDO("sqlite:" . $argv[1]); echo implode(" ", $p->query("SELECT name FROM sqlite_master WHERE type = '"'"'table'"'"' AND name NOT LIKE '"'"'sqlite_%'"'"' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN));' "$TMP/datos/envivo.sqlite")"
+TABLAS=$(php -r '$p = new PDO("sqlite:" . $argv[1]); echo implode(" ", $p->query("SELECT name FROM sqlite_master WHERE type = '"'"'table'"'"' AND name NOT LIKE '"'"'sqlite_%'"'"' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN));' "$TMP/datos/envivo.sqlite")
+FALTAN=""
+for t in actividad ajustes asociacion_miembros asociacion_solicitudes asociaciones auditoria avisos bonos_vip chat_bloqueos chat_mensajes chat_palabras chat_reportes chat_sanciones coalicion_miembros coaliciones compras entregas esquema_modulos intentos inventario jugadores mercado_publicaciones mercado_retenciones movimientos_creditos ofertas partidas plux_3ds_usados productos_ajustes series servidores sesiones soporte_casos soporte_mensajes soporte_respuestas tarjeta_reclamos transferencias; do
+  case " $TABLAS " in *" $t "*) ;; *) FALTAN="$FALTAN $t" ;; esac
+done
+check "Tablas del servidor creadas (y las de los modulos de src/migraciones/*.sql)" "" "$FALTAN"
 ENVIVO_CONFIG="$TMP/no-existe.env" php "$SRV/bin/migrar.php" > /dev/null 2>&1
 check "migrar.php sin configuracion ni carpeta -> error claro (no crea nada en otro lado)" "1" "$?"
+echo "  -- base de la version 1 (produccion) -> version nueva:"
+php "$SRV/tests/migracion_v1.php" "$TMP" | sed 's/^/  /'
+check "Migracion desde la base de produccion (v1) sin perder datos" 0 "${PIPESTATUS[0]}"
 
 echo
 echo "== 2. Servidores: Plux FALSO y el juego (php -S + router.php)"
 export FALSO_LLAVE_PRIVADA="$TMP/plux_privada.pem" FALSO_LLAVE_PUBLICA="$TMP/plux_publica.pem" FALSO_ID_CLIENTE=cliente_prueba FALSO_CLAVE=secreto_prueba_123
 export FALSO_ESTABLECIMIENTO=EST-PRUEBA-1 FALSO_LOG="$TMP/plux_falso.log" FALSO_BASE="http://127.0.0.1:$P_FALSO"
 touch "$FALSO_LOG"
-php -S 127.0.0.1:$P_FALSO "$SRV/tests/plux_falso.php" > "$TMP/falso.log" 2>&1 & PIDS+=($!)
+PHP_CLI_SERVER_WORKERS=3 php -S 127.0.0.1:$P_FALSO "$SRV/tests/plux_falso.php" > "$TMP/falso.log" 2>&1 & PIDS+=($!)
+export FALSO_G_PUB="$TMP/google_publica.pem" FALSO_G_LOG="$TMP/google_falso.log" FALSO_G_ANULADAS="$TMP/google_anuladas.json" FALSO_G_PAQUETE=com.tukanec.envivo
+touch "$FALSO_G_LOG"
+PHP_CLI_SERVER_WORKERS=2 php -S 127.0.0.1:$P_GOOGLE "$SRV/tests/google_api_falso.php" > "$TMP/google.log" 2>&1 & PIDS+=($!)
 PHPINI=(-d error_log="$TMP/php_errores.log" -d log_errors=1 -d display_errors=0 -d error_reporting=-1)
 # 4 procesos a la vez (como php-fpm): asi las pruebas de "gastar a la vez" y "4 avisos a la vez" son de verdad simultaneas
 (cd "$RAIZ" && PHP_CLI_SERVER_WORKERS=4 exec php "${PHPINI[@]}" -S 127.0.0.1:$P_APP -t "$RAIZ" server/tests/router.php) > "$TMP/app.log" 2>&1 & PIDS+=($!)
 (cd "$RAIZ" && ENVIVO_CONFIG="$TMP/config_sin.env" exec php "${PHPINI[@]}" -S 127.0.0.1:$P_SIN -t "$RAIZ" server/tests/router.php) > "$TMP/sin.log" 2>&1 & PIDS+=($!)
-esperar "http://127.0.0.1:$P_APP/api/estado" && esperar "http://127.0.0.1:$P_SIN/api/estado" && esperar "http://127.0.0.1:$P_FALSO/x" || { echo "No arrancaron los servidores"; exit 1; }
+esperar "http://127.0.0.1:$P_APP/api/estado" && esperar "http://127.0.0.1:$P_SIN/api/estado" && esperar "http://127.0.0.1:$P_FALSO/x" && esperar "http://127.0.0.1:$P_GOOGLE/x" || { echo "No arrancaron los servidores"; exit 1; }
 check "El juego responde /api/estado" "200" "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$P_APP/api/estado")"
 
 echo
@@ -94,6 +116,13 @@ EV_URL="http://127.0.0.1:$P_APP" EV_URL_SINPLUX="http://127.0.0.1:$P_SIN" EV_TMP
 EV_ADMIN_USUARIO=admin_prueba EV_ADMIN_CLAVE="$ADMIN_CLAVE" PLUX_WEBHOOK_USUARIO=plux_aviso PLUX_WEBHOOK_CLAVE="$HOOK_CLAVE" php "$SRV/tests/pruebas.php"
 check "pruebas.php sin fallas" 0 "$?"
 P_OK=$(cut -d" " -f1 "$TMP/resumen_pruebas.txt" 2> /dev/null); P_FALLAS=$(cut -d" " -f2 "$TMP/resumen_pruebas.txt" 2> /dev/null)
+
+echo
+echo "== 3b. Soporte y Google Play (pruebas_soporte_google.php, con su propio Google falso y sus propios puertos)"
+php "$SRV/tests/pruebas_soporte_google.php" > "$TMP/soporte_google.log" 2>&1; R3B=$?
+grep -E "FALLA|PENDIENTE|Resumen|correctas" "$TMP/soporte_google.log" | sed 's/^/  /'
+check "pruebas_soporte_google.php sin fallas" 0 "$R3B"
+check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo reconstruye el juego)" "" "$(grep 'PENDIENTE' "$TMP/soporte_google.log" | grep -v ' S5 ' | tr -s ' ' | tr '\n' ';')"
 
 echo
 echo "== 4. Navegador de verdad (Playwright + Chromium, celular 390x844)"
@@ -193,7 +222,7 @@ check "El codigo no escribe el pedido a Plux en ningun registro" "0" "$(grep -rn
 AVISOS=$(cat "$TMP/php_errores.log" "$TMP/app.log" "$TMP/sin.log" | grep -ciE "fatal|warning|deprecated|notice|EN VIVO api|EN VIVO pago|EN VIVO admin")
 check "Sin errores ni avisos de PHP" 0 "$AVISOS"; [ "$AVISOS" = 0 ] || cat "$TMP/php_errores.log" "$TMP/app.log" | grep -iE "fatal|warning|deprecated|notice|EN VIVO" | sort | uniq -c | head -10
 check "Plux falso: ninguna llamada sin Basic Auth valida" "0" "$(grep -c '"auth_ok":false' "$FALSO_LOG")"
-SECRETOS=$(grep -rnIE '^[[:space:]]*(PLUX_CLAVE_SECRETA|PLUX_ID_CLIENTE|PLUX_WEBHOOK_CLAVE|ENVIVO_ADMIN_CLAVE_HASH)=[^$ ]' "$SRV" --include='*.php' --include='*.sh' --include='*.ejemplo' --include='*.env' | grep -v '^.*tests/' )
+SECRETOS=$(grep -rnIE '^[[:space:]]*(PLUX_CLAVE_SECRETA|PLUX_ID_CLIENTE|PLUX_WEBHOOK_CLAVE|ENVIVO_ADMIN_CLAVE_HASH)=[^$ ]' "$SRV" --include='*.php' --include='*.sh' --include='*.ejemplo' --include='*.env' | grep -v '^.*tests/' | grep -viE '=[A-Za-z0-9_]*prueba' )
 check "Ninguna clave real escrita en el codigo ni en el ejemplo" "" "$SECRETOS"
 
 echo

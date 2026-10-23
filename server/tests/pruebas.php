@@ -75,7 +75,7 @@ $nuevo = function (string $nombre = 'Jugador') use ($URL, &$n): array {
     $nav = new Nav($URL, 'j' . $n);
     $email = 'jugador' . $n . '.' . bin2hex(random_bytes(3)) . '@prueba.example';
     $r = $nav->api('/api/registro', ['email' => $email, 'nombre' => $nombre . ' ' . $n, 'clave' => 'ClaveSegura' . $n]);
-    return [$nav, (int) ($r['jugador']['id'] ?? 0), $email, $r];
+    return [$nav, (int) ($r['jugador']['id'] ?? 0), $email, $r, 'ClaveSegura' . $n];
 };
 $ordenar = function (Nav $nav, string $producto): string {
     $r = $nav->api('/api/orden', ['producto' => $producto]);
@@ -85,7 +85,7 @@ $pagar = function (Nav $nav, string $tok, string $num, array $extra = []) use ($
     return $nav->api('/api/plux/pago', ['o' => $tok, 'buyer' => $comprador] + $extra + tarjeta($num));
 };
 $compra = fn(string $tok) => $fila('SELECT * FROM compras WHERE token = ?', [$tok]);
-$saldo = fn(int $j) => (int) $val('SELECT creditos FROM jugadores WHERE id = ?', [$j]);
+$saldo = fn(int $j) => (int) $val('SELECT creditos - deuda FROM jugadores WHERE id = ?', [$j]);   // saldo de verdad (con la deuda de un reembolso)
 $libro = fn(int $j) => (int) $val('SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos WHERE jugador_id = ?', [$j]);
 $limpiarIntentos = fn() => $exec('DELETE FROM intentos');
 $hook = function (array $d, string $u, string $c) use ($URL): array {
@@ -111,16 +111,21 @@ foreach (['/' => 200, '/index.html' => 200, '/js/logic.js' => 200, '/icons/icon-
 titulo('Estado sin sesión: forma exacta de API.md');
 $est = $v->apiGet('/api/estado');
 check('GET /api/estado -> 200', 200, $v->http);
-check('Claves del estado', ['ok', 'logueado', 'jugador', 'creditos', 'vip_hasta', 'vip_activo', 'vip_bono_hoy', 'inicio_comprado', 'entregas', 'tienda', 'plux'], array_keys($est));
+$CLAVES_ESTADO = ['ok', 'logueado', 'jugador', 'creditos', 'vip_hasta', 'vip_activo', 'vip_bono_hoy', 'inicio_comprado', 'entregas', 'tienda', 'plux', 'inventario', 'mercado', 'servidor', 'asociacion', 'perfil',
+    'tarjeta_hasta', 'tarjeta_activa', 'tarjeta_reclamada_hoy', 'cuenta_estado', 'aviso', 'soporte_sin_leer', 'compras_recientes', 'transferencia', 'creditos_retenidos', 'anuncio', 'mantenimiento'];
+check('Claves del estado (API.md + MERCADO.md + SOCIAL.md + SOPORTE.md + tarjeta, cuenta, anuncio)', $CLAVES_ESTADO, array_keys($est));
+check('Sin sesión: inventario [], mercado sin acceso, sin servidor ni asociación', [[], false, 0.05, null, null], [$est['inventario'], $est['mercado']['puede'], $est['mercado']['comision'], $est['servidor'], $est['asociacion']]);
 check('Sin sesión: logueado false, créditos 0, entregas []', [true, false, 0, [], null, false, false, false], [$est['ok'], $est['logueado'], $est['creditos'], $est['entregas'], $est['vip_hasta'], $est['vip_activo'], $est['vip_bono_hoy'], $est['inicio_comprado']]);
 check('Plux disponible en sandbox', ['disponible' => true, 'ambiente' => 'sandbox'], $est['plux']);
 check('Productos de la tienda (id, precio, créditos, una_vez)', [
     ['creditos_250', 1.99, 250, false], ['creditos_700', 4.99, 700, false], ['creditos_1500', 9.99, 1500, false], ['creditos_3200', 19.99, 3200, false],
-    ['inicio', 2.99, 200, true], ['vip30', 4.99, 0, false]],
+    ['bienvenida', 0.99, 150, true], ['inicio', 2.99, 200, true], ['tarjeta_mensual', 4.99, 0, false], ['vip30', 9.99, 0, false]],
     array_map(fn($p) => [$p['id'], $p['precio'], $p['creditos'], $p['una_vez']], $est['tienda']['productos']));
 si('Cada producto trae nombre y detalle', array_reduce($est['tienda']['productos'], fn($c, $p) => $c && is_string($p['nombre']) && $p['nombre'] !== '' && is_string($p['detalle']) && $p['detalle'] !== '', true));
-check('Exclusivos con créditos (id, créditos)', [['generador', 250], ['kit_reparacion', 60], ['caja_chica', 120], ['estrella', 300], ['dron4k', 450], ['grua', 650], ['unidad_movil', 900]],
-    array_map(fn($p) => [$p['id'], $p['creditos']], $est['tienda']['premium']));
+check('Exclusivos con créditos (id, créditos, vip, tipo)', [['generador', 250, false, 'equipo'], ['kit_reparacion', 60, false, 'consumo'], ['caja_chica', 120, false, 'consumo'], ['estrella', 300, false, 'consumo'], ['dron4k', 450, false, 'equipo'], ['grua', 650, false, 'equipo'], ['unidad_movil', 900, false, 'equipo'], ['vip_cam8k', 800, true, 'vip'], ['vip_switcher', 1000, true, 'vip'], ['vip_satelital', 700, true, 'vip'],
+    ['refuerzo_camarografo_senior', 120, false, 'refuerzo'], ['refuerzo_tecnico_internacional', 240, false, 'refuerzo'], ['alquiler_lente_box', 120, false, 'refuerzo'], ['seguro_evento', 100, false, 'refuerzo'], ['equipo_descansado', 100, false, 'refuerzo']],
+    array_map(fn($p) => [$p['id'], $p['creditos'], $p['vip'], $p['tipo']], $est['tienda']['premium']));
+si('El producto oculto transferencia_cuenta NO sale en la tienda', !in_array('transferencia_cuenta', array_column($est['tienda']['productos'], 'id'), true));
 si('Cada exclusivo trae nombre y detalle', array_reduce($est['tienda']['premium'], fn($c, $p) => $c && $p['nombre'] !== '' && $p['detalle'] !== '', true));
 check('Ruta desconocida -> 404 con {ok:false,error}', [404, false, true], [$v->get('/api/no-existe'), json_decode($v->cuerpo, true)['ok'] ?? null, is_string(json_decode($v->cuerpo, true)['error'] ?? null)]);
 
@@ -237,7 +242,7 @@ $tok700 = substr((string) $r["url"], 12);
 $c = $compra($tok700);
 check('Compra pendiente con total, subtotal e IVA (4,99 = 4,34 + 0,65)', ['pendiente', 'creditos_700', 4.99, 4.34, 0.65, $JA], [$c['estado'], $c['producto'], (float) $c['total'], (float) $c['subtotal'], (float) $c['iva'], (int) $c['jugador_id']]);
 $todos = true;
-foreach (['creditos_250' => [1.99, 1.73, 0.26], 'creditos_1500' => [9.99, 8.69, 1.30], 'creditos_3200' => [19.99, 17.38, 2.61], 'inicio' => [2.99, 2.60, 0.39], 'vip30' => [4.99, 4.34, 0.65]] as $prod => [$t, $s, $i]) {
+foreach (['creditos_250' => [1.99, 1.73, 0.26], 'creditos_1500' => [9.99, 8.69, 1.30], 'creditos_3200' => [19.99, 17.38, 2.61], 'inicio' => [2.99, 2.60, 0.39], 'vip30' => [9.99, 8.69, 1.30], 'bienvenida' => [0.99, 0.86, 0.13], 'tarjeta_mensual' => [4.99, 4.34, 0.65]] as $prod => [$t, $s, $i]) {
     $tk = $ordenar($a, $prod); $cc = $compra($tk);
     $todos = $todos && abs((float) $cc['total'] - $t) < 0.001 && abs((float) $cc['subtotal'] - $s) < 0.001 && abs((float) $cc['iva'] - $i) < 0.001 && abs((float) $cc['subtotal'] + (float) $cc['iva'] - $t) < 0.001;
 }
@@ -290,8 +295,9 @@ check('Otro jugador no puede pagar/ver la compra -> 404', 404, $intruso->http);
 titulo('Gastar con créditos (ahora sí alcanza)');
 $r = $a->api('/api/gastar', ['item' => 'dron4k']);
 check('Gastar dron4k (450) -> {ok, creditos: 250, entrega}', [200, true, 250], [$a->http, $r['ok'] ?? null, $r['creditos'] ?? null]);
-check('…la entrega es item dron4k x1', ['item', 'dron4k', 1], [$r['entrega']['tipo'] ?? null, $r['entrega']['item'] ?? null, $r['entrega']['cantidad'] ?? null]);
-si('…con id y fecha', is_int($r['entrega']['id'] ?? null) && is_string($r['entrega']['creado'] ?? null));
+check('…equipo: entrega null y llega al inventario (dron4k serie 1, origen canje, en bodega)', [null, 'dron4k', 1, 'canje', 'bodega'], [array_key_exists('entrega', $r) ? $r['entrega'] : 'x', $r['item']['item'] ?? null, $r['item']['serie'] ?? null, $r['item']['origen'] ?? null, $r['item']['estado'] ?? null]);
+si('…con id y la lista completa del inventario', is_int($r['item']['id'] ?? null) && ($r['inventario'][0]['id'] ?? 0) === ($r['item']['id'] ?? -1));
+check('…ya NO crea entrega tipo item', 0, (int) $val("SELECT COUNT(*) FROM entregas WHERE tipo = 'item'"));
 check('…en el libro: -450 motivo gasto', ['gasto', 'premium:dron4k', -450, 250], array_values($fila('SELECT motivo, ref, cambio, saldo FROM movimientos_creditos WHERE jugador_id = ? ORDER BY id DESC LIMIT 1', [$JA])));
 $r = $a->api('/api/gastar', ['item' => 'caja_chica']);
 check('caja_chica -> entrega dinero 1000', ['dinero', '-', 1000, 130], [$r['entrega']['tipo'] ?? null, $r['entrega']['item'] ?? null, $r['entrega']['cantidad'] ?? null, $r['creditos'] ?? null]);
@@ -301,7 +307,8 @@ $r = $a->api('/api/gastar', ['item' => 'grua']);
 check('grua (650) con 70 -> 402 y el saldo no cambia', [402, 70, 70], [$a->http, $r['creditos'] ?? null, $saldo($JA)]);
 check('Libro = saldo', $saldo($JA), $libro($JA));
 $e4 = $a->apiGet('/api/estado');
-check('El estado trae TODAS las entregas (historial)', [['item', 'dron4k', 1], ['dinero', '-', 1000], ['reparar_todo', '-', 1]], array_map(fn($x) => [$x['tipo'], $x['item'], $x['cantidad']], $e4['entregas']));
+check('El estado trae TODAS las entregas (historial, sin equipos)', [['dinero', '-', 1000], ['reparar_todo', '-', 1]], array_map(fn($x) => [$x['tipo'], $x['item'], $x['cantidad']], $e4['entregas']));
+check('…y el equipo en inventario', [['dron4k', 1, 'bodega']], array_map(fn($x) => [$x['item'], $x['serie'], $x['estado']], $e4['inventario']));
 si('…cada entrega con id, tipo, item, cantidad y creado', array_reduce($e4['entregas'], fn($cc, $x) => $cc && count(array_intersect(['id', 'tipo', 'item', 'cantidad', 'creado'], array_keys($x))) === 5, true));
 
 titulo('Gastar a la vez (atómico): 5 compras simultáneas con créditos para 1');
@@ -317,7 +324,7 @@ for ($i = 0; $i < 5; $i++) {
 do { curl_multi_exec($mh, $corriendo); curl_multi_select($mh); } while ($corriendo > 0);
 $codigos = array_map(fn($h) => (int) curl_getinfo($h, CURLINFO_HTTP_CODE), $hs); sort($codigos);
 check('Solo 1 sale bien; las otras 4 -> 402', [200, 402, 402, 402, 402], $codigos);
-check('…saldo 0, una sola entrega y libro = saldo', [0, 1, 0], [$saldo($JP), (int) $val('SELECT COUNT(*) FROM entregas WHERE jugador_id = ?', [$JP]), $libro($JP)]);
+check('…saldo 0, un solo equipo en el inventario y libro = saldo', [0, 1, 0], [$saldo($JP), (int) $val('SELECT COUNT(*) FROM inventario WHERE jugador_id = ?', [$JP]), $libro($JP)]);
 
 // =====================================================================
 titulo('Pago rechazado (código 2) y datos incompletos');
@@ -390,7 +397,7 @@ $sinSesion->get('/api/plux/3ds?pti=PTI-1&pcc=PCC-1&ptk=TK-zzz');
 check('3DS aprobado en un navegador sin sesión: no se pierde (queda un aviso para el admin)', [200, 1], [$sinSesion->http, (int) $val("SELECT COUNT(*) FROM avisos WHERE tipo = 'plux_sin_relacionar'")]);
 [$otroJ] = $nuevo('OtroJ');
 $otroJ->get($vuelta);
-check('Otro jugador con la vuelta del banco: no recibe la compra ajena ni se entrega otra vez', [302, $antes + 3200, $antes + 3200], [$otroJ->http, $saldo($JA), $libro($JA)]);
+check('Otro jugador con la vuelta del banco (A-02: confirmación ya usada) -> 409, no recibe nada ni se entrega otra vez', [409, $antes + 3200, $antes + 3200], [$otroJ->http, $saldo($JA), $libro($JA)]);
 $limpiarIntentos();
 
 // =====================================================================
@@ -402,8 +409,9 @@ si('Se pueden abrir 2 órdenes pendientes mientras no haya ninguna pagada', $tok
 $r = $pagar($b, $tokI1, '4540639936908783');
 check('Pagar el paquete -> success', 'success', $r['status'] ?? null);
 $eb = $b->apiGet('/api/estado');
-check('Entregas: cámara profesional, 5 cables, 3 baterías, técnico de streaming nivel 3', [['item', 'cam_pro', 1], ['consumible', 'cable', 5], ['consumible', 'battery', 3], ['personal', 'stream', 3]],
+check('Entregas: 5 cables, 3 baterías, técnico de streaming nivel 3', [['consumible', 'cable', 5], ['consumible', 'battery', 3], ['personal', 'stream', 3]],
     array_map(fn($x) => [$x['tipo'], $x['item'], $x['cantidad']], $eb['entregas']));
+check('…y la cámara profesional en el inventario (origen inicio)', [['cam_pro', 'inicio', 'bodega']], array_map(fn($x) => [$x['item'], $x['origen'], $x['estado']], $eb['inventario']));
 check('…200 créditos e inicio_comprado true', [200, true], [$eb['creditos'], $eb['inicio_comprado']]);
 $b->api('/api/orden', ['producto' => 'inicio']);
 check('Otra orden del paquete -> 409', [409, true], [$b->http, str_contains((string) (json_decode($b->cuerpo, true)['error'] ?? ''), 'una vez')]);
@@ -412,12 +420,12 @@ $r = $pagar($b, $tokI2, '4540639936908783');
 check('Pagar la 2.ª orden vieja -> 409 SIN cobrar (no llama a Plux)', [409, 'failed', $llamadas], [$b->http, $r['status'] ?? null, count(falso_log())]);
 check('pago.php de la 2.ª orden -> 409', 409, $b->get('/pago.php?o=' . $tokI2));
 $b->api('/api/plux/pago', ['o' => $tokI1, 'buyer' => $comprador] + tarjeta('4540639936908783'));
-check('Repetir el pago del paquete no entrega otra vez', [4, 200], [(int) $val('SELECT COUNT(*) FROM entregas WHERE jugador_id = ?', [$JB]), $saldo($JB)]);
+check('Repetir el pago del paquete no entrega otra vez', [3, 1, 200], [(int) $val('SELECT COUNT(*) FROM entregas WHERE jugador_id = ?', [$JB]), (int) $val('SELECT COUNT(*) FROM inventario WHERE jugador_id = ?', [$JB]), $saldo($JB)]);
 // Si de todas formas llegan 2 cobros del paquete (el aviso de Plux de una orden vieja), NO se entrega dos veces: queda aviso.
 $cI2 = $compra($tokI2);
 [$h, $j] = $hook(['state' => 'PAGADO', 'description' => 'EV-' . $cI2['id'] . ' EN VIVO Tycoon Paquete de inicio', 'amount' => 2.99], $E('PLUX_WEBHOOK_USUARIO'), $E('PLUX_WEBHOOK_CLAVE'));
-check('Cobro doble del paquete (aviso de Plux): pagado pero NO se entrega otra vez y queda aviso', [200, 4, 200, 1],
-    [$h, (int) $val('SELECT COUNT(*) FROM entregas WHERE jugador_id = ?', [$JB]), $saldo($JB), (int) $val("SELECT COUNT(*) FROM avisos WHERE tipo = 'inicio_duplicado' AND compra_id = ?", [$cI2['id']])]);
+check('Cobro doble del paquete (aviso de Plux): pagado pero NO se entrega otra vez y queda aviso', [200, 3, 1, 200, 1],
+    [$h, (int) $val('SELECT COUNT(*) FROM entregas WHERE jugador_id = ?', [$JB]), (int) $val('SELECT COUNT(*) FROM inventario WHERE jugador_id = ?', [$JB]), $saldo($JB), (int) $val("SELECT COUNT(*) FROM avisos WHERE tipo = 'inicio_duplicado' AND compra_id = ?", [$cI2['id']])]);
 
 // =====================================================================
 titulo('VIP 30 días (se suma) y bono diario');
@@ -526,8 +534,9 @@ $tot = (float) $val("SELECT SUM(total) FROM compras WHERE estado = 'pagado'");
 $hoyT = (float) $val("SELECT SUM(total) FROM compras WHERE estado = 'pagado' AND pagado_en >= ?", [strtotime('today')]);
 si('Muestra ventas de hoy, del mes y total (solo pagadas)', substr_count($html, '$' . number_format($tot, 2, ',', '.')) >= 3 && abs($tot - $hoyT) < 0.001 && $tot > 0);
 check('…y el número de jugadores', true, str_contains($html, '<b id="num-jugadores">' . $val('SELECT COUNT(*) FROM jugadores') . '</b>'));
-si('Lista las compras con datos para la factura (cédula, nombre, correo, celular)', str_contains($html, '1710034065') && str_contains($html, 'Ana Pérez Tester') && str_contains($html, 'ana.titular@prueba.example'));
-[$h, $html] = $adm('/admin.php?estado=rechazado', $AU, $AC);
+[$h, $html] = $adm('/admin.php?t=compras', $AU, $AC);
+si('Pestaña Compras: lista las compras con datos para la factura (cédula, nombre, correo, celular)', str_contains($html, '1710034065') && str_contains($html, 'Ana Pérez Tester') && str_contains($html, 'ana.titular@prueba.example'));
+[$h, $html] = $adm('/admin.php?t=compras&estado=rechazado', $AU, $AC);
 si('Filtro "rechazado": solo rechazadas', $h === 200 && str_contains($html, 'estado-rechazado') && !str_contains($html, 'class="estado-pagado"'));
 [$h, $csv, $cab] = $adm('/admin.php?a=csv&estado=pagado', $AU, $AC);
 $lineas = array_values(array_filter(explode("\n", trim($csv))));
@@ -537,8 +546,9 @@ check('CSV de pagadas: una fila por compra pagada', (int) $val("SELECT COUNT(*) 
 si('…todas "pagado", con subtotal/IVA/total', array_reduce(array_slice($lineas, 1), fn($cc, $l) => $cc && str_contains($l, ';pagado;') && preg_match('/;\d+\.\d\d;\d+\.\d\d;\d+\.\d\d;/', $l), true));
 [$h, $csvTodo] = $adm('/admin.php?a=csv', $AU, $AC);
 check('CSV de todas', (int) $val('SELECT COUNT(*) FROM compras'), count(array_filter(explode("\n", trim($csvTodo)))) - 1);
-[$h, $html] = $adm('/admin.php', $AU, $AC);
+[$h, $html] = $adm('/admin.php?t=jugadores&id=' . $JL, $AU, $AC);
 preg_match('/name="csrf" value="([a-f0-9]+)"/', $html, $mm); $csrf = $mm[1] ?? '';
+si('Hay código CSRF en los formularios del Centro de Control', strlen($csrf) === 64);
 [$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => 'malo', 'email' => $emailL, 'creditos' => '50', 'nota' => 'prueba']);
 check('Dar créditos sin el código del formulario -> no se da nada', [true, 0], [str_contains($html, 'Recárgala'), $saldo($JL)]);
 [$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'email' => $emailL, 'creditos' => '50', 'nota' => 'prueba'], ['Origin: http://sitio-malo.example']);
@@ -567,9 +577,16 @@ check('Estado: plux.disponible false', ['disponible' => false, 'ambiente' => 'sa
 $s->api('/api/orden', ['producto' => 'creditos_250']);
 check('Orden -> 503', 503, $s->http);
 
+// Mercado entre jugadores, equipos VIP, servidores, asociaciones y chat (MERCADO.md y SOCIAL.md)
+require __DIR__ . '/pruebas_mercado_social.php';
+// Tienda nueva, transferencias, reembolsos, Google Play, Centro de Control, soporte, borrar cuenta y arreglos de la auditoría
+require __DIR__ . '/pruebas_tienda_cuenta.php';
+
 titulo('Libro de créditos de TODOS los jugadores = su saldo');
-check('Jugadores con saldo distinto a la suma de su libro', 0, (int) $val('SELECT COUNT(*) FROM jugadores j WHERE j.creditos <> (SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos m WHERE m.jugador_id = j.id)'));
+check('Jugadores con saldo (créditos - deuda) distinto a la suma de su libro', 0, (int) $val('SELECT COUNT(*) FROM jugadores j WHERE j.creditos - j.deuda <> (SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos m WHERE m.jugador_id = j.id)'));
 check('Cada movimiento guarda el saldo que quedó', 0, (int) $val('SELECT COUNT(*) FROM movimientos_creditos m WHERE m.saldo <> (SELECT SUM(cambio) FROM movimientos_creditos x WHERE x.jugador_id = m.jugador_id AND x.id <= m.id)'));
+check('Inventario: ningún número de serie repetido por tipo', 0, (int) $val('SELECT COUNT(*) FROM (SELECT item, serie FROM inventario GROUP BY item, serie HAVING COUNT(*) > 1)'));
+check('Inventario: cada equipo publicado tiene exactamente una publicación activa, y viceversa', [0, 0], [(int) $val("SELECT COUNT(*) FROM inventario i WHERE i.estado = 'publicado' AND (SELECT COUNT(*) FROM mercado_publicaciones p WHERE p.inventario_id = i.id AND p.estado = 'activa') <> 1"), (int) $val("SELECT COUNT(*) FROM mercado_publicaciones p JOIN inventario i ON i.id = p.inventario_id WHERE p.estado = 'activa' AND i.estado <> 'publicado'")]);
 check('Ninguna compra pagada se entregó dos veces', 0, (int) $val("SELECT COUNT(*) FROM (SELECT ref FROM movimientos_creditos WHERE motivo = 'compra' GROUP BY ref HAVING COUNT(*) > 1)"));
 check('Base en modo WAL', 'wal', strtolower((string) $val('PRAGMA journal_mode')));
 
