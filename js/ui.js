@@ -1380,6 +1380,14 @@
     return seccion('tv-obra', ICO_OBRA, T('tienda.sec_obra'), html ? html + `<p class="small muted tv-nota">${T('tienda.obra_det')}</p>` : '');
   }
 
+  // Impulsos (js/impulsos.js, server/INTEGRAR_MONETIZACION2.md): equipo de obra extra, Fondo de crecimiento y Tarjeta semanal
+  function seccionImpulsos(log, lista) {
+    const IM = window.Impulsos;
+    if (!IM || typeof IM.seccionTienda !== 'function') return [];
+    const x = seguro(() => IM.seccionTienda(ctxModulo(), { log, lista }), null);
+    return x && x.html ? [{ id: x.id, ico: x.ico, t: x.t, html: seccion(x.id, x.ico, x.t, x.html) }] : [];
+  }
+
   function renderTienda() {
     const el = $('tab-tienda');
     if (vistaTienda === 'mercado' && Api.disponible && Api.estado && Api.estado.logueado && window.Mercado) {
@@ -1441,6 +1449,7 @@
       { id: 'tv-vip', ico: I('crown', 'sm'), t: T('tienda.sec_vip'), html: seccionVip(log, lista) },
       { id: 'tv-copa', ico: I('star', 'sm'), t: T('tienda.nav_copa'), html: seccionEstrellas(log) },
       { id: 'tv-obra', ico: ICO_OBRA, t: T('tienda.nav_obra'), html: seccionObra(lista) },
+      ...seccionImpulsos(log, lista),
       { id: 'tv-creditos', ico: I('gem', 'sm'), t: T('tienda.sec_creditos'), html: seccion('tv-creditos', I('gem', 'sm'), T('tienda.sec_creditos'),
         (creditos.length ? `<div class="tv-cgrid">${creditos.map(cardCreditos).join('')}</div>` : '') + otros.map((p) => cardProd(p)).join('')) },
     ].filter((x) => x.html);
@@ -1596,6 +1605,7 @@
     try { if (window.Pase && window.Pase.recargar) window.Pase.recargar(ctxInicio()); } catch (e) { /* sin pase */ }
     try { if (window.Vip && window.Vip.invalidar) { window.Vip.invalidar(); if (window.Vip.recargar) Promise.resolve(window.Vip.recargar()).then(() => { if (tab === 'tienda') render(); }).catch(() => {}); } } catch (e) { /* sin VIP */ }
     try { if (window.Estrellas && window.Estrellas.invalidar) window.Estrellas.invalidar(); } catch (e) { /* sin estrellas */ }
+    try { if (window.Impulsos && window.Impulsos.invalidar) { window.Impulsos.invalidar(); window.Impulsos.recargar(ctxModulo(), true); } } catch (e) { /* sin impulsos */ }
   }
   function comprarPlay(id) {
     if (!GP || !playOk) { toast(T('tienda.play_no_disp')); snd.play('error'); return; }

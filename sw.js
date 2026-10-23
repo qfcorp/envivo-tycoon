@@ -41,6 +41,7 @@ const SHELL = [
   './js/vip.js',        // nivel VIP 1–10, regalos de asociación y Mecenas
   './js/pase.js',       // Pase de Temporada
   './js/estrellas.js',  // Personal estrella y Pase de Copa
+  './js/impulsos.js',   // Equipo de obra extra, Fondo de crecimiento y Tarjeta semanal
   './js/guia.js',       // guía "toca aquí" del primer evento
   './js/guias.js',      // guías cortas de cada sección (primera vez)
   './js/escena.js',     // franja animada del evento en vivo (opcional)

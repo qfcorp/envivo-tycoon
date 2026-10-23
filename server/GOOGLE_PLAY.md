@@ -50,6 +50,9 @@ Todos son **productos únicos** (ninguno es suscripción). Después de crear cad
 | `pase_premium` ($4.99), `pase_premium_plus` ($9.99) | Pase de Temporada (dura la temporada de 28 días; no es suscripción) | Sí (uno por temporada) |
 | `pack_obra_s` ($1.99), `pack_obra_m` ($4.99), `pack_obra_l` ($9.99) | Packs de obra de la sede oficial (contenido fijo) | Sí |
 | `pase_copa` ($2.99) | Pase de Copa: +5 intentos por día esa semana | Sí |
+| `equipo_obra_2` ($2.99) | Equipo de obra extra (permanente) de la sede oficial — server/INTEGRAR_MONETIZACION2.md | No (una vez por cuenta) |
+| `fondo_crecimiento` ($19.99) | Fondo de crecimiento: premios fijos por nivel de la sede oficial | No (una vez por cuenta) |
+| `tarjeta_semanal` ($1.99) | Tarjeta semanal (7 días: 15 créditos + materiales cada día) | Sí |
 | `oferta_vip_s` ($1.99), `oferta_vip_m` ($4.99), `oferta_vip_l` ($9.99), `oferta_campeon` ($4.99), `oferta_sede_5` ($4.99), `oferta_sede_10` ($9.99) | Ofertas por logros (aparecen al subir de nivel VIP, ganar una copa o subir la sede) | Con tope por oferta (lo controla el servidor) |
 
 `estrella_copa` (personal estrella) **no** se crea en Play: se paga solo con créditos dentro del juego.
