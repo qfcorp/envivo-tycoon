@@ -604,46 +604,513 @@
       <rect x="52" y="49" width="12" height="16" fill="#e9edf5"/><circle cx="58" cy="57" r="6" fill="#0e4a28" opacity=".5"/><text x="58" y="60.5" font-size="9" font-family="${FONT_D}" font-weight="800" fill="#e9edf5" text-anchor="middle">$</text>`,
   };
 
+  /* ---------- Más equipos: cada TIPO de producto con su propio dibujo (mismo estilo) ---------- */
+  // Caja en perspectiva: frente (x, y, w, h), cara de arriba y lado derecho con profundidad d
+  const BOX3 = (x, y, w, h, d, front, top, rx) => `<path d="M${x} ${y}l${d} -${(d * 0.8).toFixed(1)}h${w}l-${d} ${(d * 0.8).toFixed(1)}z" fill="${top || U('gm')}"/><path d="M${x + w} ${y}l${d} -${(d * 0.8).toFixed(1)}v${h}l-${d} ${(d * 0.8).toFixed(1)}z" fill="${U('side')}"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx == null ? 3 : rx}" fill="${front || U('pl')}"/>`;
+  // Lente visto de 3/4: cuerpo cilíndrico (xf adelante, xb atrás) y cristal frontal
+  const BARREL = (xf, xb, cy, ry, fill) => `<ellipse cx="${xb}" cy="${cy}" rx="${(ry * 0.45).toFixed(1)}" ry="${ry}" fill="${U('cyp')}"/><rect x="${xf}" y="${cy - ry}" width="${xb - xf}" height="${ry * 2}" fill="${fill || U('cyp')}"/>`;
+  const GLASS = (cx, cy, ry, rim) => `<ellipse cx="${cx}" cy="${cy}" rx="${(ry * 0.45).toFixed(1)}" ry="${ry}" fill="${rim || U('pl')}"/><ellipse cx="${cx}" cy="${cy}" rx="${(ry * 0.34).toFixed(1)}" ry="${(ry * 0.8).toFixed(1)}" fill="${U('lens')}"/><ellipse cx="${(cx - ry * 0.1).toFixed(1)}" cy="${(cy - ry * 0.4).toFixed(1)}" rx="${(ry * 0.08).toFixed(1)}" ry="${(ry * 0.16).toFixed(1)}" fill="#fff" opacity=".75"/>`;
+  const LEG = (x1, y1, x2, y2, w) => `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#14171d" stroke-width="${(w || 3) + 2}" stroke-linecap="round"/><path d="M${x1} ${y1}L${x2} ${y2}" stroke="#aab3c0" stroke-width="${w || 3}" stroke-linecap="round"/>`;
+  const ANT = (x, y, ang, len, c) => `<g transform="rotate(${ang} ${x} ${y})"><rect x="${x - 2.4}" y="${y - len}" width="4.8" height="${len}" rx="2.4" fill="${c || U('rub')}"/><rect x="${x - 1.5}" y="${y - 2.5}" width="3" height="4" fill="#3a4150"/></g>`;
+  const KNOB = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r || 3}" fill="${U('gmd')}" stroke="#5b6476" stroke-width=".7"/><path d="M${x} ${y}l${((r || 3) * 0.6).toFixed(1)} -${((r || 3) * 0.6).toFixed(1)}" stroke="#e9edf5" stroke-width="1"/>`;
+  const WAVES = (x, y, c) => `<path d="M${x - 8} ${y}a11 11 0 0116 0M${x - 13} ${y - 5}a18 18 0 0126 0" stroke="${c || '#4da3ff'}" stroke-width="2" fill="none" stroke-linecap="round" class="blink"/>`;
+  // Pantalla de software (mezcla, repetición o gráficos)
+  function UI(x, y, w, h, ui) {
+    const f = (v) => v.toFixed(1);
+    if (ui === 'replay') {
+      return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#070a10"/>${MINI_SCREEN(x + 1, y + 1, w * 0.62, h * 0.62)}<rect x="${x + 2}" y="${y + 2}" width="13" height="6" rx="1" fill="#000" opacity=".65"/><text x="${x + 8.5}" y="${y + 6.6}" font-size="4.6" font-family="${FONT_M}" fill="#ffb020" text-anchor="middle">×0.5</text>
+        ${[0, 1, 2, 3].map((i) => `<rect x="${f(x + w * 0.66)}" y="${f(y + 1 + i * h * 0.155)}" width="${f(w * 0.32)}" height="${f(h * 0.12)}" rx=".8" fill="${i === 1 ? '#ffb020' : '#24405f'}"/>`).join('')}
+        <rect x="${x + 1}" y="${f(y + h * 0.7)}" width="${w - 2}" height="${f(h * 0.12)}" fill="#1b2433"/>${[0.06, 0.28, 0.46, 0.7].map((v, i) => `<rect x="${f(x + 1 + (w - 2) * v)}" y="${f(y + h * 0.7)}" width="${f((w - 2) * 0.14)}" height="${f(h * 0.12)}" fill="${['#2f6fb3', '#2ecc71', '#b57bff', '#2f6fb3'][i]}"/>`).join('')}
+        <path d="M${f(x + w * 0.52)} ${f(y + h * 0.66)}v${f(h * 0.2)}" stroke="#ff3b3b" stroke-width="1.4"/><rect x="${x + 1}" y="${f(y + h * 0.86)}" width="${f(w * 0.3)}" height="${f(h * 0.11)}" rx="1" fill="#ff3b3b"/>`;
+    }
+    if (ui === 'gfx') {
+      return `${MINI_SCREEN(x, y, w, h)}<rect x="${x + 2}" y="${y + 2}" width="${f(w * 0.4)}" height="${f(h * 0.16)}" rx="1" fill="#0b0d11" opacity=".92"/><rect x="${x + 3.5}" y="${f(y + 3.2)}" width="${f(w * 0.07)}" height="${f(h * 0.09)}" fill="#ff3b3b"/><rect x="${f(x + 3.5 + w * 0.26)}" y="${f(y + 3.2)}" width="${f(w * 0.07)}" height="${f(h * 0.09)}" fill="#4da3ff"/><text x="${f(x + 2 + w * 0.2)}" y="${f(y + 2 + h * 0.13)}" font-size="${f(h * 0.12)}" font-family="${FONT_M}" fill="#fff" text-anchor="middle">2-1</text>
+        <rect x="${f(x + w * 0.08)}" y="${f(y + h * 0.68)}" width="${f(w * 0.1)}" height="${f(h * 0.18)}" fill="#ff3b3b"/><rect x="${f(x + w * 0.18)}" y="${f(y + h * 0.68)}" width="${f(w * 0.62)}" height="${f(h * 0.18)}" fill="#f2f4f8"/><rect x="${f(x + w * 0.22)}" y="${f(y + h * 0.72)}" width="${f(w * 0.38)}" height="${f(h * 0.045)}" fill="#14171d"/><rect x="${f(x + w * 0.22)}" y="${f(y + h * 0.79)}" width="${f(w * 0.24)}" height="${f(h * 0.03)}" fill="#8f99aa"/>`;
+    }
+    const bw = (w - 3) / 2, bh = h * 0.48, sw = (w - 5) / 4;
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#05070b"/><rect x="${x + 1}" y="${y + 1}" width="${f(bw)}" height="${f(bh)}" fill="#1d4f86" stroke="#2ecc71" stroke-width="1"/>${MINI_SCREEN(x + 1.5, y + 1.5, bw - 1, bh - 1)}<rect x="${f(x + 2 + bw)}" y="${y + 1}" width="${f(bw)}" height="${f(bh)}" fill="#5a1d22" stroke="#ff3b3b" stroke-width="1"/>${MINI_SCREEN(x + 2.5 + bw, y + 1.5, bw - 1, bh - 1)}
+      ${[0, 1, 2, 3].map((i) => `<rect x="${f(x + 1 + i * (sw + 1))}" y="${f(y + bh + 2.5)}" width="${f(sw)}" height="${f(h * 0.24)}" fill="${['#2f5a3e', '#5a4a2a', '#3b2f55', '#24405f'][i]}"/>`).join('')}
+      <rect x="${x + 1}" y="${f(y + h * 0.8)}" width="${w - 2}" height="${f(h * 0.17)}" fill="#11161f"/><rect x="${x + 2}" y="${f(y + h * 0.83)}" width="${f(w * 0.26)}" height="${f(h * 0.11)}" rx="1" fill="#ff3b3b"/><rect x="${f(x + 4 + w * 0.26)}" y="${f(y + h * 0.83)}" width="${f(w * 0.2)}" height="${f(h * 0.11)}" rx="1" fill="#2a3242"/>`;
+  }
+  // Monitor sobre pie (multiview, referencia, gráficos)
+  const MON = (x, y, w, h, inner) => `<path d="M${x + w / 2} ${y + h}v12M${x + w / 2 - 14} ${y + h + 14}h28" stroke="#2a2f3a" stroke-width="4" stroke-linecap="round"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="${U('pl')}"/>${BEV(x + 3, y + 0.6, x + w - 3)}<rect x="${x + 3}" y="${y + 3}" width="${w - 6}" height="${h - 9}" fill="#05070b"/>${inner}<rect x="${x + w - 12}" y="${y + h - 4.5}" width="3" height="2" rx="1" fill="#2ecc71"/>`;
+
+  Object.assign(DRAW, {
+    // ===== Cámaras =====
+    // Camcorder doméstica: pequeña, pantalla abatible y correa de mano
+    handycam: (p) => `${SH(58, 38)}
+      <rect x="44" y="78" width="28" height="5" rx="2" fill="${U('pl')}"/>
+      <rect x="24" y="51" width="20" height="25" rx="4" fill="${U('cyp')}"/>${RIBS(29, 41, 51, 76, 2.2)}
+      <path d="M15 48l11 3v25l-11 3z" fill="${U('pl')}"/>${LENSF(16, 63.5, 3.2, 12)}
+      <rect x="38" y="46" width="56" height="34" rx="13" fill="${p.body || U('gm')}"/>${SPEC(42, 47, 48, 9, 8)}${BEV(48, 46.6, 84)}
+      <rect x="46" y="42.5" width="16" height="4.5" rx="2" fill="#23262d"/><path d="M48 44.7h12" stroke="#5b6476" stroke-width="1.4" stroke-dasharray="1 1.2"/>
+      <rect x="70" y="41.5" width="11" height="4.5" rx="2.2" fill="${U('cyal')}"/><circle cx="86" cy="44" r="2" fill="#5b6476"/>
+      <path d="M80 47c9-3 15 2 15 10v13c0 8-6 12-14 10" stroke="#14171d" stroke-width="8.5" fill="none" stroke-linecap="round"/><path d="M80 47c9-3 15 2 15 10v13c0 8-6 12-14 10" stroke="${U('fab')}" stroke-width="6.5" fill="none" stroke-linecap="round"/><path d="M82 49.5c6-1.5 10 2 10 8v12c0 6-4 9-10 8" stroke="#6b7487" stroke-width=".7" stroke-dasharray="1.4 1" fill="none"/>
+      <rect x="44" y="54" width="31" height="22" rx="2.5" fill="#0c0e12" stroke="#3a4150" stroke-width=".9"/>${MINI_SCREEN(46, 56, 27, 18)}${SPEC(46, 56, 27, 6)}
+      <rect x="75" y="58" width="3" height="14" rx="1" fill="#2a2f3a"/>${LED(43, 50, '#ff3b3b', true)}`,
+    // Cámara de acción: caja chica resistente, lente grande y patitas de montaje
+    action_cam: (p) => `${SH(60, 32)}
+      <rect x="49" y="84" width="5" height="12" rx="1.5" fill="${U('rub')}"/><rect x="57" y="84" width="5" height="12" rx="1.5" fill="${U('rub')}"/><rect x="65" y="84" width="5" height="12" rx="1.5" fill="${U('rub')}"/><path d="M47 90.5h26" stroke="${U('cyal')}" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M38 98h44l5 5H33z" fill="${U('gm')}"/>
+      ${BOX3(32, 38, 52, 47, 9, U('pl'), U('gm'), 7)}${SPEC(33, 39, 50, 11, 7)}${BEV(38, 38.6, 78)}
+      <rect x="62" y="28.6" width="15" height="4" rx="2" fill="${U('red')}"/>
+      <rect x="36" y="43" width="28" height="28" rx="6" fill="#0b0d11" stroke="#3a4150" stroke-width="1"/>
+      <circle cx="50" cy="57" r="11.5" fill="${U('cyp')}"/><circle cx="50" cy="57" r="9" fill="#05070b"/>${LENSF(50, 57, 7.2, 7.2)}
+      <rect x="67" y="44" width="14" height="13" rx="2" fill="#0c0e12" stroke="#3a4150" stroke-width=".7"/>${MINI_SCREEN(68.5, 45.5, 11, 10)}
+      ${LED(74, 63, '#ff3b3b', true)}<path d="M38 78h3M43 78h3M48 78h3M53 78h3" stroke="#05070b" stroke-width="2" stroke-linecap="round"/>
+      <path d="M86 40v38" stroke="#000" stroke-opacity=".3" stroke-width="1.2" stroke-dasharray="2 2"/>`,
+    // Cámara de bolsillo con gimbal: mango alto, pantallita y cabeza de 3 ejes
+    pocket_gimbal: (p) => `${SH(61, 22)}
+      <rect x="49" y="50" width="24" height="52" rx="10" fill="${U('pl')}"/>${SPEC(50, 51, 8, 48, 4)}
+      <rect x="52" y="55" width="18" height="22" rx="2.5" fill="#0c0e12" stroke="#3a4150" stroke-width=".8"/>${MINI_SCREEN(53.5, 56.5, 15, 19)}
+      ${KNOB(61, 84, 3.8)}<circle cx="61" cy="94" r="3" fill="#ff3b3b"/>
+      <rect x="55" y="43" width="12" height="9" rx="2.5" fill="${U('cy')}"/>
+      <path d="M61 44V41H80V25H75" fill="none" stroke="#1b1e25" stroke-width="5" stroke-linejoin="round"/><circle cx="80" cy="41" r="3.6" fill="${U('cyal')}"/>
+      <rect x="44" y="11" width="30" height="27" rx="10" fill="${U('gm')}"/>${SPEC(46, 12, 26, 8, 8)}
+      <circle cx="57" cy="24.5" r="9.5" fill="${U('pl')}"/><circle cx="57" cy="24.5" r="7.4" fill="${U('cyp')}"/>${LENSF(57, 24.5, 5.4, 5.4)}
+      <rect x="72" y="19" width="7" height="11" rx="2.5" fill="${U('cyal')}"/>${LED(69, 16, '#2ecc71')}`,
+    // Minicámara POV: cubito con lente redondo, brazo articulado y prensa
+    pov_cam: (p) => `${SH(58, 30)}
+      <path d="M84 56q14 4 13 22t15 22" stroke="#14171d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M61 68L45 82L58 95" fill="none" stroke="#14171d" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M61 68L45 82L58 95" fill="none" stroke="${U('cyal')}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="45" cy="82" r="5" fill="${U('gm')}" stroke="#8f99aa" stroke-width=".8"/><path d="M42 82h6" stroke="#ff3b3b" stroke-width="1.8"/>
+      <path d="M48 92h26v13H48v-4h20v-5H48z" fill="${U('gm')}"/><rect x="66" y="96" width="14" height="3.4" rx="1.5" fill="${U('cyal')}"/>
+      ${BOX3(42, 36, 32, 31, 10, U('pl'), U('gm'), 3)}${SPEC(43, 37, 30, 8, 3)}
+      <path d="M77 31v28M80 29v28M83 27v28" stroke="#000" stroke-opacity=".35" stroke-width="1"/>
+      <circle cx="58" cy="51.5" r="12.5" fill="${U('cyp')}"/><circle cx="58" cy="51.5" r="9.8" fill="#05070b" stroke="#3a4150"/>${LENSF(58, 51.5, 7.2, 7.2)}
+      <circle cx="61" cy="69" r="4" fill="${U('cyal')}"/>${LED(46.5, 40, '#ff3b3b', true)}`,
+    // Celular en gimbal de mano
+    phone_gimbal: (p) => `${SH(60, 26)}
+      <rect x="52" y="60" width="16" height="42" rx="8" fill="${U('gm')}"/>${SPEC(53, 61, 5, 38, 3)}
+      ${KNOB(60, 73, 3.6)}<circle cx="60" cy="83" r="2.6" fill="#ff3b3b"/>
+      <rect x="54" y="53" width="12" height="9" rx="2.5" fill="${U('cy')}"/>
+      <path d="M60 55V51H88V44" stroke="#1b1e25" stroke-width="5" fill="none" stroke-linejoin="round"/><circle cx="88" cy="48" r="4.2" fill="${U('cyal')}"/>
+      <rect x="52" y="10" width="16" height="7" rx="2" fill="${U('cyal')}"/><rect x="52" y="41" width="16" height="7" rx="2" fill="${U('cyal')}"/>
+      <rect x="14" y="14" width="92" height="31" rx="6" fill="#0b0d11" stroke="#4a5263" stroke-width="1.2"/>
+      <rect x="18" y="17" width="84" height="25" rx="3" fill="#000"/>${MINI_SCREEN(19, 18, 82, 23)}${SPEC(18, 17, 84, 8, 3)}
+      <rect x="21" y="20" width="16" height="6" rx="1" fill="#000" opacity=".55"/><circle cx="24.5" cy="23" r="1.7" fill="#ff3b3b" class="blink"/><text x="27.5" y="24.8" font-size="4.4" font-family="${FONT_M}" fill="#fff">REC</text>
+      <circle cx="99" cy="29.5" r="1.4" fill="#2a2f3a"/>`,
+    // Cámara de estudio liviana: cuerpo de caja con pantalla grande atrás y lente chico
+    studio_box: (p) => `${SH(62, 46)}
+      <rect x="54" y="86" width="16" height="12" fill="${U('cy')}"/><ellipse cx="62" cy="100" rx="18" ry="4" fill="${U('gmd')}"/>
+      <rect x="20" y="44" width="16" height="24" rx="2" fill="${U('cyp')}"/>${RIBS(23, 33, 44, 68, 2)}<path d="M11 41l10 3v24l-10 3z" fill="${U('pl')}"/>${LENSF(12, 56, 2.8, 12)}
+      ${BOX3(32, 36, 64, 48, 8)}${BEV(36, 36.6, 92)}
+      <path d="M33 37h62v46H33z" fill="none" stroke="#05070b" stroke-width="2.5"/>
+      <rect x="37" y="40" width="54" height="35" fill="#05070b"/>${MINI_SCREEN(38, 41, 52, 33)}${SPEC(37, 40, 54, 10)}
+      <rect x="39" y="42" width="16" height="5" rx="1" fill="#000" opacity=".55"/><text x="47" y="45.9" font-size="3.8" font-family="${FONT_M}" fill="#2ecc71" text-anchor="middle">4K60</text>
+      ${[0, 1, 2, 3, 4].map((i) => `<rect x="${40 + i * 7}" y="77.5" width="5" height="3" rx="1" fill="${i === 0 ? '#ff3b3b' : '#4a5263'}"/>`).join('')}${KNOB(84, 79, 2.6)}
+      <rect x="78" y="28" width="13" height="3.2" rx="1" fill="#ff3b3b" class="blink"/>`,
+    // PTZ broadcast: cabeza de caja en horquilla, lente grande
+    ptz_pro: (p) => `${SH(60, 40)}
+      <rect x="28" y="84" width="64" height="16" rx="4" fill="${U('pl')}"/>${SPEC(29, 85, 62, 5, 4)}${LED(38, 93, '#2ecc71', true)}<rect x="68" y="90" width="18" height="4" rx="1" fill="#05070b"/>
+      <path d="M92 95q12 0 18 9" stroke="#f0b829" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M30 86V44q0-6 6-6h5v48zM90 86V44q0-6-6-6h-5v48z" fill="${U('gm')}"/>
+      <circle cx="35" cy="58" r="5" fill="${U('cyal')}"/><circle cx="85" cy="58" r="5" fill="${U('cyal')}"/>
+      <rect x="39" y="33" width="42" height="48" rx="6" fill="${p.body || U('pl')}"/>${SPEC(40, 34, 40, 10, 6)}${BEV(43, 33.6, 77)}
+      <rect x="44" y="41" width="32" height="32" rx="5" fill="#05070b"/><circle cx="60" cy="57" r="13.5" fill="${U('cyp')}"/><circle cx="60" cy="57" r="11" fill="#05070b" stroke="#3a4150"/>${LENSF(60, 57, 9, 9)}
+      ${TALLY(75, 37, 1.8)}`,
+    // Cámara de alta velocidad: cuerpo de caja con disipador, lente de cine con engranajes y contador de cuadros
+    highspeed: (p) => `${SH(58, 48)}
+      <path d="M52 37v-8q0-3 3-3h28q3 0 3 3v8" fill="none" stroke="#1b1e25" stroke-width="4.5"/>
+      ${BOX3(42, 37, 54, 46, 8)}${SPEC(43, 38, 52, 10, 3)}${RIBS(46, 92, 39, 46, 2.4)}
+      <path d="M42 74h54" stroke="${p.acc || '#ff3b3b'}" stroke-width="2.2"/>
+      <rect x="56" y="50" width="34" height="18" rx="1.5" fill="#0b0d11" stroke="#3a4150" stroke-width=".7"/><text x="73" y="61" font-size="9" font-family="${FONT_D}" font-weight="800" fill="#ffb020" text-anchor="middle">1000</text><text x="73" y="66" font-size="4" font-family="${FONT_M}" fill="#8b95a8" text-anchor="middle">fps</text>
+      ${BARREL(18, 44, 60, 15)}<rect x="24" y="44" width="6" height="32" rx="1" fill="#14171d"/><rect x="34" y="44" width="5" height="32" rx="1" fill="#14171d"/>${RIBS(24, 30, 72, 76, 1.2)}${RIBS(34, 39, 72, 76, 1.2)}
+      <path d="M26 46v3M36 46v3" stroke="#e9edf5" stroke-width="1"/>
+      <rect x="10" y="40" width="10" height="40" rx="2" fill="${U('pl')}"/>${GLASS(11, 60, 17)}
+      <rect x="62" y="84" width="16" height="8" rx="2" fill="${U('gm')}"/>${TALLY(90, 42, 1.5)}`,
+    // Cámara aérea por cables
+    spidercam: (p) => `<ellipse cx="60" cy="106" rx="56" ry="9" fill="${U('turf')}" opacity=".6"/><path d="M14 106h92M60 99v14" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>
+      ${SH(60, 20, 106, 4)}
+      <path d="M0 4L50 54M120 4L70 54M0 44L46 60M120 44L74 60" stroke="#c5ccd6" stroke-width="1.3" opacity=".9"/>
+      ${[[0, 4], [120, 4], [0, 44], [120, 44]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.5" fill="${U('gm')}"/>`).join('')}
+      <path d="M46 52h28l5 10H41z" fill="${U('gm')}"/><rect x="41" y="62" width="38" height="8" rx="2" fill="${U('pl')}"/>${LED(47, 66, '#2ecc71', true)}${LED(73, 66, '#ff3b3b', true)}
+      <rect x="57" y="70" width="6" height="5" fill="#14171d"/><circle cx="60" cy="84" r="12" fill="${U('wht')}"/>${SPEC(50, 73, 20, 6, 3)}
+      <circle cx="54" cy="86" r="6.5" fill="${U('pl')}"/>${LENSF(54, 86, 4.6, 4.6)}`,
+    // Cámara en riel (cablecam lineal)
+    rail_cam: (p) => `${SH(60, 54, 104, 4)}
+      <path d="M14 46v56M106 46v56M6 102h16M98 102h16" stroke="#3a4150" stroke-width="3.4" stroke-linecap="round"/>
+      <rect x="2" y="36" width="116" height="10" rx="1.5" fill="${U('cyal')}"/><path d="M${Array.from({ length: 19 }, (_, i) => `${i ? 'L' : ''}${3 + i * 6.1} ${i % 2 ? 45 : 37}`).join('')}" stroke="#5b6476" stroke-width="1" fill="none"/>
+      <rect x="44" y="45" width="34" height="9" rx="2" fill="${U('gm')}"/><circle cx="50" cy="45" r="3" fill="#14171d"/><circle cx="72" cy="45" r="3" fill="#14171d"/>
+      <path d="M61 54v6h18v16h-5" stroke="#1b1e25" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+      <rect x="44" y="61" width="30" height="18" rx="3" fill="${U('al')}"/>${SPEC(45, 62, 28, 5, 3)}<rect x="33" y="63" width="12" height="14" rx="2" fill="${U('cyp')}"/>${LENSF(33.5, 70, 2.2, 6.2)}${TALLY(70, 65, 1.4)}
+      <path d="M86 64h24M90 72h20M84 80h22" stroke="#4da3ff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/>`,
+
+    // ===== Lentes =====
+    lens_kit: (p) => `${SH(60, 34)}
+      <ellipse cx="88" cy="63" rx="9" ry="20" fill="${U('cyal')}"/>
+      ${BARREL(36, 86, 63, 20)}
+      <rect x="48" y="43" width="20" height="40" fill="#14171d"/>${RIBS(49, 67, 43, 83, 1.8)}
+      <rect x="72" y="43" width="8" height="40" fill="#22262d"/>
+      <path d="M58 46v5" stroke="#e9edf5" stroke-width="1.2"/>
+      ${SPEC(36, 44, 50, 7)}
+      <text x="76" y="80" font-size="4.6" font-family="${FONT_M}" fill="#cfd5dd" text-anchor="middle" transform="rotate(-90 76 80)">${esc(p.tag || '14-140')}</text>
+      ${GLASS(36, 63, 22)}`,
+    lens_cine: (p) => `${SH(60, 44)}
+      <ellipse cx="96" cy="60" rx="9" ry="20" fill="${U('cyal')}"/>
+      ${BARREL(34, 94, 60, 22, U('pl'))}
+      ${[[44, 12], [64, 12]].map(([x, w]) => `<rect x="${x}" y="36" width="${w}" height="48" rx="1.5" fill="#0b0d11"/>${RIBS(x + 1, x + w - 1, 80, 85, 1.4)}`).join('')}
+      <rect x="80" y="38" width="8" height="44" fill="#1b1e25"/>
+      ${[0, 1, 2, 3, 4].map((i) => `<path d="M${46 + i * 2.2} 40v3" stroke="#ffffff" stroke-width=".8"/><path d="M${66 + i * 2.2} 40v${i % 2 ? 2 : 3}" stroke="${p.acc || '#ffb020'}" stroke-width=".8"/>`).join('')}
+      <path d="M34 39h60" stroke="#fff" stroke-opacity=".2" stroke-width="2"/>
+      <text x="85" y="66" font-size="4.6" font-family="${FONT_M}" fill="#cfd5dd" text-anchor="middle" transform="rotate(-90 85 66)">${esc(p.tag || 'T2.8')}</text>
+      <rect x="22" y="30" width="14" height="60" rx="2" fill="${U('pl')}"/>${GLASS(23, 60, 28)}`,
+    lens_eng: (p) => `${SH(56, 44)}
+      <ellipse cx="94" cy="56" rx="6" ry="13" fill="${U('cyal')}"/>
+      ${BARREL(24, 92, 56, 14)}
+      <rect x="36" y="42" width="14" height="28" fill="#14171d"/>${RIBS(37, 49, 42, 70, 1.8)}<rect x="80" y="42" width="6" height="28" fill="#22262d"/>
+      <path d="M86 70l6 8" stroke="#ffb020" stroke-width="2.6" stroke-linecap="round"/>
+      ${SPEC(24, 43, 68, 5)}<text x="64" y="51" font-size="5" font-family="${FONT_M}" fill="#cfd5dd" text-anchor="middle">${esc(p.tag || '20×')}</text>
+      <path d="M48 66h30q6 0 6 6v18q0 6-6 6H52q-6 0-6-6z" fill="${U('pl')}"/>${SPEC(48, 67, 34, 6, 4)}
+      <rect x="54" y="72" width="16" height="6" rx="3" fill="${U('cyal')}"/><text x="56.5" y="76.6" font-size="4" font-family="${FONT_M}" fill="#14171d">W T</text>
+      <circle cx="76" cy="75" r="2.6" fill="#ff3b3b"/><path d="M50 84q16 10 32 0" stroke="${U('fab')}" stroke-width="4" fill="none"/>
+      <rect x="12" y="38" width="13" height="36" rx="2" fill="${U('pl')}"/>${GLASS(13, 56, 18)}`,
+    lens_box: (p) => {
+      const L = p.q >= 6 ? 74 : p.q === 5 ? 66 : 52;
+      return `${SH(56, 50)}
+      <path d="M${36 + L} 82q8 8 2 16t8 8" stroke="#14171d" stroke-width="2.4" fill="none"/>
+      ${BOX3(32, 32, L, 52, 8, U('al'), U('wht'), 4)}${SPEC(33, 33, L - 2, 12, 4)}
+      <rect x="${32 + L - 16}" y="40" width="10" height="36" rx="2" fill="#2a2f3a"/><path d="M32 74h${L}" stroke="${p.acc || '#ff3b3b'}" stroke-width="2"/>
+      <rect x="44" y="48" width="${Math.min(30, L - 22)}" height="12" rx="1.5" fill="#14171d"/><text x="${44 + Math.min(30, L - 22) / 2}" y="57" font-size="8" font-family="${FONT_D}" font-weight="800" fill="#e9edf5" text-anchor="middle">${esc(p.tag || '86×')}</text>
+      <rect x="8" y="24" width="28" height="68" rx="7" fill="${U('pl')}"/>${BEV(12, 24.6, 32)}${GLASS(20, 58, 28, '#0b0d11')}`;
+    },
+    // Adaptador para lente box: bandeja con montura grande y visor de estudio
+    box_adapter: (p) => `${SH(60, 50)}
+      ${BOX3(20, 62, 80, 22, 10)}${SPEC(21, 63, 78, 5, 3)}
+      <path d="M30 59h68M34 56h66" stroke="#aab3c0" stroke-width="2.2" stroke-linecap="round"/>
+      <rect x="36" y="46" width="44" height="13" rx="2" fill="none" stroke="#4da3ff" stroke-width="1.4" stroke-dasharray="3 2" opacity=".85"/>
+      <rect x="8" y="46" width="16" height="42" rx="3" fill="${U('gm')}"/><ellipse cx="16" cy="67" rx="5.5" ry="15" fill="#05070b" stroke="${U('cyal')}" stroke-width="2.4"/>
+      <rect x="66" y="40" width="8" height="8" fill="${U('gmd')}"/>
+      <rect x="50" y="14" width="46" height="27" rx="3" fill="${U('pl')}"/><rect x="54" y="18" width="38" height="19" fill="${U('scr')}"/>${SPEC(54, 18, 38, 6)}<path d="M50 14l-6-4h58l-6 4" fill="${U('gmd')}"/>
+      ${LED(28, 72, '#2ecc71')}${LED(33, 72, '#2ecc71')}${LED(38, 72, '#ffb020')}<rect x="66" y="69" width="26" height="7" rx="1.5" fill="#05070b"/>`,
+
+    // ===== Trípodes y soportes =====
+    tripod: (p) => {
+      const heavy = !!p.heavy, fluid = heavy || !!p.fluid;
+      const hub = [60, heavy ? 52 : 50];
+      const feet = heavy ? [[14, 100], [106, 100], [64, 94]] : [[22, 100], [98, 100], [64, 94]];
+      const legs = feet.map(([x, y]) => (fluid
+        ? LEG(hub[0] - 2, hub[1], x - 2, y, heavy ? 2.6 : 2) + LEG(hub[0] + 2, hub[1], x + 2, y, heavy ? 2.6 : 2)
+        : LEG(hub[0], hub[1], x, y, 3))).join('');
+      const mid = (t) => feet.map(([x, y]) => [hub[0] + (x - hub[0]) * t, hub[1] + (y - hub[1]) * t]);
+      const spread = fluid ? `<path d="M${mid(0.6).map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L')}z" fill="none" stroke="#3a4150" stroke-width="2"/>` : '';
+      const ground = heavy ? `<path d="M14 100L106 100M14 100L64 94L106 100" stroke="#2a2f3a" stroke-width="2.4" fill="none"/>${[14, 106].map((x) => `<circle cx="${x}" cy="101" r="3.4" fill="${U('tire')}"/>`).join('')}` : feet.map(([x, y]) => `<circle cx="${x}" cy="${y + 1}" r="2.4" fill="#14171d"/>`).join('');
+      const head = heavy
+        ? `<ellipse cx="60" cy="52" rx="16" ry="5" fill="${U('gmd')}"/><rect x="40" y="26" width="40" height="26" rx="5" fill="${U('gm')}"/>${SPEC(41, 27, 38, 7, 5)}${KNOB(48, 40, 4)}${KNOB(72, 40, 4)}<rect x="36" y="20" width="48" height="7" rx="2" fill="${U('cyal')}"/>
+          <path d="M80 34l26 14M40 34l-26 14" stroke="#14171d" stroke-width="4.5" stroke-linecap="round"/><rect x="100" y="44" width="12" height="7" rx="3" transform="rotate(28 106 47)" fill="${U('rub')}"/><rect x="8" y="44" width="12" height="7" rx="3" transform="rotate(-28 14 47)" fill="${U('rub')}"/>`
+        : fluid
+          ? `<ellipse cx="60" cy="50" rx="12" ry="4" fill="${U('gmd')}"/><rect x="48" y="33" width="24" height="17" rx="4" fill="${U('gm')}"/>${SPEC(49, 34, 22, 5, 4)}<circle cx="55" cy="41" r="2.4" fill="#2ecc71" stroke="#0e4a28"/>${KNOB(66, 42, 3)}<rect x="44" y="28" width="32" height="5" rx="2" fill="${U('cyal')}"/>
+            <path d="M72 40l30 16" stroke="#14171d" stroke-width="4.4" stroke-linecap="round"/><rect x="96" y="52" width="13" height="7" rx="3" transform="rotate(28 102 55)" fill="${U('rub')}"/>`
+          : `<rect x="51" y="40" width="18" height="10" rx="2" fill="${U('gm')}"/><rect x="47" y="35" width="26" height="5" rx="2" fill="${U('cyal')}"/>
+            <path d="M68 44l30 18" stroke="#14171d" stroke-width="3.4" stroke-linecap="round"/><rect x="92" y="58" width="11" height="6" rx="3" transform="rotate(30 97 61)" fill="${U('rub')}"/>`;
+      return `${SH(60, heavy ? 52 : 42, 101, 5)}${legs}${spread}${ground}${fluid ? '' : `<path d="M60 50v20" stroke="#5b6476" stroke-width="3"/>`}${head}`;
+    },
+    tripod_fluid: (p) => DRAW.tripod(Object.assign({}, p, { fluid: true })),
+    tripod_heavy: (p) => DRAW.tripod(Object.assign({}, p, { heavy: true })),
+    // Gimbal de mano con cámara chica
+    gimbal: (p) => `${SH(60, 30)}
+      <rect x="53" y="62" width="14" height="40" rx="6" fill="${U('rub')}"/>${RIBS(55, 65, 84, 100, 2)}<rect x="56" y="67" width="8" height="8" rx="1" fill="${U('lcd')}"/>${LED(60, 79, '#2ecc71')}
+      <rect x="51" y="55" width="18" height="9" rx="3" fill="${U('cy')}"/>
+      <path d="M60 56V51H93V27H86" stroke="#1b1e25" stroke-width="5.5" fill="none" stroke-linejoin="round"/>
+      <circle cx="93" cy="51" r="5" fill="${U('cyal')}"/>
+      <rect x="40" y="22" width="40" height="27" rx="4" fill="${U('gm')}"/>${SPEC(41, 23, 38, 8, 4)}<rect x="46" y="17" width="12" height="6" rx="1.5" fill="${U('gm')}"/><circle cx="72" cy="21" r="2.4" fill="#3a4150"/>
+      <rect x="52" y="29" width="22" height="15" rx="1.5" fill="#0c0e12"/>${MINI_SCREEN(53, 30, 20, 13)}
+      <rect x="22" y="25" width="19" height="21" rx="2" fill="${U('cyp')}"/>${RIBS(26, 37, 25, 46, 1.8)}<path d="M15 23l8 2v21l-8 2z" fill="${U('pl')}"/>${LENSF(16, 35.5, 2.6, 10)}
+      <circle cx="86" cy="35" r="5" fill="${U('cyal')}"/>`,
+    // Steadicam: chaleco, brazo con resortes y poste con cámara y monitor
+    steadicam: (p) => `${SH(60, 50)}
+      <path d="M8 38q0-8 8-8h16q8 0 8 8v52q0 6-6 6H14q-6 0-6-6z" fill="${U('fab')}" stroke="#5b6476" stroke-width="1.2"/><path d="M14 31q10 10 20 0" stroke="#5b6476" stroke-width="1.2" fill="none"/><path d="M14 30v-8M34 30v-8" stroke="#14171d" stroke-width="4" stroke-linecap="round"/>
+      ${[50, 66, 82].map((y) => `<rect x="9" y="${y}" width="30" height="4" fill="#14171d"/><rect x="21" y="${y - 1}" width="6" height="6" rx="1" fill="${U('cyal')}"/>`).join('')}
+      <rect x="38" y="58" width="8" height="12" rx="2" fill="${U('gm')}"/>
+      <path d="M44 62L62 72L82 62" stroke="#14171d" stroke-width="7" fill="none" stroke-linejoin="round"/><path d="M44 62L62 72L82 62" stroke="${U('cyal')}" stroke-width="4" fill="none" stroke-linejoin="round"/>
+      <path d="M46 67L60 76M64 76L80 67" stroke="#ff3b3b" stroke-width="2" stroke-dasharray="1.6 1.2"/><circle cx="62" cy="72" r="3.6" fill="${U('gm')}"/>
+      <rect x="84" y="22" width="5" height="70" rx="2" fill="${U('cyal')}"/><rect x="80" y="56" width="13" height="11" rx="3" fill="${U('rub')}"/>
+      <rect x="70" y="12" width="34" height="13" rx="3" fill="${U('gm')}"/>${SPEC(71, 13, 32, 4, 3)}<rect x="60" y="13.5" width="11" height="10" rx="2" fill="${U('cyp')}"/>${LENSF(60.5, 18.5, 1.8, 4.5)}
+      <rect x="70" y="86" width="22" height="14" rx="2" fill="${U('pl')}"/>${MINI_SCREEN(72, 88, 18, 10)}<rect x="92" y="82" width="12" height="18" rx="2" fill="${U('gm')}"/>${LED(98, 86, '#2ecc71')}`,
+    // Dolly sobre riel
+    dolly: (p) => `${SH(60, 56, 104, 4)}
+      ${Array.from({ length: 9 }, (_, i) => `<rect x="${3 + i * 14}" y="92" width="6" height="14" rx="1" fill="#3a2818"/>`).join('')}
+      <path d="M2 95h116M2 103h116" stroke="#aab3c0" stroke-width="2.6"/>
+      <rect x="22" y="80" width="70" height="8" rx="2" fill="${U('gm')}"/><path d="M22 80h70" stroke="#fff" stroke-opacity=".25"/><rect x="22" y="86" width="70" height="4" fill="${U('pl')}"/>
+      ${[30, 84].map((x) => `<circle cx="${x}" cy="94" r="4.5" fill="${U('tire')}"/>`).join('')}
+      <path d="M88 80l12-30h8" stroke="#1b1e25" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="54" y="54" width="8" height="26" fill="${U('cyal')}"/><ellipse cx="58" cy="54" rx="9" ry="3" fill="${U('gmd')}"/><rect x="50" y="44" width="16" height="10" rx="3" fill="${U('gm')}"/>
+      <path d="M66 50l20 10" stroke="#14171d" stroke-width="3.4" stroke-linecap="round"/>
+      <rect x="44" y="26" width="34" height="18" rx="3" fill="${U('al')}"/>${SPEC(45, 27, 32, 5, 3)}<rect x="30" y="28" width="15" height="14" rx="2" fill="${U('cyp')}"/>${LENSF(30.5, 35, 2.2, 6.4)}${TALLY(74, 30, 1.4)}
+      <path d="M2 70h14M4 62h10" stroke="#4da3ff" stroke-width="1.8" stroke-linecap="round" opacity=".5"/>`,
+
+    // ===== Switchers, repetición y gráficos =====
+    // Switcher mini con botones grandes (4 u 8 entradas)
+    mini_switcher: (p) => {
+      const n = (p.q || 1) >= 2 ? 8 : 4;
+      const A = (u, t) => [24 - 12 * t + (72 + 24 * t) * u, 48 + 30 * t];
+      const K = (u, t, w, h, fill, lit) => { const [x, y] = A(u, t); const k = 1 + 0.35 * t; const W = w * k, H = h * k; return `${lit ? `<rect x="${(x - W * 0.85).toFixed(1)}" y="${(y - H * 0.85).toFixed(1)}" width="${(W * 1.7).toFixed(1)}" height="${(H * 1.7).toFixed(1)}" rx="2" fill="${fill}" opacity=".25"/>` : ''}<rect x="${(x - W / 2).toFixed(1)}" y="${(y - H / 2).toFixed(1)}" width="${W.toFixed(1)}" height="${H.toFixed(1)}" rx="1.2" fill="${fill}"/>`; };
+      const ins = Array.from({ length: n }, (_, i) => K(0.07 + i * (0.5 / (n - 1)), 0.32, n === 4 ? 10 : 5.6, 6, i === 0 ? '#ff3b3b' : i === 1 ? '#2ecc71' : '#e1e6ec', i < 2)).join('');
+      const tr = [0, 1, 2].map((i) => K(0.72 + i * 0.09, 0.32, 5, 4, i === 2 ? '#ffb020' : '#4a5263', i === 2)).join('');
+      const knobs = Array.from({ length: n === 4 ? 6 : 10 }, (_, i) => { const [x, y] = A(0.07 + i * (n === 4 ? 0.1 : 0.056), 0.72); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#3a4150"/><circle cx="${x.toFixed(1)}" cy="${(y - 0.6).toFixed(1)}" r="1" fill="#8f99aa"/>`; }).join('');
+      const [lx, ly] = A(0.7, 0.62);
+      const lcd = n === 8 ? `<rect x="${lx.toFixed(1)}" y="${(ly - 5).toFixed(1)}" width="24" height="13" rx="1" fill="#05070b"/>${MINI_SCREEN(lx + 1, ly - 4, 22, 11)}` : `<rect x="${lx.toFixed(1)}" y="${(ly - 2).toFixed(1)}" width="22" height="6" rx="1.5" fill="#ff3b3b"/><text x="${(lx + 11).toFixed(1)}" y="${(ly + 2.4).toFixed(1)}" font-size="4.6" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">ON AIR</text>`;
+      return `${SH(60, 52, 100)}
+        ${[0, 1, 2, 3].map((i) => `<path d="M${36 + i * 12} 49c0-12 -6-18 -14-${26 - i * 3}" stroke="#14171d" stroke-width="3" fill="none" stroke-linecap="round"/>`).join('')}
+        <path d="M24 48H96L108 78H12Z" fill="${U('gm')}"/><path d="M24 48H96" stroke="#fff" stroke-opacity=".25"/><path d="M12 78h96v9q0 2-2 2H14q-2 0-2-2z" fill="${U('pl')}"/><path d="M12 78h96" stroke="#fff" stroke-opacity=".18"/>
+        ${ins}${tr}${knobs}${lcd}`;
+    },
+    // Switcher de rack con panel incorporado
+    switcher_rack: (p) => `${SH(60, 54, 100)}
+      ${BOX3(10, 46, 94, 36, 8)}${SPEC(11, 47, 92, 8, 3)}
+      <rect x="4" y="46" width="7" height="36" rx="1" fill="${U('gm')}"/><circle cx="7.5" cy="51" r="1.4" fill="#05070b"/><circle cx="7.5" cy="77" r="1.4" fill="#05070b"/>
+      <rect x="15" y="51" width="24" height="15" rx="1" fill="#05070b"/>${MINI_SCREEN(16, 52, 22, 13)}
+      ${[0, 1].map((r) => Array.from({ length: 9 }, (_, i) => `<rect x="${43 + i * 6.2}" y="${52 + r * 7}" width="4.8" height="4.4" rx=".8" fill="${r === 0 && i === 1 ? '#ff3b3b' : r === 1 && i === 3 ? '#2ecc71' : '#4a5263'}"/>`).join('')).join('')}
+      ${Array.from({ length: 6 }, (_, i) => `<rect x="${43 + i * 6.2}" y="70" width="4.8" height="4.4" rx=".8" fill="${i === 4 ? '#ffb020' : '#2a2f3a'}"/>`).join('')}
+      <rect x="15" y="70" width="24" height="5" rx="1" fill="#05070b"/>${[0, 1, 2, 3].map((i) => `<rect x="${16 + i * 5.8}" y="71" width="${2 + (i * 3) % 4}" height="3" fill="#2ecc71"/>`).join('')}
+      ${KNOB(86, 72, 4.2)}${LED(98, 52, '#2ecc71', true)}`,
+    // Switcher grande de unidad móvil (4 M/E): pared de monitores y panel enorme
+    switcher_big: (p) => `${SH(60, 56, 104)}
+      ${[0, 1, 2].map((i) => `<rect x="${3 + i * 38.5}" y="4" width="37" height="26" rx="1.5" fill="${U('pl')}"/><rect x="${4.5 + i * 38.5}" y="5.5" width="34" height="23" fill="#05070b"/>`).join('')}
+      ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${5 + (i % 3) * 11.2}" y="${6 + Math.floor(i / 3) * 11}" width="10.4" height="10" fill="${['#2f5a3e', '#24405f', '#5a4a2a', '#3b2f55', '#24405f', '#2f5a3e'][i]}"/>`).join('')}
+      <rect x="44" y="6" width="16.5" height="21.5" fill="#1d4f86" stroke="#2ecc71"/>${MINI_SCREEN(44.5, 6.5, 15.5, 20.5)}<rect x="61" y="6" width="16.5" height="21.5" fill="#5a1d22" stroke="#ff3b3b"/>${MINI_SCREEN(61.5, 6.5, 15.5, 20.5)}
+      ${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${82.5 + (i % 3) * 11.2}" y="${6 + Math.floor(i / 3) * 11}" width="10.4" height="10" fill="${['#3b2f55', '#2f5a3e', '#24405f', '#5a4a2a', '#2f5a3e', '#3b2f55'][i]}"/>`).join('')}
+      <rect x="56" y="30" width="8" height="10" fill="${U('gmd')}"/>
+      ${DECK(U('gm'), U('pl'))}
+      ${[0.18, 0.36, 0.54, 0.72, 0.9].map((t, r) => Array.from({ length: 12 }, (_, i) => KEY(0.03 + i * 0.058, t, 3.6, 2.6, (r === 1 || r === 3) && i === 2 ? '#ff3b3b' : (r === 1 || r === 3) && i === 5 ? '#2ecc71' : r === 4 && i < 3 ? '#ffb020' : '#4a5263', (r === 1 || r === 3) && i === 2)).join('')).join('')}
+      ${[0.8, 0.93].map((u) => `<path d="M${at(u, 0.3)[0]} ${at(u, 0.3)[1]}L${at(u, 0.85)[0]} ${at(u, 0.85)[1]}" stroke="#05070b" stroke-width="3" stroke-linecap="round"/><rect x="${at(u, 0.55)[0] - 4}" y="${at(u, 0.55)[1] - 3}" width="10" height="4.5" rx="2" fill="${U('cyal')}"/>`).join('')}
+      ${p.vip ? '<path d="M10 83h100" stroke="#f0b829" stroke-width="1.6"/>' : ''}`,
+    // PC de escritorio con software (mezcla, repetición o gráficos)
+    workstation: (p) => `${SH(60, 54, 104)}
+      ${BOX3(88, 42, 20, 56, 6)}<rect x="91" y="48" width="14" height="3" rx="1" fill="#05070b"/>${LED(98, 56, '#4da3ff', true)}<circle cx="98" cy="76" r="6" fill="#05070b" stroke="#2f343d"/><path d="M95 76h6M98 73v6" stroke="#2f343d"/>
+      <path d="M48 66v10M36 78h24" stroke="#2a2f3a" stroke-width="4" stroke-linecap="round"/>
+      <rect x="8" y="14" width="80" height="52" rx="3" fill="${U('pl')}"/>${BEV(11, 14.6, 85)}${UI(11, 17, 74, 45, p.ui)}<path d="M11 17h74l-28 45H11z" fill="#fff" opacity=".04"/>
+      <path d="M12 84h56l6 12H6z" fill="${U('gm')}"/>${[0, 1, 2].map((r) => `<path d="M${12 - r * 2} ${87 + r * 3}h${56 + r * 4}" stroke="#05070b" stroke-width="1.6" stroke-dasharray="3 1"/>`).join('')}
+      ${p.jog ? `<path d="M72 86h34l6 12H66z" fill="${U('gm')}"/><ellipse cx="96" cy="92" rx="7" ry="4" fill="${U('cy')}" stroke="#5b6476" stroke-width=".7"/>${[0, 1, 2].map((i) => `<rect x="${72 + i * 6}" y="89" width="4.4" height="3" rx=".8" fill="${i === 0 ? '#ff3b3b' : '#4a5263'}"/>`).join('')}<path d="M80 95l-2 -10" stroke="${U('cyal')}" stroke-width="2.4" stroke-linecap="round"/>` : `<ellipse cx="80" cy="91" rx="4" ry="5" fill="${U('gm')}"/>`}`,
+    // Gráficos 3D en vivo
+    cg: (p) => `${SH(60, 46)}
+      ${MON(12, 14, 96, 64, `<rect x="15" y="17" width="90" height="52" fill="url(#am-night)"/>
+        ${[0, 1, 2, 3].map((i) => { const h = [16, 26, 20, 32][i], x = 26 + i * 18; return `<path d="M${x} ${62 - h}l5-4h10l-5 4z" fill="${['#ff8a8a', '#9ec5ff', '#ff8a8a', '#9ec5ff'][i]}"/><path d="M${x + 10} ${62 - h}l5-4v${h}l-5 4z" fill="${['#7a1015', '#163c69', '#7a1015', '#163c69'][i]}"/><rect x="${x}" y="${62 - h}" width="10" height="${h}" fill="${['#d42a30', '#2f6fb3', '#d42a30', '#2f6fb3'][i]}"/>`; }).join('')}
+        <path d="M20 63h82" stroke="#cfe6ff" stroke-opacity=".5"/><rect x="20" y="21" width="46" height="8" rx="1" fill="#f2f4f8"/><rect x="22" y="23.5" width="28" height="3" fill="#14171d"/><rect x="66" y="21" width="10" height="8" fill="#ff3b3b"/>`)}
+      ${BOX3(30, 94, 60, 8, 4, U('pl'), U('gm'), 1.5)}${LED(36, 98, '#2ecc71', true)}${LED(41, 98, '#2ecc71')}<rect x="62" y="96.5" width="22" height="3" rx="1" fill="#05070b"/>`,
+    // Gráficos de realidad aumentada sobre la cancha
+    cg_ar: (p) => `${SH(60, 46)}
+      ${MON(12, 14, 96, 64, `<rect x="15" y="17" width="90" height="52" fill="url(#am-night)"/><path d="M15 40h90v29H15z" fill="${U('turf')}"/><path d="M15 40h90" stroke="#fff" stroke-opacity=".5"/>
+        <path d="M60 40l-8 29M30 52h60" stroke="#fff" stroke-opacity=".45" stroke-width=".9"/><ellipse cx="55" cy="52" rx="9" ry="3.4" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width=".9"/>
+        <path d="M28 58l30-6v-20l-30 6z" fill="#4da3ff" opacity=".55"/><path d="M28 58l30-6v-20l-30 6z" fill="none" stroke="#cfe6ff" stroke-width="1"/><path d="M34 49l18-3.6M34 44l12-2.4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        <path d="M72 62l14-3 0 4 9-7-9-5 0 4-14 3z" fill="#ffb020" opacity=".9"/>
+        <rect x="18" y="20" width="14" height="7" rx="1" fill="#b57bff"/><text x="25" y="25.6" font-size="5" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">AR</text>`)}
+      ${BOX3(30, 94, 60, 8, 4, U('pl'), U('gm'), 1.5)}${LED(36, 98, '#b57bff', true)}<rect x="62" y="96.5" width="22" height="3" rx="1" fill="#05070b"/>`,
+    // Multiview: muchas cámaras en una pantalla
+    multiview: (p) => `${SH(60, 46)}
+      ${MON(6, 14, 108, 68, Array.from({ length: 16 }, (_, i) => { const x = 10 + (i % 4) * 25, y = 18 + Math.floor(i / 4) * 14.2; const c = ['#2f5a3e', '#24405f', '#5a4a2a', '#3b2f55'][(i * 3) % 4]; return `<rect x="${x}" y="${y}" width="24" height="13.4" fill="${c}"${i === 0 ? ' stroke="#ff3b3b" stroke-width="1.4"' : i === 1 ? ' stroke="#2ecc71" stroke-width="1.4"' : ''}/><path d="M${x} ${y + 9}l6-4 5 3 6-5 7 6v4H${x}z" fill="#000" opacity=".25"/><rect x="${x + 1.5}" y="${y + 10.2}" width="9" height="2.2" fill="#000" opacity=".5"/>`; }).join(''))}`,
+    // Monitor de referencia: barras de color y forma de onda
+    ref_monitor: (p) => `${SH(60, 40)}
+      ${MON(14, 16, 92, 64, `${['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0'].map((c, i) => `<rect x="${17 + i * 12.29}" y="19" width="12.4" height="34" fill="${c}"/>`).join('')}
+        <rect x="17" y="53" width="86" height="5" fill="#1a1a2a"/><rect x="17" y="58" width="86" height="13" fill="#0a0a0a"/><rect x="60" y="58" width="43" height="13" fill="#05070b" stroke="#2f343d" stroke-width=".6"/>
+        <path d="M62 68l4-6 4 3 4-7 4 5 4-8 4 6 4-4 6 9" stroke="#2ecc71" stroke-width="1" fill="none"/>`)}
+      <path d="M14 16l-4-5h100l-4 5" fill="${U('gmd')}"/>
+      ${[0, 1, 2, 3, 4].map((i) => `<rect x="${22 + i * 8}" y="76" width="6" height="2.2" rx=".8" fill="${i === 0 ? '#2ecc71' : '#3a4150'}"/>`).join('')}`,
+
+    // ===== Audio y micrófonos =====
+    // Mezcladora de rack (con tablet si se controla por WiFi)
+    mixer_rack: (p) => `${SH(58, 50, 102)}
+      ${p.tablet ? `<g transform="rotate(-6 42 30)"><rect x="12" y="6" width="58" height="40" rx="4" fill="#0b0d11" stroke="#4a5263" stroke-width="1.2"/><rect x="15" y="9" width="52" height="34" fill="${U('scr')}"/>
+        ${Array.from({ length: 8 }, (_, i) => `<path d="M${20 + i * 6} 13v26" stroke="#2f343d" stroke-width="1.6"/><rect x="${17.6 + i * 6}" y="${16 + ((i * 7) % 18)}" width="4.8" height="3" rx=".6" fill="${i === 7 ? '#ff3b3b' : '#e1e6ec'}"/>`).join('')}</g>${WAVES(88, 30, '#4da3ff')}` : ''}
+      ${BOX3(12, 56, 86, 32, 10)}${SPEC(13, 57, 84, 7, 3)}
+      <rect x="8" y="56" width="5" height="32" rx="1" fill="${U('gm')}"/>
+      ${[0, 1].map((r) => Array.from({ length: 8 }, (_, i) => `<circle cx="${19 + i * 7}" cy="${66 + r * 12}" r="2.8" fill="#05070b" stroke="#5b6476" stroke-width=".7"/><circle cx="${19 + i * 7}" cy="${66 + r * 12}" r="1" fill="#3a4150"/>`).join('')).join('')}
+      ${p.screen ? `<rect x="76" y="60" width="18" height="10" rx="1" fill="${U('lcd')}"/>${KNOB(80, 79, 2.8)}${KNOB(90, 79, 2.8)}` : `${LED(80, 64, '#2ecc71', true)}${LED(86, 64, '#4da3ff')}<rect x="76" y="72" width="10" height="8" rx="1" fill="#05070b"/><rect x="88" y="72" width="6" height="8" rx="1" fill="#05070b"/>`}`,
+    // Micrófono de mano con cable
+    mic_handheld: (p) => `${SH(56, 36)}
+      <path d="M30 88q-16 4-12 12t22 0 34 4" stroke="#14171d" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <g transform="rotate(-40 60 60)">
+        <rect x="14" y="56.5" width="10" height="7" rx="1.5" fill="${U('cyal')}"/>
+        <path d="M23 57L76 53.5V66.5L23 63Z" fill="${U('cyp')}"/><path d="M26 57.6L74 54.6" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/>
+        <rect x="74" y="52" width="6" height="16" rx="1.5" fill="#2a2f3a"/>
+        <ellipse cx="90" cy="60" rx="13" ry="12" fill="${U('cyal')}"/><path d="M80 54h20M78 60h24M80 66h20M90 48v24M85 49v22M95 49v22" stroke="#5b6476" stroke-width=".7"/>
+        <ellipse cx="86" cy="54" rx="5" ry="3" fill="#fff" opacity=".45"/>
+      </g>`,
+    // Micrófono corbatero: petaca transmisora y cápsula de solapa
+    lavalier: (p) => `${SH(56, 42)}
+      <path d="M52 34q4-16 22-16t18 18q0 14-6 22" stroke="#14171d" stroke-width="1.8" fill="none"/>
+      ${BOX3(28, 40, 32, 52, 7)}${SPEC(29, 41, 30, 9, 3)}
+      <path d="M36 34V14" stroke="#14171d" stroke-width="2.8" stroke-linecap="round"/>
+      <rect x="32" y="46" width="24" height="13" rx="1.5" fill="${U('lcd')}"/><text x="34" y="52" font-size="4.4" font-family="${FONT_M}" fill="#e9f3ff">CH 2</text>${[0, 1, 2, 3].map((i) => `<rect x="${47 + i * 2}" y="${56 - i * 1.4}" width="1.3" height="${1.4 + i * 1.4}" fill="#e9f3ff"/>`).join('')}
+      ${LED(36, 66, '#2ecc71', true)}<rect x="42" y="64" width="12" height="4" rx="2" fill="#3a4150"/><rect x="34" y="74" width="20" height="2" fill="#05070b"/><rect x="34" y="79" width="20" height="2" fill="#05070b"/>
+      <rect x="78" y="54" width="16" height="5" rx="1.5" fill="${U('cyal')}"/><rect x="82" y="58" width="8" height="12" rx="3.5" fill="${U('pl')}"/><circle cx="86" cy="74" r="5.5" fill="#2a2d33"/><circle cx="84.5" cy="72.5" r="1.6" fill="#fff" opacity=".18"/>`,
+    // Micrófono shotgun con suspensión, empuñadura y caña
+    shotgun: (p) => `${SH(60, 46)}
+      <path d="M64 70L116 108" stroke="#14171d" stroke-width="5.5" stroke-linecap="round"/><path d="M64 70L116 108" stroke="${U('cyal')}" stroke-width="3" stroke-linecap="round"/><path d="M88 87.5l3 2.2" stroke="#14171d" stroke-width="5"/>
+      <path d="M56 58l6 26" stroke="#14171d" stroke-width="10" stroke-linecap="round"/><path d="M56 58l6 26" stroke="${U('rub')}" stroke-width="8" stroke-linecap="round"/>
+      <path d="M38 56h36" stroke="#2a2f3a" stroke-width="3.4" stroke-linecap="round"/>
+      ${[40, 72].map((x) => `<ellipse cx="${x}" cy="44" rx="4" ry="13" fill="none" stroke="#3a4150" stroke-width="2.6"/>`).join('')}
+      <rect x="8" y="38" width="96" height="12" rx="6" fill="${U('cyp')}"/>${SPEC(10, 39, 92, 4, 2)}
+      ${Array.from({ length: 9 }, (_, i) => `<rect x="${22 + i * 6.6}" y="42.5" width="3.4" height="3" rx="1" fill="#05070b"/>`).join('')}
+      <rect x="6" y="37" width="12" height="14" rx="6" fill="#3a4150"/><path d="M8 40v8M11 38.5v11M14 38.5v11" stroke="#14171d" stroke-width=".8"/>
+      <rect x="100" y="39" width="10" height="10" rx="2" fill="${U('cyal')}"/>`,
+    // Diadema de comentarista
+    headset: (p) => `${SH(60, 42)}
+      <path d="M28 64C28 22 92 22 92 64" stroke="#14171d" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M30 60C31 28 89 28 90 60" stroke="#5b6476" stroke-width="2" fill="none"/>
+      <path d="M96 82q8 10 2 22" stroke="#14171d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <ellipse cx="92" cy="70" rx="12" ry="17" fill="${U('pl')}"/><ellipse cx="95" cy="70" rx="7" ry="12" fill="${U('rub')}"/>
+      <ellipse cx="28" cy="70" rx="12" ry="17" fill="${U('pl')}"/>${SPEC(19, 56, 16, 6, 3)}<ellipse cx="25" cy="70" rx="7" ry="12" fill="${U('rub')}"/>
+      <path d="M32 80q2 20 26 18" stroke="#14171d" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <rect x="54" y="92" width="16" height="10" rx="5" fill="${U('pl')}"/><ellipse cx="70" cy="97" rx="5.5" ry="5.5" fill="#2a2d33"/><circle cx="68.5" cy="95.5" r="1.6" fill="#fff" opacity=".2"/>
+      <rect x="36" y="40" width="8" height="5" rx="2" fill="#ff3b3b" transform="rotate(-50 40 42)"/>`,
+    // Intercom inalámbrico: base con antenas y diadema sin cable
+    intercom_wl: (p) => `${SH(58, 48)}
+      ${ANT(26, 48, -18, 22)}${ANT(56, 48, 18, 22)}
+      ${BOX3(18, 50, 44, 28, 6)}${SPEC(19, 51, 42, 6, 3)}<rect x="23" y="55" width="22" height="10" rx="1" fill="${U('lcd')}"/><text x="25" y="61.8" font-size="4.6" font-family="${FONT_M}" fill="#e9f3ff">8 ON</text>${LED(51, 58, '#2ecc71', true)}${LED(56, 58, '#2ecc71')}${KNOB(52, 71, 3)}
+      <path d="M70 70C70 40 108 40 108 70" stroke="#14171d" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="72" cy="76" rx="9" ry="12" fill="${U('pl')}"/><ellipse cx="74" cy="76" rx="5" ry="8.5" fill="${U('rub')}"/><rect x="104" y="66" width="8" height="10" rx="3" fill="${U('pl')}"/>
+      <path d="M68 70v-12" stroke="#14171d" stroke-width="2.6" stroke-linecap="round"/>${LED(72, 66, '#4da3ff', true)}
+      <path d="M74 86q4 12 22 12" stroke="#14171d" stroke-width="2.8" fill="none"/><rect x="92" y="94" width="12" height="7" rx="3.5" fill="#2a2d33"/>`,
+
+    // ===== Internet, video inalámbrico, cables y energía =====
+    hotspot: (p) => `${SH(60, 34)}
+      ${WAVES(60, 30)}
+      <rect x="26" y="38" width="68" height="50" rx="12" fill="${U('pl')}"/>${SPEC(28, 39, 64, 12, 10)}${BEV(36, 38.6, 84)}
+      <rect x="33" y="46" width="42" height="26" rx="3" fill="${U('lcd')}"/>${[0, 1, 2, 3].map((i) => `<rect x="${37 + i * 4}" y="${62 - i * 3}" width="2.6" height="${4 + i * 3}" fill="#e9f3ff"/>`).join('')}
+      <text x="65" y="63" font-size="12" font-family="${FONT_D}" font-weight="800" fill="#fff" text-anchor="middle">5G</text>
+      <rect x="37" y="49" width="8" height="3.4" rx=".8" fill="none" stroke="#cfe6ff" stroke-width=".7"/><rect x="38" y="50" width="5" height="1.4" fill="#2ecc71"/>
+      ${KNOB(84, 59, 3.4)}${LED(84, 49, '#2ecc71', true)}<rect x="34" y="78" width="16" height="4" rx="1" fill="#05070b"/>`,
+    // Transmisor de video inalámbrico (2 o 4 antenas de paleta)
+    wireless_tx: (p) => {
+      const n = (p.q || 1) >= 4 ? 4 : 2;
+      const ants = n === 4 ? [[36, -22], [48, -8], [60, 8], [72, 22]] : [[40, -16], [68, 16]];
+      return `${SH(56, 40)}
+      ${ants.map(([x, a]) => ANT(x, 46, a, 26)).join('')}
+      ${BOX3(28, 48, 52, 38, 8)}${SPEC(29, 49, 50, 8, 3)}
+      <rect x="34" y="54" width="30" height="14" rx="1.5" fill="#03140b" stroke="#1d3b2b" stroke-width=".8"/><text x="36" y="60.5" font-size="4.8" font-family="${FONT_M}" fill="#2ecc71">TX ●</text><text x="36" y="66" font-size="4" font-family="${FONT_M}" fill="#7fe0a8">${n === 4 ? '230 m' : '135 m'}</text>
+      <circle cx="72" cy="60" r="3" fill="#f0b829"/><circle cx="72" cy="60" r="1.2" fill="#05070b"/>${LED(36, 76, '#2ecc71', true)}${LED(41, 76, '#4da3ff')}${KNOB(70, 76, 3)}
+      <path d="M80 70q14 4 18 18" stroke="#14171d" stroke-width="3" fill="none" stroke-linecap="round"/>${WAVES(96, 30, n === 4 ? '#b57bff' : '#4da3ff')}`;
+    },
+    // Par de conversores SDI ↔ fibra
+    fiber_converter: (p) => `${SH(60, 54)}
+      <path d="M40 74C56 104 66 40 80 70" stroke="#f0b829" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M40 72C56 100 66 38 80 68" stroke="#fff3c4" stroke-width=".9" fill="none" opacity=".6"/>
+      <path d="M12 70q-10 6-8 22M108 70q10 6 8 22" stroke="#14171d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      ${[[10, 'SDI'], [76, 'SDI']].map(([x, t]) => `${BOX3(x, 58, 34, 22, 6)}${SPEC(x + 1, 59, 32, 5, 3)}<circle cx="${x + 7}" cy="70" r="3.4" fill="${U('cyal')}"/><circle cx="${x + 7}" cy="70" r="1.3" fill="#05070b"/><rect x="${x + 24}" y="67" width="7" height="6" rx="1" fill="#2f6fb3"/>${LED(x + 15, 66, '#2ecc71', true)}<text x="${x + 18}" y="77" font-size="4.4" font-family="${FONT_M}" fill="#8b95a8" text-anchor="middle">${t}</text>`).join('')}`,
+    // Generador inverter portátil
+    generator_inverter: (p) => `${SH(60, 46)}
+      <path d="M36 42q0-16 14-16h20q14 0 14 16" stroke="#7a1015" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M18 56q0-14 14-14h56q14 0 14 14v34q0 6-6 6H24q-6 0-6-6z" fill="${U('red')}"/>${SPEC(22, 43, 76, 10, 8)}
+      <rect x="24" y="58" width="38" height="30" rx="3" fill="#1b1e25"/>
+      ${[0, 1].map((i) => `<rect x="${28 + i * 16}" y="62" width="13" height="11" rx="2.5" fill="#e9edf5"/><path d="M${32 + i * 16} 65v4M${37 + i * 16} 65v4" stroke="#14171d" stroke-width="1.4"/>`).join('')}
+      <rect x="28" y="78" width="10" height="5" rx="1" fill="#2ecc71"/><circle cx="52" cy="80.5" r="3" fill="#3a4150"/>
+      ${Array.from({ length: 6 }, (_, i) => `<path d="M68 ${60 + i * 4.4}h26" stroke="#7a1015" stroke-width="2" stroke-linecap="round"/>`).join('')}
+      <circle cx="90" cy="46" r="4" fill="${U('gm')}"/><rect x="24" y="96" width="12" height="4" rx="1" fill="#14171d"/><rect x="84" y="96" width="12" height="4" rx="1" fill="#14171d"/>`,
+
+    // ===== Vehículos =====
+    cargo_van: (p) => `${SH(60, 56, 104, 5)}
+      ${[[14, 18], [34, 14], [52, 16]].map(([x, w], i) => `<rect x="${x}" y="${30 - i % 2 * 4}" width="${w}" height="${10 + i % 2 * 4}" rx="1.5" fill="${['#2a2f3a', '#1d3b5e', '#2a2f3a'][i]}"/><rect x="${x + w / 2 - 3}" y="${32 - i % 2 * 4}" width="6" height="2" fill="#5b6476"/>`).join('')}
+      <path d="M10 40h62" stroke="#3a4150" stroke-width="3"/>
+      <path d="M6 48q0-6 6-6h66q6 0 10 4l18 20q4 4 4 10v12q0 4-4 4H6z" fill="${U('al')}"/>${SPEC(7, 43, 74, 8, 4)}
+      <path d="M82 48h7l14 16H82z" fill="#1d3b5e"/><path d="M84 50h4l-3 10h-2z" fill="#fff" opacity=".35"/>
+      <path d="M44 46v38M78 46v38" stroke="#8f99aa" stroke-width=".9"/><rect x="70" y="62" width="6" height="2" rx="1" fill="#5b6476"/><rect x="36" y="62" width="6" height="2" rx="1" fill="#5b6476"/>
+      <path d="M6 72h104" stroke="#2f6fb3" stroke-width="3"/><rect x="104" y="76" width="6" height="4" rx="1" fill="#ffd27a"/><rect x="6" y="76" width="4" height="5" fill="#ff3b3b"/>
+      ${[26, 90].map((x) => `<circle cx="${x}" cy="90" r="10" fill="${U('tire')}"/>`).join('')}`,
+    // Tráiler OB con cabina de camión
+    ob_truck: (p) => `${SH(60, 58, 104, 5)}
+      <path d="M8 34v-6" stroke="#5b6476" stroke-width="3"/><g transform="rotate(-24 10 20)"><ellipse cx="10" cy="20" rx="15" ry="6" fill="${p.vip ? U('dishg') : U('dish')}"/><path d="M10 20V10" stroke="#5b6476" stroke-width="1.4"/><circle cx="10" cy="9" r="1.8" fill="#3a4150"/></g>
+      <rect x="2" y="34" width="84" height="54" rx="2" fill="${U('wht')}"/>${SPEC(3, 35, 82, 10, 2)}
+      <rect x="16" y="40" width="56" height="40" rx="1" fill="none" stroke="#a9b2bf" stroke-width="1.2"/><path d="M44 40v40" stroke="#a9b2bf" stroke-width=".8"/>
+      <rect x="2" y="66" width="84" height="7" fill="${p.uhd ? U('gold') : U('red')}"/>
+      <text x="44" y="61" font-size="9" font-family="${FONT_D}" font-weight="800" fill="#ff3b3b" text-anchor="middle" letter-spacing=".6">${p.uhd ? '4K HDR' : 'EN VIVO'}</text>
+      <path d="M48 34V22M44 22h8" stroke="#5b6476" stroke-width="2"/><circle cx="48" cy="20" r="2" fill="#ff3b3b" class="blink"/>
+      <rect x="62" y="88" width="3" height="8" fill="#3a4150"/>
+      <path d="M88 54h14q6 0 8 6l6 14v14H88z" fill="${U('red')}"/><path d="M94 58h8l6 12H94z" fill="#1d3b5e"/><path d="M96 60h3l-2 8h-2z" fill="#fff" opacity=".35"/><rect x="86" y="44" width="4" height="44" fill="${U('gm')}"/>
+      <rect x="112" y="80" width="5" height="4" rx="1" fill="#ffd27a"/>
+      ${[16, 32, 102].map((x) => `<circle cx="${x}" cy="92" r="8.5" fill="${U('tire')}"/>`).join('')}`,
+  });
+  // Variantes por subtipo que reutilizan un dibujo (no son clases nuevas)
+  const BOND0 = DRAW.bonding;
+  DRAW.bonding = (p) => (p.big ? BOND0(p).replace('<path d="M30 30q', `${[0, 1].map((i) => `<rect x="${30 + i * 52}" y="${16 + i * 2}" width="5" height="20" rx="2.5" fill="${U('pl')}"/>`).join('')}<path d="M30 30q`).replace('>LIVE<', ' textLength="28" lengthAdjust="spacingAndGlyphs">LIVE 5G<') : BOND0(p));
+  const CAMC0 = DRAW.camcorder;
+  DRAW.camcorder = (p) => `${CAMC0(p)}${p.tag ? `<rect x="43" y="62" width="12" height="7" rx="1" fill="#0b0d11"/><text x="49" y="67.3" font-size="4.6" font-family="${FONT_M}" fill="${p.stream ? '#2ecc71' : '#8b95a8'}" text-anchor="middle">${esc(p.tag)}</text>` : ''}${p.stream ? `${ANT(80, 33, 14, 14)}${ANT(72, 33, -8, 12)}${WAVES(98, 20, '#2ecc71')}` : ''}`;
+  const ENG0 = DRAW.eng;
+  DRAW.eng = (p) => `${p.fiber ? '<path d="M100 78q14 6 12 16t6 12" stroke="#f0b829" stroke-width="3.2" fill="none" stroke-linecap="round"/>' : ''}${ENG0(p)}${p.fiber ? `<rect x="96" y="74" width="10" height="7" rx="2" fill="${U('cyal')}"/>` : ''}`;
+  const SYS0 = DRAW.system;
+  DRAW.system = (p) => `${SYS0(p)}${p.tag ? `<rect x="64" y="58" width="22" height="7" rx="1" fill="#0b0d11"/><text x="75" y="63.6" font-size="5" font-family="${FONT_M}" fill="${p.acc || '#8b95a8'}" text-anchor="middle">${esc(p.tag)}</text>` : ''}`;
   // Subtipos soportados (para equipos nuevos: CATALOG[k].subtipo o Art.item(k, s, {subtipo}))
   const SUBTIPOS = Object.keys(DRAW).filter((k) => !['gems', 'crown', 'gift', 'star', 'toolkit', 'cash'].includes(k));
-  const SUB_ALIAS = { camara: 'eng', camcorder: 'camcorder', mano: 'camcorder', hombro: 'eng', eng: 'eng', ptz: 'ptz', robotica: 'ptz', sistema: 'system', estudio: 'system', system: 'system', box: 'system', cine: 'cine',
+  const has = (o, k) => !!k && Object.prototype.hasOwnProperty.call(o, k);
+  // Subtipo del catálogo (js/datos.js) → dibujo, o [dibujo, parámetros]. "cat:subtipo" gana sobre "subtipo".
+  const SUB_DRAW = {
+    // Cámaras: cada clase con su dibujo
+    camcorder_consumo: 'handycam', camcorder_pro: 'camcorder', camcorder_pro_sdi: ['camcorder', { tag: 'SDI' }], camcorder_streaming: ['camcorder', { tag: 'SRT', stream: true }],
+    estudio_ligera: 'studio_box', cine: 'cine', eng_hombro: 'eng', ptz: 'ptz', ptz_broadcast: 'ptz_pro',
+    sistema: ['eng', { fiber: true, tag: 'CCU', body: U('al') }], sistema_4k: ['system', { tag: 'UHD' }], super_lenta: ['system', { tag: 'HFR', acc: '#ffb020' }],
+    ultra_movimiento: 'highspeed', pov: 'pov_cam', accion: 'action_cam', gimbal_compacta: 'pocket_gimbal', celular: 'phone_gimbal',
+    dron: 'drone', dron_cine: ['drone', { body: U('gm') }], grua: 'jib', camara_aerea_cables: 'spidercam', riel: 'rail_cam',
+    // Lentes
+    lente_mft: 'lens_kit', lente_cine: 'lens_cine', lente_eng: 'lens_eng', lente_box: 'lens_box', adaptador_lente_box: 'box_adapter',
+    // Trípodes y soportes
+    tripode: 'tripod', tripode_fluido: 'tripod_fluid', soporte_pesado: 'tripod_heavy', gimbal: 'gimbal', steadicam: 'steadicam', jib: 'jib', dolly: 'dolly',
+    // Switchers, repetición, gráficos y monitores
+    mini_hdmi: 'mini_switcher', sdi: 'switcher_rack', sdi_me: 'switcher', grande_me: 'switcher_big',
+    'switcher:software': (it) => ((it.q || 1) >= 3 ? ['workstation', { ui: 'mix' }] : 'laptop'),
+    'replay:software': ['workstation', { ui: 'replay', jog: true }], servidor_medio: 'replay', servidor_broadcast: 'replay',
+    'graphics:software': ['workstation', { ui: 'gfx' }], cg_3d: 'cg', cg_ar: 'cg_ar', multiviewer: 'multiview', referencia: 'ref_monitor',
+    // Audio y micrófonos
+    analoga: ['console', { channels: 8, screen: false }], digital_chica: ['mixer_rack', { tablet: true }], digital: ['mixer_rack', { screen: true }],
+    digital_superficie: ['console', { channels: 12 }], digital_grande: ['console', { channels: 16 }], broadcast: ['console', { channels: 20 }],
+    dinamico: 'mic_handheld', 'mics:inalambrico': 'mic_wireless', corbatero: 'lavalier', shotgun: 'shotgun', diadema_comentarista: 'headset',
+    'intercom:inalambrico': 'intercom_wl', inalambrico_digital: 'intercom',
+    // Transmisión, cables, energía, vehículos
+    encoder_hw: 'encoder', bonding: 'bonding', bonding_broadcast: ['bonding', { big: true }], hotspot: 'hotspot', satelite: 'satellite', tx_video: 'wireless_tx',
+    conversor_fibra: 'fiber_converter', cable_fibra_smpte: 'cable_reel', ups: 'ups', generador_portatil: 'generator_inverter', generador_diesel: 'generator',
+    cobertor: 'raincover', maletas: 'case', camioneta: 'cargo_van', ob_chica: 'ob_van', ob_grande: 'ob_truck', ob_uhd: ['ob_truck', { uhd: true }], ob_alquiler: 'ob_van',
+  };
+  const SUB_ALIAS = { camara: 'camcorder', camcorder: 'camcorder', mano: 'camcorder', hombro: 'eng', eng: 'eng', ptz: 'ptz', robotica: 'ptz', sistema: 'system', estudio: 'studio_box', system: 'system', box: 'system', cine: 'cine',
+    accion: 'action_cam', action: 'action_cam', bolsillo: 'pocket_gimbal', pov: 'pov_cam', celular: 'phone_gimbal', movil: 'phone_gimbal',
     switcher: 'switcher', mezclador: 'switcher', laptop: 'laptop', consola: 'console', mixer: 'console', console: 'console', mic: 'mic_wireless', microfono: 'mic_wireless', inalambrico: 'mic_wireless',
     encoder: 'encoder', mochila: 'bonding', bonding: 'bonding', backpack: 'bonding', router: 'router', ups: 'ups', bateria: 'vbattery', battery: 'vbattery', vmount: 'vbattery',
     cable: 'cable_reel', fibra: 'cable_reel', carrete: 'cable_reel', lluvia: 'raincover', cobertor: 'raincover', dron: 'drone', drone: 'drone', grua: 'jib', jib: 'jib',
     unidad_movil: 'ob_van', ob: 'ob_van', van: 'ob_van', generador: 'generator', replay: 'replay', repeticion: 'replay', intercom: 'intercom', satelite: 'satellite', satelital: 'satellite',
-    monitor: 'monitor', luz: 'light', light: 'light', led: 'light', maleta: 'case', case: 'case' };
+    monitor: 'monitor', luz: 'light', light: 'light', led: 'light', maleta: 'case', case: 'case', lente: 'lens_eng', lens: 'lens_eng', tripode: 'tripod', tripod: 'tripod' };
   const TYPE_SUB = {
-    cam_basic: 'camcorder', cam_pro: 'eng', cam_cine: 'system', vip_cam8k: 'cine', switch_basic: 'laptop', switch_pro: 'switcher', vip_switcher: 'switcher',
-    audio_basic: 'console', audio_pro: 'console', mics: 'mic_wireless', encoder: 'encoder', router4g: 'router', ups: 'ups', raincover: 'raincover',
+    cam_basic: 'handycam', cam_pro: 'camcorder', cam_cine: 'camcorder', vip_cam8k: 'system', switch_basic: 'laptop', switch_pro: 'switcher', vip_switcher: 'switcher',
+    audio_basic: 'console', audio_pro: 'mixer_rack', mics: 'mic_wireless', encoder: 'encoder', router4g: 'hotspot', ups: 'ups', raincover: 'raincover',
     cable: 'cable_reel', battery: 'vbattery', dron4k: 'drone', grua: 'jib', unidad_movil: 'ob_van', generador: 'generator', vip_satelital: 'satellite',
     kit_reparacion: 'toolkit', caja_chica: 'cash', vip30: 'crown', inicio: 'gift', estrella: 'star',
   };
-  const CAT_SUB = { cam: 'eng', switcher: 'switcher', audio: 'console', mics: 'mic_wireless', encoder: 'encoder', internet: 'router', power: 'ups', rain: 'raincover',
-    replay: 'replay', intercom: 'intercom', light: 'light', luz: 'light', monitor: 'monitor', cable: 'cable_reel', bonding: 'bonding', drone: 'drone', dron: 'drone' };
-  const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  function subtipoOf(type, o) {
+  const CAT_SUB = { cam: 'camcorder', lens: 'lens_eng', support: 'tripod_fluid', switcher: 'switcher', replay: 'replay', graphics: 'cg', monitor: 'monitor', audio: 'console', mics: 'mic_wireless',
+    intercom: 'intercom', encoder: 'encoder', internet: 'router', wireless: 'wireless_tx', cable: 'cable_reel', power: 'ups', rain: 'raincover', case: 'case', vehicle: 'cargo_van',
+    service: 'jib', light: 'light', luz: 'light', bonding: 'bonding', drone: 'drone', dron: 'drone' };
+  const norm = (t) => String(t == null ? '' : t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  // → { sub: clave de DRAW, prm: parámetros del subtipo }
+  function specOf(type, o) {
     const it = catalogItem(type);
-    const cands = [o && o.subtipo, it && it.subtipo];
-    for (const c of cands) { const k = norm(c); if (DRAW[k]) return k; if (SUB_ALIAS[k]) return SUB_ALIAS[k]; }
-    if (TYPE_SUB[type]) return TYPE_SUB[type];
-    if (/^creditos/.test(String(type))) return 'gems';
-    const n = norm(type);
-    const rx = [[/ptz/, 'ptz'], [/eng|hombro/, 'eng'], [/sistema|system|estudio|box/, 'system'], [/cine|8k|6k/, 'cine'], [/replay|repetic/, 'replay'], [/intercom|clear/, 'intercom'],
-      [/mochila|bond|backpack|lu\d/, 'bonding'], [/unidad|ob_?van|movil|truck/, 'ob_van'], [/dron|drone/, 'drone'], [/grua|jib|crane/, 'jib'], [/cable|fibra|sdi/, 'cable_reel'],
-      [/bater|battery|vmount|v_mount/, 'vbattery'], [/monitor/, 'monitor'], [/luz|light|led|panel/, 'light'], [/sat/, 'satellite'], [/gener/, 'generator'], [/router|4g|5g|modem/, 'router'],
-      [/encoder|srt/, 'encoder'], [/mic/, 'mic_wireless'], [/audio|consola|mixer/, 'console'], [/switch|atem|mezcl/, 'switcher'], [/laptop|vmix/, 'laptop'], [/ups/, 'ups'], [/cam/, 'eng']];
-    for (const [re, k] of rx) if (re.test(n)) return k;
     const cat = norm((o && o.cat) || (it && it.cat));
-    if (CAT_SUB[cat]) return CAT_SUB[cat];
-    return 'case';
+    for (const c of [o && o.subtipo, it && it.subtipo]) {
+      const k = norm(c);
+      if (!k) continue;
+      let m = has(SUB_DRAW, cat + ':' + k) ? SUB_DRAW[cat + ':' + k] : has(SUB_DRAW, k) ? SUB_DRAW[k] : null;
+      if (typeof m === 'function') { try { m = m(it || {}); } catch (e) { m = null; } }
+      if (m) { const d = Array.isArray(m) ? m[0] : m; if (has(DRAW, d)) return { sub: d, prm: Array.isArray(m) ? m[1] : null }; }
+      if (has(DRAW, k)) return { sub: k };
+      if (has(SUB_ALIAS, k)) return { sub: SUB_ALIAS[k] };
+    }
+    if (has(TYPE_SUB, type)) return { sub: TYPE_SUB[type] };
+    if (/^creditos/.test(String(type))) return { sub: 'gems' };
+    const n = norm(type);
+    const rx = [[/camioneta|furgon|pickup/, 'cargo_van'], [/corbat|solapa|lavalier/, 'lavalier'], [/shotgun|boom/, 'shotgun'], [/diadema|headset/, 'headset'],
+      [/gopr|accion|action/, 'action_cam'], [/bolsillo|pocket/, 'pocket_gimbal'], [/pov/, 'pov_cam'], [/celular|phone/, 'phone_gimbal'], [/steadi/, 'steadicam'], [/dolly/, 'dolly'],
+      [/gimbal/, 'gimbal'], [/tripod/, 'tripod_fluid'], [/lente|lens/, 'lens_eng'], [/hotspot/, 'hotspot'], [/multiview/, 'multiview'],
+      [/ptz/, 'ptz'], [/eng|hombro/, 'eng'], [/sistema|system|estudio|box/, 'system'], [/cine|8k|6k/, 'cine'], [/replay|repetic/, 'replay'], [/intercom|clear/, 'intercom'],
+      [/mochila|bond|backpack|lu\d/, 'bonding'], [/unidad|ob_?van|movil|truck|trailer/, 'ob_van'], [/dron|drone/, 'drone'], [/grua|jib|crane/, 'jib'], [/cable|fibra|sdi/, 'cable_reel'],
+      [/bater|battery|vmount|v_mount/, 'vbattery'], [/monitor/, 'monitor'], [/luz|light|led|panel/, 'light'], [/sat/, 'satellite'], [/gener/, 'generator'], [/router|4g|5g|modem/, 'router'],
+      [/encoder|srt/, 'encoder'], [/mic/, 'mic_wireless'], [/audio|consola|mixer/, 'console'], [/switch|atem|mezcl/, 'switcher'], [/laptop|vmix/, 'laptop'], [/ups/, 'ups'], [/cam/, 'camcorder']];
+    for (const [re, k] of rx) if (re.test(n)) return { sub: k };
+    if (has(CAT_SUB, cat)) return { sub: CAT_SUB[cat] };
+    return { sub: 'case' };
   }
-  function itemParams(type, r) {
-    const p = { vip: r.key === 'vip' };
-    if (type === 'audio_basic') { p.channels = 8; p.screen = false; }
-    if (type === 'audio_pro') { p.channels = 12; p.screen = true; }
-    if (type === 'cam_cine') p.tag = '4K';
-    if (p.vip) { p.acc = '#f0b829'; p.tag = '8K'; }
-    if (type === 'cam_pro') p.tag = 'HD';
+  const subtipoOf = (type, o) => specOf(type, o).sub;
+  function itemParams(type, r, prm) {
+    const it = catalogItem(type) || {};
+    const p = Object.assign({ vip: r.key === 'vip', q: it.q || 1 }, prm || {});
+    // Lentes: el número de zoom o la focal sale del nombre (solo números, nunca la marca)
+    if (it.cat === 'lens' && !p.tag) {
+      const nm = String(it.name || ''), r1 = /(\d+)\s*-\s*(\d+)/.exec(nm), zs = nm.match(/\d{2,3}(?=\s*[x×])/gi);
+      if (zs) p.tag = zs[zs.length - 1] + '×'; else if (r1) p.tag = r1[1] + '-' + r1[2];
+    }
+    if (p.vip) { p.acc = '#f0b829'; p.tag = p.tag || '8K'; }
     return p;
   }
   const ITEM_LABEL = (type) => { const it = catalogItem(type); return it ? it.name : ''; };
@@ -653,9 +1120,10 @@
     const o = opts || {};
     const s = size || 96;
     const r = (o.rarity && RARITIES[RARITY_ALIAS[norm(o.rarity)] || o.rarity]) || rarity(type);
-    const sub = subtipoOf(type, o);
+    const spec = specOf(type, o);
+    const sub = spec.sub;
     let body;
-    try { body = DRAW[sub](itemParams(type, r)); } catch (e) { try { body = DRAW.case({}); } catch (e2) { body = ''; } }
+    try { body = DRAW[sub](itemParams(type, r, spec.prm)); } catch (e) { try { body = DRAW.case({}); } catch (e2) { body = ''; } }
     const inline = ensureShared() ? '' : `<defs>${sharedDefs()}</defs>`;
     const rays = r.key === 'exclusivo' || r.key === 'vip'
       ? `<g opacity="${r.key === 'vip' ? 0.2 : 0.13}" fill="${r.color}" class="${r.key === 'vip' ? 'rays' : ''}" style="transform-origin:60px 58px">${Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<path d="M60 58L${(60 + 72 * Math.cos(a - 0.11)).toFixed(1)} ${(58 + 72 * Math.sin(a - 0.11)).toFixed(1)}L${(60 + 72 * Math.cos(a + 0.11)).toFixed(1)} ${(58 + 72 * Math.sin(a + 0.11)).toFixed(1)}z"/>`; }).join('')}</g>` : '';

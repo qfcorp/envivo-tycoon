@@ -461,18 +461,104 @@
           <button class="btn" data-act="next-day">${I('sleep')}${T('inicio.descansar')} <span class="muted small">(${T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
         </div>
       </div>
-      ${cuentaCard()}
       ${installCard()}
-      ${tarjetasInicio()}
-      ${story}
-      <div class="sectitle">${T('inicio.ultimo')}</div>
-      <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}
-        <button class="btn sm" data-act="tab" data-tab="registro" style="margin-top:10px">${I('log', 'sm')} ${T('inicio.ver_registro')}</button></div>
-      <div class="sectitle">${T('inicio.ayuda')}</div>
-      <div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}</div>
+      ${plegablesInicio(story)}
       <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
       ${soporteBtn()}
       <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}${T('inicio.nueva')}</button>`;
+  }
+
+  /* ---------- Inicio plegable: cada bloque es una fila (ícono, título, resumen) que se abre al tocarla ----------
+     Así Inicio no muestra todo de una. "Nuevo" sale cuando cambió algo desde la última vez que se abrió esa fila
+     (títulos o botones para reclamar/jugar). Lo abierto se recuerda en este celular. Para pruebas: {"*":true} abre todo. */
+  const PL_ABIERTOS = 'envivo_inicio_abiertos', PL_VISTOS = 'envivo_inicio_vistos';
+  const PL_INFO = {
+    cuenta: ['cloud', 'avisoc.t'], temporadas: ['calendar', 'inicio.pl.temporadas'], sede: ['home', 'inicio.pl.sede'],
+    servidores: ['globe', 'inicio.pl.servidores'], copa: ['crown', 'inicio.pl.copa'], vip: ['vip', 'inicio.pl.vip'],
+    pase: ['star', 'inicio.pl.pase'], estrellas: ['sparkle', 'inicio.pl.estrellas'], historia: ['flag', 'historia.tag'],
+    ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
+  };
+  function plFirma(html) {
+    // Lo que cuenta como "nuevo": los títulos y los botones principales (sin números, que cambian solos: días, montos)
+    try {
+      const t = document.createElement('template');
+      t.innerHTML = html;
+      const tit = [...t.content.querySelectorAll('h2,h3,.story-tag')].map((e) => e.textContent.trim());
+      const bot = [...t.content.querySelectorAll('.btn.main:not([disabled]),.btn.green:not([disabled])')].map((e) => (e.dataset.act || e.dataset.acc || '') + e.textContent.replace(/[\d.,$%:+\-]+/g, '').trim());
+      const s = tit.concat(bot).join('|');
+      if (!s) return '';
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+      return String(h);
+    } catch (e) { return ''; }
+  }
+  function plResumen(html) {
+    try {
+      const t = document.createElement('template');
+      t.innerHTML = html;
+      const xs = [...t.content.querySelectorAll('h2,h3')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (xs.length) return xs.join(' · ');
+      // Sin títulos (sede, servidor...): las primeras palabras de la tarjeta, sin los botones
+      t.content.querySelectorAll('button,script,style,svg').forEach((e) => e.remove());
+      const tx = t.content.textContent.replace(/\s+/g, ' ').trim();
+      return tx.length > 60 ? tx.slice(0, 58) + '…' : tx;
+    } catch (e) { return ''; }
+  }
+  // En las pruebas automáticas (navegador controlado) todo abierto, salvo que la prueba diga otra cosa
+  const plAbiertos = () => lsGet(PL_ABIERTOS) || (navigator.webdriver ? { '*': true } : {});
+  function plegablesInicio(story) {
+    const ab = plAbiertos(), vis = lsGet(PL_VISTOS) || {};
+    let cambio = false;
+    const filas = [];
+    const fila = (id, html, o) => {
+      if (!html) return;
+      const info = PL_INFO[id] || ['box', ''];
+      const abierta = ab['*'] === true || (ab[id] != null ? !!ab[id] : !!(o && o.abierta));
+      const f = o && o.sinNuevo ? '' : plFirma(html);
+      if (abierta && f && vis[id] !== f) { vis[id] = f; cambio = true; }
+      const nuevo = !abierta && f && vis[id] !== f;
+      const titulo = (o && o.titulo) || (info[1] ? T(info[1]) : id);
+      const resumen = (o && o.resumen != null) ? o.resumen : plResumen(html);
+      filas.push(`<div class="pl ${abierta ? 'abierta' : ''} ${o && o.tono ? 'pl-' + o.tono : ''}" data-pl="${esc(id)}">
+        <button class="pl-cab" data-act="pl" data-k="${esc(id)}" aria-expanded="${abierta}">
+          <span class="pl-ic">${I(info[0], 'sm')}</span>
+          <span class="pl-tx"><b>${esc(titulo)}</b>${resumen ? `<small>${esc(resumen)}</small>` : ''}</span>
+          ${nuevo ? `<span class="pl-nuevo">${T('inicio.nuevo')}</span>` : ''}
+          <span class="pl-fl" aria-hidden="true">&#8250;</span>
+        </button>
+        <div class="pl-cuerpo">${html}</div></div>`);
+    };
+    fila('cuenta', cuentaCard(), { tono: 'amber', resumen: T('cuenta.crea_gratis') });
+    const ctx = ctxInicio();
+    modulosInicio().forEach((m) => {
+      if (typeof m.tarjeta !== 'function') return;
+      let h = '';
+      try { h = m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); h = ''; }
+      fila(m.id, h);
+    });
+    const ch = G.CHAPTERS[S.chapter];
+    fila('historia', story, { abierta: !S.storyDone && S.chapter === 0,
+      resumen: S.storyDone ? T('historia.completada') : `${TL(ch.title)} · ${TL(ch.progress(S))}` });
+    const ult = S.log[0];
+    fila('ultimo', `<div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}
+        <button class="btn sm" data-act="tab" data-tab="registro" style="margin-top:10px">${I('log', 'sm')} ${T('inicio.ver_registro')}</button></div>`,
+      { resumen: ult ? `${T('comun.dia_n', { n: ult.day })} · ${gtx(ult, ult.text)}` : '' });
+    // "Lo último" es nuevo cuando cambia la última línea
+    if (ult) { const k = 'u' + ult.day + (ult.text || '').length; const i = filas.length - 1; const abierta = ab['*'] === true || !!ab.ultimo;
+      if (abierta) { if (vis.ultimo !== k) { vis.ultimo = k; cambio = true; } } else if (vis.ultimo !== k) filas[i] = filas[i].replace('<span class="pl-fl"', `<span class="pl-nuevo">${T('inicio.nuevo')}</span><span class="pl-fl"`); }
+    fila('ayuda', `<div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}</div>`, { sinNuevo: true, resumen: '' });
+    if (cambio) lsSet(PL_VISTOS, vis);
+    return `<div class="pls">${filas.join('')}</div>`;
+  }
+  function plAlternar(id) {
+    const ab = plAbiertos();
+    if (ab['*'] === true) return;
+    const el = document.querySelector(`.pl[data-pl="${id}"]`);
+    ab[id] = !(el && el.classList.contains('abierta'));
+    lsSet(PL_ABIERTOS, ab);
+    snd.play('tap');
+    render();
+    if (ab[id]) { const n = document.querySelector(`.pl[data-pl="${id}"]`); if (n && n.scrollIntoView) try { n.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); } catch (e) { /* nada */ } }
   }
 
   /* ---------- Aviso de cuenta: sin cuenta, la partida vive SOLO en este celular ----------
@@ -483,8 +569,7 @@
   function cuentaCard() {
     if (!sinCuenta() || !tutorialHecho()) return '';
     return `<div class="card aviso-cuenta">
-      <div class="prodrow">${tile('cloud', 'amber')}<div class="grow"><h3 style="margin:0">${T('avisoc.t')}</h3>
-        <p class="small muted" style="margin:4px 0 0">${T('avisoc.det', { d: S.day, n: S.stats.events })}</p></div></div>
+      <p class="small muted" style="margin:0 0 4px">${T('avisoc.det', { d: S.day, n: S.stats.events })}</p>
       <button class="btn main" data-act="cuenta" data-modo="registro">${I('user')}${T('avisoc.crear')}</button>
       <button class="btn" data-act="cuenta-info">${I('tip')}${T('avisoc.porque')}</button></div>`;
   }
@@ -1885,6 +1970,7 @@
       case 'vista-tienda': vistaTienda = el.dataset.k; if (window.Mercado) window.Mercado.invalidar(); render(); break;
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
       case 'cuenta-info': avisoCuenta(); break;
+      case 'pl': plAlternar(el.dataset.k); break;
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;

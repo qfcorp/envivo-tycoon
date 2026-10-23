@@ -85,7 +85,7 @@ const MARCAS = ['zony', 'sony', 'kanon', 'canon', 'panasonika', 'panasonic', 'bl
   const camDibs = new Set(claves.filter((k) => items[k].cat === 'cam').map((k) => items[k].dib));
   bien(camDibs.size >= 12, `Cámaras: ${camDibs.size} tipos de dibujo (${[...camDibs].join(', ')})`);
   const esperado = { cam_gopra_heroe13: 'action_cam', cam_dgi_osmo_bolsillo_3: 'pocket_gimbal', cam_marchall_cv513_pov: 'pov_cam', cam_celular_gimbal: 'phone_gimbal',
-    cam_basic: 'camcorder', cam_blackmagia_urso_broadcast_g3: 'eng', cam_zony_fz6_cine: 'cine', cam_panasonika_aw_uv22: 'ptz', dron_dgi_micro_4_pro: 'drone' };
+    cam_basic: 'handycam', cam_pro: 'camcorder', cam_blackmagia_urso_broadcast_g3: 'eng', cam_zony_fz6_cine: 'cine', cam_panasonika_aw_uv22: 'ptz', dron_dgi_micro_4_pro: 'drone' };
   const mal = Object.keys(esperado).filter((k) => items[k] && items[k].dib !== esperado[k]);
   bien(!mal.length, 'Cámaras clave con el dibujo correcto' + (mal.length ? ': ' + mal.map((k) => `${k}=${items[k].dib} (esperado ${esperado[k]})`).join(', ') : ''));
 

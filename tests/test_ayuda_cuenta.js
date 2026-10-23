@@ -58,8 +58,9 @@ async function abrir(browser, caso) {
       if (c.idioma) localStorage.setItem('envivo_lang', c.idioma);
       if (c.partida) localStorage.setItem('envivo_tycoon_save_v1', c.partida);
       if (c.aviso != null) localStorage.setItem('envivo_aviso_cuenta', String(c.aviso));
+      if (c.plegado && !sessionStorage.getItem('ya')) { localStorage.setItem('envivo_inicio_abiertos', '{}'); sessionStorage.setItem('ya', '1'); }
     } catch (e) { /* nada */ }
-  }, { idioma: caso.idioma || 'es', partida: caso.partida || null, aviso: caso.aviso == null ? null : caso.aviso });
+  }, { plegado: !!caso.plegado, idioma: caso.idioma || 'es', partida: caso.partida || null, aviso: caso.aviso == null ? null : caso.aviso });
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.Api && window.Api.disponible !== null && window.Api.estado, null, { timeout: 8000 });
   await page.waitForTimeout(300);
@@ -215,6 +216,32 @@ async function partida(browser, cambios) {
       bien((await st()).sl < e2.sl, `6 (${vp.n}): la flecha izquierda regresa`);
       bien(!(await desborde(page)), `6 (${vp.n}): sin desborde horizontal`);
       bien(errores.length === 0, `6 (${vp.n}): sin errores de JS` + (errores.length ? ': ' + errores.join(' | ') : ''));
+      await ctx.close();
+    }
+
+    /* ---------- 7. Inicio plegado: filas con resumen, "Nuevo", abrir/cerrar y se recuerda ---------- */
+    {
+      const { ctx, page, errores } = await abrir(browser, { partida: p2, aviso: 3, plegado: true });
+      await cerrarOtras(page);
+      const filas = await page.$$eval('.pls .pl', (xs) => xs.map((x) => ({ id: x.dataset.pl, abierta: x.classList.contains('abierta'), nuevo: !!x.querySelector('.pl-nuevo'), res: (x.querySelector('.pl-tx small') || {}).textContent || '' })));
+      bien(filas.length >= 4 && filas.every((f) => !f.abierta), '7: Inicio en filas, todas cerradas (' + filas.map((f) => f.id).join(', ') + ')');
+      const h = filas.find((f) => f.id === 'historia');
+      bien(h && /Capítulo 2/.test(h.res), '7: la fila de Historia resume el capítulo: ' + (h && h.res));
+      bien(!!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: la fila de la cuenta dice "Nuevo"');
+      bien(!(await page.isVisible('.aviso-cuenta')), '7: el contenido cerrado no se ve');
+      await page.click('.pl[data-pl="cuenta"] .pl-cab');
+      bien(await page.isVisible('.aviso-cuenta'), '7: al tocar la fila se abre');
+      bien(!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: abierta ya no dice "Nuevo"');
+      await page.screenshot({ path: path.join(OUT, 'ayuda_inicio_plegado.png'), fullPage: true });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => window.Api && window.Api.estado, null, { timeout: 8000 });
+      await cerrarOtras(page); await page.waitForTimeout(300);
+      bien(await page.isVisible('.aviso-cuenta'), '7: al recargar sigue abierta');
+      await page.click('.pl[data-pl="cuenta"] .pl-cab');
+      bien(!(await page.isVisible('.aviso-cuenta')), '7: al tocar otra vez se cierra');
+      bien(!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: cerrada sin cambios no vuelve a decir "Nuevo"');
+      bien(!(await desborde(page)), '7: sin desborde horizontal');
+      bien(errores.length === 0, '7: sin errores de JS' + (errores.length ? ': ' + errores.join(' | ') : ''));
       await ctx.close();
     }
 
