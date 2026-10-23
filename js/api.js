@@ -76,6 +76,24 @@
   Api.bonoVip = () => req('POST', '/api/vip/bono', {});
   Api.orden = (producto) => req('POST', '/api/orden', { producto });
 
+  // Mercado entre jugadores (server/MERCADO.md)
+  Api.mercado = (item, orden) => req('GET', '/api/mercado?' + new URLSearchParams({ item: item || '', orden: orden || 'precio' }).toString());
+  Api.publicar = (inventario_id, precio) => req('POST', '/api/mercado/publicar', { inventario_id, precio });
+  Api.retirar = (publicacion_id) => req('POST', '/api/mercado/retirar', { publicacion_id });
+  Api.comprarMercado = (publicacion_id) => req('POST', '/api/mercado/comprar', { publicacion_id });
+
+  // Comunidad: perfil, asociaciones y chat (server/SOCIAL.md)
+  Api.perfil = (alias, fama) => req('POST', '/api/perfil', { alias, fama });
+  Api.asociaciones = (buscar) => req('GET', '/api/asociaciones?' + new URLSearchParams({ buscar: buscar || '' }).toString());
+  Api.crearAsociacion = (datos) => req('POST', '/api/asociaciones/crear', datos);
+  Api.unirse = (id) => req('POST', '/api/asociaciones/unirse', { id });
+  Api.salirAsociacion = () => req('POST', '/api/asociaciones/salir', {});
+  Api.chat = (canal, desde) => req('GET', '/api/chat?' + new URLSearchParams({ canal, desde: String(desde || 0) }).toString(), undefined, 10000);
+  Api.escribir = (canal, texto) => req('POST', '/api/chat', { canal, texto });
+  Api.mensajeRapido = (canal, rapido) => req('POST', '/api/chat', { canal, rapido });
+  Api.reportar = (mensaje_id, motivo) => req('POST', '/api/chat/reportar', { mensaje_id, motivo });
+  Api.bloquear = (jugador_id) => req('POST', '/api/chat/bloquear', { jugador_id });
+
   Api.logueado = () => !!(Api.estado && Api.estado.logueado);
 
   root.Api = Api;
