@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  Recuperar la contraseña (server/INTEGRAR_CORREO.md). Llega desde el enlace del correo:
+  https://juego.tukanec.com/recuperar.html#t=<código>&l=<idioma>   (el código va después del "#": no sale en los registros)
+  Sin código, la página sirve para pedir el enlace. Textos en 10 idiomas en /pago-assets/recuperar.js.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0f14">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Recuperar contraseña · EN VIVO Tycoon</title>
+<link rel="icon" href="/icons/favicon-32.png">
+<link rel="stylesheet" href="/pago-assets/estilo.css?v=2">
+</head>
+<body>
+<main class="caja">
+  <div class="marca">EN VIVO <b>Tycoon</b></div>
+  <h1 id="titulo" data-t="titulo">Recuperar contraseña</h1>
+
+  <section id="v-cargando"><p class="tenue" data-t="revisando">Revisando el enlace…</p></section>
+
+  <section id="v-pedir" hidden>
+    <p data-t="pedir_texto">Escribe el correo de tu cuenta y te enviamos un enlace para elegir una contraseña nueva.</p>
+    <form id="f-pedir" class="form-fila" novalidate>
+      <label><span data-t="correo">Correo</span><input id="p-email" type="email" autocomplete="email" maxlength="120" required></label>
+      <button class="boton grande" type="submit" id="p-btn" data-t="pedir_boton">Enviarme el enlace</button>
+    </form>
+    <p class="aviso" id="p-aviso" role="status" aria-live="polite"></p>
+  </section>
+
+  <section id="v-nueva" hidden>
+    <p><span data-t="cuenta">Cuenta</span>: <b id="n-email"></b></p>
+    <form id="f-nueva" class="form-fila" novalidate>
+      <label><span id="n-l1" data-t="nueva">Contraseña nueva (mínimo 8 caracteres)</span><input id="n-clave" type="password" autocomplete="new-password" minlength="8" maxlength="200" required></label>
+      <label><span data-t="repite">Repite la contraseña</span><input id="n-clave2" type="password" autocomplete="new-password" minlength="8" maxlength="200" required></label>
+      <label class="casilla" style="flex-direction:row;align-items:center;color:var(--texto)"><input id="n-ver" type="checkbox"><span data-t="ver">Mostrar contraseña</span></label>
+      <button class="boton grande" type="submit" id="n-btn" data-t="guardar">Guardar contraseña nueva</button>
+    </form>
+    <p class="aviso aviso-error" id="n-aviso" role="alert" aria-live="assertive"></p>
+    <p class="tenue" data-t="nota_sesiones">Al guardar, cerramos tu sesión en los otros dispositivos y entras aquí con la contraseña nueva.</p>
+  </section>
+
+  <section id="v-invalido" hidden>
+    <p class="aviso aviso-error" data-t="invalido">Este enlace ya no sirve: venció o ya se usó.</p>
+    <p data-t="invalido_texto">Puedes pedir uno nuevo aquí abajo o desde «¿Olvidaste tu contraseña?» en el juego.</p>
+    <p><button class="boton sec" type="button" id="i-pedir" data-t="pedir_otro">Pedir un enlace nuevo</button></p>
+  </section>
+
+  <section id="v-listo" hidden>
+    <p class="aviso aviso-ok" data-t="listo">¡Listo! Tu contraseña cambió.</p>
+    <p data-t="listo_texto">Ya entraste en este dispositivo. En los demás, entra otra vez con la contraseña nueva.</p>
+  </section>
+
+  <p class="pie"><a class="boton sec" href="/" id="ir-juego" data-t="ir_juego">Ir al juego</a></p>
+</main>
+<script src="/pago-assets/recuperar.js?v=1"></script>
+</body>
+</html>

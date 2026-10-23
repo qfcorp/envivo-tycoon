@@ -45,6 +45,8 @@ try {
 
     // Salud de servidores, fusión y traslado voluntario (server/INTEGRAR_FUSIONES.md): /api/servidor/*
     if (($r = \EnVivo\Fusiones::ruta($ruta, $metodo)) !== null) Http::json(200, $r);
+    // Recuperar la contraseña por correo (server/INTEGRAR_CORREO.md): /api/cuenta/recuperar* (sin sesión)
+    if (class_exists(\EnVivo\RecuperarApi::class) && \EnVivo\RecuperarApi::esRuta($ruta)) \EnVivo\RecuperarApi::responder($ruta, $metodo);
 
     match ($ruta) {
         '/estado' => $soloGet() && Http::json(200, \EnVivo\Universos::estado(Sesiones::jugadorId()) + \EnVivo\Fusiones::estado(Sesiones::jugadorId()) + Cuentas::estado(Sesiones::jugadorId()) + \EnVivo\Discord::estado(Sesiones::jugadorId())),

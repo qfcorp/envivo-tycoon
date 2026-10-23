@@ -157,6 +157,15 @@ for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas; do
 done
 
 echo
+echo "== 3e. Correo y recuperar la contraseña (server/INTEGRAR_CORREO.md: SMTP falso, enlace de un solo uso, /recuperar.html)"
+if [ -f "$SRV/tests/pruebas_correo.php" ]; then
+  env -u ENVIVO_CONFIG P_APP="$(puerto)" php "$SRV/tests/pruebas_correo.php" > "$TMP/modulo_correo.log" 2>&1; RM=$?
+  grep -E "FALLA" "$TMP/modulo_correo.log" | sed 's/^/  /'
+  echo "  ($(grep -v '^[[:space:]]*$' "$TMP/modulo_correo.log" | grep -vE '^-+$|^=+$' | tail -1 | sed 's/^ *//'))"
+  check "pruebas_correo.php sin fallas" 0 "$RM"
+fi
+
+echo
 echo "== 4. Navegador de verdad (Playwright + Chromium, celular 390x844)"
 php -r '$p = new PDO("sqlite:" . $argv[1]); $p->exec("DELETE FROM intentos");' "$TMP/datos/envivo.sqlite"
 NP="${NODE_PATH:-/opt/npm-tools/node_modules}"
@@ -243,6 +252,9 @@ NGC
   check "nginx: /pago.php y /api/estado sin cabeceras repetidas (PHP + nginx)" "1 1 1 1" "$(echo "$CAB" | grep -ciE '^x-frame-options:') $(echo "$CAB" | grep -ciE '^x-content-type-options:') $(curl -s -D - -o /dev/null "$B/api/estado" | tr -d '\r' | grep -ciE '^x-frame-options:') $(curl -s -D - -o /dev/null "$B/api/estado" | tr -d '\r' | grep -ciE '^referrer-policy:')"
   check "nginx: /control/assets/control.css y control.js se ven (200)" "200 200" "$(curl -s -o /dev/null -w '%{http_code}' "$B/control/assets/control.css") $(curl -s -o /dev/null -w '%{http_code}' "$B/control/assets/control.js")"
   check "nginx: GET /discord/interacciones llega a PHP (405: Discord solo manda POST)" "405" "$(curl -s -o /dev/null -w '%{http_code}' "$B/discord/interacciones")"
+  # Recuperar la contraseña (INTEGRAR_CORREO.md): la página y su JavaScript se ven, con la CSP del juego y no-store
+  CAB=$(curl -s -D - -o /dev/null "$B/recuperar.html" | tr -d '\r')
+  check "nginx: /recuperar.html (200, CSP con script-src 'self', no-store) y /pago-assets/recuperar.js (200)" "200 1 1 200" "$(echo "$CAB" | head -1 | cut -d' ' -f2) $(echo "$CAB" | grep -ciE "^content-security-policy: .*script-src 'self'") $(echo "$CAB" | grep -ciE '^cache-control: no-store') $(curl -s -o /dev/null -w '%{http_code}' "$B/pago-assets/recuperar.js")"
   CAB=$(curl -s -D - -o /dev/null "$B/" | tr -d '\r')
   check "nginx: CSP del juego con las fuentes de Google en connect-src (el service worker las baja)" "1" "$(echo "$CAB" | grep -ciE "^content-security-policy: .*connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;")"
   check "nginx: Permissions-Policy en el juego, la API y las legales" "1 1 1" "$(for r in / /api/estado /terminos.html; do curl -s -D - -o /dev/null "$B$r" | grep -ciE '^permissions-policy: camera=\(\)'; done | tr '\n' ' ' | sed 's/ $//')"

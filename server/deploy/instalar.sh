@@ -129,8 +129,8 @@ PLUX_LLAVE_PUBLICA=
 PLUX_WEBHOOK_USUARIO=plux_aviso
 PLUX_WEBHOOK_CLAVE=$HOOK_CLAVE
 
-; Soporte (lo muestra el juego en "Ayuda y soporte"). Solo correo, sin WhatsApp.
-SOPORTE_CORREO=
+; Soporte (lo muestra el juego en "Ayuda y soporte"). Solo correo, sin WhatsApp. Crealo con Cloudflare Email Routing (docs/CORREO.md)
+SOPORTE_CORREO=soporte@tukanec.com
 SOPORTE_HORARIO=
 
 ; Google Play (app de Android). Ver server/GOOGLE_PLAY.md
@@ -282,7 +282,8 @@ echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_
 echo "    (claves de PRODUCCION; PLUX_AMBIENTE=produccion ya viene puesto), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
 echo " c2) Codigo del celular (2FA) del Centro de Control: docs/DESPLIEGUE.md, paso 6"
 echo " d) Revisa con un abogado y completa terminos.html y privacidad.html ([RUC], [CORREO DE SOPORTE], [DIRECCION], [FECHA])."
-echo " d2) Soporte: cuando tengas el correo de soporte, ponlo en $CONF (SOPORTE_CORREO=... y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00)"
+echo " d2) Soporte: crea soporte@tukanec.com (Cloudflare Email Routing) y revisa en $CONF SOPORTE_CORREO y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00"
+echo "     Correo del juego (recuperar la contraseña): llena las líneas SMTP_ de $CONF siguiendo docs/CORREO.md"
 echo "     y luego:  sudo systemctl reload php$PHPV-fpm   (el juego lo muestra en Ayuda y soporte)"
 echo " d3) Google Play (cuando publiques la app): sigue server/GOOGLE_PLAY.md"
 echo " e) Centro de Control (ventas, jugadores, soporte):   https://$DOMINIO/control/"
