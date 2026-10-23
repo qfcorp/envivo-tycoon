@@ -286,7 +286,7 @@ echo " b) Certificado:   sudo certbot --nginx -d $DOMINIO     y despues otra vez
 echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_CLIENTE, PLUX_CLAVE_SECRETA y PLUX_LLAVE_PUBLICA"
 echo "    (claves de PRODUCCION; PLUX_AMBIENTE=produccion ya viene puesto), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
 echo " c2) Codigo del celular (2FA) del Centro de Control: docs/DESPLIEGUE.md, paso 6"
-echo " d) Revisa con un abogado y completa terminos.html y privacidad.html ([RUC], [CORREO DE SOPORTE], [DIRECCION], [FECHA])."
+echo " d) Completa [DIRECCION] en terminos.html y privacidad.html y que un abogado los revise (docs/LEGAL_REVISION.md)."
 echo " d2) Soporte: crea soporte@tukanec.com (Cloudflare Email Routing) y revisa en $CONF SOPORTE_CORREO y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00"
 echo "     Correo del juego (recuperar la contraseña): llena las líneas SMTP_ de $CONF siguiendo docs/CORREO.md"
 echo "     y luego:  sudo systemctl reload php$PHPV-fpm   (el juego lo muestra en Ayuda y soporte)"

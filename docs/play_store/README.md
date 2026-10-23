@@ -75,9 +75,10 @@ las palabras clave se usan en frases naturales, sin listas repetidas.
 - URL: `https://juego.tukanec.com/privacidad.html` (versión oficial en español).
 - Las traducciones de conveniencia están en `docs/traducciones/legal/privacidad_<idioma>.html`; si se publican, van
   en `/privacidad_<idioma>.html` (los enlaces internos de esas páginas ya apuntan ahí).
-- ⚠️ Antes de enviar: llenar [RUC], [DIRECCIÓN], [CORREO DE SOPORTE] y [FECHA] y que la revise un abogado.
-- ⚠️ La política debe nombrar **todo** lo que dice el formulario de Seguridad de los datos (2.6): analítica propia,
-  registros de errores, IP y navegador para prevenir fraude, y el ID de Discord si el jugador vincula su cuenta.
+- ⚠️ Antes de enviar: llenar [DIRECCIÓN] (RUC, correo soporte@tukanec.com y fecha ya están) y que la revise un abogado
+  (lista en `docs/LEGAL_REVISION.md`).
+- Enlace web para eliminar la cuenta (Seguridad de los datos): `https://juego.tukanec.com/borrar-cuenta.html` (explica cómo
+  pedirlo sin la app, por correo a soporte@tukanec.com).
 
 ### 2.2 Acceso a la app
 - "Toda la funcionalidad está disponible sin acceso especial": **No**, porque la tienda, el mercado y el chat
@@ -197,8 +198,7 @@ llegara a abrir `pago.php`, habría que declararlos también (Información perso
    (`server/src/Google.php` ya lo verifica). La app de Play no debe mostrar ni enlazar el pago con tarjeta de Pago Plux.
 3. **Capturas sin marcas reales.** Volver a generar la captura 01 ("Partido de LigaPro") y revisar las demás
    (`ASO_Y_CAPTURAS.md` §3).
-4. **Datos legales.** Completar [RUC], [DIRECCIÓN], [CORREO DE SOPORTE] y [FECHA] en los términos y la privacidad,
-   y crear el correo de soporte (`SOPORTE_CORREO`). Que la privacidad nombre la analítica propia, los registros de
-   errores, la IP para fraude y el ID de Discord (ver 2.6).
+4. **Datos legales.** Completar [DIRECCIÓN] en los términos y la privacidad (lo demás ya está; ver `docs/LEGAL_REVISION.md`),
+   y crear el correo de soporte (`SOPORTE_CORREO`).
 5. **Cuenta de prueba para el revisor** con una compra de sandbox (para que vea mercado y chat).
 6. **Público 16+**: que los términos y la privacidad digan la misma edad que el formulario 2.5.

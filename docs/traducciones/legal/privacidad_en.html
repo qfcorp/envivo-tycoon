@@ -1,10 +1,9 @@
 <!doctype html>
 <!--
-  IMPORTANTE: BORRADOR DE TRADUCCIÓN (en) de la política de privacidad (server/public/privacidad.html).
-  La versión en español es la única oficial y prevalece. Debe revisarla un abogado en Ecuador antes del lanzamiento
-  (Ley Orgánica de Protección de Datos Personales y su reglamento), y conviene que un traductor nativo revise el texto. Reemplazar los marcadores
-  [RUC], [CORREO DE SOPORTE], [DIRECCIÓN] y [FECHA] con los datos reales (los mismos que en la versión en español).
-  Contacto de soporte: solo «Ayuda y soporte» dentro del juego y el correo.
+  IMPORTANTE: TRADUCCIÓN DE CONVENIENCIA (en) de server/public/privacidad.html. La versión en español es la única oficial y prevalece.
+  Debe revisarla un abogado en Ecuador antes del lanzamiento (docs/LEGAL_REVISION.md) y conviene que un traductor nativo revise el texto.
+  Único dato pendiente del dueño: [DIRECCIÓN] (el mismo que en la versión en español).
+  Contacto de soporte: solo «Ayuda y soporte» dentro del juego y el correo soporte@tukanec.com.
 -->
 <html lang="en">
 <head>
@@ -13,7 +12,7 @@
 <meta name="theme-color" content="#0d0f14">
 <title>Privacy policy · EN VIVO Tycoon</title>
 <link rel="icon" href="/icons/favicon-32.png">
-<link rel="stylesheet" href="/pago-assets/estilo.css?v=1">
+<link rel="stylesheet" href="/pago-assets/estilo.css?v=2">
 <link rel="alternate" hreflang="es" href="/privacidad.html">
 </head>
 <body>
@@ -21,56 +20,131 @@
   <div class="marca">EN VIVO <b>Tycoon</b></div>
   <div class="aviso aviso-info" id="aviso-traduccion" role="note"><b>Translation for convenience only.</b> This English text is provided to help you understand the document. The Spanish version is the only official one and prevails in case of any difference or doubt. <b>Draft:</b> it must be reviewed by a lawyer before publication. <a href="/privacidad.html" hreflang="es" lang="es">Read the official Spanish version</a>.</div>
   <h1>Privacy policy</h1>
-  <p class="tenue">Last updated: [FECHA]</p>
+  <p class="tenue">Last updated: 23 October 2026</p>
 
   <h2>1. Data controller</h2>
-  <p>QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES), RUC (Ecuadorian tax ID) [RUC], located at [DIRECCIÓN], Ecuador. Contact: [CORREO DE SOPORTE]
-  or "Help & support" inside the game. We process your data in accordance with Ecuador's <b>Organic Law on Personal Data Protection</b> (Ley Orgánica de Protección de Datos Personales).</p>
+  <p><b>QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES)</b>, RUC (Ecuadorian tax ID) 1793135099001, located at <mark class="falta">[DIRECCIÓN]</mark>, Ecuador.
+  Contact for data matters: the "Help &amp; support" option inside the game or <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a>.
+  We process your data in accordance with Ecuador's <b>Organic Law on Personal Data Protection</b> (Ley Orgánica de Protección de Datos Personales, LOPDP) and its regulations.</p>
 
-  <h2>2. What data we keep</h2>
+  <h2>2. What data we process</h2>
   <ul>
-    <li><b>Your account:</b> email, name and your password (stored encrypted so that nobody, not even us, can read it).</li>
-    <li><b>Your game:</b> the game progress you save in the cloud, your credits, what you have received and your VIP Pass.</li>
-    <li><b>Your purchases:</b> product, amount, date, and the cardholder details you enter when paying (names, ID number, email and mobile number), which
-      we need to issue the electronic invoice (SRI).</li>
-    <li><b>Community:</b> your company's public name, your alliance, chat messages (deleted after 30 days), reports and
-      blocks, and your listings and sales on the market.</li>
-    <li><b>Support:</b> the tickets you send us from "Help &amp; support" and a small technical diagnostic sent by the game (version, language,
-      screen size, game day), without your card details or your password.</li>
-    <li><b>Security:</b> the IP address and browser you connect with, to protect your account and prevent fraud (for example, limiting password attempts).</li>
+    <li><b>Your account:</b> email, name, player number, alias and game server, and your password (stored so that nobody, not even us, can read it).</li>
+    <li><b>Your game:</b> the progress you save in the cloud, your credits, what you have received, your VIP and your Monthly Card.</li>
+    <li><b>Web purchases (Pago Plux):</b> product, amount, date, transaction number and the cardholder details you enter when paying (names, ID card or passport number, email and mobile number), which we need for the electronic invoice (SRI).</li>
+    <li><b>Purchases in the Android app (Google Play):</b> product, date, order number and the purchase receipt that Google gives us to verify it.</li>
+    <li><b>Community:</b> your company's public name, your alliance, chat messages, reports and blocks, and your listings and sales on the market.</li>
+    <li><b>Discord (optional):</b> if you link your account with Discord, we store your Discord user number and username and the roles the bot gave you. We do not receive your Discord password or messages.</li>
+    <li><b>Support:</b> the tickets you send us and a small technical diagnostic (version, language, screen size, game day).</li>
+    <li><b>Statistics and error reports:</b> the game itself records which parts you use (for example, events played or screens opened) and the errors that happen (error message, version, type of browser or device). They are sent only to our server: <b>we do not use analytics or advertising tools from other companies</b>.</li>
+    <li><b>Security:</b> the IP address and browser you connect with, password attempts and a log of important actions (purchases, account changes), to protect your account and prevent fraud.</li>
+    <li><b>Notifications (if you turn them on):</b> the subscription address your browser or phone gives us to send you alerts. It is not your phone number.</li>
   </ul>
+  <p>We do not ask for sensitive data (health, religion, etc.). Please do not write it in the chat or in support tickets.</p>
 
   <h2>3. Your card details: we do NOT store them</h2>
-  <p>Payment is processed by <b>Pago Plux</b>. Your card details (number, expiration date and CVV) are encrypted in your browser and sent encrypted to
-  Pago Plux. <b>We do not see them, do not store them and do not write them into any log.</b> We only receive from Plux the payment result and its
-  transaction number.</p>
+  <p>On the web, payment is processed by <b>Pago Plux</b>: your card details (number, expiry date and CVV) are encrypted in your browser and sent
+  encrypted to Pago Plux. In the Android app, Google Play handles the payment. <b>We do not see, store or log your card details.</b>
+  We only receive the payment result and its transaction number.</p>
 
-  <h2>4. What we use them for</h2>
+  <h2>4. Why we use your data and on what legal basis</h2>
+  <p>We only process your data on one of the legal bases allowed by the LOPDP (art. 7):</p>
   <ul>
-    <li>Giving you access to your account and saving your game.</li>
-    <li>Processing and delivering your purchases, and issuing your invoice.</li>
-    <li>Providing support and answering your messages.</li>
-    <li>Protecting the game against cheating and fraud.</li>
+    <li><b>Providing your account, saving your game, the chat, the market and support:</b> to perform the contract you accept with the terms.</li>
+    <li><b>Processing and delivering your purchases:</b> to perform the contract.</li>
+    <li><b>Issuing your invoice and keeping your purchase data:</b> legal obligation (Ecuador's tax rules).</li>
+    <li><b>Security, fraud prevention and chat moderation:</b> our legitimate interest in protecting players and the game.</li>
+    <li><b>The game's own statistics and error reports:</b> our legitimate interest in fixing problems and improving the game. You can object (section 9).</li>
+    <li><b>Linking Discord and receiving notifications:</b> your consent, which you give when you turn them on and can withdraw at any time.</li>
+    <li><b>Emails:</b> we write to you to recover your password and for notices about your account or purchases (contract). We do not send you advertising by email without your consent.</li>
   </ul>
-  <p>We do not sell your data. We only share it with Pago Plux (for payment), with the SRI (for the invoice) and when a competent authority
-  requests it in accordance with the law.</p>
 
-  <h2>5. Where and for how long</h2>
-  <p>Data is stored on our server. The session cookie lasts 60 days and only serves so that you don't have to type your password every
-  time. Purchase data is kept for as long as Ecuador's tax rules require; everything else, for as long as your account exists.</p>
+  <h2>5. Who we share your data with</h2>
+  <p><b>We do not sell your data or use it for advertising.</b> We only share it with:</p>
+  <ul>
+    <li><b>Pago Plux</b>, to process web payments.</li>
+    <li><b>Google</b>, for purchases in the app (Google Play Billing). In addition, the game loads its fonts from Google Fonts, so Google receives your IP address and browser when they load.</li>
+    <li><b>Discord</b>, only if you link your account.</li>
+    <li><b>OVHcloud</b>, the company that rents us the server where the game runs; it only stores the data on our behalf.</li>
+    <li>The notification service of your browser or phone (for example, Google, Apple, Mozilla or Microsoft), only if you turn on notifications.</li>
+    <li>The provider we use to send emails (for example, password recovery).</li>
+    <li>The <b>SRI</b> (for the invoice) and authorities that request it in accordance with the law.</li>
+  </ul>
 
-  <h2>6. Your rights</h2>
-  <p>You can ask us at any time to <b>access, correct or delete</b> your data, or to <b>delete your account</b>, and you can also object to its use or request its
-  portability. Write to us from your account email to [CORREO DE SOPORTE]. When your account is deleted, your game, your credits and your purchases are lost.
-  We will only keep the billing data that the law requires us to keep.</p>
+  <h2>6. Where data is stored and international transfer</h2>
+  <p>The game runs on an <b>OVHcloud server located outside Ecuador</b> (OVHcloud has no data centres in Ecuador; it has them in Europe,
+  North America and Asia-Pacific). We keep an encrypted backup copy on our own server in Ecuador. Google and Discord process the data they
+  receive on their own servers, mainly in the United States.
+  This is an <b>international data transfer</b> (LOPDP, arts. 55 to 57). We only do it to provide the service, with providers that
+  have data protection contracts, with encrypted connections (HTTPS) and encrypted backups. You can ask us for more information about
+  these safeguards at the support email.</p>
 
-  <h2>7. Minors</h2>
-  <p>If you are a minor, use the game with permission from your parents or guardians. They can ask us to access or delete your data.</p>
+  <h2>7. How long we keep your data</h2>
+  <ul>
+    <li><b>Account, game, market and support:</b> while your account exists. When you delete it, they are deleted or anonymised right away.</li>
+    <li><b>Chat messages:</b> deleted automatically after 30 days (with their reports).</li>
+    <li><b>Session:</b> the session cookie lasts 60 days; expired sessions are deleted every day. Password attempts are deleted after 24 hours.</li>
+    <li><b>Purchases and invoices:</b> 7 years, as required by Ecuador's tax rules, even if you delete your account (only the purchase and invoice data).</li>
+    <li><b>Security log:</b> while your account exists; when you delete it, we remove your IP address from that log.</li>
+    <li><b>Statistics and error reports:</b> at most 90 days with your player number; after that, only totals that do not identify you remain.</li>
+    <li><b>Discord link and notifications:</b> until you turn them off or delete your account.</li>
+    <li><b>Backups:</b> they rotate automatically; deleted data disappears from them within 6 months at most.</li>
+  </ul>
 
-  <h2>8. Changes</h2>
-  <p>If we change this policy, we will let you know in the game.</p>
+  <h2>8. Your rights</h2>
+  <p>You have the right to:</p>
+  <ul>
+    <li><b>Access:</b> know what data of yours we hold and ask for a copy.</li>
+    <li><b>Rectification:</b> correct wrong or incomplete data.</li>
+    <li><b>Erasure:</b> ask us to delete your data or your account.</li>
+    <li><b>Objection:</b> ask us not to use your data for something, for example statistics.</li>
+    <li><b>Portability:</b> receive your data in a common file format (JSON).</li>
+    <li><b>Suspension of processing</b> and <b>not to be subject to solely automated decisions</b> (see section 10).</li>
+    <li><b>Withdraw your consent</b> at any time (Discord, notifications), without affecting what was done before.</li>
+  </ul>
 
-  <p class="pie"><a href="/">← Back to the game</a> · <a href="/terminos_en.html">Terms and conditions</a></p>
+  <h2>9. How to exercise your rights and file complaints</h2>
+  <p>Write to us from "Help &amp; support" or at <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a>, preferably from your account's
+  email. It is free. We <b>answer within 15 days at most</b>. We may ask you to confirm that you own the account.
+  To <b>delete your account</b>, do it yourself in the game (<b>Account → Delete my account</b>) or request it without opening the game: see
+  <a href="/borrar-cuenta_en.html">how to delete your account</a>.
+  If we do not answer within 15 days or you are not satisfied, you can file a complaint with Ecuador's <b>Superintendency of Personal Data Protection</b>
+  (Superintendencia de Protección de Datos Personales, <a href="https://servicios.spdp.gob.ec/denuncia">servicios.spdp.gob.ec/denuncia</a>). If you live in Colombia, you can also go to the
+  Superintendency of Industry and Commerce (SIC); if you live in Peru, to the National Authority for Personal Data Protection.</p>
+
+  <h2>10. Automated decisions</h2>
+  <p>Some protections are automatic: the chat filter blocks certain words, and if there is a chargeback or several refunds of purchases that were
+  received, the account is suspended or blocked automatically. We always show you the reason and you can ask for <b>a person from our team to review
+  the decision</b>.</p>
+
+  <h2>11. Security and breach notices</h2>
+  <p>We use encrypted connections (HTTPS), passwords stored with one-way encryption, session codes that are not stored in plain text, restricted
+  access to the administration panel and encrypted backups. If a data breach or leak occurs, we will notify the
+  Superintendency of Personal Data Protection within 5 days at most and, if there is a risk to you, we will notify you within 3 days at most,
+  explaining what happened and what you can do (LOPDP, arts. 43 and 46).</p>
+
+  <h2>12. Minors</h2>
+  <p>The game is for people <b>aged 16 or older</b>. If you are 16 or 17, you can consent to the use of your data yourself (the LOPDP allows this from
+  age 15, art. 21), but you need permission from your parents or guardians to make purchases. If we learn that an account belongs to someone under 16,
+  we will delete it. Parents or guardians can write to us to access or delete their child's data.</p>
+
+  <h2>13. Cookies and storage on your device</h2>
+  <p>We use <b>a single cookie</b>, the session cookie: it lasts 60 days, only serves so that you do not have to type your password every time, and cannot be read from
+  other websites. The game also stores on your device (the browser's local storage) your game, your language, sound settings and whether you have seen the guide.
+  <b>We do not use advertising or tracking cookies.</b> If you clear your browser data, any game progress not saved in the cloud is lost.</p>
+
+  <h2>14. Notifications</h2>
+  <p>We only send you notifications if <b>you turn them on</b> (your browser or phone will ask for permission). They are for game alerts, such as events or
+  the end of your VIP. You can turn them off at any time in the game or in your browser or phone settings.</p>
+
+  <h2>15. Chat and moderation</h2>
+  <p>Chat messages can be read by the other players in the channel. If someone reports a message, our team reviews it together with its context.
+  Only you can see your list of blocked players. Messages are deleted after 30 days.</p>
+
+  <h2>16. Changes to this policy</h2>
+  <p>If we change this policy, we will let you know in the game. If the change requires your consent, we will ask for it again.</p>
+
+  <p class="pie"><a href="/">← Back to the game</a> · <a href="/terminos_en.html">Terms and conditions</a> · <a href="/borrar-cuenta_en.html">Delete your account</a></p>
 </main>
 </body>
 </html>

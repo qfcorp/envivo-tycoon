@@ -1,7 +1,8 @@
 <!doctype html>
 <!--
-  Página pública para borrar la cuenta (la pide Google Play: "enlace para eliminar la cuenta"). Revisar con un abogado
-  junto con terminos.html y privacidad.html. Marcadores pendientes para el dueño: [CORREO DE SOPORTE].
+  Página pública para borrar la cuenta (Google Play: "enlace para eliminar la cuenta"). Versión OFICIAL en español (las traducciones están en docs/traducciones/legal/).
+  BORRADOR para revisión de un abogado en Ecuador antes del lanzamiento: ver docs/LEGAL_REVISION.md.
+  Único dato pendiente del dueño: [DIRECCIÓN] (marcado con <mark class="falta">).
 -->
 <html lang="es">
 <head>
@@ -16,26 +17,53 @@
 <main class="caja">
   <div class="marca">EN VIVO <b>Tycoon</b></div>
   <h1>Borrar tu cuenta</h1>
-  <p>Puedes borrar tu cuenta de EN VIVO Tycoon cuando quieras. Así se hace:</p>
+  <p class="tenue">Última actualización: 23 de octubre de 2026</p>
+  <p>Puedes borrar tu cuenta de EN VIVO Tycoon cuando quieras, desde el juego o <b>sin entrar al juego</b>, por correo. Es gratis.</p>
+
+  <h2>Opción 1: desde el juego (al instante)</h2>
   <ol>
     <li>Abre el juego (en <b>juego.tukanec.com</b> o en la app de Android) y entra a tu cuenta.</li>
     <li>Ve a <b>Cuenta → Borrar mi cuenta</b>.</li>
-    <li>Escribe tu clave y la palabra <b>BORRAR</b> para confirmar.</li>
+    <li>Escribe tu clave y la palabra <b>BORRAR</b> para confirmar. La cuenta se borra en ese momento.</li>
   </ol>
-  <p>Si ya no puedes entrar a tu cuenta, escríbenos desde la opción <b>«Ayuda y soporte»</b> del juego o al correo
-    <mark class="falta">[CORREO DE SOPORTE]</mark> desde el correo con el que te registraste, y la borramos por ti.</p>
+
+  <h2>Opción 2: sin la app, por correo</h2>
+  <p>Si no tienes la app, no puedes entrar o ya no recuerdas tu clave:</p>
+  <ol>
+    <li>Escribe a <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a> <b>desde el correo con el que creaste tu cuenta</b>, con el asunto «Borrar mi cuenta».</li>
+    <li>Dinos el correo de la cuenta y, si lo recuerdas, el nombre de tu productora.</li>
+    <li>Para proteger tu cuenta, podemos enviarte un código o una pregunta a ese correo para confirmar que eres el dueño.</li>
+    <li>Borramos la cuenta y te confirmamos por correo en un máximo de <b>15 días</b> (normalmente mucho antes).</li>
+  </ol>
+  <p><a class="boton" href="mailto:soporte@tukanec.com?subject=Borrar%20mi%20cuenta%20de%20EN%20VIVO%20Tycoon&body=Hola.%20Quiero%20borrar%20mi%20cuenta%20de%20EN%20VIVO%20Tycoon.%0ACorreo%20de%20la%20cuenta%3A%20%0ANombre%20de%20mi%20productora%20%28si%20lo%20recuerdo%29%3A%20%0AEntiendo%20que%20se%20pierden%20mi%20partida%2C%20mis%20cr%C3%A9ditos%20y%20lo%20comprado.">Escribir el correo para borrar mi cuenta</a></p>
+  <p>Si ya no tienes acceso a ese correo, escríbenos desde otro y te pediremos otros datos para confirmar que la cuenta es tuya (por ejemplo,
+  el número de una compra). También puedes pedirlo desde la opción <b>«Ayuda y soporte»</b> del juego.</p>
 
   <h2>Qué se borra</h2>
   <ul>
-    <li>Tu correo, tu nombre, el nombre de tu productora y tu clave.</li>
+    <li>Tu correo, tu nombre, el nombre de tu productora, tu alias y tu clave.</li>
     <li>Tu partida guardada en la nube, tus créditos, tu VIP y tu Tarjeta mensual, tus equipos y lo que tenías a la venta en el mercado.</li>
-    <li>Tus mensajes del chat, tus casos de soporte y tu lugar en tu asociación.</li>
+    <li>Tus mensajes del chat, tus bloqueos y reportes, tus casos de soporte y tu lugar en tu asociación.</li>
+    <li>El vínculo con tu cuenta de Discord, si lo tenías.</li>
   </ul>
-  <h2>Qué se guarda</h2>
-  <p>Los datos de tus <b>compras</b> (fecha, producto, valor y los datos de facturación) se guardan el tiempo que exigen las
-    normas tributarias del Ecuador (SRI), sin relación con tu correo ni tu partida. Nunca guardamos los datos de tu tarjeta.</p>
-  <p class="tenue">Borrar la cuenta no se puede deshacer y lo comprado no se devuelve.</p>
-  <p class="pie"><a href="/">← Volver al juego</a> · <a href="/privacidad.html">Política de privacidad</a> · <a href="/terminos.html">Términos</a></p>
+
+  <h2>Qué se guarda y por cuánto tiempo</h2>
+  <ul>
+    <li>Los datos de tus <b>compras</b> (fecha, producto, valor y los datos de facturación) se guardan <b>7 años</b>, como exigen las normas tributarias del Ecuador (SRI).</li>
+    <li>Un registro de seguridad de que la cuenta fue borrada, sin tu dirección IP.</li>
+    <li>Las copias de seguridad cifradas se renuevan solas: lo borrado desaparece de ellas en un máximo de 6 meses.</li>
+  </ul>
+  <p>Nunca guardamos los datos de tu tarjeta.</p>
+
+  <h2>Antes de borrar</h2>
+  <ul>
+    <li>Borrar la cuenta <b>no se puede deshacer</b> y lo que compraste se pierde.</li>
+    <li>Si quieres la devolución de una compra que no usaste, pídela <b>antes</b> de borrar la cuenta (ver los <a href="/terminos.html">términos</a>, sección 12).</li>
+    <li>La partida guardada solo en tu equipo (sin cuenta) se borra borrando los datos del navegador o desinstalando la app.</li>
+  </ul>
+  <p>Más información en la <a href="/privacidad.html">política de privacidad</a>.</p>
+
+  <p class="pie"><a href="/">← Volver al juego</a> · <a href="/terminos.html">Términos y condiciones</a> · <a href="/privacidad.html">Política de privacidad</a></p>
 </main>
 </body>
 </html>

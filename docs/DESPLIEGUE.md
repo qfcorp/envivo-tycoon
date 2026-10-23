@@ -329,7 +329,7 @@ En la columna **Paths** deben aparecer `/etc/envivo` y `/var/backups/envivo`. Si
 | https://juego.tukanec.com | El juego carga. Arriba, candado (HTTPS). |
 | https://juego.tukanec.com/control/ | La entrada pide usuario, clave **y código de 6 dígitos**. |
 | https://juego.tukanec.com/admin.php | Te lleva solo a `/control/`. |
-| https://juego.tukanec.com/terminos.html | Los términos (todavía con `[RUC]` y `[CORREO DE SOPORTE]`: normal hasta completarlos). |
+| https://juego.tukanec.com/terminos.html | Los términos (todavía con `[DIRECCIÓN]` en amarillo: normal hasta completarla). |
 | En el juego: **Tienda** → **Crear cuenta** → comprar **700 créditos** con una **tarjeta de pruebas de Plux** | La compra sale aprobada, los créditos llegan, y la tienda avisa que está en **modo de pruebas**. En `/control/` → **Compras** aparece la venta. |
 | En el juego: pestaña **En línea** (ya con cuenta) | Salen Liga Semanal, Mega Festival, Duelo de Productoras, Desafío del Día y Copa de Servidores. La Liga pide unirse a una asociación (antes de las productoras de muestra no hay ninguna). |
 
@@ -418,9 +418,9 @@ sudo bash /var/www/envivo/server/deploy/ops/instalar_ops.sh
 1. **Correo de soporte** (solo correo, nunca WhatsApp): créalo (por ejemplo `soporte@tukanec.com`; Cloudflare →
    **Email Routing** lo reenvía gratis a tu Gmail). Ponlo en el VPS en `SOPORTE_CORREO=` y
    `SOPORTE_HORARIO=Lunes a viernes 9:00-18:00`, y recarga PHP. El juego lo muestra en **Ayuda y soporte**.
-2. **Páginas legales** (`terminos.html`, `privacidad.html`, `borrar-cuenta.html`): mándame el **RUC**, el **correo de
-   soporte**, la **dirección** y la **fecha**, y las completo en GitHub (no las edites en el VPS). Después, que un
-   abogado las revise, junto con la lista de nombres parodia de marcas y torneos.
+2. **Páginas legales** (`terminos.html`, `privacidad.html`, `borrar-cuenta.html`): el RUC, el correo de soporte y la
+   fecha ya están; solo falta la **dirección** (mándamela y la completo en GitHub; no las edites en el VPS). Después, que un
+   abogado las revise con la lista de `docs/LEGAL_REVISION.md`, junto con los nombres parodia de marcas y torneos.
 3. **Pago Plux en producción:** la integración es la misma de TuPass (ya certificada). Con las claves de producción
    puestas (paso 4) y `PLUX_AMBIENTE=produccion`, haz una compra real pequeña: la **Oferta de bienvenida ($0,99)**.
    Si Plux te pide la dirección del aviso de pago (webhook): `https://juego.tukanec.com/api/plux/webhook`, con el
