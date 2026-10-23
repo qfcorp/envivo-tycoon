@@ -109,7 +109,7 @@ de la distancia a 1000. Ligas: Bronce < 1100 ≤ Plata < 1250 ≤ Oro < 1400 ≤
 duelos): 1º $5.000 + 5 fama, 2º $3.000 + 4, 3º $2.000 + 3, 4º–10º $1.000 + 2.
 
 **Lo que es igual para los dos lados:** semilla (`random_int`), contrato (tablero del día del servidor), contexto
-(fama 30, $1.000, 1 cable, 1 batería), ánimo 80, kit básico de duelo (4 cámaras profesionales, laptop con vMix, consola de
+(fama 30, $1.000, 1 cable, 1 batería), ánimo 80, kit básico de duelo (4 cámaras profesionales, laptop con vMax, consola de
 8 canales, micrófonos, encoder, router 4G, UPS, cobertores; estado 85 %) y la cantidad de cámaras (la del contrato:
 primero las exclusivas, después las del kit). Lo que cambia: el personal registrado y los equipos del inventario del servidor.
 

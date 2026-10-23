@@ -66,7 +66,7 @@ $esperar("http://127.0.0.1:$P_APP/api/duelos");
 $esperar("http://127.0.0.1:$P_VAL/salud", ["X-Validador-Clave: $CLAVE_VAL"]);
 
 require $RAIZ . '/server/src/arranque.php';
-use EnVivo\{Db, Desafio, Duelos, Fallo, Inventario, Monedero, Repeticion};
+use EnVivo\{Db, Desafio, Duelos, Fallo, Festival, Inventario, Monedero, Repeticion};
 Db::pdo();
 
 $ok = 0; $fallas = 0;
@@ -161,7 +161,7 @@ $r = $A->post('/api/duelos/equipo', ['personal' => $equipoBasico, 'inventario' =
 check('Equipo repetido -> 400', 400, $A->http);
 $persA = array_merge($equipoBasico, [['rol' => 'cam', 'habilidad' => 4, 'nivel' => 'senior']]);
 $r = $A->post('/api/duelos/equipo', ['personal' => $persA, 'inventario' => [$dronA['id']]]);
-check('Equipo válido (estrella senior + Dron 4K) -> 200 con resumen', [200, 9, 'Dron 4K'], [$A->http, count($r['equipo']['personal'] ?? []), $r['equipo']['resumen']['camaras'][0] ?? null]);
+check('Equipo válido (estrella senior + Dron 4K) -> 200 con resumen', [200, 9, Duelos::EQUIPOS['dron4k'][2]], [$A->http, count($r['equipo']['personal'] ?? []), $r['equipo']['resumen']['camaras'][0] ?? null]);
 check('…las claves viejas de rol (cam) se guardan con la clave nueva (camarografo)', 'camarografo', $r['equipo']['personal'][8]['rol'] ?? null);
 si('…el poder sube con el dron', ($r['equipo']['poder'] ?? 0) > 0);
 $B->post('/api/duelos/equipo', ['personal' => $equipoBasico, 'inventario' => [$gruaB['id']]]);
@@ -489,9 +489,15 @@ check('…solo una vez', 3, (int) Db::valor("SELECT COUNT(*) FROM desafio_premio
 $nav1 = ['A' => $A, 'B' => $B, 'F' => $F][array_search($top[0]['jugador_id'], ['A' => $JA, 'B' => $JB, 'F' => $JF], true)];
 check('…y lo ve en "ayer" del resumen', 1, $nav1->get('/api/desafio')['ayer']['puesto'] ?? null);
 check('Es un día nuevo: el desafío de hoy se puede jugar otra vez', 0, $A->get('/api/desafio')['intentos']['usados']);
-check('Libro de Pases de Prensa cuadrado (suma = saldo)', Desafio::pases($JA), (int) Db::valor('SELECT COALESCE(SUM(cambio),0) FROM pases_prensa_libro WHERE jugador_id = ?', [$JA]));
+check('Pases de Prensa: un solo saldo con el Festival (libro festival_pases, suma = saldo)', [Desafio::pases($JA), Desafio::pases($JA)], [Festival::pases($JA), (int) Db::valor('SELECT COALESCE(SUM(cambio),0) FROM festival_pases WHERE jugador_id = ?', [$JA])]);
 try { Desafio::gastarPases($JD, 1, 'festival'); $cod = 0; } catch (Fallo $e) { $cod = $e->getCode(); }
 check('Gastar pases sin tener -> 402', 402, $cod);
+$antesJD = Festival::pases($JD);
+Desafio::sumarPases($JD, 2, 'desafio', 'prueba:unificar');
+Desafio::sumarPases($JD, 2, 'desafio', 'prueba:unificar');
+check('Pases del Desafío los ve el Festival (misma ref no suma dos veces)', [$antesJD + 2, $antesJD + 2], [Festival::pases($JD), Desafio::pases($JD)]);
+Desafio::gastarPases($JD, 1, 'festival', 'prueba:gastar');
+check('…y gastarlos baja el mismo saldo (motivo gasto en festival_pases)', [$antesJD + 1, 'gasto'], [Festival::pases($JD), Db::valor("SELECT motivo FROM festival_pases WHERE ref = 'prueba:gastar'")]);
 // Día con menos de 3 participantes: sin premios de ranking
 Db::q("INSERT INTO desafio_dias (dia, modificador, semilla_base, contrato_json, creado) VALUES ('2026-01-05', 'lluvia', 7, ?, ?)", [json_encode(Desafio::MODIFICADORES[1]['contrato'] + ['client' => 'X']), time()]);
 Db::q("INSERT INTO desafio_intentos (dia, servidor_id, jugador_id, numero, seleccion_json, variante, semilla, intento_json, incidentes_json, estado, calidad, estrellas, creado, vence, terminado)

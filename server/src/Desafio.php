@@ -15,8 +15,8 @@ namespace EnVivo;
  * - 1 intento por día (+1 con VIP). Si no terminas en MINUTOS minutos, el intento se pierde.
  * - Premios: al terminar (una vez por día, según tus estrellas) repuestos, dinero del juego y Pases de Prensa; al cerrar el
  *   día, el top 10 de cada servidor (con al menos MIN_PARTICIPANTES jugadores) recibe más. Nada de esto se vende en el mercado.
- * - Pases de Prensa: saldo del servidor (tabla pases_prensa, con libro). Los usa el Mega Festival: Desafio::pases(),
- *   Desafio::sumarPases() y Desafio::gastarPases().
+ * - Pases de Prensa: UN solo saldo con el Mega Festival (libro festival_pases, Festival::moverPases). Desafio::pases(),
+ *   Desafio::sumarPases() y Desafio::gastarPases() escriben ahí.
  */
 final class Desafio
 {
@@ -87,11 +87,11 @@ final class Desafio
         'e12' => ['mics', 90, 1], 'e13' => ['encoder', 90, 1], 'e14' => ['router4g', 90, 1], 'e15' => ['ups', 90, 1], 'e16' => ['raincover', 90, 1],
     ];
     public const ITEMS = [
-        'cam_cine' => ['cam', 'Cámara broadcast 4K'], 'cam_pro' => ['cam', 'Cámara profesional'], 'cam_basic' => ['cam', 'Cámara básica'],
-        'switch_pro' => ['switcher', 'Switcher ATEM + PC potente'], 'switch_basic' => ['switcher', 'Laptop con vMix'],
-        'audio_pro' => ['audio', 'Consola digital 18 canales'], 'audio_basic' => ['audio', 'Consola de audio 8 canales'],
-        'mics' => ['mics', 'Micrófonos inalámbricos'], 'encoder' => ['encoder', 'Encoder SRT portátil'], 'router4g' => ['internet', 'Router 4G de respaldo'],
-        'ups' => ['power', 'UPS / batería de respaldo'], 'raincover' => ['rain', 'Cobertores de lluvia'],
+        'cam_cine' => ['cam', 'Kanon XF615'], 'cam_pro' => ['cam', 'Kanon XA65'], 'cam_basic' => ['cam', 'Zony Handicam FDX-AX44'],
+        'switch_pro' => ['switcher', 'Blackmagia ATOM 2 M/E Constelación 4K + panel'], 'switch_basic' => ['switcher', 'Laptop con vMax Básico HD'],
+        'audio_pro' => ['audio', 'Mydas MR19 (digital 18 canales)'], 'audio_basic' => ['audio', 'Yamaka MG10XV'],
+        'mics' => ['mics', 'Inalámbrico de mano doble Behringa ULM'], 'encoder' => ['encoder', 'Blackmagia Web Presentador 4K'], 'router4g' => ['internet', 'Hotspot 5G NetGir M7'],
+        'ups' => ['power', 'APZ Smart-UPS 1500 VA'], 'raincover' => ['rain', 'Cobertor de lluvia básico'],
     ];
 
     /** Premio por terminar (una vez por día) según estrellas: [cables, baterías, dinero, pases]. */
@@ -378,18 +378,21 @@ final class Desafio
     }
 
     // ------------------------------------------------------------------ Pases de Prensa
-    public static function pases(int $j): int { self::preparar(); return (int) (Db::valor('SELECT saldo FROM pases_prensa WHERE jugador_id = ?', [$j]) ?? 0); }
+    // UN SOLO saldo de Pases de Prensa para todo el juego: el libro festival_pases del Mega Festival (Festival::moverPases:
+    // idempotente por ref y con el tope Festival::PASES_TOPE; lo que pase del tope no se suma). Las tablas viejas
+    // pases_prensa / pases_prensa_libro ya no se usan (Db las pasó a festival_pases).
+    public const MOTIVOS_PASES = ['diario', 'vip', 'mision', 'compra', 'intento', 'ajuste', 'desafio', 'desafio_top', 'gasto'];
 
+    public static function pases(int $j): int { Festival::preparar(); return Festival::pases($j); }
+
+    /** Suma ($n > 0) o resta pases. Devuelve el saldo. Sin pases suficientes: 402 sin_pases. La misma ref no cuenta dos veces. */
     public static function sumarPases(int $j, int $n, string $motivo, ?string $ref = null): int
     {
-        self::preparar();
-        return Db::tx(function () use ($j, $n, $motivo, $ref): int {
-            $saldo = self::pases($j) + $n;
-            Fallo::si($saldo < 0, 'No tienes Pases de Prensa suficientes.', 402, ['codigo' => 'sin_pases']);
-            Db::q('INSERT INTO pases_prensa (jugador_id, saldo, actualizado) VALUES (?, ?, ?) ON CONFLICT (jugador_id) DO UPDATE SET saldo = excluded.saldo, actualizado = excluded.actualizado', [$j, $saldo, time()]);
-            Db::q('INSERT INTO pases_prensa_libro (jugador_id, cambio, saldo, motivo, ref, creado) VALUES (?, ?, ?, ?, ?, ?)', [$j, $n, $saldo, $motivo, $ref, time()]);
-            return $saldo;
-        });
+        Festival::preparar();
+        $m = in_array($motivo, self::MOTIVOS_PASES, true) ? $motivo : ($n < 0 ? 'gasto' : 'ajuste');
+        $ref = mb_substr(($ref ?? ($motivo . ':' . bin2hex(random_bytes(8)))), 0, 200);
+        Festival::moverPases($j, $n, $m, $ref);
+        return Festival::pases($j);
     }
 
     public static function gastarPases(int $j, int $n, string $motivo, ?string $ref = null): int

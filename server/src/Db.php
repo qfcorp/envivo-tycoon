@@ -474,8 +474,38 @@ final class Db
         self::tx(function () use ($pdo, $archivos, $huella): void {
             if ((string) $pdo->query("SELECT valor FROM esquema_modulos WHERE clave = 'huella'")->fetchColumn() === $huella) return;   // otra petición ya lo hizo
             foreach ($archivos as $f) Migraciones::aplicar(basename($f));
+            self::unificarPases($pdo);
             self::q("INSERT INTO esquema_modulos (clave, valor, actualizado) VALUES ('huella', ?, ?) ON CONFLICT (clave) DO UPDATE SET valor = excluded.valor, actualizado = excluded.actualizado", [$huella, time()]);
         });
+    }
+
+    /**
+     * Pases de Prensa = UN solo saldo (festival_pases). Para bases hechas antes de unificarlos: (1) si festival_pases tiene
+     * la lista vieja de motivos, se rehace con la nueva (desafio, desafio_top, gasto); (2) lo que haya en el libro viejo del
+     * Desafío (pases_prensa_libro) pasa a festival_pases con ref "pases_prensa:<id>" (una sola vez, INSERT OR IGNORE).
+     */
+    private static function unificarPases(PDO $pdo): void
+    {
+        $sql = (string) $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'festival_pases'")->fetchColumn();
+        if ($sql === '') return;
+        if (!str_contains($sql, "'desafio_top'")) {
+            $nuevo = str_replace("'intento', 'ajuste')", "'intento', 'ajuste', 'desafio', 'desafio_top', 'gasto')", $sql);
+            if ($nuevo === $sql) throw new \RuntimeException('festival_pases: no se pudo ampliar la lista de motivos');
+            $pdo->exec('ALTER TABLE festival_pases RENAME TO festival_pases_viejo');
+            $pdo->exec($nuevo);
+            $pdo->exec('INSERT INTO festival_pases SELECT * FROM festival_pases_viejo');
+            $pdo->exec('DROP TABLE festival_pases_viejo');
+            $pdo->exec('CREATE INDEX IF NOT EXISTS festival_pases_dia ON festival_pases (jugador_id, dia, motivo)');
+        }
+        if (!$pdo->query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'pases_prensa_libro'")->fetchColumn()) return;
+        $motivos = ['diario', 'vip', 'mision', 'compra', 'intento', 'ajuste', 'desafio', 'desafio_top', 'gasto'];
+        foreach (self::todas("SELECT * FROM pases_prensa_libro WHERE 'pases_prensa:' || id NOT IN (SELECT ref FROM festival_pases WHERE ref LIKE 'pases_prensa:%') ORDER BY id") as $f) {
+            $j = (int) $f['jugador_id'];
+            $saldo = (int) self::valor('SELECT COALESCE(SUM(cambio), 0) FROM festival_pases WHERE jugador_id = ?', [$j]) + (int) $f['cambio'];
+            $m = in_array($f['motivo'], $motivos, true) ? $f['motivo'] : ((int) $f['cambio'] < 0 ? 'gasto' : 'ajuste');
+            self::q('INSERT OR IGNORE INTO festival_pases (jugador_id, cambio, saldo, motivo, ref, dia, creado) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [$j, (int) $f['cambio'], max(0, $saldo), $m, 'pases_prensa:' . $f['id'], date('Y-m-d', (int) $f['creado']), (int) $f['creado']]);
+        }
     }
 
     private static function migrarVersiones(PDO $pdo): int

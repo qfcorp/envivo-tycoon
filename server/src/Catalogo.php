@@ -55,17 +55,17 @@ final class Catalogo
     ];
 
     public const PREMIUM = [
-        'generador'      => ['nombre' => 'Generador diésel', 'detalle' => 'La luz nunca te deja sin señal', 'creditos' => 250, 'entrega' => ['tipo' => 'item', 'item' => 'generador', 'cantidad' => 1]],
+        'generador'      => ['nombre' => 'Kummins 22 kVA diésel insonorizado', 'detalle' => 'Generador silencioso para estadios y conciertos: si se va la luz, tú sigues al aire.', 'creditos' => 250, 'entrega' => ['tipo' => 'item', 'item' => 'generador', 'cantidad' => 1]],
         'kit_reparacion' => ['nombre' => 'Kit de reparación total', 'detalle' => 'Todo tu equipo al 100 %', 'creditos' => 60, 'entrega' => ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]],
         'caja_chica'     => ['nombre' => 'Caja chica', 'detalle' => '$1.000 para tu productora', 'creditos' => 120, 'entrega' => ['tipo' => 'dinero', 'item' => '-', 'cantidad' => 1000]],
         'estrella'       => ['nombre' => 'Camarógrafo estrella', 'detalle' => 'Nivel 4, gratis y sin pago inicial', 'creditos' => 300, 'entrega' => ['tipo' => 'personal', 'item' => 'cam', 'cantidad' => 4]],
-        'dron4k'         => ['nombre' => 'Dron 4K', 'detalle' => 'Cuenta como cámara de calidad 4', 'creditos' => 450, 'entrega' => ['tipo' => 'item', 'item' => 'dron4k', 'cantidad' => 1]],
-        'grua'           => ['nombre' => 'Cámara en grúa telescópica', 'detalle' => 'Cámara de calidad 4', 'creditos' => 650, 'entrega' => ['tipo' => 'item', 'item' => 'grua', 'cantidad' => 1]],
-        'unidad_movil'   => ['nombre' => 'Unidad móvil de transmisión', 'detalle' => 'Switcher de calidad 3', 'creditos' => 900, 'entrega' => ['tipo' => 'item', 'item' => 'unidad_movil', 'cantidad' => 1]],
+        'dron4k'         => ['nombre' => 'DGI Inspira 3X Cine (dron) Exclusivo', 'detalle' => 'Dron de cine con cámara 4K de lentes cambiables. Tomas aéreas de calidad 5. Necesita piloto de dron.', 'creditos' => 450, 'entrega' => ['tipo' => 'item', 'item' => 'dron4k', 'cantidad' => 1]],
+        'grua'           => ['nombre' => 'Grúa telescópica de 12 m con cabeza remota', 'detalle' => 'Barridos de cine sobre el público. Cámara de calidad 4 para las posiciones de grúa o jib.', 'creditos' => 650, 'entrega' => ['tipo' => 'item', 'item' => 'grua', 'cantidad' => 1]],
+        'unidad_movil'   => ['nombre' => 'Sprinto OB equipada (4 a 6 cámaras)', 'detalle' => 'Unidad móvil con switcher, audio e intercom adentro. Cuenta como switcher de calidad 4.', 'creditos' => 900, 'entrega' => ['tipo' => 'item', 'item' => 'unidad_movil', 'cantidad' => 1]],
         // Equipos VIP: se canjean solo con VIP activo; siguen siendo del jugador cuando el VIP vence (el juego los guarda)
-        'vip_cam8k'      => ['nombre' => 'Cámara de cine 8K Edición VIP', 'detalle' => 'Cámara de calidad 5 (funciona con VIP activo)', 'creditos' => 800, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_cam8k', 'cantidad' => 1]],
-        'vip_switcher'   => ['nombre' => 'Switcher de estudio VIP', 'detalle' => 'Switcher de calidad 4 (funciona con VIP activo)', 'creditos' => 1000, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_switcher', 'cantidad' => 1]],
-        'vip_satelital'  => ['nombre' => 'Enlace satelital VIP', 'detalle' => 'Internet que nunca se cae, calidad 3 (funciona con VIP activo)', 'creditos' => 700, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_satelital', 'cantidad' => 1]],
+        'vip_cam8k'      => ['nombre' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'detalle' => 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.', 'creditos' => 800, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_cam8k', 'cantidad' => 1]],
+        'vip_switcher'   => ['nombre' => 'Rosco Carbonita Ultra Edición VIP', 'detalle' => 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.', 'creditos' => 1000, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_switcher', 'cantidad' => 1]],
+        'vip_satelital'  => ['nombre' => 'Enlace satelital portátil (flyaway) Edición VIP', 'detalle' => 'Tu transmisión sale por satélite: el internet nunca te deja mal.', 'creditos' => 700, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_satelital', 'cantidad' => 1]],
         // Refuerzos (ayudas por tiempo limitado). Los aplica el juego (entrega tipo "refuerzo").
         'refuerzo_camarografo_senior' => ['tipo' => 'refuerzo', 'nombre' => 'Camarógrafo senior de refuerzo', 'detalle' => 'Un camarógrafo con experiencia te acompaña en tus próximos 2 eventos', 'creditos' => 120, 'entrega' => ['tipo' => 'refuerzo', 'item' => 'refuerzo_camarografo_senior', 'cantidad' => 1, 'nivel' => 'senior', 'eventos' => 2]],
         'refuerzo_tecnico_internacional' => ['tipo' => 'refuerzo', 'nombre' => 'Técnico de streaming internacional', 'detalle' => 'Un técnico de nivel internacional cuida tu señal en tus próximos 3 eventos', 'creditos' => 240, 'entrega' => ['tipo' => 'refuerzo', 'item' => 'refuerzo_tecnico_internacional', 'cantidad' => 1, 'nivel' => 'internacional', 'eventos' => 3]],
@@ -76,9 +76,9 @@ final class Catalogo
 
     /** Nombre de cada equipo que vive en el inventario del servidor (para el mercado y el panel). */
     public const EQUIPOS = [
-        'cam_pro' => 'Cámara profesional', 'generador' => 'Generador diésel', 'dron4k' => 'Dron 4K', 'grua' => 'Cámara en grúa telescópica',
-        'unidad_movil' => 'Unidad móvil de transmisión', 'vip_cam8k' => 'Cámara de cine 8K Edición VIP', 'vip_switcher' => 'Switcher de estudio VIP',
-        'vip_satelital' => 'Enlace satelital VIP',
+        'cam_pro' => 'Kanon XA65', 'generador' => 'Kummins 22 kVA diésel insonorizado', 'dron4k' => 'DGI Inspira 3X Cine (dron) Exclusivo', 'grua' => 'Grúa telescópica de 12 m con cabeza remota',
+        'unidad_movil' => 'Sprinto OB equipada (4 a 6 cámaras)', 'vip_cam8k' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'vip_switcher' => 'Rosco Carbonita Ultra Edición VIP',
+        'vip_satelital' => 'Enlace satelital portátil (flyaway) Edición VIP',
     ];
 
     /** Comisión del mercado: el vendedor recibe floor(precio * (1 - COMISION)); el resto desaparece. */
@@ -154,7 +154,86 @@ final class Catalogo
         return $p;
     }
 
-    public static function premium(string $id): ?array { return self::PREMIUM[$id] ?? null; }
+    /**
+     * Exclusivo con créditos con los cambios del Centro de Control (productos_ajustes: "creditos" = lo que cuesta y
+     * "activo"; el precio no aplica). Agrega creditos_base y activo. null si no existe.
+     */
+    public static function premium(string $id): ?array
+    {
+        $p = self::PREMIUM[$id] ?? null;
+        if ($p === null) return null;
+        $p['id'] = $id;
+        $p['creditos_base'] = $p['creditos'];
+        $p['activo'] = true;
+        $a = self::ajustes()[$id] ?? null;
+        if ($a) {
+            if ($a['creditos'] !== null) $p['creditos'] = (int) $a['creditos'];
+            if ($a['activo'] !== null) $p['activo'] = (bool) (int) $a['activo'];
+        }
+        return $p;
+    }
+
+    // ------------------------------------------------------------------ escrituras del Centro de Control (auditan)
+    /**
+     * Guarda en productos_ajustes los cambios de un producto con dinero real (precio con IVA, créditos que da, activo) o
+     * de un exclusivo con créditos (créditos que cuesta y activo; $precio se ignora). Audita y limpia la caché.
+     */
+    public static function guardarAjuste(string $producto, float $precio, int $creditos, bool $activo, string $quien): void
+    {
+        $real = isset(self::PRODUCTOS[$producto]);
+        Fallo::si(!$real && !isset(self::PREMIUM[$producto]), 'Ese producto no existe.', 404, ['codigo' => 'producto_no_existe']);
+        if ($real) Fallo::si($precio < 0.5 || $precio > 100 || round($precio, 2) != $precio, 'El precio debe ser de $0,50 a $100 (con IVA incluido), ej. 4.99', 400, ['codigo' => 'precio_invalido']);
+        Fallo::si($real ? ($creditos < 0 || $creditos > 1000000) : ($creditos < 1 || $creditos > 100000),
+            $real ? 'Los créditos deben ser un número entero de 0 a 1.000.000.' : 'El costo debe ser de 1 a 100.000 créditos.', 400, ['codigo' => 'creditos_invalidos']);
+        Db::tx(function () use ($producto, $precio, $creditos, $activo, $quien, $real): void {
+            if ($real) {
+                $antes = self::producto($producto);
+                $credAntes = (int) $antes['creditos'] - (int) ($antes['oferta']['creditos_extra'] ?? 0);
+                $det = $producto . ': precio ' . $antes['precio'] . ' -> ' . round($precio, 2) . ', créditos ' . $credAntes . ' -> ' . $creditos;
+            } else {
+                $antes = self::premium($producto);
+                $det = $producto . ' (exclusivo): costo ' . $antes['creditos'] . ' -> ' . $creditos . ' créditos';
+            }
+            Db::q('INSERT INTO productos_ajustes (producto, precio, creditos, activo, actualizado) VALUES (?, ?, ?, ?, ?) ON CONFLICT (producto) DO UPDATE SET precio = excluded.precio, creditos = excluded.creditos, activo = excluded.activo, actualizado = excluded.actualizado',
+                [$producto, $real ? round($precio, 2) : null, $creditos, $activo ? 1 : 0, time()]);
+            self::olvidarAjustes();
+            Auditoria::anotar($quien, 'producto_editar', $det . ', activo ' . (int) $antes['activo'] . ' -> ' . (int) $activo);
+        });
+    }
+
+    /** Vuelve a los valores de este archivo (borra el ajuste). true si había uno. */
+    public static function restaurarAjuste(string $producto, string $quien): bool
+    {
+        Fallo::si(!isset(self::PRODUCTOS[$producto]) && !isset(self::PREMIUM[$producto]), 'Ese producto no existe.', 404, ['codigo' => 'producto_no_existe']);
+        $n = Db::q('DELETE FROM productos_ajustes WHERE producto = ?', [$producto])->rowCount();
+        self::olvidarAjustes();
+        if ($n) Auditoria::anotar($quien, 'producto_restaurar', $producto . ' vuelve a los valores de Catalogo.php');
+        return $n > 0;
+    }
+
+    /** Oferta de % extra de créditos por tiempo limitado (solo productos con dinero real que dan créditos). Devuelve su id. */
+    public static function crearOferta(string $producto, int $bonoPct, int $inicio, int $fin, string $quien): int
+    {
+        $p = self::producto($producto);
+        Fallo::si(!$p || !empty($p['oculto']) || (int) $p['creditos'] - (int) ($p['oferta']['creditos_extra'] ?? 0) <= 0, 'Las ofertas de % extra son para productos que dan créditos.', 400, ['codigo' => 'oferta_invalida']);
+        Fallo::si($bonoPct < 1 || $bonoPct > 300, 'El bono debe ser de 1 % a 300 %.', 400, ['codigo' => 'bono_invalido']);
+        Fallo::si($fin <= $inicio || $fin <= time(), 'Revisa las fechas: el fin debe ser después del inicio y en el futuro.', 400, ['codigo' => 'fechas_invalidas']);
+        return Db::tx(function () use ($producto, $bonoPct, $inicio, $fin, $quien): int {
+            Db::q('INSERT INTO ofertas (producto, bono_pct, inicio, fin, activa, creado) VALUES (?, ?, ?, ?, 1, ?)', [$producto, $bonoPct, $inicio, $fin, time()]);
+            $id = Db::ultimoId();
+            self::olvidarAjustes();
+            Auditoria::anotar($quien, 'oferta_crear', 'Oferta N° ' . $id . ": $producto +$bonoPct % créditos del " . date('Y-m-d H:i', $inicio) . ' al ' . date('Y-m-d H:i', $fin));
+            return $id;
+        });
+    }
+
+    public static function terminarOferta(int $ofertaId, string $quien): void
+    {
+        $n = Db::q('UPDATE ofertas SET activa = 0 WHERE id = ? AND activa = 1', [$ofertaId])->rowCount();
+        Fallo::si($n === 0, 'Esa oferta no existe o ya terminó.', 404, ['codigo' => 'oferta_no_existe']);
+        self::olvidarAjustes();
+        Auditoria::anotar($quien, 'oferta_terminar', 'Oferta N° ' . $ofertaId);
+    }
 
     /** Productos que se venden en Google Play: los de la tienda (menos los ocultos) y los refuerzos, con los mismos ids. */
     public static function productoGoogle(string $id): ?array
@@ -189,7 +268,9 @@ final class Catalogo
                  + (isset($x['dias']) ? ['dias' => $x['dias']] : []) + (isset($x['creditos_dia']) ? ['creditos_dia' => $x['creditos_dia']] : []);
         }
         $m = [];
-        foreach (self::PREMIUM as $id => $x) {
+        foreach (array_keys(self::PREMIUM) as $id) {
+            $x = self::premium($id);
+            if (!$x['activo']) continue;
             $tipo = $x['tipo'] ?? ($x['entrega']['tipo'] === 'item' ? (!empty($x['vip']) ? 'vip' : 'equipo') : 'consumo');
             $m[] = ['id' => $id, 'nombre' => $x['nombre'], 'detalle' => $x['detalle'], 'creditos' => $x['creditos'], 'vip' => !empty($x['vip']), 'tipo' => $tipo, 'entrega' => $x['entrega']];
         }

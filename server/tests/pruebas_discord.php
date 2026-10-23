@@ -22,7 +22,9 @@ $libre = function (): int { $s = stream_socket_server('tcp://127.0.0.1:0'); $n =
 $P_APP = (int) (getenv('P_APP') ?: $libre()); $P_FALSO = (int) (getenv('P_FALSO') ?: $libre()); $P_NGINX = (int) (getenv('P_NGINX') ?: $libre());
 $PROCS = [];
 register_shutdown_function(function () use (&$PROCS, $TMP) {
-    foreach (['nginx.pid', 'fpm.pid'] as $f) if (is_file("$TMP/$f")) posix_kill((int) trim((string) file_get_contents("$TMP/$f")), SIGTERM);
+    // Solo un pid de verdad: posix_kill(0, ...) (archivo vacío si nginx no arrancó) mataría a todo el grupo de procesos,
+    // incluido server/tests/correr.sh
+    foreach (['nginx.pid', 'fpm.pid'] as $f) if (is_file("$TMP/$f") && ($pid = (int) trim((string) file_get_contents("$TMP/$f"))) > 1) posix_kill($pid, SIGTERM);
     foreach ($PROCS as $p) { proc_terminate($p, SIGKILL); proc_close($p); }
     usleep(200000);
     if (getenv('GUARDAR_TMP') === '1') echo "Archivos de la prueba en $TMP\n"; else exec('rm -rf ' . escapeshellarg($TMP));
@@ -81,8 +83,13 @@ $api = (string) file_get_contents("$TMP/srv/public/api.php");
 $ancla = "        default => Http::error(404, 'No encontrado.'),";
 $rutas = $bloque('rutas'); $antes = $bloque('estado_antes'); $despues = $bloque('estado_despues');
 check('INTEGRAR_DISCORD.md trae los bloques rutas / estado / nginx / cron', [true, true, true, true, true], [$rutas !== '', $antes !== '', $despues !== '', $bloque('nginx') !== '', $bloque('cron') !== '']);
-check('api.php (de hoy) tiene el lugar donde va cada bloque', [1, 1], [substr_count($api, $ancla), substr_count($api, $antes)]);
-$api = str_replace([$ancla, $antes], [$rutas . "\n" . $ancla, $despues], $api);
+if (str_contains($api, $rutas) && substr_count($api, $despues) === 1) {
+    // api.php ya trae los bloques (integrado en server/): se prueba tal cual
+    check('api.php (de hoy) ya trae las rutas del bot y /api/estado con Discord::estado', [1, 1, 0], [substr_count($api, $rutas), substr_count($api, $despues), substr_count($api, $antes)]);
+} else {
+    check('api.php (de hoy) tiene el lugar donde va cada bloque', [1, 1], [substr_count($api, $ancla), substr_count($api, $antes)]);
+    $api = str_replace([$ancla, $antes], [$rutas . "\n" . $ancla, $despues], $api);
+}
 file_put_contents("$TMP/srv/public/api.php", $api);
 exec('php -l ' . escapeshellarg("$TMP/srv/public/api.php") . ' 2>&1', $o, $c);
 check('api.php con los bloques del bot: sin errores de sintaxis', 0, $c);
@@ -599,8 +606,13 @@ if ($fpm !== '' && $nginx !== '' && is_file("$SRV/deploy/nginx-sitio.sh")) {
     exec('cp -r ' . escapeshellarg("$TMP/srv/src") . ' ' . escapeshellarg("$TMP/srv/public") . ' ' . escapeshellarg("$APPN/server/") . ' && chmod -R a+rX ' . escapeshellarg($TMP));
     $sitio = (string) file_get_contents("$SRV/deploy/nginx-sitio.sh");
     $anclaN = '    location = /terminos.html';
-    check('nginx-sitio.sh (de hoy) tiene el lugar del bloque de nginx', 1, substr_count($sitio, $anclaN));
-    file_put_contents("$NG/nginx-sitio.sh", str_replace($anclaN, $bloque('nginx') . "\n" . $anclaN, $sitio));
+    if (str_contains($sitio, 'location = /discord/interacciones {')) {   // la plantilla ya trae el bloque (integrado)
+        check('nginx-sitio.sh (de hoy) ya trae el bloque del bot (una vez)', 1, substr_count($sitio, 'location = /discord/interacciones'));
+        file_put_contents("$NG/nginx-sitio.sh", $sitio);
+    } else {
+        check('nginx-sitio.sh (de hoy) tiene el lugar del bloque de nginx', 1, substr_count($sitio, $anclaN));
+        file_put_contents("$NG/nginx-sitio.sh", str_replace($anclaN, $bloque('nginx') . "\n" . $anclaN, $sitio));
+    }
     file_put_contents("$TMP/config_nginx.env", str_replace("ENVIVO_URL=http://127.0.0.1:$P_APP", "ENVIVO_URL=http://127.0.0.1:$P_NGINX", (string) file_get_contents("$TMP/config.env")));
     touch("$TMP/php_errores.log"); chmod("$TMP/php_errores.log", 0666); chmod("$TMP/datos", 0777); foreach (glob("$TMP/datos/*") as $f) @chmod($f, 0666); chmod("$TMP/config_nginx.env", 0644);
     $usr = posix_geteuid() === 0 ? "user = nobody\ngroup = nogroup\n" : '';
@@ -609,7 +621,9 @@ if ($fpm !== '' && $nginx !== '' && is_file("$SRV/deploy/nginx-sitio.sh")) {
     exec(escapeshellarg($fpm) . ' -y ' . escapeshellarg("$NG/fpm.conf") . ' -R 2> ' . escapeshellarg("$NG/logs/fpm-arranque.log"));
     exec('DOMINIO=juego.tukanec.com APP=' . escapeshellarg($APPN) . ' SOCK=' . escapeshellarg("$NG/fpm.sock") . ' LISTEN=127.0.0.1:' . $P_NGINX . ' IPV6=0 bash ' . escapeshellarg("$NG/nginx-sitio.sh") . ' > ' . escapeshellarg("$NG/sitio.conf"));
     file_put_contents("$NG/nginx.conf", "worker_processes 1;\npid $TMP/nginx.pid;\nerror_log $NG/logs/error.log;\nevents { worker_connections 64; }\nhttp {\n  include /etc/nginx/mime.types;\n  access_log off;\n"
-        . "  client_body_temp_path $NG/tmp; fastcgi_temp_path $NG/tmp; proxy_temp_path $NG/tmp; uwsgi_temp_path $NG/tmp; scgi_temp_path $NG/tmp;\n  include $NG/sitio.conf;\n}\n");
+        . "  client_body_temp_path $NG/tmp; fastcgi_temp_path $NG/tmp; proxy_temp_path $NG/tmp; uwsgi_temp_path $NG/tmp; scgi_temp_path $NG/tmp;\n"
+        // Las zonas de límite que usa la plantilla (en el VPS: /etc/nginx/conf.d/envivo-limites.conf, lo copia instalar.sh)
+        . "  include $SRV/deploy/ops/nginx-envivo-limites.conf;\n  include $NG/sitio.conf;\n}\n");
     exec('nginx -t -q -c ' . escapeshellarg("$NG/nginx.conf") . ' -p ' . escapeshellarg($NG) . ' 2> ' . escapeshellarg("$NG/logs/t.log"), $o, $c);
     check('nginx -t acepta el sitio con el bloque del bot', 0, $c);
     exec('nginx -c ' . escapeshellarg("$NG/nginx.conf") . ' -p ' . escapeshellarg($NG) . ' 2>> ' . escapeshellarg("$NG/logs/t.log"));

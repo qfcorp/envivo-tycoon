@@ -6,6 +6,7 @@
 #   2. Plux FALSO (llaves RSA de prueba hechas aqui con openssl) y el juego con "php -S" + router.php (imita a nginx)
 #   3. pruebas.php: cuenta, limites, X-Envivo, estado (API.md), partida, gastar, ordenes, Plux 0/2/100/102/103, 3DS,
 #      idempotencia, paquete de inicio, VIP, webhook, panel, CSV, creditos a mano
+#  3b. pruebas_soporte_google.php · 3c. pruebas_discord / festival / liga / control (con navegador_control.cjs) / duelos_desafio
 #   4. Navegador de verdad (Playwright + Chromium) en un celular 390x844
 #   5. nginx de verdad con la plantilla (si hay nginx y php-fpm en esta maquina): rutas permitidas y prohibidas
 #   6. Ningun numero de tarjeta en la base, en los registros de PHP ni en las respuestas guardadas
@@ -39,9 +40,13 @@ MAL=0
 while IFS= read -r f; do php -l "$f" > /dev/null 2>&1 || { echo "  FALLA php -l $f"; MAL=1; }; done < <(find "$SRV" -name '*.php')
 while IFS= read -r f; do bash -n "$f" || { echo "  FALLA bash -n $f"; MAL=1; }; done < <(find "$SRV" -name '*.sh')
 check "php -l y bash -n sin errores" 0 "$MAL"
-node --check "$SRV/public/assets/pago.js" && node --check "$SRV/tests/navegador.cjs"
+node --check "$SRV/public/assets/pago.js" && node --check "$SRV/tests/navegador.cjs" && node --check "$SRV/tests/navegador_control.cjs"
 check "JavaScript sin errores de sintaxis" 0 "$?"
 check "Vendor CryptoJS y JSEncrypt iguales a los de TuPass (si esta TuPass)" 0 "$( [ -d /home/claude/tupass ] && { cmp -s "$SRV/public/assets/vendor/crypto-js.min.js" /home/claude/tupass/public/assets/vendor/crypto-js.min.js && cmp -s "$SRV/public/assets/vendor/jsencrypt.min.js" /home/claude/tupass/public/assets/vendor/jsencrypt.min.js; echo $?; } || echo 0)"
+check "src/CatalogoJuego.php al dia con js/datos.js (roles, equipos y tipos de evento)" 0 "$(php "$SRV/bin/catalogo_juego.php" --revisar > /dev/null 2>&1; echo $?)"
+# Marcas reales: el juego usa nombres parodia (Zony, Kanon, DGI, vMax, LigaPrima...). Nada visible del servidor puede nombrar una real.
+MARCAS='\b(sony|canon|dji|blackmagic|atem|vmix|panasonic|cummins|mercedes|sprinter|ross video|carbonite|fujinon|gopro|manfrotto|vinten|steadicam|grass valley|jvc|marshall|teradek|liveu|shure|sennheiser|yamaha|behringer|midas|tricaster|newtek|netgear|apc smart|honda)\b'
+check "Ninguna marca real en el servidor (src, public, bin, deploy, documentos)" "" "$( { grep -rliE "$MARCAS" "$SRV/src" "$SRV/public" "$SRV/bin" "$SRV/deploy" "$SRV"/*.md --include=*.php --include=*.sql --include=*.html --include=*.js --include=*.css --include=*.sh --include=*.md 2> /dev/null; grep -rlE 'LigaPro\b' "$SRV/src" "$SRV/public" "$SRV/bin" "$SRV"/*.md 2> /dev/null; } | grep -v '/public/vendor/' | sort -u | tr '\n' ' ')"
 
 echo
 echo "== 1. Configuracion y base TEMPORALES"
@@ -125,6 +130,17 @@ check "pruebas_soporte_google.php sin fallas" 0 "$R3B"
 check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo reconstruye el juego)" "" "$(grep 'PENDIENTE' "$TMP/soporte_google.log" | grep -v ' S5 ' | tr -s ' ' | tr '\n' ';')"
 
 echo
+echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control, Duelos y Desafío"
+for suite in discord festival liga control duelos_desafio; do
+  # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
+  env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
+  grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'
+  echo "  ($(grep -v '^[[:space:]]*$' "$TMP/modulo_$suite.log" | grep -vE '^-+$|^=+$' | tail -1 | sed 's/^ *//'))"
+  check "pruebas_$suite.php sin fallas" 0 "$RM"
+  check "pruebas_$suite.php: sin líneas FALLA" 0 "$(grep -c 'FALLA' "$TMP/modulo_$suite.log")"
+done
+
+echo
 echo "== 4. Navegador de verdad (Playwright + Chromium, celular 390x844)"
 php -r '$p = new PDO("sqlite:" . $argv[1]); $p->exec("DELETE FROM intentos");' "$TMP/datos/envivo.sqlite"
 NP="${NODE_PATH:-/opt/npm-tools/node_modules}"
@@ -163,6 +179,7 @@ FPM
   chmod 777 "$TMP/datos"; chmod 666 "$TMP/datos/"* 2> /dev/null; chmod 644 "$TMP/config_nginx.env"
   "$FPM" -y "$NG/fpm.conf" -R 2> "$NG/logs/fpm-arranque.log"
   DOMINIO=juego.tukanec.com APP="$APPN" SOCK="$NG/fpm.sock" LISTEN="127.0.0.1:$P_NGINX" bash "$SRV/deploy/nginx-sitio.sh" > "$NG/sitio.conf"
+  mkdir -p "$NG/conf.d"; cp "$SRV/deploy/ops/nginx-envivo-limites.conf" "$NG/conf.d/envivo-limites.conf"
   cat > "$NG/nginx.conf" <<NGC
 worker_processes 1;
 pid $TMP/nginx.pid;
@@ -172,6 +189,8 @@ http {
   include /etc/nginx/mime.types;
   access_log off;
   client_body_temp_path $NG/tmp; fastcgi_temp_path $NG/tmp; proxy_temp_path $NG/tmp; uwsgi_temp_path $NG/tmp; scgi_temp_path $NG/tmp;
+  # Como en el VPS: instalar.sh copia deploy/ops/nginx-envivo-limites.conf a /etc/nginx/conf.d/envivo-limites.conf
+  include $NG/conf.d/*.conf;
   include $NG/sitio.conf;
 }
 NGC
@@ -190,7 +209,7 @@ NGC
   esperar "http://127.0.0.1:$P_NGINX/api/estado"
   B="http://127.0.0.1:$P_NGINX"
   RUTAS_BIEN="/ /index.html /js/logic.js /icons/icon-192.png /manifest.webmanifest /sw.js /terminos.html /privacidad.html /pago-assets/pago.js /pago-assets/estilo.css /pago-assets/vendor/crypto-js.min.js /api/estado"
-  RUTAS_MAL="/server/src/Config.php /server/src/Db.php /server/tests/pruebas.php /server/tests/plux_falso.php /server/deploy/instalar.sh /server/bin/migrar.php /server/config.env.ejemplo /server/API.md /server/public/api.php /server/public/assets/pago.js /.git/config /.git/HEAD /.gitignore /PLAN.md /README.md /tests/test_logic.js /tools/build_single.js /dist/envivo-tycoon.html /HEAD_SNIPPET.html /config.env /server/tests/correr.sh /js/../server/src/Config.php /pago-assets/../src/Config.php /pago-assets/../../src/Db.php /api.php /index.php"
+  RUTAS_MAL="/server/src/Config.php /server/src/Db.php /server/tests/pruebas.php /server/tests/plux_falso.php /server/deploy/instalar.sh /server/bin/migrar.php /server/config.env.ejemplo /server/API.md /server/public/api.php /server/public/assets/pago.js /.git/config /.git/HEAD /.gitignore /PLAN.md /README.md /tests/test_logic.js /tools/build_single.js /dist/envivo-tycoon.html /HEAD_SNIPPET.html /config.env /server/tests/correr.sh /js/../server/src/Config.php /pago-assets/../src/Config.php /pago-assets/../../src/Db.php /api.php /index.php /control/index.php /control/lib/base.php /control/lib/ /control/assets/ /control/assets/../lib/base.php /server/public/control/index.php /server/src/Control.php /discord/interacciones.php /server/public/discord/interacciones.php"
   MAL=""
   for r in $RUTAS_BIEN; do h=$(curl -s -o /dev/null -w '%{http_code}' --path-as-is "$B$r"); [ "$h" = "200" ] || MAL="$MAL $r=$h"; done
   check "nginx: el juego, la API, pago-assets y las legales se ven (200)" "" "$MAL"
@@ -199,13 +218,29 @@ NGC
   check "nginx: codigo del servidor, pruebas, .git, PLAN.md, README.md... prohibidos" "" "$MAL"
   check "nginx: /api/estado devuelve JSON del juego" "true" "$(curl -s "$B/api/estado" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo isset($j["tienda"]["productos"]) ? "true" : "false";')"
   check "nginx: /pago.php llega a PHP (sin sesion -> 401)" "401" "$(curl -s -o /dev/null -w '%{http_code}' "$B/pago.php?o=abc")"
-  check "nginx: /admin.php pide clave (401)" "401" "$(curl -s -o /dev/null -w '%{http_code}' "$B/admin.php")"
-  check "nginx: /admin.php con la clave -> 200 (Basic Auth llega a PHP)" "200" "$(curl -s -o /dev/null -w '%{http_code}' -u "admin_prueba:$ADMIN_CLAVE" "$B/admin.php")"
+  check "nginx: /admin.php -> 302 a /control/" "302 /control/" "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "$B/admin.php" | sed "s#$B##")"
+  check "nginx: /control -> 301 /control/" "301" "$(curl -s -o /dev/null -w '%{http_code}' "$B/control")"
+  CAB=$(curl -s -D - -o "$TMP/control.html" "$B/control/" | tr -d '\r')
+  check "nginx: /control/ llega a PHP (formulario de entrada, 200)" "200 true" "$(echo "$CAB" | head -1 | cut -d' ' -f2) $(grep -q 'name="clave"' "$TMP/control.html" && echo true || echo false)"
+  check "nginx: /control/ con no-store, noindex y las cabeceras A-09, cada una UNA vez (location con add_header)" "1 1 1 1 1 1 1" "$(for c in cache-control x-robots-tag x-frame-options x-content-type-options referrer-policy permissions-policy content-security-policy; do echo "$CAB" | grep -ciE "^$c:"; done | tr '\n' ' ' | sed 's/ $//')"
+  CAB=$(curl -s -D - -o /dev/null "$B/pago.php?o=abc" | tr -d '\r')
+  check "nginx: /pago.php y /api/estado sin cabeceras repetidas (PHP + nginx)" "1 1 1 1" "$(echo "$CAB" | grep -ciE '^x-frame-options:') $(echo "$CAB" | grep -ciE '^x-content-type-options:') $(curl -s -D - -o /dev/null "$B/api/estado" | tr -d '\r' | grep -ciE '^x-frame-options:') $(curl -s -D - -o /dev/null "$B/api/estado" | tr -d '\r' | grep -ciE '^referrer-policy:')"
+  check "nginx: /control/assets/control.css y control.js se ven (200)" "200 200" "$(curl -s -o /dev/null -w '%{http_code}' "$B/control/assets/control.css") $(curl -s -o /dev/null -w '%{http_code}' "$B/control/assets/control.js")"
+  check "nginx: GET /discord/interacciones llega a PHP (405: Discord solo manda POST)" "405" "$(curl -s -o /dev/null -w '%{http_code}' "$B/discord/interacciones")"
+  CAB=$(curl -s -D - -o /dev/null "$B/" | tr -d '\r')
+  check "nginx: CSP del juego con las fuentes de Google en connect-src (el service worker las baja)" "1" "$(echo "$CAB" | grep -ciE "^content-security-policy: .*connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;")"
+  check "nginx: Permissions-Policy en el juego, la API y las legales" "1 1 1" "$(for r in / /api/estado /terminos.html; do curl -s -D - -o /dev/null "$B$r" | grep -ciE '^permissions-policy: camera=\(\)'; done | tr '\n' ' ' | sed 's/ $//')"
+  head -c 100000 /dev/zero | tr '\0' a > "$TMP/grande.txt"
+  check "nginx: más de 64 KB a /pago.php -> 413; a /api/ se aceptan (hasta 1 MB, la partida)" "413 401" "$(curl -s -o /dev/null -w '%{http_code}' -X POST --data-binary @"$TMP/grande.txt" "$B/pago.php") $(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'X-Envivo: 1' -H 'Content-Type: application/json' --data-binary @"$TMP/grande.txt" "$B/api/partida")"
   check "nginx: POST /api/registro sin X-Envivo -> 403" "403" "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$B/api/registro")"
   check "nginx: registro con X-Envivo -> 200" "200" "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"email":"nginx@prueba.example","nombre":"Nginx","clave":"ClaveNginx1"}' "$B/api/registro")"
   check "nginx: el webhook con Basic Auth llega a PHP (clave mala -> 401)" "401" "$(curl -s -o /dev/null -w '%{http_code}' -u plux_aviso:mala -X POST -d '{}' "$B/api/plux/webhook")"
   check "nginx: el webhook con la clave buena -> 422 (estado vacio)" "422" "$(curl -s -o /dev/null -w '%{http_code}' -u "plux_aviso:$HOOK_CLAVE" -X POST -H 'Content-Type: application/json' -d '{"x":1}' "$B/api/plux/webhook")"
   check "nginx: el juego tiene la tienda de Plux disponible" "true" "$(curl -s "$B/api/estado" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo !empty($j["plux"]["disponible"]) ? "true" : "false";')"
+  # Al final (llena la zona de 127.0.0.1): límite por IP de nginx en POST /api/entrar -> 429 en JSON con Retry-After
+  for i in $(seq 1 40); do curl -s -D "$TMP/lim_cab.txt" -o "$TMP/lim.json" -X POST -H 'X-Envivo: 1' -H 'Content-Type: application/json' -d '{"email":"nadie@prueba.example","clave":"x"}' "$B/api/entrar" -w '%{http_code}\n'; done > "$TMP/lim_codigos.txt"
+  check "nginx: POST /api/entrar seguido desde una IP -> 429 de nginx (JSON, Retry-After: 60)" "true true true" "$(grep -q '^429$' "$TMP/lim_codigos.txt" && echo true || echo false) $(grep -qi '^retry-after: 60' "$TMP/lim_cab.txt" && echo true || echo false) $(php -r '$j = json_decode((string) file_get_contents($argv[1]), true); echo ($j["ok"] ?? null) === false && str_contains((string) ($j["error"] ?? ""), "Espera un minuto") ? "true" : "false";' "$TMP/lim.json")"
+  check "nginx: GET /api/estado no se limita (sigue 200)" "200" "$(curl -s -o /dev/null -w '%{http_code}' "$B/api/estado")"
 else
   echo "  (sin nginx o php-fpm en esta maquina: se salta)"
 fi

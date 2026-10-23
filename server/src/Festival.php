@@ -91,14 +91,20 @@ final class Festival
     public const EQUIPOS_MAX = 12;
     public const MORAL = 80;                     // el servidor fija ánimo y estado: iguales para todos
     public const ESTADO_EQUIPO = 90;
-    public const ROLES = ['cam', 'dir', 'audio', 'stream'];
-    /** Equipos que se compran con dinero del juego: [categoría, fama mínima, máximo por intento]. */
-    public const EQUIPOS_JUEGO = [
-        'cam_basic' => ['cam', 0, 4], 'cam_pro' => ['cam', 10, 4], 'cam_cine' => ['cam', 35, 4],
-        'switch_basic' => ['switcher', 0, 1], 'switch_pro' => ['switcher', 30, 1],
-        'audio_basic' => ['audio', 0, 1], 'audio_pro' => ['audio', 20, 1], 'mics' => ['mics', 0, 2],
-        'encoder' => ['encoder', 0, 1], 'router4g' => ['internet', 0, 1], 'ups' => ['power', 0, 1], 'raincover' => ['rain', 0, 1],
-    ];
+    /** Los 14 roles del juego (js/datos.js, vía CatalogoJuego). Las claves viejas cam/dir/audio/stream se aceptan y se guardan con la nueva. */
+    public const ROLES = CatalogoJuego::ROLES;
+    /**
+     * Equipos que se compran con dinero del juego: TODO el catálogo de js/datos.js (CatalogoJuego::EQUIPOS: categoría y
+     * fama mínima del juego). Máximo por intento según la categoría (lo que no está: 1). Ver equipoJuego().
+     */
+    public const MAX_POR_CATEGORIA = ['cam' => 4, 'lens' => 4, 'support' => 4, 'wireless' => 4, 'mics' => 4, 'cable' => 2, 'power' => 2, 'rain' => 2];
+
+    /** [categoría, fama mínima, máximo por intento] de un equipo del juego, o null si no existe. */
+    public static function equipoJuego(string $t): ?array
+    {
+        $x = CatalogoJuego::EQUIPOS[$t] ?? null;
+        return $x === null ? null : [(string) $x['cat'], (int) $x['fama'], self::MAX_POR_CATEGORIA[$x['cat']] ?? 1];
+    }
     /** Exclusivos del inventario del servidor (hay que tenerlos en la bodega); los vip_* además piden VIP activo. */
     public const EQUIPOS_SERVIDOR = [
         'dron4k' => 'cam', 'grua' => 'cam', 'vip_cam8k' => 'cam', 'unidad_movil' => 'switcher', 'vip_switcher' => 'switcher',
@@ -249,8 +255,11 @@ final class Festival
     // ------------------------------------------------------------------ pases de prensa
     public static function pases(int $j): int { return (int) Db::valor('SELECT COALESCE(SUM(cambio), 0) FROM festival_pases WHERE jugador_id = ?', [$j]); }
 
-    /** Anota un cambio de pases (idempotente por ref). Las sumas respetan PASES_TOPE. Devuelve lo que se sumó/restó o null si ya estaba. */
-    private static function moverPases(int $j, int $cambio, string $motivo, string $ref): ?int
+    /**
+     * Anota un cambio de pases (idempotente por ref). Las sumas respetan PASES_TOPE. Devuelve lo que se sumó/restó o null si ya estaba.
+     * Es el ÚNICO saldo de Pases de Prensa: también lo usan los premios del Desafío del Día (Desafio::sumarPases / gastarPases).
+     */
+    public static function moverPases(int $j, int $cambio, string $motivo, string $ref): ?int
     {
         return Db::tx(function () use ($j, $cambio, $motivo, $ref): ?int {
             if (Db::valor('SELECT 1 FROM festival_pases WHERE jugador_id = ? AND ref = ?', [$j, $ref])) return null;
@@ -368,6 +377,7 @@ final class Festival
         $duenos = 0;
         $sobre = [];
         foreach ($staff as $i => $p) {
+            if (is_array($p) && is_string($p['role'] ?? null)) $p['role'] = CatalogoJuego::ROL_ALIAS[$p['role']] ?? $p['role'];
             Fallo::si(!is_array($p) || !in_array($p['role'] ?? null, self::ROLES, true), 'Persona ' . ($i + 1) . ': rol no válido.', 400, ['codigo' => 'equipo']);
             $k = $p['skill'] ?? null;
             Fallo::si(!is_int($k) || $k < 1 || $k > 5, 'Persona ' . ($i + 1) . ': la habilidad va de 1 a 5.', 400, ['codigo' => 'equipo']);
@@ -387,12 +397,14 @@ final class Festival
         $camaras = 0;
         foreach ($equip as $i => $x) {
             $t = is_array($x) && is_string($x['type'] ?? null) ? $x['type'] : '';
-            Fallo::si(!isset(self::EQUIPOS_JUEGO[$t]) && !isset(self::EQUIPOS_SERVIDOR[$t]), 'Equipo ' . ($i + 1) . ': ese equipo no se puede llevar al festival.', 400, ['codigo' => 'equipo']);
+            $ej = $t === '' ? null : self::equipoJuego($t);
+            Fallo::si($ej === null && !isset(self::EQUIPOS_SERVIDOR[$t]), 'Equipo ' . ($i + 1) . ': ese equipo no se puede llevar al festival.', 400, ['codigo' => 'equipo']);
             $cuenta[$t] = ($cuenta[$t] ?? 0) + 1;
-            if (isset(self::EQUIPOS_JUEGO[$t])) {
-                [$cat, $min, $max] = self::EQUIPOS_JUEGO[$t];
-                Fallo::si($fama < $min, 'Para llevar ' . $t . ' necesitas ' . $min . ' de fama.', 400, ['codigo' => 'fama_equipo', 'item' => $t]);
-                Fallo::si($cuenta[$t] > $max, 'Máximo ' . $max . ' de ' . $t . ' por escenario.', 400, ['codigo' => 'equipo', 'item' => $t]);
+            if ($ej !== null) {
+                [$cat, $min, $max] = $ej;
+                $nom = CatalogoJuego::EQUIPOS[$t]['nombre'];
+                Fallo::si($fama < $min, 'Para llevar ' . $nom . ' necesitas ' . $min . ' de fama.', 400, ['codigo' => 'fama_equipo', 'item' => $t]);
+                Fallo::si($cuenta[$t] > $max, 'Máximo ' . $max . ' de ' . $nom . ' por escenario.', 400, ['codigo' => 'equipo', 'item' => $t]);
             } else {
                 $cat = self::EQUIPOS_SERVIDOR[$t];
                 Fallo::si(str_starts_with($t, 'vip_') && !$vip, 'Los equipos VIP solo se pueden llevar con el Pase VIP activo.', 403, ['codigo' => 'vip_requerido', 'item' => $t]);

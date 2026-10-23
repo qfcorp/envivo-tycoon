@@ -207,16 +207,53 @@ final class Chat
     }
 
     // ------------------------------------------------------------------ panel de administración
-    public static function sancionar(int $jugador, string $tipo, ?int $segundos, string $motivo): void
+    /** Silencio ($segundos) o expulsión ($tipo 'expulsion', $segundos null). Con $quien, queda en la auditoría. */
+    public static function sancionar(int $jugador, string $tipo, ?int $segundos, string $motivo, ?string $quien = null): void
     {
+        Fallo::si(!in_array($tipo, ['silencio', 'expulsion'], true) || ($tipo === 'silencio' && ($segundos === null || $segundos < 60)), 'Sanción no válida.', 400, ['codigo' => 'sancion_invalida']);
+        if ($quien !== null) Auditoria::anotar($quien, $tipo === 'expulsion' ? 'chat_expulsar' : 'chat_silenciar', ($tipo === 'silencio' ? $segundos . ' s: ' : '') . $motivo, $jugador);
         Db::q('INSERT INTO chat_sanciones (jugador_id, tipo, hasta, motivo, creado) VALUES (?, ?, ?, ?, ?)',
             [$jugador, $tipo, $segundos === null ? null : time() + $segundos, mb_substr($motivo, 0, 200), time()]);
         self::sistema($jugador, $tipo === 'expulsion' ? 'Fuiste expulsado del chat por: ' . $motivo
             : 'No podrás escribir en el chat por ' . ($segundos >= 86400 ? intdiv($segundos, 86400) . ' día(s)' : intdiv($segundos, 3600) . ' hora(s)') . '. Motivo: ' . $motivo);
     }
 
-    public static function levantar(int $jugador): int
+    public static function levantar(int $jugador, ?string $quien = null): int
     {
-        return Db::q('UPDATE chat_sanciones SET levantada = 1 WHERE jugador_id = ? AND levantada = 0', [$jugador])->rowCount();
+        $n = Db::q('UPDATE chat_sanciones SET levantada = 1 WHERE jugador_id = ? AND levantada = 0', [$jugador])->rowCount();
+        if ($quien !== null) Auditoria::anotar($quien, 'chat_levantar', "$n sanciones levantadas", $jugador);
+        return $n;
+    }
+
+    /** ocultar | mostrar | resolver | descartar un mensaje (y cierra sus reportes pendientes). Audita. */
+    public static function moderarMensaje(int $mensajeId, string $accion, string $quien): void
+    {
+        Fallo::si(!in_array($accion, ['ocultar', 'mostrar', 'resolver', 'descartar'], true), 'Acción no válida.', 400, ['codigo' => 'accion_invalida']);
+        Db::tx(function () use ($mensajeId, $accion, $quien): void {
+            $m = Db::fila('SELECT * FROM chat_mensajes WHERE id = ?', [$mensajeId]);
+            Fallo::si(!$m, 'Ese mensaje ya no existe (se borran a los ' . self::DIAS . ' días).', 404, ['codigo' => 'mensaje_no_existe']);
+            if ($accion === 'ocultar') Db::q('UPDATE chat_mensajes SET oculto = 1 WHERE id = ?', [$mensajeId]);
+            if ($accion === 'mostrar') Db::q('UPDATE chat_mensajes SET oculto = 0 WHERE id = ?', [$mensajeId]);
+            $estado = in_array($accion, ['ocultar', 'resolver'], true) ? 'resuelto' : 'descartado';
+            Db::q("UPDATE chat_reportes SET estado = ?, resuelto_en = ? WHERE mensaje_id = ? AND estado = 'pendiente'", [$estado, time(), $mensajeId]);
+            Auditoria::anotar($quien, 'chat_' . $accion, 'Mensaje N° ' . $mensajeId . ': ' . mb_substr((string) $m['texto'], 0, 200), $m['jugador_id'] === null ? null : (int) $m['jugador_id']);
+        });
+    }
+
+    /** Agrega (true) o quita (false) una palabra prohibida. Audita. Devuelve la palabra limpia. */
+    public static function palabra(string $palabra, bool $agregar, string $quien): string
+    {
+        $w = Filtro::limpiarPalabra($palabra);
+        Fallo::si($w === '' || mb_strlen($w) < 2 || mb_strlen($w) > 40, 'Escribe una palabra (2 a 40 letras, sin números).', 400, ['codigo' => 'palabra_invalida']);
+        if ($agregar) {
+            $n = Db::q('INSERT OR IGNORE INTO chat_palabras (palabra, creado) VALUES (?, ?)', [$w, time()])->rowCount();
+            Fallo::si($n === 0, '"' . $w . '" ya estaba en la lista.', 409, ['codigo' => 'palabra_repetida']);
+        } else {
+            $n = Db::q('DELETE FROM chat_palabras WHERE palabra = ?', [$w])->rowCount();
+            Fallo::si($n === 0, '"' . $w . '" no estaba en la lista.', 404, ['codigo' => 'palabra_no_existe']);
+        }
+        Filtro::olvidarLista();
+        Auditoria::anotar($quien, $agregar ? 'palabra_agregar' : 'palabra_quitar', $w);
+        return $w;
     }
 }

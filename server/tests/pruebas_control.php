@@ -320,7 +320,7 @@ $c->get('/control/?t=jugadores&id=1');
 check('Ficha de Ana: VIP activo, 2 sesiones y su caso de soporte', [true, true, true], [(bool) preg_match('/id="kpi-vip".*?Activo/s', $c->cuerpo), $c->tiene('Cerrar todas sus sesiones (2)'), $c->tiene('No me llegaron')]);
 check('Ficha de un jugador que no existe: 200 con aviso', [200, true], [$c->get('/control/?t=jugadores&id=999'), $c->tiene('No existe')]);
 $c->get('/control/?t=compras&id=3');
-check('Detalle de la compra 3: lo que entregó (200 créditos, cámara, entregas) y el formulario de reembolso', [true, true, true, true], [$c->tiene('<b>200</b>'), $c->tiene('Cámara profesional #0001'), $c->tiene('no se puede quitar'), $c->tiene('compra_revertir')]);
+check('Detalle de la compra 3: lo que entregó (200 créditos, cámara, entregas) y el formulario de reembolso', [true, true, true, true], [$c->tiene('<b>200</b>'), $c->tiene((function () use ($SRV) { require_once $SRV . '/src/Catalogo.php'; return \EnVivo\Catalogo::EQUIPOS['cam_pro']; })() . ' #0001'), $c->tiene('no se puede quitar'), $c->tiene('compra_revertir')]);
 $c->get('/control/?t=soporte&caso=1');
 check('Caso de soporte: hilo, compra del caso, diagnóstico y respuestas rápidas', [true, true, true, true], [$c->tiene('id="hilo"'), $c->tiene('N° 1</a>'), $c->tiene('Chrome Android'), $c->tiene('data-rapida=')]);
 $c->get('/control/?t=compras&estado=todas');

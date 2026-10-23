@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Ajustes, Catalogo, Chat, Compras, Cuentas, Db, Fallo, Google, Http, Inventario, Limite, Mercado, Monedero, Plux, Sesiones, Social, Soporte, Transferencias};
+use EnVivo\{Ajustes, Catalogo, Chat, Compras, Cuentas, Db, Desafio, Duelos, Fallo, Google, Http, Inventario, Limite, Mercado, Monedero, Plux, Sesiones, Social, Soporte, Transferencias};
 
 $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $ruta = '/' . trim(substr($ruta, strlen('/api')), '/');
@@ -29,6 +29,8 @@ try {
 
     // Liga Semanal de Productoras (server/INTEGRAR_LIGA.md): responde y termina
     if (\EnVivo\LigaApi::esRuta($ruta)) \EnVivo\LigaApi::responder($ruta, $metodo, requiere_sesion());
+    // Duelo de Productoras y Desafío Técnico del Día (server/INTEGRAR_DUELOS_DESAFIO.md): /api/duelos* y /api/desafio*
+    if (($r = Duelos::ruta($ruta, $metodo) ?? Desafio::ruta($ruta, $metodo)) !== null) Http::json(200, $r);
 
     match ($ruta) {
         '/estado' => $soloGet() && Http::json(200, Cuentas::estado(Sesiones::jugadorId()) + \EnVivo\Discord::estado(Sesiones::jugadorId())),
@@ -114,7 +116,7 @@ function api_registro(): never
     if (Limite::contar('registro:' . Http::ip(), 50, 60)) Http::error(429, 'Demasiados registros desde esta conexión. Espera un rato e intenta de nuevo.', [], 'limite_intentos');
     $id = Cuentas::registrar(texto_de($in, 'email'), texto_de($in, 'nombre'), texto_de($in, 'clave'));
     Sesiones::abrir($id);
-    Http::json(200, Cuentas::estado($id));
+    Http::json(200, Cuentas::estado($id) + \EnVivo\Discord::estado($id));
 }
 
 function api_entrar(): never
@@ -132,7 +134,7 @@ function api_entrar(): never
         Http::error(401, 'Correo o clave incorrectos.', [], 'credenciales_invalidas');
     }
     Sesiones::abrir($id);
-    Http::json(200, Cuentas::estado($id));
+    Http::json(200, Cuentas::estado($id) + \EnVivo\Discord::estado($id));
 }
 
 function api_salir(): never
@@ -470,7 +472,7 @@ function api_transferir_confirmar(): never
     $in = Http::entrada(10000);
     $j = Transferencias::confirmar(texto_de($in, 'email'), texto_de($in, 'codigo'), texto_de($in, 'clave'), texto_de($in, 'nombre'));
     Sesiones::abrir($j);   // el nuevo dueño queda con la sesión abierta
-    Http::json(200, Cuentas::estado($j));
+    Http::json(200, Cuentas::estado($j) + \EnVivo\Discord::estado($j));
 }
 
 function api_transferir_cancelar(): never
@@ -490,7 +492,7 @@ function api_google_verificar(): never
     if (Limite::contar('google:' . $j, 30)) Http::error(429, 'Demasiados intentos. Espera unos minutos.', [], 'limite_intentos');
     $r = Google::verificar($j, texto_de($in, 'producto'), texto_de($in, 'purchaseToken'), texto_de($in, 'orderId'));
     $c = $r['compra'];
-    Http::json(200, ['ok' => true, 'nueva' => $r['nueva'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'estado' => $c['estado'], 'canal' => $c['canal']]] + Cuentas::estado($j));
+    Http::json(200, ['ok' => true, 'nueva' => $r['nueva'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'estado' => $c['estado'], 'canal' => $c['canal']]] + Cuentas::estado($j) + \EnVivo\Discord::estado($j));
 }
 
 // ---------------------------------------------------------------------------------------------- soporte

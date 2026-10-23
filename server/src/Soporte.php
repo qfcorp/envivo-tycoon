@@ -198,6 +198,10 @@ final class Soporte
         Auditoria::anotar($quien, 'soporte_rapida_borrar', 'Respuesta rápida N° ' . $id . ': ' . $r['titulo']);
     }
 
+    /** Nombres que usa el Centro de Control (docs/INTEGRAR_CONTROL.md). */
+    public static function guardarRespuesta(?int $id, string $titulo, string $texto, string $quien): array { return self::guardarRespuestaRapida($id, $titulo, $texto, $quien); }
+    public static function borrarRespuesta(int $id, string $quien): void { self::borrarRespuestaRapida($id, $quien); }
+
     /** {nombre}, {caso} y {compra} de una respuesta rápida -> datos del caso. */
     public static function plantilla(string $texto, int $caso): string
     {

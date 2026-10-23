@@ -143,7 +143,7 @@ final class Cuentas
                     'inicio_comprado' => false, 'entregas' => [], 'tienda' => Catalogo::tienda(), 'plux' => $plux,
                     'inventario' => [], 'mercado' => Mercado::resumen(null), 'servidor' => null, 'asociacion' => null, 'perfil' => null,
                     'tarjeta_hasta' => null, 'tarjeta_activa' => false, 'tarjeta_reclamada_hoy' => false, 'cuenta_estado' => null, 'aviso' => null,
-                    'soporte_sin_leer' => 0, 'compras_recientes' => [], 'transferencia' => null, 'creditos_retenidos' => 0] + self::comun();
+                    'soporte_sin_leer' => 0, 'compras_recientes' => [], 'transferencia' => null, 'creditos_retenidos' => 0, 'duelos' => null, 'desafio' => null] + self::comun();
         }
         $id = (int) $j['id'];
         Mercado::vencer();   // las publicaciones vencidas vuelven a la bodega antes de mostrar el inventario
@@ -176,6 +176,9 @@ final class Cuentas
             'compras_recientes' => Compras::recientes($id),
             'transferencia' => Transferencias::resumen($id),
             'creditos_retenidos' => Mercado::retenido($id)[0],
+            // Duelo de Productoras y Desafío del Día (server/INTEGRAR_DUELOS_DESAFIO.md): punto rojo del menú
+            'duelos' => Duelos::estado($id),     // { rating, liga, restantes, tiene_equipo, defensas_nuevas, en_curso }
+            'desafio' => Desafio::estado($id),   // { dia, modificador, nombre, icono, restantes, jugado_hoy, pases_prensa }
         ] + self::comun();
     }
 }

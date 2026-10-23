@@ -14,8 +14,16 @@ cd /tmp || exit 1
 echo "== 1. Bajar lo nuevo de GitHub"
 git config --global --add safe.directory "$APP" 2> /dev/null
 ANTES="$(git -C "$APP" rev-parse --short HEAD)"
+# js/intento.js es una COPIA de server/validador/intento.js (nginx solo sirve /js/; no un enlace). No está en git:
+# se quita antes de bajar lo nuevo (así "git pull" nunca choca con ella) y se vuelve a copiar después.
+git -C "$APP" ls-files --error-unmatch js/intento.js > /dev/null 2>&1 || rm -f "$APP/js/intento.js"
 if git -C "$APP" pull -q --ff-only origin "$RAMA"; then echo "   $ANTES -> $(git -C "$APP" rev-parse --short HEAD)"
-else echo "   ERROR: no se pudo actualizar (cambios hechos a mano?). Revisa:  git -C $APP status"; exit 1; fi
+else echo "   ERROR: no se pudo actualizar (cambios hechos a mano?). Revisa:  git -C $APP status"
+     [ -f "$APP/server/validador/intento.js" ] && [ ! -e "$APP/js/intento.js" ] && install -m 644 "$APP/server/validador/intento.js" "$APP/js/intento.js"
+     exit 1; fi
+if [ -f "$APP/server/validador/intento.js" ] && ! git -C "$APP" ls-files --error-unmatch js/intento.js > /dev/null 2>&1; then
+  install -m 644 "$APP/server/validador/intento.js" "$APP/js/intento.js" && echo "   js/intento.js copiado de server/validador/intento.js (duelos y desafío)"
+fi
 chown -R root:root "$APP"; chmod -R u+rwX,go+rX,go-w "$APP"
 
 echo "== 2. Tablas de la base de datos"

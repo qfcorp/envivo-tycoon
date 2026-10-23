@@ -77,13 +77,93 @@ Una vez por día (zona America/Guayaquil). Da $150 del juego (entrega) + 10 cré
 | `inicio` | Paquete de inicio (una sola vez): cámara profesional, 5 cables, 3 baterías, técnico de streaming nivel 3 y 200 créditos | $2,99 |
 | `vip30` | Pase VIP 30 días (no se renueva solo): bono diario de $150 + 10 créditos, reparaciones 30 % más baratas, 1 oferta extra al día, distintivo VIP | $4,99 |
 
-Exclusivos con créditos:
+Exclusivos con créditos (nombres de js/datos.js; costo editable en el Centro de Control):
 | id | Qué es | Créditos |
 |---|---|---|
-| `generador` | Generador diésel (la luz nunca te deja sin señal) | 250 |
+| `generador` | Kummins 22 kVA diésel insonorizado | 250 |
 | `kit_reparacion` | Kit de reparación total (todo al 100 %) | 60 |
 | `caja_chica` | $1.000 para tu productora | 120 |
 | `estrella` | Camarógrafo estrella nivel 4 (gratis, sin pago inicial) | 300 |
-| `dron4k` | Dron 4K (cuenta como cámara de calidad 4) | 450 |
-| `grua` | Cámara en grúa telescópica (cámara de calidad 4) | 650 |
-| `unidad_movil` | Unidad móvil de transmisión (switcher de calidad 3) | 900 |
+| `dron4k` | DGI Inspira 3X Cine (dron) Exclusivo | 450 |
+| `grua` | Grúa telescópica de 12 m con cabeza remota | 650 |
+| `unidad_movil` | Sprinto OB equipada (4 a 6 cámaras) | 900 |
+| `vip_cam8k`, `vip_switcher`, `vip_satelital` | Equipos VIP (solo con VIP activo) | 800, 1000, 700 |
+
+---
+
+# Agregados (lo de arriba sigue valiendo; esto se SUMA)
+
+## Errores: campo `codigo`
+Todo error trae además `"codigo"`: un texto fijo para el juego (el `error` es para mostrar y puede cambiar).
+`{ "ok": false, "error": "Tu cuenta está suspendida…", "codigo": "cuenta_suspendida" }`.
+Si no hay uno propio, sale del código HTTP (`sesion_requerida` 401, `sin_creditos` 402, `prohibido` 403, `no_encontrado` 404,
+`conflicto` 409, `limite_intentos` 429, `no_disponible` 503…). Propios, por ejemplo: `producto_inactivo`, `mantenimiento`,
+`cuenta_suspendida`, `cuenta_baneada`, `email_en_uso`, `credenciales_invalidas`, `compra_ajena`, `pago_en_proceso`,
+`ya_reclamado`, `google_pendiente`, `google_otra_cuenta`. nginx
+responde `429` en JSON (`ok:false`, `error`, `Retry-After: 60`) si una IP abusa de `POST /api/entrar`, `/api/registro`,
+`/api/plux/pago` o `/api/chat`.
+
+## `/api/estado`: campos nuevos
+Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar` y `google/verificar`.
+| campo | qué es | detalle en |
+|---|---|---|
+| `inventario`, `mercado`, `creditos_retenidos` | equipos del servidor y mercado; créditos de ventas aún retenidos (7 días) | `MERCADO.md` |
+| `servidor`, `asociacion`, `perfil` | servidor, asociación, alias/fama/sanción del chat | `SOCIAL.md` |
+| `tarjeta_hasta`, `tarjeta_activa`, `tarjeta_reclamada_hoy` | Tarjeta mensual (20 créditos por día por 30 días) | abajo |
+| `cuenta_estado`, `aviso` | `activo` / `suspendido` / `baneado` y el mensaje para el jugador (con el correo de soporte) | abajo |
+| `soporte_sin_leer`, `compras_recientes` | respuestas de soporte sin leer; compras para elegir en un caso | `SOPORTE.md` |
+| `transferencia` | transferencia de cuenta en curso o `null` | abajo |
+| `anuncio`, `mantenimiento` | anuncio del sistema `{id, texto, tipo, hasta}` o `null`; `{activo, mensaje}` | Centro de Control |
+| `duelos`, `desafio` | `{rating, liga, restantes, tiene_equipo, defensas_nuevas, en_curso}` y `{dia, modificador, nombre, icono, restantes, jugado_hoy, pases_prensa}`; `null` sin sesión | `INTEGRAR_DUELOS_DESAFIO.md` |
+| `discord_vinculado`, `discord_invitacion` | bot de Discord | `INTEGRAR_DISCORD.md` |
+
+`creditos` es el saldo real (`creditos - deuda`): puede ser NEGATIVO después de un reembolso o contracargo.
+`tienda.premium[]` trae `tipo` (`equipo`, `vip`, `consumo`, `refuerzo`) y `vip`; un exclusivo apagado en el Centro de
+Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos` que manda el servidor).
+
+## Endpoints nuevos (todos POST con `X-Envivo: 1`, salvo que diga GET)
+| ruta | cuerpo | respuesta |
+|---|---|---|
+| `/api/tarjeta/reclamar` | — | `{creditos, recibidos: 20, tarjeta_reclamada_hoy: true}`; 403 `tarjeta_requerida`, 409 `ya_reclamado` |
+| `/api/cuenta/borrar` | `{confirmar: "BORRAR", clave}` | `{borrada: true}`; anonimiza la cuenta, conserva las compras (SRI). Página pública: `/borrar-cuenta.html` |
+| `/api/cuenta/transferir/iniciar` | `{email_nuevo}` | crea la orden de `transferencia_cuenta` ($9,99) para pagar con `/pago.php` |
+| `/api/cuenta/transferir/confirmar` | `{email, codigo, clave, nombre}` | el nuevo dueño entra con sesión (estado completo) |
+| `/api/cuenta/transferir/cancelar` | — | cancela la pendiente |
+| `/api/google/verificar` | `{producto, purchaseToken, orderId?}` | `{nueva, compra:{id, producto, estado, canal}}` + estado. `orderId` opcional (TWA): se toma de Google; un token se acepta una sola vez (409 si es de otra cuenta). Ver `GOOGLE_PLAY.md` |
+| `/api/mercado/*`, `/api/perfil`, `/api/asociaciones/*`, `/api/chat*` | | `MERCADO.md`, `SOCIAL.md` |
+| `/api/soporte` (GET y POST), `/api/soporte/responder`, `/api/soporte/leido`, GET `/api/soporte/contacto` | | `SOPORTE.md` (solo dentro del juego y por correo) |
+| `/api/discord/codigo`, `/api/discord/desvincular` | — | `INTEGRAR_DISCORD.md` |
+| GET `/api/festival`, `/api/festival/intento/iniciar`, `/api/festival/intento/enviar`, `/api/festival/pases/comprar` | | `INTEGRAR_FESTIVAL.md` |
+| `/api/liga`, `/api/liga/tomar`, `/abandonar`, `/descartar`, `/intento`, `/completar`, `/tienda` | | `INTEGRAR_LIGA.md` |
+| `/api/duelos*`, `/api/desafio*` | | `INTEGRAR_DUELOS_DESAFIO.md` |
+
+**Pases de Prensa: UN solo saldo.** Los que da el Desafío del Día y los del Mega Festival (diarios, VIP, misiones, compra)
+son el mismo saldo: libro `festival_pases` (idempotente por `ref`, tope 10; lo que pase del tope no se suma).
+`Desafio::pases/sumarPases/gastarPases` escriben ahí; `desafio.pases_prensa` y el `pases` del festival dan lo mismo.
+
+## Catálogo actual (reemplaza la tabla de arriba; se puede cambiar precio/créditos/activo en el Centro de Control)
+`creditos_250` $1,99 · `creditos_700` $4,99 · `creditos_1500` $9,99 · `creditos_3200` $19,99 · `bienvenida` $0,99 (una vez:
+150 créditos + camarógrafo senior por 3 eventos + 3 cables) · `inicio` $2,99 (una vez) · `tarjeta_mensual` $4,99 (30 días,
+20 créditos/día; otra compra suma días) · `vip30` $9,99 · `transferencia_cuenta` $9,99 (no sale en la tienda).
+Las ofertas por tiempo (`oferta: {bono_pct, fin, creditos_extra}`) suman % de créditos; lo pagado con oferta se entrega
+aunque la oferta termine. Refuerzos y equipos VIP: `MERCADO.md` y `Catalogo::PREMIUM`. Roles, equipos y tipos de evento que revisa el servidor
+(Festival, Liga) salen de `js/datos.js` en `src/CatalogoJuego.php` (generado con `php server/bin/catalogo_juego.php`).
+
+## Reembolsos, contracargos y abuso
+Un reembolso o contracargo (Centro de Control, o anulación en Google Play) quita lo que dio la compra (créditos, aunque el
+saldo quede negativo; equipos que todavía tenga; días de VIP o tarjeta), sigue el rastro en el mercado (lo retenido al
+vendedor no se libera) y suspende la cuenta. Se BANEA con cualquier contracargo o con 2 reembolsos en 180 días (ajustes
+`abuso_contracargo_banea`, `abuso_reembolsos`, `abuso_dias`). El mensaje (`aviso`) trae el correo de soporte.
+
+## Pago con tarjeta (cambios de seguridad, auditoría A-02 / A-03)
+Cada respuesta 3DS se usa una sola vez, debe ser de la misma transacción y por el mismo monto. Un pago en curso queda
+"procesando": un segundo `POST /api/plux/pago` de la misma orden responde 409 `pago_en_proceso` sin volver a llamar a Plux.
+
+## Centro de Control
+`/admin.php` redirige (302) a `/control/` (formulario de entrada, TOTP opcional, lista de IPs; ver
+`docs/INTEGRAR_CONTROL.md`). `/control/` usa solo métodos del servidor, que auditan en la tabla `auditoria`:
+`Catalogo::guardarAjuste / restaurarAjuste / crearOferta / terminarOferta` (y `premium()` lee los ajustes),
+`Monedero::ajusteManual` (motivo obligatorio, máx. 100.000 por vez, tope diario `ENVIVO_CONTROL_TOPE_CREDITOS`, 20.000 si
+está vacío, 0 = sin tope), `Chat::moderarMensaje / palabra / sancionar(..., $quien) / levantar(..., $quien)`,
+`Soporte::guardarRespuesta / borrarRespuesta / plantilla`, `Ajustes::guardar`, `Compras::revertir`,
+`Cuentas::cambiarEstado`, `Mercado::moderar`, `Transferencias::cancelar`, `Google::revisarAnuladas / avisosPendientes`.

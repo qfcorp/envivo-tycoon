@@ -36,6 +36,44 @@ final class Monedero
     /** Saldo de verdad (créditos menos deuda; negativo si se revirtió una compra ya gastada). */
     public static function saldo(int $jugador): int { return (int) Db::valor('SELECT creditos - deuda FROM jugadores WHERE id = ?', [$jugador]); }
 
+    /** Créditos a mano: máximo por operación y tope diario por defecto (ENVIVO_CONTROL_TOPE_CREDITOS; 0 = sin tope). */
+    public const MANUAL_MAX = 100000;
+    public const MANUAL_TOPE_DIA = 20000;
+
+    public static function topeManualDia(): int
+    {
+        $v = trim(Config::get('ENVIVO_CONTROL_TOPE_CREDITOS'));
+        return $v !== '' && ctype_digit($v) ? (int) $v : self::MANUAL_TOPE_DIA;
+    }
+
+    /** Suma de |créditos a mano| movidos hoy (día local). */
+    public static function manualesHoy(): int
+    {
+        return (int) Db::valor("SELECT COALESCE(SUM(ABS(cambio)), 0) FROM movimientos_creditos WHERE motivo = 'manual' AND creado >= ?", [strtotime('today')]);
+    }
+
+    /**
+     * Da (cambio > 0) o quita créditos a mano desde el Centro de Control: libro con motivo 'manual', tope diario,
+     * auditoría. No deja el saldo en negativo. Devuelve el saldo nuevo.
+     */
+    public static function ajusteManual(int $jugador, int $cambio, string $motivo, string $quien): int
+    {
+        $motivo = trim(preg_replace('/\s+/u', ' ', $motivo) ?? '');
+        Fallo::si($motivo === '' || mb_strlen($motivo) > 300, 'Escribe el motivo (máximo 300 caracteres).', 400, ['codigo' => 'motivo_invalido']);
+        Fallo::si($cambio === 0 || abs($cambio) > self::MANUAL_MAX, 'La cantidad debe ser distinta de 0 y como máximo ' . number_format(self::MANUAL_MAX, 0, ',', '.') . '.', 400, ['codigo' => 'cantidad_invalida']);
+        return Db::tx(function () use ($jugador, $cambio, $motivo, $quien): int {
+            Fallo::si(!Cuentas::porId($jugador), 'Ese jugador no existe.', 404, ['codigo' => 'jugador_no_existe']);
+            $tope = self::topeManualDia();
+            $hoy = self::manualesHoy();
+            Fallo::si($tope > 0 && $hoy + abs($cambio) > $tope, 'Tope diario de créditos a mano: ya se movieron ' . number_format($hoy, 0, ',', '.') . ' de ' . number_format($tope, 0, ',', '.') . ' hoy.', 409, ['codigo' => 'tope_dia']);
+            $antes = self::saldo($jugador);
+            Fallo::si($antes + $cambio < 0, 'No se pueden quitar ' . abs($cambio) . ' créditos: tiene ' . $antes . '.', 409, ['codigo' => 'sin_creditos']);
+            $saldo = self::mover($jugador, $cambio, 'manual', 'control:' . mb_substr($motivo, 0, 200));
+            Auditoria::anotar($quien, $cambio > 0 ? 'creditos_dar' : 'creditos_quitar', abs($cambio) . ' créditos: ' . $motivo . ' (saldo ' . $antes . ' -> ' . $saldo . ')', $jugador);
+            return $saldo;
+        });
+    }
+
     /** Crea una entrega y la devuelve como la ve el juego. */
     public static function entregar(int $jugador, string $tipo, string $item, int $cantidad, string $origen, ?string $nivel = null, ?int $eventos = null): array
     {
@@ -77,6 +115,7 @@ final class Monedero
     {
         $p = Catalogo::premium($item);
         if (!$p) throw new \InvalidArgumentException('Ese artículo no existe en la tienda.', 404);
+        if (!$p['activo']) throw new \InvalidArgumentException('Ese artículo no está a la venta por ahora.', 404);
         return Db::tx(function () use ($jugador, $item, $p): array {
             if (!empty($p['vip']) && !self::vipActivo($jugador)) throw new \RuntimeException('Los equipos VIP se canjean solo con el Pase VIP activo.', 403);
             if (self::saldo($jugador) < $p['creditos']) throw new \RuntimeException('No tienes créditos suficientes. Necesitas ' . $p['creditos'] . ' créditos.', 402);

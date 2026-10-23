@@ -1,13 +1,11 @@
 <?php
 // SOLO PRUEBAS: lo incluye pruebas.php después de pruebas_mercado_social.php (usa sus ayudas).
 // Tienda nueva (precios, bienvenida, tarjeta mensual, refuerzos), transferencia oficial de cuenta, reembolsos/contracargos,
-// Google Play (contra un Google FALSO), Centro de Control (admin.php), soporte, códigos de error, borrar la cuenta y los
+// Google Play (contra un Google FALSO), acciones del Centro de Control (métodos del servidor; la interfaz /control/ la prueba pruebas_control.php), soporte, códigos de error, borrar la cuenta y los
 // arreglos de la auditoría de seguridad (A-01, A-02, A-03, A-08).
 if (PHP_SAPI !== 'cli' || !isset($nuevo, $pagador, $multi)) { http_response_code(404); exit; }
 
 $exec('DELETE FROM intentos');
-$csrfAdm = function () use ($adm, $AU, $AC): string { [, $h] = $adm('/admin.php?t=ajustes', $AU, $AC); return preg_match('/name="csrf" value="([a-f0-9]+)"/', $h, $m) ? $m[1] : ''; };
-$admPost = function (string $tab, array $datos) use ($adm, $AU, $AC, $csrfAdm): array { return $adm('/admin.php?t=' . $tab, $AU, $AC, ['csrf' => $csrfAdm()] + $datos); };
 $tareas = fn() => (string) shell_exec('ENVIVO_CONFIG=' . escapeshellarg((string) getenv('ENVIVO_CONFIG')) . ' php ' . escapeshellarg(dirname(__DIR__) . '/bin/tareas.php') . ' 2>&1');
 $auditado = fn(string $accion, ?int $j = null) => (int) $val('SELECT COUNT(*) FROM auditoria WHERE accion = ?' . ($j !== null ? ' AND jugador_id = ' . (int) $j : ''), [$accion]);
 
@@ -149,10 +147,10 @@ check('El de la tarjeta robada compra en el mercado a la cuenta B (712 retenidos
 check('Comprador y vendedor desde la misma IP -> aviso y marca de riesgo en las dos cuentas', [true, true, true], [(bool) $val("SELECT 1 FROM avisos WHERE tipo = 'mercado_misma_ip' AND detalle LIKE ?", ['%N° ' . $pubLav . '%']),
     $val('SELECT riesgo_motivo FROM jugadores WHERE id = ?', [$JFR]) !== null, $val('SELECT riesgo_motivo FROM jugadores WHERE id = ?', [$JLAV]) !== null]);
 $saldoAntes = $saldo($JFR); $saldoLav = $saldo($JLAV);
-[$h, $html] = $admPost('compras&id=' . $cF['id'], ['accion' => 'revertir', 'compra_id' => $cF['id'], 'tipo' => 'reembolso', 'motivo' => '']);
-check('Revertir sin motivo -> no hace nada', ['pagado', true], [$compra($tokF)['estado'], str_contains($html, 'motivo')]);
-[$h, $html] = $admPost('compras&id=' . $cF['id'], ['accion' => 'revertir', 'compra_id' => $cF['id'], 'tipo' => 'reembolso', 'motivo' => 'Reembolso pedido al banco']);
-check('Reembolso -> compra revertida, cuenta suspendida (1.er reembolso: todavía no banea)', [true, 'revertido', 'reembolso', 'suspendido'], [str_contains($html, 'revertida'), $compra($tokF)['estado'], $compra($tokF)['revertida_tipo'], $val('SELECT estado FROM jugadores WHERE id = ?', [$JFR])]);
+$r = $accion('revertir', ['compra' => $cF['id'], 'tipo' => 'reembolso', 'motivo' => '']);
+check('Revertir sin motivo -> no hace nada', ['pagado', 'motivo_invalido'], [$compra($tokF)['estado'], $r['codigo'] ?? null]);
+$r = $accion('revertir', ['compra' => $cF['id'], 'tipo' => 'reembolso', 'motivo' => 'Reembolso pedido al banco']);
+check('Reembolso -> compra revertida, cuenta suspendida (1.er reembolso: todavía no banea)', [true, 'revertido', 'reembolso', 'suspendido'], [$r['ok'], $compra($tokF)['estado'], $compra($tokF)['revertida_tipo'], $val('SELECT estado FROM jugadores WHERE id = ?', [$JFR])]);
 check('…se descuentan los 3.200 créditos aunque ya los gastó: el saldo queda NEGATIVO', $saldoAntes - 3200, $saldo($JFR));
 check('…libro = saldo (con la deuda)', $saldo($JFR), $libro($JFR));
 check('…lo retenido a la cuenta B se recupera (nunca le llega) y el equipo vuelve a B', ['recuperado', $saldoLav, $JLAV, 'bodega'],
@@ -181,24 +179,24 @@ check('…ni usar el mercado', false, $fr->apiGet('/api/mercado')['puede']);
 $fr->api('/api/vip/bono');
 check('…ni reclamar el bono VIP', 403, $fr->http);
 check('…pero sí puede leer su partida y escribir a soporte', [200], [$fr->get('/api/partida')]);
-[$h, $html] = $admPost('compras&id=' . $cV['id'], ['accion' => 'revertir', 'compra_id' => $cV['id'], 'tipo' => 'reembolso', 'motivo' => 'Reembolso pedido']);
+$accion('revertir', ['compra' => $cV['id'], 'tipo' => 'reembolso', 'motivo' => 'Reembolso pedido']);
 check('Reembolso del VIP -> el VIP termina (le quitan los 30 días)', [true, 'revertido'], [(int) $val('SELECT vip_hasta FROM jugadores WHERE id = ?', [$JFR]) <= time(), $val('SELECT estado FROM compras WHERE id = ?', [$cV['id']])]);
 check('G6: 2.º reembolso en 180 días -> cuenta BANEADA (sesiones cerradas) y aviso', ['baneado', false, true], [$val('SELECT estado FROM jugadores WHERE id = ?', [$JFR]), $fr->apiGet('/api/estado')['logueado'], (bool) $val("SELECT 1 FROM avisos WHERE tipo = 'abuso_reembolsos' AND detalle LIKE ?", ['%cuenta ' . $JFR . ' %'])]);
 $r = $fr->api('/api/entrar', ['email' => $emailFR, 'clave' => $claveFR]);
 check('…el baneado ve un mensaje claro con el correo de soporte', [403, 'cuenta_baneada', true], [$fr->http, $r['codigo'] ?? null, str_contains((string) ($r['error'] ?? ''), 'soporte@prueba.example')]);
-[$h, $html] = $admPost('compras&id=' . $cF['id'], ['accion' => 'revertir', 'compra_id' => $cF['id'], 'tipo' => 'reembolso', 'motivo' => 'otra vez']);
-check('Revertir otra vez la misma compra -> no hace nada (idempotente)', [true, $saldoAntes - 3200], [str_contains($html, 'no está pagada'), $saldo($JFR)]);
+$r = $accion('revertir', ['compra' => $cF['id'], 'tipo' => 'reembolso', 'motivo' => 'otra vez']);
+check('Revertir otra vez la misma compra -> 409, no hace nada (idempotente)', [409, $saldoAntes - 3200], [$r['http'] ?? null, $saldo($JFR)]);
 check('Una compra revertida no se vuelve a aprobar (aviso de Plux PAGADO después)', [200, 'ya_estaba_pagado', 'revertido'], (function () use ($hook, $E, $cF, $compra, $tokF) { [$h, $j] = $hook(['state' => 'PAGADO', 'description' => 'EV-' . $cF['id'], 'amount' => 19.99], $E('PLUX_WEBHOOK_USUARIO'), $E('PLUX_WEBHOOK_CLAVE')); return [$h, $j['resultado'] ?? null, $compra($tokF)['estado']]; })());
 check('Auditoría: 2 compra_reembolso y el baneo anotados', [2, 1], [$auditado('compra_reembolso', $JFR), $auditado('cuenta_baneado', $JFR)]);
 // Paquete de inicio revertido: la cámara del paquete se quita si todavía la tiene
 [$ip, $JIP] = $nuevo('Inicio Revertido');
 $pagar($ip, $ordenar($ip, 'inicio'), '4540639936908783');
 $cI = Db_todas($pdo, "SELECT * FROM compras WHERE jugador_id = ? AND producto = 'inicio'", [$JIP])[0];
-$admPost('compras&id=' . $cI['id'], ['accion' => 'revertir', 'compra_id' => $cI['id'], 'tipo' => 'reembolso', 'motivo' => 'Prueba']);
+$accion('revertir', ['compra' => $cI['id'], 'tipo' => 'reembolso', 'motivo' => 'Prueba']);
 check('Reembolso del paquete de inicio -> la cámara del paquete sale del inventario y se quitan sus 200 créditos', [[], 'revocado', 0],
     [$ip->apiGet('/api/estado')['inventario'], $val("SELECT estado FROM inventario WHERE jugador_id = ? AND item = 'cam_pro'", [$JIP]), $saldo($JIP)]);
 // Reactivar la cuenta
-[$h, $html] = $admPost('jugadores&id=' . $JFR, ['accion' => 'cuenta_estado', 'jugador_id' => $JFR, 'estado' => 'activo', 'motivo' => '']);
+$accion('cuenta_estado', ['jugador' => $JFR, 'estado' => 'activo', 'motivo' => '']);
 check('Centro de Control: levantar el baneo (reactivar la cuenta)', ['activo', true], [$val('SELECT estado FROM jugadores WHERE id = ?', [$JFR]), $auditado('cuenta_activo', $JFR) === 1]);
 $darCreditos($JFR, 5000);
 check('La deuda se descuenta de lo próximo que reciba (5000 - deuda)', $saldoAntes - 3200 + 5000, $saldo($JFR));
@@ -247,10 +245,8 @@ check('Auditoría: transferencia iniciada, pagada y completada', [1, 1, 1], [$au
 [$tc, $JTC] = $pagador('Cancela Transferencia');
 $tc->api('/api/cuenta/transferir/iniciar', ['email_nuevo' => 'cancelada.' . bin2hex(random_bytes(3)) . '@prueba.example']);
 $tid = (int) $val("SELECT id FROM transferencias WHERE jugador_id = ? AND estado = 'pendiente_pago'", [$JTC]);
-[$h, $html] = $adm('/admin.php?t=transferencias', $AU, $AC);
-si('El Centro de Control lista las transferencias', str_contains($html, 'id="tabla-transferencias"') && str_contains($html, 'pendiente_pago'));
-$admPost('transferencias', ['accion' => 'transferencia_cancelar', 'transferencia_id' => $tid]);
-check('Cancelar desde el panel -> cancelada y su orden ya no se puede pagar', ['cancelada', 'rechazado'], [$val('SELECT estado FROM transferencias WHERE id = ?', [$tid]), $val('SELECT c.estado FROM compras c JOIN transferencias t ON t.compra_id = c.id WHERE t.id = ?', [$tid])]);
+$accion('transferencia_cancelar', ['transferencia' => $tid]);
+check('Cancelar desde el Centro de Control (Transferencias::cancelar) -> cancelada y su orden ya no se puede pagar', ['cancelada', 'rechazado'], [$val('SELECT estado FROM transferencias WHERE id = ?', [$tid]), $val('SELECT c.estado FROM compras c JOIN transferencias t ON t.compra_id = c.id WHERE t.id = ?', [$tid])]);
 
 // =====================================================================
 titulo('Google Play (contra un Google FALSO)');
@@ -306,40 +302,58 @@ check('…y reintenta los avisos a Google que faltan (dentro de los 3 días)', t
 
 // =====================================================================
 titulo('Centro de Control: productos, ofertas, mantenimiento, anuncio, jugadores');
-$exec('DELETE FROM intentos');
-foreach (array_keys(['resumen' => 1, 'jugadores' => 1, 'compras' => 1, 'productos' => 1, 'mercado' => 1, 'chat' => 1, 'soporte' => 1, 'transferencias' => 1, 'ajustes' => 1, 'auditoria' => 1]) as $tab) {
-    [$h, $html] = $adm('/admin.php?t=' . $tab, $AU, $AC);
-    check("Pestaña $tab -> 200 con la barra de pestañas", [200, true], [$h, str_contains($html, 'class="tabs"') && str_contains($html, 'aria-current="page"')]);
-}
-[$h, $html] = $adm('/admin.php?t=resumen', $AU, $AC);
-$dau = (int) $val('SELECT COUNT(*) FROM actividad WHERE dia = ?', [date('Y-m-d')]);
-si('Resumen: DAU/MAU, ARPPU, más vendidos, por canal (web y Google) y créditos emitidos/quemados', $dau > 0 && str_contains($html, '<b id="dau-mau">' . $dau . ' / ') && str_contains($html, 'id="arppu"') && str_contains($html, 'id="tabla-mas-vendidos"') && str_contains($html, 'Google Play') && str_contains($html, 'id="creditos-quemados"'));
-[$h, $html] = $admPost('productos', ['accion' => 'producto_guardar', 'producto' => 'creditos_700', 'precio' => '5.49', 'creditos' => '800', 'activo' => '1']);
+$accion('producto_guardar', ['producto' => 'creditos_700', 'precio' => 5.49, 'creditos' => 800, 'activo' => true]);
 $pt = array_values(array_filter((new Nav($URL, 'ver_tienda'))->apiGet('/api/estado')['tienda']['productos'], fn($p) => $p['id'] === 'creditos_700'))[0];
 check('Editar precio y créditos -> la tienda lo muestra', [5.49, 800, 4.99, 700], [$pt['precio'], $pt['creditos'], $pt['precio_base'], $pt['creditos_base']]);
 [$pc, $JPC] = $nuevo('Precio Nuevo');
 $tokPc = $ordenar($pc, 'creditos_700');
 check('…la orden nueva usa el precio nuevo (5,49 = 4,77 + 0,72) y 800 créditos', [5.49, 4.77, 0.72, 800], [(float) $compra($tokPc)['total'], (float) $compra($tokPc)['subtotal'], (float) $compra($tokPc)['iva'], (int) $compra($tokPc)['creditos']]);
-[$h, $html] = $admPost('productos', ['accion' => 'oferta_crear', 'producto' => 'creditos_700', 'bono_pct' => '50', 'inicio' => '', 'fin' => date('Y-m-d\TH:i', time() + 3600)]);
+$r = $accion('oferta_crear', ['producto' => 'creditos_250', 'bono_pct' => 50, 'inicio' => time(), 'fin' => time() - 10]);
+check('Oferta con fin en el pasado -> 400 fechas_invalidas', [false, 'fechas_invalidas'], [$r['ok'], $r['codigo'] ?? null]);
+$r = $accion('oferta_crear', ['producto' => 'transferencia_cuenta', 'bono_pct' => 50, 'fin' => time() + 3600]);
+check('…en un producto que no da créditos -> 400 oferta_invalida', 'oferta_invalida', $r['codigo'] ?? null);
+$r = $accion('oferta_crear', ['producto' => 'creditos_700', 'bono_pct' => 50, 'inicio' => time(), 'fin' => time() + 3600]);
+check('Crear oferta -> su id', [true, true], [$r['ok'], ($r['r'] ?? 0) > 0]);
 $pt = array_values(array_filter((new Nav($URL, 'ver_tienda2'))->apiGet('/api/estado')['tienda']['productos'], fn($p) => $p['id'] === 'creditos_700'))[0];
 check('Oferta +50 % por tiempo limitado -> 1.200 créditos con la oferta en la tienda', [1200, 50], [$pt['creditos'], $pt['oferta']['bono_pct'] ?? null]);
 $tokOf = $ordenar($pc, 'creditos_700');
 $exec('UPDATE ofertas SET activa = 0');
 $pagar($pc, $tokOf, '4540639936908783');
 check('…lo que se pagó con la oferta se entrega aunque la oferta termine (1.200 guardados en la compra)', [1200, 50, 1200], [(int) $compra($tokOf)['creditos'], (int) $compra($tokOf)['bono_pct'], $saldo($JPC)]);
-$admPost('productos', ['accion' => 'producto_guardar', 'producto' => 'creditos_250', 'precio' => '1.99', 'creditos' => '250']);   // sin "activo" = apagado
+$accion('producto_guardar', ['producto' => 'creditos_250', 'precio' => 1.99, 'creditos' => 250, 'activo' => false]);
 check('Apagar un producto -> no sale en la tienda', false, in_array('creditos_250', array_column((new Nav($URL, 'ver_tienda3'))->apiGet('/api/estado')['tienda']['productos'], 'id'), true));
 $r = $pc->api('/api/orden', ['producto' => 'creditos_250']);
 check('…y no se puede ordenar (409 producto_inactivo)', [409, 'producto_inactivo'], [$pc->http, $r['codigo'] ?? null]);
-$admPost('productos', ['accion' => 'producto_restaurar', 'producto' => 'creditos_250']);
-$admPost('productos', ['accion' => 'producto_restaurar', 'producto' => 'creditos_700']);
+$accion('producto_restaurar', ['producto' => 'creditos_250']);
+$accion('producto_restaurar', ['producto' => 'creditos_700']);
 check('Restaurar -> vuelven los valores de Catalogo.php', [true, 4.99], [in_array('creditos_250', array_column((new Nav($URL, 'ver_tienda4'))->apiGet('/api/estado')['tienda']['productos'], 'id'), true), array_values(array_filter((new Nav($URL, 'ver_tienda5'))->apiGet('/api/estado')['tienda']['productos'], fn($p) => $p['id'] === 'creditos_700'))[0]['precio']]);
 check('Cada cambio de precio quedó en la auditoría', [true, true, true], [$auditado('producto_editar') >= 2, $auditado('oferta_crear') === 1, $auditado('producto_restaurar') === 2]);
-[$h, $html] = $admPost('productos', ['accion' => 'producto_guardar', 'producto' => 'creditos_700', 'precio' => '0.10', 'creditos' => '700', 'activo' => '1']);
-check('Precio menor a $0,50 -> rechazado', [true, false], [str_contains($html, 'El precio debe ser'), $val("SELECT precio FROM productos_ajustes WHERE producto = 'creditos_700'")]);
+$r = $accion('producto_guardar', ['producto' => 'creditos_700', 'precio' => 0.10, 'creditos' => 700, 'activo' => true]);
+check('Precio menor a $0,50 -> 400 precio_invalido, nada guardado', [false, 'precio_invalido', false], [$r['ok'], $r['codigo'] ?? null, $val("SELECT precio FROM productos_ajustes WHERE producto = 'creditos_700'")]);
+$r = $accion('producto_guardar', ['producto' => 'no_existe', 'precio' => 1.99, 'creditos' => 1, 'activo' => true]);
+check('Producto que no existe -> 404', [false, 404], [$r['ok'], $r['http'] ?? null]);
+// Exclusivos con créditos: Catalogo::premium() lee productos_ajustes (costo y activo)
+$accion('producto_guardar', ['producto' => 'kit_reparacion', 'precio' => 0, 'creditos' => 75, 'activo' => true]);
+$prem = array_values(array_filter((new Nav($URL, 'ver_premium'))->apiGet('/api/estado')['tienda']['premium'], fn($p) => $p['id'] === 'kit_reparacion'))[0] ?? [];
+check('Exclusivo: costo 60 -> 75 créditos en la tienda (precio no se guarda)', [75, null], [$prem['creditos'] ?? null, $val("SELECT precio FROM productos_ajustes WHERE producto = 'kit_reparacion'")]);
+[$kp, $JKP] = $nuevo('Kit Precio');
+$darCreditos($JKP, 70);
+$kp->api('/api/gastar', ['item' => 'kit_reparacion']);
+check('…con 70 créditos ya no alcanza (402)', [402, 70], [$kp->http, $saldo($JKP)]);
+$darCreditos($JKP, 5);
+$kp->api('/api/gastar', ['item' => 'kit_reparacion']);
+check('…con 75 sí, y cobra 75', [200, 0], [$kp->http, $saldo($JKP)]);
+$accion('producto_guardar', ['producto' => 'kit_reparacion', 'precio' => 0, 'creditos' => 75, 'activo' => false]);
+$darCreditos($JKP, 100);
+$kp->api('/api/gastar', ['item' => 'kit_reparacion']);
+check('Exclusivo apagado -> no sale en la tienda y no se puede canjear (404), saldo igual', [false, 404, 100], [in_array('kit_reparacion', array_column((new Nav($URL, 'ver_premium2'))->apiGet('/api/estado')['tienda']['premium'], 'id'), true), $kp->http, $saldo($JKP)]);
+$r = $accion('producto_guardar', ['producto' => 'kit_reparacion', 'precio' => 0, 'creditos' => 0, 'activo' => true]);
+check('…costo 0 -> 400 creditos_invalidos', 'creditos_invalidos', $r['codigo'] ?? null);
+$accion('producto_restaurar', ['producto' => 'kit_reparacion']);
+check('…restaurar -> vuelve a 60 y a la tienda', 60, array_values(array_filter((new Nav($URL, 'ver_premium3'))->apiGet('/api/estado')['tienda']['premium'], fn($p) => $p['id'] === 'kit_reparacion'))[0]['creditos'] ?? null);
 // Mantenimiento
 $tokM = $ordenar($pc, 'creditos_250');
-$admPost('ajustes', ['accion' => 'mantenimiento', 'activo' => '1', 'mensaje' => 'Volvemos a las 18:00']);
+$accion('ajustes', ['accion' => 'mantenimiento', 'valores' => ['mantenimiento' => '1', 'mantenimiento_mensaje' => 'Volvemos a las 18:00']]);
 $e = $pc->apiGet('/api/estado');
 check('Mantenimiento -> estado.mantenimiento activo con el mensaje', ['activo' => true, 'mensaje' => 'Volvemos a las 18:00'], $e['mantenimiento']);
 $r = $pc->api('/api/orden', ['producto' => 'creditos_250']);
@@ -349,30 +363,28 @@ check('…ni pagar una orden ya creada (503) sin llamar a Plux', [503, 'mantenim
 $r = $gp2->api('/api/google/verificar', ['producto' => 'creditos_250', 'purchaseToken' => 'ok-' . bin2hex(random_bytes(10))]);
 check('…ni verificar compras nuevas de Google (503)', [503, 'mantenimiento'], [$gp2->http, $r['codigo'] ?? null]);
 check('…pago.php muestra el mensaje de mantenimiento', [503, true], [$pc->get('/pago.php?o=' . $tokM), $pc->tiene('Volvemos a las 18:00')]);
-$admPost('ajustes', ['accion' => 'mantenimiento', 'mensaje' => '']);
+$accion('ajustes', ['accion' => 'mantenimiento', 'valores' => ['mantenimiento' => '0', 'mantenimiento_mensaje' => '']]);
 check('Quitar el mantenimiento -> se puede ordenar otra vez', 200, ($pc->api('/api/orden', ['producto' => 'creditos_250']) && true) ? $pc->http : 0);
-$admPost('ajustes', ['accion' => 'anuncio', 'texto' => '¡Festival de Quito este sábado!', 'tipo' => 'evento', 'hasta' => '']);
+$accion('ajustes', ['accion' => 'anuncio', 'valores' => ['anuncio_texto' => '¡Festival de Quito este sábado!', 'anuncio_tipo' => 'evento', 'anuncio_hasta' => '']]);
 $an = (new Nav($URL, 'anuncio'))->apiGet('/api/estado')['anuncio'];
 check('Anuncio del sistema -> /api/estado.anuncio (también sin sesión)', ['¡Festival de Quito este sábado!', 'evento', null, true], [$an['texto'] ?? null, $an['tipo'] ?? null, array_key_exists('hasta', (array) $an) ? $an['hasta'] : 'x', strlen((string) ($an['id'] ?? '')) === 12]);
-$admPost('ajustes', ['accion' => 'anuncio', 'texto' => '']);
+$accion('ajustes', ['accion' => 'anuncio', 'valores' => ['anuncio_texto' => '']]);
+$r = $accion('ajustes', ['accion' => 'x', 'valores' => ['Clave Mala' => '1']]);
+check('Ajustes::guardar con una clave no válida -> 400 ajuste_invalido', [false, 'ajuste_invalido'], [$r['ok'], $r['codigo'] ?? null]);
+$antes = $auditado('anuncio');
+$accion('ajustes', ['accion' => 'anuncio', 'valores' => ['anuncio_texto' => '']]);
+check('…guardar lo mismo otra vez no deja otra línea en la auditoría', $antes, $auditado('anuncio'));
 check('…quitar el anuncio', null, (new Nav($URL, 'anuncio2'))->apiGet('/api/estado')['anuncio']);
-check('Mantenimiento y anuncio en la auditoría', [true, true], [$auditado('mantenimiento') === 2, $auditado('anuncio') === 2]);
+check('Mantenimiento y anuncio en la auditoría (una línea por guardado, con lo que cambió)', [2, 2, true], [$auditado('mantenimiento'), $auditado('anuncio'), str_contains((string) $val("SELECT detalle FROM auditoria WHERE accion = 'mantenimiento' ORDER BY id LIMIT 1"), 'mantenimiento:  -> 1')]);
 // Jugadores
-[$h, $html] = $adm('/admin.php?t=jugadores&q=' . urlencode($emailFR), $AU, $AC);
-si('Buscar jugador por correo', str_contains($html, 'id="tabla-jugadores"') && str_contains($html, $emailFR));
-[$h, $html] = $adm('/admin.php?t=jugadores&id=' . $JFR, $AU, $AC);
-si('Ficha del jugador: compras, libro, inventario, entregas, auditoría', str_contains($html, 'id="ficha-compras"') && str_contains($html, 'id="ficha-libro"') && str_contains($html, 'id="ficha-inventario"') && str_contains($html, 'id="ficha-entregas"') && str_contains($html, 'compra_reembolso'));
 [$bn, $JBN, $emailBN, , $claveBN] = $nuevo('Baneado');
-$admPost('jugadores&id=' . $JBN, ['accion' => 'cuenta_estado', 'jugador_id' => $JBN, 'estado' => 'baneado', 'motivo' => 'Trampas']);
+$accion('cuenta_estado', ['jugador' => $JBN, 'estado' => 'baneado', 'motivo' => 'Trampas']);
 check('Banear -> se cierran sus sesiones', [false, 'baneado'], [$bn->apiGet('/api/estado')['logueado'], $val('SELECT estado FROM jugadores WHERE id = ?', [$JBN])]);
 $r = $bn->api('/api/entrar', ['email' => $emailBN, 'clave' => $claveBN]);
 check('…y no puede entrar (403 cuenta_baneada)', [403, 'cuenta_baneada'], [$bn->http, $r['codigo'] ?? null]);
 [$cs, $JCS, $emailCS] = $nuevo('Cerrar Sesiones');
-$admPost('jugadores&id=' . $JCS, ['accion' => 'cerrar_sesiones', 'jugador_id' => $JCS]);
-check('Cerrar sesiones de un jugador', [false, 1], [$cs->apiGet('/api/estado')['logueado'], $auditado('sesiones_cerrar', $JCS)]);
-[$h, $csv] = $adm('/admin.php?a=csv&canal=google_play', $AU, $AC);
-$lin = array_values(array_filter(explode("\n", trim($csv))));
-check('CSV filtrado por canal google_play: solo compras de Google', [(int) $val("SELECT COUNT(*) FROM compras WHERE canal = 'google_play'"), true], [count($lin) - 1, array_reduce(array_slice($lin, 1), fn($c, $l) => $c && str_ends_with(trim($l), ';google_play'), true)]);
+$r = $accion('cerrar_sesiones', ['jugador' => $JCS]);
+check('Cerrar sesiones de un jugador (Sesiones::revocarTodas)', [true, 1, false], [$r['ok'], $r['r'] ?? null, $cs->apiGet('/api/estado')['logueado']]);
 // Mercado: congelar y quitar
 [$mv, $JMV] = $pagador('Mercado Moderado');
 $darCreditos($JMV, 300);
@@ -380,14 +392,12 @@ $r = $mv->api('/api/gastar', ['item' => 'generador']);
 $invMv = (int) $r['item']['id'];
 $r = $mv->api('/api/mercado/publicar', ['inventario_id' => $invMv, 'precio' => 300]);
 $pubMv = (int) $r['publicacion']['id'];
-$admPost('mercado', ['accion' => 'mercado_congelar', 'publicacion_id' => $pubMv]);
+$accion('mercado', ['publicacion' => $pubMv, 'que' => 'congelar']);
 $r = $x1->api('/api/mercado/comprar', ['publicacion_id' => $pubMv]);
 check('Congelar una publicación -> nadie la puede comprar (409 congelada)', [409, 'congelada'], [$x1->http, $r['codigo'] ?? null]);
-$admPost('mercado', ['accion' => 'mercado_quitar', 'publicacion_id' => $pubMv]);
+$accion('mercado', ['publicacion' => $pubMv, 'que' => 'quitar']);
 check('Quitarla -> el equipo vuelve a la bodega del vendedor', ['quitada', 'bodega', true], [$val('SELECT estado FROM mercado_publicaciones WHERE id = ?', [$pubMv]), $val('SELECT estado FROM inventario WHERE id = ?', [$invMv]), in_array($invMv, array_column($mv->apiGet('/api/estado')['inventario'], 'id'), true)]);
 check('…moderación del mercado en la auditoría', [1, 1], [$auditado('mercado_congelar', $JMV), $auditado('mercado_quitar', $JMV)]);
-[$h, $html] = $adm('/admin.php?t=auditoria', $AU, $AC);
-si('Pestaña Auditoría lista las acciones', str_contains($html, 'id="tabla-auditoria"') && str_contains($html, 'mercado_quitar'));
 
 // =====================================================================
 titulo('Soporte dentro del juego');
@@ -412,12 +422,9 @@ $so->api('/api/soporte', ['categoria' => 'otro', 'asunto' => str_repeat('a', 81)
 check('Asunto de más de 80 -> 400', 400, $so->http);
 check('estado.compras_recientes para elegir la compra', true, in_array($cso, array_column($so->apiGet('/api/estado')['compras_recientes'], 'id'), true));
 // Centro de Control responde
-[$h, $html] = $adm('/admin.php?t=soporte', $AU, $AC);
-si('Bandeja de soporte: el caso con el jugador y la compra', str_contains($html, 'id="tabla-soporte"') && str_contains($html, 'No llegaron mis créditos'));
-[$h, $html] = $adm('/admin.php?t=soporte&caso=' . $caso, $AU, $AC);
-si('Ficha del caso: diagnóstico, enlace al jugador y a la compra, respuestas rápidas', str_contains($html, 'id="ficha-caso"') && str_contains($html, 'Diagnóstico del juego') && str_contains($html, 't=jugadores&amp;id=' . $JSO) && str_contains($html, 't=compras&amp;id=' . $cso) && str_contains($html, 'Pago acreditado'));
-$rapida = (int) $val("SELECT id FROM soporte_respuestas WHERE titulo = 'Pago acreditado'");
-$admPost('soporte&caso=' . $caso, ['accion' => 'soporte_responder', 'caso_id' => $caso, 'rapida_id' => $rapida]);
+$rapida = (string) $val("SELECT texto FROM soporte_respuestas WHERE titulo = 'Pago acreditado'");
+check('Hay respuestas rápidas iniciales ("Pago acreditado")', true, $rapida !== '');
+$accion('soporte_responder', ['caso' => $caso, 'texto' => $rapida]);
 $e = $so->apiGet('/api/estado');
 check('Responder con respuesta rápida -> soporte_sin_leer 1, caso respondido', [1, 'respondido'], [$e['soporte_sin_leer'], $val('SELECT estado FROM soporte_casos WHERE id = ?', [$caso])]);
 $l = $so->apiGet('/api/soporte');
@@ -428,10 +435,18 @@ $r = $so->api('/api/soporte/responder', ['caso_id' => $caso, 'mensaje' => 'Ya lo
 check('El jugador responde -> el caso vuelve a "abierto"', [200, 'abierto'], [$so->http, $r['caso']['estado'] ?? null]);
 $x1->api('/api/soporte/responder', ['caso_id' => $caso, 'mensaje' => 'me meto']);
 check('Responder un caso ajeno -> 404', 404, $x1->http);
-$admPost('soporte&caso=' . $caso, ['accion' => 'soporte_cerrar', 'caso_id' => $caso]);
+$accion('soporte_estado', ['caso' => $caso, 'estado' => 'cerrado']);
 check('Cerrar desde el panel (y queda en la auditoría)', ['cerrado', 1], [$val('SELECT estado FROM soporte_casos WHERE id = ?', [$caso]), $auditado('soporte_cerrar', $JSO)]);
-$admPost('soporte', ['accion' => 'respuesta_guardar', 'rapida_id' => 0, 'titulo' => 'Cuenta borrada', 'texto' => 'Tu cuenta fue borrada.']);
-check('Respuestas rápidas editables', true, (bool) $val("SELECT 1 FROM soporte_respuestas WHERE titulo = 'Cuenta borrada'"));
+$r = $accion('respuesta_guardar', ['titulo' => 'Cuenta borrada', 'texto' => 'Hola {nombre}: tu caso N° {caso} quedó listo.']);
+check('Respuestas rápidas: crear (Soporte::guardarRespuesta) con auditoría', [true, true, 1], [$r['ok'], (bool) $val("SELECT 1 FROM soporte_respuestas WHERE titulo = 'Cuenta borrada'"), $auditado('soporte_rapida_crear')]);
+$idR = (int) ($r['r']['id'] ?? 0);
+$accion('respuesta_guardar', ['id' => $idR, 'titulo' => 'Cuenta borrada (editada)', 'texto' => 'Hola {nombre}: tu caso N° {caso} quedó listo.']);
+check('…editar', 'Cuenta borrada (editada)', $val('SELECT titulo FROM soporte_respuestas WHERE id = ?', [$idR]));
+$accion('soporte_responder', ['caso' => $caso, 'texto' => 'Hola {nombre}: tu caso N° {caso} quedó listo.']);
+check('…la plantilla cambia {nombre} y {caso} por los datos del caso', 'Hola ' . $val('SELECT nombre FROM jugadores WHERE id = ?', [$JSO]) . ': tu caso N° ' . $caso . ' quedó listo.', $val("SELECT texto FROM soporte_mensajes WHERE caso_id = ? AND autor = 'soporte' ORDER BY id DESC LIMIT 1", [$caso]));
+$accion('respuesta_borrar', ['id' => $idR]);
+check('…borrar (Soporte::borrarRespuesta); borrarla otra vez -> 404', [false, 404], [(bool) $val('SELECT 1 FROM soporte_respuestas WHERE id = ?', [$idR]), $accion('respuesta_borrar', ['id' => $idR])['http'] ?? null]);
+$accion('soporte_estado', ['caso' => $caso, 'estado' => 'cerrado']);
 for ($i = 0; $i < 4; $i++) $so->api('/api/soporte', ['categoria' => 'sugerencia', 'asunto' => 'Idea ' . $i, 'mensaje' => 'Una idea']);
 $r = $so->api('/api/soporte', ['categoria' => 'sugerencia', 'asunto' => 'Idea 5', 'mensaje' => 'Otra idea']);
 check('Con 4 casos abiertos se puede uno más (5) y el 6.º -> 409 max_casos', [200, 409], [$so->http, ($so->api('/api/soporte', ['categoria' => 'sugerencia', 'asunto' => 'Idea 6', 'mensaje' => 'x']) && true) ? $so->http : 0]);

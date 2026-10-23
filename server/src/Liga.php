@@ -49,25 +49,15 @@ final class Liga
     /** Imprevistos que cortan la transmisión ("sin cortes" = ninguno de estos salió mal). */
     public const CORTES = ['internet', 'luz', 'senal', 'cable', 'bateria', 'falla'];
 
-    /** Copia de EVENT_TYPES de js/logic.js (solo lo que hace falta para armar contratos). */
-    public const TIPOS = [
-        'misa' => ['nombre' => 'Misa / ceremonia', 'cams' => [1, 1], 'audio' => true, 'stream' => 0.3, 'outdoor' => 0.0, 'diff' => 1, 'pay' => [150, 280], 'clientes' => ['Parroquia San José', 'Iglesia El Buen Pastor']],
-        'boda' => ['nombre' => 'Boda', 'cams' => [1, 2], 'audio' => true, 'stream' => 0.2, 'outdoor' => 0.4, 'diff' => 1, 'pay' => [250, 480], 'clientes' => ['Familia Andrade', 'Carla y Andrés']],
-        'prensa' => ['nombre' => 'Rueda de prensa', 'cams' => [1, 2], 'audio' => true, 'stream' => 1.0, 'outdoor' => 0.0, 'diff' => 1, 'pay' => [200, 380], 'clientes' => ['Municipio', 'Prefectura']],
-        'barrial' => ['nombre' => 'Partido de liga barrial', 'cams' => [2, 2], 'audio' => false, 'stream' => 1.0, 'outdoor' => 1.0, 'diff' => 2, 'pay' => [300, 600], 'clientes' => ['Liga Barrial La Floresta', 'Liga Barrial El Inca']],
-        'graduacion' => ['nombre' => 'Graduación de colegio', 'cams' => [2, 2], 'audio' => true, 'stream' => 0.6, 'outdoor' => 0.2, 'diff' => 2, 'pay' => [350, 650], 'clientes' => ['Colegio Nacional Mejía', 'Unidad Educativa Santa Ana']],
-        'lanzamiento' => ['nombre' => 'Lanzamiento de marca', 'cams' => [2, 3], 'audio' => true, 'stream' => 1.0, 'outdoor' => 0.2, 'diff' => 3, 'pay' => [900, 1600], 'clientes' => ['Cervecería Montaña', 'Celulares Nébula']],
-        'concierto' => ['nombre' => 'Concierto', 'cams' => [3, 4], 'audio' => true, 'stream' => 1.0, 'outdoor' => 0.6, 'diff' => 4, 'pay' => [1600, 3000], 'clientes' => ['Festival Sur Sonoro', 'Coliseo Rumiñahui']],
-        'ligapro' => ['nombre' => 'Partido de LigaPro', 'cams' => [4, 4], 'audio' => true, 'stream' => 1.0, 'outdoor' => 1.0, 'diff' => 4, 'pay' => [2600, 4500], 'clientes' => ['Club Atlético del Valle', 'Sporting Pichincha']],
-        'final' => ['nombre' => 'Final de campeonato', 'cams' => [5, 6], 'audio' => true, 'stream' => 1.0, 'outdoor' => 1.0, 'diff' => 5, 'pay' => [6000, 10000], 'clientes' => ['Liga Nacional de Fútbol', 'Federación del Torneo']],
-    ];
+    /** Los 16 tipos de evento del juego (js/datos.js, vía CatalogoJuego): nombre, cams, audio, stream, outdoor, diff, pay, clientes. */
+    public const TIPOS = CatalogoJuego::EVENTOS;
     /** Tipos de evento que entran en cada liga (y dificultad mínima de los encargos "genéricos"). */
     public const TIPOS_LIGA = [
-        ['misa', 'boda', 'prensa', 'barrial', 'graduacion'],
-        ['misa', 'boda', 'prensa', 'barrial', 'graduacion', 'lanzamiento'],
-        ['boda', 'prensa', 'barrial', 'graduacion', 'lanzamiento', 'concierto'],
-        ['barrial', 'graduacion', 'lanzamiento', 'concierto', 'ligapro'],
-        ['lanzamiento', 'concierto', 'ligapro', 'final'],
+        ['misa', 'funeral', 'boda', 'prensa', 'irl', 'barrial', 'graduacion'],
+        ['misa', 'funeral', 'boda', 'prensa', 'irl', 'barrial', 'graduacion', 'lucha_libre', 'lanzamiento'],
+        ['boda', 'prensa', 'irl', 'barrial', 'graduacion', 'lucha_libre', 'lanzamiento', 'boxeo', 'concierto'],
+        ['barrial', 'graduacion', 'lucha_libre', 'lanzamiento', 'boxeo', 'lanzamiento_autos', 'concierto', 'ligapro'],
+        ['lanzamiento', 'boxeo', 'lanzamiento_autos', 'concierto', 'ligapro', 'final', 'internacional_unilateral', 'internacional_host'],
     ];
 
     /**
@@ -89,7 +79,7 @@ final class Liga
         'lanzamientos' => ['titulo' => 'Lanza {n} marcas con 4⭐', 'uno' => 'Lanza una marca con 4⭐', 'icono' => 'lanzamiento', 'criterio' => ['evento' => ['lanzamiento'], 'min_estrellas' => 4], 'meta' => [null, 1, 2, 2, 3], 'pu' => 120],
         'grandes' => ['titulo' => 'Cubre {n} eventos de dificultad 3 o más', 'uno' => 'Cubre un evento de dificultad 3 o más', 'icono' => 'trend', 'criterio' => ['min_diff' => 3], 'meta' => [null, 2, 3, 3, 4], 'pu' => 90],
         'conciertos' => ['titulo' => 'Consigue 4⭐ en {n} conciertos', 'uno' => 'Consigue 4⭐ en un concierto', 'icono' => 'concierto', 'criterio' => ['evento' => ['concierto'], 'min_estrellas' => 4], 'meta' => [null, null, 1, 2, 2], 'pu' => 160],
-        'ligapro' => ['titulo' => 'Transmite {n} partidos de LigaPro con 3⭐ o más', 'uno' => 'Transmite un partido de LigaPro con 3⭐ o más', 'icono' => 'ligapro', 'criterio' => ['evento' => ['ligapro'], 'min_estrellas' => 3], 'meta' => [null, null, null, 1, 2], 'pu' => 200],
+        'ligapro' => ['titulo' => 'Transmite {n} partidos de LigaPrima con 3⭐ o más', 'uno' => 'Transmite un partido de LigaPrima con 3⭐ o más', 'icono' => 'ligapro', 'criterio' => ['evento' => ['ligapro'], 'min_estrellas' => 3], 'meta' => [null, null, null, 1, 2], 'pu' => 200],
         'finales' => ['titulo' => 'Transmite {n} finales con 4⭐', 'uno' => 'Transmite una final con 4⭐', 'icono' => 'final', 'criterio' => ['evento' => ['final'], 'min_estrellas' => 4], 'meta' => [null, null, null, null, 1], 'pu' => 350],
     ];
 

@@ -28,6 +28,23 @@ final class Ajustes
         self::$cache = null;
     }
 
+    /** Guarda varios valores en un solo paso y deja UNA línea en la auditoría con lo que cambió ("clave: antes -> después"). */
+    public static function guardar(array $valores, string $quien, string $accion): void
+    {
+        Db::tx(function () use ($valores, $quien, $accion): void {
+            $cambios = [];
+            foreach ($valores as $k => $v) {
+                $k = (string) $k; $v = (string) $v;
+                Fallo::si(!preg_match('/^[a-z][a-z0-9_]{0,59}$/', $k), 'Ajuste no válido: ' . $k, 400, ['codigo' => 'ajuste_invalido']);
+                $antes = self::get($k);
+                if ($antes === $v) continue;
+                self::set($k, $v);
+                $cambios[] = $k . ': ' . mb_substr($antes, 0, 60) . ' -> ' . mb_substr($v, 0, 60);
+            }
+            if ($cambios) Auditoria::anotar($quien, $accion, implode(' · ', $cambios));
+        });
+    }
+
     public static function mantenimiento(): bool { return self::get('mantenimiento') === '1'; }
 
     public static function mensajeMantenimiento(): string

@@ -449,26 +449,25 @@ check('3 reportes de personas distintas -> el mensaje se oculta solo', [true, 1]
 $l = $p1->apiGet('/api/chat?canal=servidor&desde=0');
 check('…ya no sale y viene en "ocultos" (para quitarlo de la pantalla)', [false, true], [in_array($MB, array_column($l['mensajes'], 'id'), true), in_array($MB, $l['ocultos'], true)]);
 
-titulo('Panel: moderación del chat y mercado');
-[$h, $html] = $adm('/admin.php?t=chat', $AU, $AC);
-preg_match('/name="csrf" value="([a-f0-9]+)"/', $html, $mm); $csrf = $mm[1] ?? '';
-si('El panel muestra el reporte pendiente con el texto y el autor', $h === 200 && str_contains($html, 'id="tabla-reportes"') && str_contains($html, 'Mensaje que molesta') && str_contains($html, 'acoso'));
-$quemado = (int) $val("SELECT SUM(comision) FROM mercado_publicaciones WHERE estado = 'vendida'");
-[$h, $htmlM] = $adm('/admin.php?t=mercado', $AU, $AC);
-si('El panel muestra las ventas del mercado y los créditos quemados', str_contains($htmlM, 'id="tabla-mercado"') && str_contains($htmlM, '<b id="mercado-quemados">' . number_format($quemado, 0, ',', '.') . '</b>') && str_contains($htmlM, 'Pedro Vendedor Ruiz') && str_contains($htmlM, '#000'));
-check('…ventas del mercado contadas', true, str_contains($htmlM, '<b id="mercado-ventas">' . $val("SELECT COUNT(*) FROM mercado_publicaciones WHERE estado = 'vendida'") . '</b>'));
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => 'malo', 'accion' => 'silenciar', 'jugador_id' => $J_CH2, 'duracion' => '1h']);
-check('Sin el código del formulario: no sanciona', 0, (int) $val('SELECT COUNT(*) FROM chat_sanciones WHERE jugador_id = ?', [$J_CH2]));
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'mostrar', 'mensaje_id' => $MB]);
-check('Admin: "Mostrar" el mensaje (reporte descartado)', [0, 'descartado'], [(int) $val('SELECT oculto FROM chat_mensajes WHERE id = ?', [$MB]), $val('SELECT estado FROM chat_reportes WHERE mensaje_id = ? LIMIT 1', [$MB])]);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'ocultar', 'mensaje_id' => $M1]);
-check('Admin: ocultar cualquier mensaje', 1, (int) $val('SELECT oculto FROM chat_mensajes WHERE id = ?', [$M1]));
+titulo('Centro de Control: moderación del chat (Chat::moderarMensaje / sancionar / levantar / palabra, con auditoría)');
+// La interfaz de /control/ (tablas de reportes, mercado, sanciones) la prueba pruebas_control.php; aquí, los métodos del servidor
+$audit = fn(string $acc) => $fila('SELECT quien, accion, jugador_id FROM auditoria WHERE accion = ? ORDER BY id DESC LIMIT 1', [$acc]) ?: [];
+$r = $accion('chat_mensaje', ['mensaje' => $MB, 'que' => 'borrar']);
+check('Acción no válida -> 400 accion_invalida', [false, 400, 'accion_invalida'], [$r['ok'], $r['http'] ?? null, $r['codigo'] ?? null]);
+$r = $accion('chat_mensaje', ['mensaje' => 99999999, 'que' => 'ocultar']);
+check('Mensaje que no existe -> 404', [false, 404, 'mensaje_no_existe'], [$r['ok'], $r['http'] ?? null, $r['codigo'] ?? null]);
+$r = $accion('chat_mensaje', ['mensaje' => $MB, 'que' => 'mostrar', 'quien' => 'control:mod']);
+check('"Mostrar" el mensaje (reporte descartado), auditado', [true, 0, 'descartado', 'control:mod'], [$r['ok'], (int) $val('SELECT oculto FROM chat_mensajes WHERE id = ?', [$MB]), $val('SELECT estado FROM chat_reportes WHERE mensaje_id = ? LIMIT 1', [$MB]), $audit('chat_mostrar')['quien'] ?? null]);
+$accion('chat_mensaje', ['mensaje' => $M1, 'que' => 'ocultar']);
+check('Ocultar cualquier mensaje (auditoría chat_ocultar)', [1, 'chat_ocultar'], [(int) $val('SELECT oculto FROM chat_mensajes WHERE id = ?', [$M1]), $audit('chat_ocultar')['accion'] ?? null]);
 si('…ya no sale en el chat', !in_array($M1, array_column($ch2->apiGet('/api/chat?canal=servidor&desde=0')['mensajes'], 'id'), true));
+$r = $accion('chat_sancion', ['jugador' => $J_CH2, 'tipo' => 'silencio', 'segundos' => 5]);
+check('Silencio de menos de 1 minuto -> 400 sancion_invalida, sin sanción', [false, 'sancion_invalida', 0], [$r['ok'], $r['codigo'] ?? null, (int) $val('SELECT COUNT(*) FROM chat_sanciones WHERE jugador_id = ?', [$J_CH2])]);
 foreach (['1h' => 3600, '24h' => 86400, '7d' => 7 * 86400] as $d => $seg) {
     $exec('DELETE FROM chat_sanciones WHERE jugador_id = ?', [$J_CH2]);
-    [$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'silenciar', 'jugador_id' => $J_CH2, 'duracion' => $d, 'motivo' => 'Prueba']);
+    $r = $accion('chat_sancion', ['jugador' => $J_CH2, 'tipo' => 'silencio', 'segundos' => $seg, 'motivo' => 'Prueba']);
     $hasta = (int) $val('SELECT hasta FROM chat_sanciones WHERE jugador_id = ? ORDER BY id DESC LIMIT 1', [$J_CH2]);
-    check("Admin: silenciar $d", true, cerca($hasta, time() + $seg, 30) && str_contains($html, 'no podrá escribir'));
+    check("Silenciar $d (auditoría chat_silenciar con el jugador)", [true, true, ['control:prueba', 'chat_silenciar', $J_CH2]], [$r['ok'], cerca($hasta, time() + $seg, 30), array_values($audit('chat_silenciar'))]);
 }
 $espera();
 $r = $ch2->api('/api/chat', ['canal' => 'servidor', 'texto' => 'hola']);
@@ -481,28 +480,31 @@ si('…recibió un aviso del sistema', str_contains(json_encode($ch2->apiGet('/a
 $exec('UPDATE chat_sanciones SET hasta = ? WHERE jugador_id = ?', [time() - 1, $J_CH2]);
 $r = $ch2->api('/api/chat', ['canal' => 'servidor', 'texto' => 'Ya puedo hablar']);
 check('Cuando vence el silencio, vuelve a escribir', 200, $ch2->http);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'expulsar_chat', 'jugador_id' => $J_CH2, 'motivo' => 'Reincidente']);
+$accion('chat_sancion', ['jugador' => $J_CH2, 'tipo' => 'expulsion', 'motivo' => 'Reincidente']);
 $espera();
 $r = $ch2->api('/api/chat', ['canal' => 'servidor', 'texto' => 'hola']);
-check('Admin: expulsar del chat (sin fecha) -> 403 expulsión', [403, 'expulsion', null], [$ch2->http, $r['sancion']['tipo'] ?? null, array_key_exists('hasta', $r['sancion'] ?? []) ? $r['sancion']['hasta'] : 'x']);
-[$h, $html] = $adm('/admin.php?t=chat', $AU, $AC);
-si('…sale en "sanciones vigentes"', str_contains($html, 'id="tabla-sanciones"') && str_contains($html, 'para siempre'));
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'levantar', 'jugador_id' => $J_CH2]);
+check('Expulsar del chat (sin fecha) -> 403 expulsión', [403, 'expulsion', null], [$ch2->http, $r['sancion']['tipo'] ?? null, array_key_exists('hasta', $r['sancion'] ?? []) ? $r['sancion']['hasta'] : 'x']);
+check('…queda una expulsión vigente sin fecha (auditoría chat_expulsar)', [1, 'chat_expulsar'], [(int) $val("SELECT COUNT(*) FROM chat_sanciones WHERE jugador_id = ? AND tipo = 'expulsion' AND hasta IS NULL AND levantada = 0", [$J_CH2]), $audit('chat_expulsar')['accion'] ?? null]);
+$r = $accion('chat_levantar', ['jugador' => $J_CH2]);
+check('Levantar: cuenta las sanciones levantadas y audita', [true, true, 'chat_levantar'], [$r['ok'], ($r['r'] ?? 0) >= 1, $audit('chat_levantar')['accion'] ?? null]);
 $espera();
 $ch2->api('/api/chat', ['canal' => 'servidor', 'texto' => 'Gracias por perdonarme']);
-check('Admin: levantar sanciones -> puede escribir', 200, $ch2->http);
+check('Levantar sanciones -> puede escribir', 200, $ch2->http);
 // Lista de palabras editable
 $espera();
 $ch1->api('/api/chat', ['canal' => 'servidor', 'texto' => 'eres un zopenco']);
 check('"zopenco" no está en la lista: pasa', 200, $ch1->http);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'palabra_agregar', 'palabra' => 'Zopénco']);
-check('Admin: agregar "Zopénco" (se guarda sin tilde)', [true, true], [str_contains($html, 'agregada'), (bool) $val("SELECT 1 FROM chat_palabras WHERE palabra = 'zopenco'")]);
+$r = $accion('palabra', ['palabra' => 'Zopénco', 'agregar' => true]);
+check('Agregar "Zopénco" (se guarda sin tilde, auditado)', [true, 'zopenco', true, 'palabra_agregar'], [$r['ok'], $r['r'] ?? null, (bool) $val("SELECT 1 FROM chat_palabras WHERE palabra = 'zopenco'"), $audit('palabra_agregar')['accion'] ?? null]);
+$r = $accion('palabra', ['palabra' => 'zopenco', 'agregar' => true]);
+check('…agregarla otra vez -> 409 palabra_repetida', [false, 409, 'palabra_repetida'], [$r['ok'], $r['http'] ?? null, $r['codigo'] ?? null]);
 $espera();
 $r = $ch1->api('/api/chat', ['canal' => 'servidor', 'texto' => 'eres un ZOPENCOS']);
 check('…ahora se rechaza (también en plural y mayúsculas)', [400, 'groseria'], [$ch1->http, $r['codigo'] ?? null]);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'accion' => 'palabra_quitar', 'palabra' => 'zopenco']);
+$r = $accion('palabra', ['palabra' => 'zopenco', 'agregar' => false]);
+check('Quitar la palabra (auditado); quitarla otra vez -> 404', [true, 'palabra_quitar', 404], [$r['ok'], $audit('palabra_quitar')['accion'] ?? null, $accion('palabra', ['palabra' => 'zopenco'])['http'] ?? null]);
 $r = $ch1->api('/api/chat', ['canal' => 'servidor', 'texto' => 'eres un zopenco']);
-check('Admin: quitar la palabra -> vuelve a pasar', 200, $ch1->http);
+check('…sin la palabra, vuelve a pasar', 200, $ch1->http);
 si('La lista inicial de Ecuador está cargada (chucha, verga, cojudo, huevon...)', (int) $val("SELECT COUNT(*) FROM chat_palabras WHERE palabra IN ('chucha', 'verga', 'cojudo', 'huevon', 'longo', 'conchatumadre')") === 6);
 
 titulo('Chat: coaliciones y limpieza de 30 días');

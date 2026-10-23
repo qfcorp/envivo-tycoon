@@ -178,6 +178,16 @@ check('Fama 5: cámara broadcast 4K (fama 35) -> 400 fama_equipo', [400, 'fama_e
 check('Dron 4K que no está en su bodega -> 403 no_es_tuyo', [403, 'no_es_tuyo'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'dron4k']])])), 0, 2));
 check('Equipo VIP sin VIP -> 403 vip_requerido', [403, 'vip_requerido'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'vip_cam8k']])])), 0, 2));
 check('Sin cámara -> 400 sin_camara', [400, 'sin_camara'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'mics']])])), 0, 2));
+// Catálogo realista (js/datos.js vía CatalogoJuego): los 14 roles, las claves viejas y los 90 equipos del juego
+$rv = Festival::revisarEquipo($baja, $eq([['role' => 'piloto_dron', 'skill' => 2], ['role' => 'cam', 'skill' => 2], ['role' => 'operador_graficos', 'skill' => 1]],
+    [['type' => 'cam_gopra_heroe13'], ['type' => 'sop_tripode_basico'], ['type' => 'lente_kit_mft']]), false);
+check('Roles nuevos y viejos (cam -> camarografo) y equipos del catálogo realista', [['piloto_dron', 'camarografo', 'operador_graficos'], ['cam_gopra_heroe13', 'sop_tripode_basico', 'lente_kit_mft']],
+    [array_column($rv['staff'], 'role'), array_column($rv['equip'], 'type')]);
+check('Los 14 roles del juego se aceptan', 14, count(Festival::revisarEquipo($baja, $eq(array_map(fn($r) => ['role' => $r, 'skill' => 1], array_slice(\EnVivo\CatalogoJuego::ROLES, 0, 8)), [['type' => 'cam_basic']]), false)['staff'])
+    + count(Festival::revisarEquipo($baja, $eq(array_map(fn($r) => ['role' => $r, 'skill' => 1], array_slice(\EnVivo\CatalogoJuego::ROLES, 8)), [['type' => 'cam_basic']]), false)['staff']));
+check('Cámara de sistema (fama 65 en el juego) con fama 5 -> 400 fama_equipo', [400, 'fama_equipo'], array_slice(falla(fn() => Festival::revisarEquipo($baja, $eq([['role' => 'camarografo', 'skill' => 2]], [['type' => 'cam_zony_hdk_3600']]), false)), 0, 2));
+check('Rol que no existe -> 400 equipo', [400, 'equipo'], array_slice(falla(fn() => Festival::revisarEquipo($baja, $eq([['role' => 'astronauta', 'skill' => 2]], [['type' => 'cam_basic']]), false)), 0, 2));
+check('Liga: los 16 tipos de evento, y cada liga usa solo tipos que existen', [16, []], [count(\EnVivo\Liga::TIPOS), array_values(array_diff(array_merge(...\EnVivo\Liga::TIPOS_LIGA), array_keys(\EnVivo\Liga::TIPOS)))]);
 check('Equipo inventado -> 400', 400, falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'cam_nasa']])]))[0]);
 check('Escenario 7 -> 400', 400, falla(fn() => Festival::iniciar($baja, ['escenario' => 7, 'equipo' => $EQUIPO]))[0]);
 check('Ningún intento fallido gastó pases', 1, Festival::pases($baja));

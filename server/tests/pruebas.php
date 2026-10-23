@@ -112,8 +112,8 @@ titulo('Estado sin sesión: forma exacta de API.md');
 $est = $v->apiGet('/api/estado');
 check('GET /api/estado -> 200', 200, $v->http);
 $CLAVES_ESTADO = ['ok', 'logueado', 'jugador', 'creditos', 'vip_hasta', 'vip_activo', 'vip_bono_hoy', 'inicio_comprado', 'entregas', 'tienda', 'plux', 'inventario', 'mercado', 'servidor', 'asociacion', 'perfil',
-    'tarjeta_hasta', 'tarjeta_activa', 'tarjeta_reclamada_hoy', 'cuenta_estado', 'aviso', 'soporte_sin_leer', 'compras_recientes', 'transferencia', 'creditos_retenidos', 'anuncio', 'mantenimiento'];
-check('Claves del estado (API.md + MERCADO.md + SOCIAL.md + SOPORTE.md + tarjeta, cuenta, anuncio)', $CLAVES_ESTADO, array_keys($est));
+    'tarjeta_hasta', 'tarjeta_activa', 'tarjeta_reclamada_hoy', 'cuenta_estado', 'aviso', 'soporte_sin_leer', 'compras_recientes', 'transferencia', 'creditos_retenidos', 'duelos', 'desafio', 'anuncio', 'mantenimiento', 'discord_vinculado', 'discord_invitacion'];
+check('Claves del estado (API.md + MERCADO.md + SOCIAL.md + SOPORTE.md + tarjeta, cuenta, anuncio, duelos, desafío, Discord)', $CLAVES_ESTADO, array_keys($est));
 check('Sin sesión: inventario [], mercado sin acceso, sin servidor ni asociación', [[], false, 0.05, null, null], [$est['inventario'], $est['mercado']['puede'], $est['mercado']['comision'], $est['servidor'], $est['asociacion']]);
 check('Sin sesión: logueado false, créditos 0, entregas []', [true, false, 0, [], null, false, false, false], [$est['ok'], $est['logueado'], $est['creditos'], $est['entregas'], $est['vip_hasta'], $est['vip_activo'], $est['vip_bono_hoy'], $est['inicio_comprado']]);
 check('Plux disponible en sandbox', ['disponible' => true, 'ambiente' => 'sandbox'], $est['plux']);
@@ -510,7 +510,7 @@ check('…ya no se puede pagar esa compra rechazada (409)', [409, 'failed'], [$w
 check('Libro = saldo', $saldo($JW), $libro($JW));
 
 // =====================================================================
-titulo('Panel /admin.php (Basic Auth)');
+titulo('/admin.php -> /control/ y créditos a mano (Monedero::ajusteManual, lo que usa el Centro de Control)');
 $adm = function (string $ruta, ?string $u, ?string $c, ?array $post = null, array $cab = []) use ($URL): array {
     $ch = curl_init($URL . $ruta);
     $o = [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_HTTPHEADER => $cab];
@@ -521,53 +521,37 @@ $adm = function (string $ruta, ?string $u, ?string $c, ?array $post = null, arra
     $hs = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     return [(int) curl_getinfo($ch, CURLINFO_HTTP_CODE), substr($r, $hs), substr($r, 0, $hs)];
 };
+// Acción del Centro de Control con los mismos métodos del servidor que llama /control/ (tests/accion.php)
+$accion = function (string $que, array $args = []): array {
+    $sal = shell_exec('php ' . escapeshellarg(__DIR__ . '/accion.php') . ' ' . escapeshellarg($que) . ' ' . escapeshellarg(json_encode($args)) . ' 2>&1');
+    return json_decode(trim((string) $sal), true) ?: ['ok' => false, 'http' => 0, 'error' => (string) $sal];
+};
 $AU = $E('EV_ADMIN_USUARIO'); $AC = $E('EV_ADMIN_CLAVE');
-[$h, , $cab] = $adm('/admin.php', null, null);
-check('Sin usuario -> 401 con WWW-Authenticate', [401, true], [$h, stripos($cab, 'WWW-Authenticate: Basic') !== false]);
-[$h] = $adm('/admin.php', $AU, 'clave-mala');
-check('Clave mala -> 401', 401, $h);
-[$h] = $adm('/admin.php', 'otro', $AC);
-check('Usuario malo -> 401', 401, $h);
-[$h, $html] = $adm('/admin.php', $AU, $AC);
-check('Usuario y clave buenos -> 200', 200, $h);
-$tot = (float) $val("SELECT SUM(total) FROM compras WHERE estado = 'pagado'");
-$hoyT = (float) $val("SELECT SUM(total) FROM compras WHERE estado = 'pagado' AND pagado_en >= ?", [strtotime('today')]);
-si('Muestra ventas de hoy, del mes y total (solo pagadas)', substr_count($html, '$' . number_format($tot, 2, ',', '.')) >= 3 && abs($tot - $hoyT) < 0.001 && $tot > 0);
-check('…y el número de jugadores', true, str_contains($html, '<b id="num-jugadores">' . $val('SELECT COUNT(*) FROM jugadores') . '</b>'));
-[$h, $html] = $adm('/admin.php?t=compras', $AU, $AC);
-si('Pestaña Compras: lista las compras con datos para la factura (cédula, nombre, correo, celular)', str_contains($html, '1710034065') && str_contains($html, 'Ana Pérez Tester') && str_contains($html, 'ana.titular@prueba.example'));
-[$h, $html] = $adm('/admin.php?t=compras&estado=rechazado', $AU, $AC);
-si('Filtro "rechazado": solo rechazadas', $h === 200 && str_contains($html, 'estado-rechazado') && !str_contains($html, 'class="estado-pagado"'));
-[$h, $csv, $cab] = $adm('/admin.php?a=csv&estado=pagado', $AU, $AC);
-$lineas = array_values(array_filter(explode("\n", trim($csv))));
-check('CSV: 200, text/csv, adjunto', [200, true, true], [$h, stripos($cab, 'Content-Type: text/csv') !== false, stripos($cab, 'attachment') !== false]);
-si('CSV: empieza con BOM (Excel) y trae los encabezados', str_starts_with($csv, "\xEF\xBB\xBF") && str_contains($lineas[0], 'Subtotal;IVA;Total;Cédula;Nombre;Correo;Celular'));
-check('CSV de pagadas: una fila por compra pagada', (int) $val("SELECT COUNT(*) FROM compras WHERE estado = 'pagado'"), count($lineas) - 1);
-si('…todas "pagado", con subtotal/IVA/total', array_reduce(array_slice($lineas, 1), fn($cc, $l) => $cc && str_contains($l, ';pagado;') && preg_match('/;\d+\.\d\d;\d+\.\d\d;\d+\.\d\d;/', $l), true));
-[$h, $csvTodo] = $adm('/admin.php?a=csv', $AU, $AC);
-check('CSV de todas', (int) $val('SELECT COUNT(*) FROM compras'), count(array_filter(explode("\n", trim($csvTodo)))) - 1);
-[$h, $html] = $adm('/admin.php?t=jugadores&id=' . $JL, $AU, $AC);
-preg_match('/name="csrf" value="([a-f0-9]+)"/', $html, $mm); $csrf = $mm[1] ?? '';
-si('Hay código CSRF en los formularios del Centro de Control', strlen($csrf) === 64);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => 'malo', 'email' => $emailL, 'creditos' => '50', 'nota' => 'prueba']);
-check('Dar créditos sin el código del formulario -> no se da nada', [true, 0], [str_contains($html, 'Recárgala'), $saldo($JL)]);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'email' => $emailL, 'creditos' => '50', 'nota' => 'prueba'], ['Origin: http://sitio-malo.example']);
-check('Dar créditos desde otro sitio -> no se da nada', [true, 0], [str_contains($html, 'no permitida'), $saldo($JL)]);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'email' => 'nadie@prueba.example', 'creditos' => '50', 'nota' => 'x']);
-si('Correo que no existe -> mensaje', str_contains($html, 'No hay ningún jugador'));
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'email' => strtoupper($emailL), 'creditos' => '50', 'nota' => 'compra N° 3 no llegó']);
-check('Dar 50 créditos a mano -> saldo 50', [200, true, 50], [$h, str_contains($html, 'Se dieron 50 créditos'), $saldo($JL)]);
-check('…en el libro con motivo manual', ['manual', 50, 'admin:compra N° 3 no llegó'], array_values($fila('SELECT motivo, cambio, ref FROM movimientos_creditos WHERE jugador_id = ? ORDER BY id DESC LIMIT 1', [$JL])));
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'email' => $emailL, 'creditos' => '-80', 'nota' => 'devolución']);
-check('Quitar más de lo que tiene -> error, saldo igual', [true, 50], [str_contains($html, 'No se pudo'), $saldo($JL)]);
-[$h, $html] = $adm('/admin.php', $AU, $AC, ['csrf' => $csrf, 'email' => $emailL, 'creditos' => '-20', 'nota' => 'devolución']);
-check('Quitar 20 -> saldo 30', 30, $saldo($JL));
+foreach ([['/admin.php', null, null, null], ['/admin.php?t=compras&a=csv', $AU, $AC, null], ['/admin.php', $AU, $AC, ['csrf' => 'x', 'email' => $emailL, 'creditos' => '50']]] as [$ruta, $u, $c, $post]) {
+    [$h, $html, $cab] = $adm($ruta, $u, $c, $post);
+    check('/admin.php' . ($post ? ' (POST)' : ($u ? ' con clave' : '')) . ' -> 302 a /control/, sin cuerpo', [302, true, ''], [$h, (bool) preg_match('~^Location: /control/\r?$~mi', $cab), trim($html)]);
+}
+check('…y el POST a /admin.php no dio créditos', 0, $saldo($JL));
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => 50, 'motivo' => '']);
+check('Créditos a mano sin motivo -> 400 motivo_invalido', [false, 400, 'motivo_invalido', 0], [$r['ok'], $r['http'] ?? null, $r['codigo'] ?? null, $saldo($JL)]);
+$r = $accion('creditos', ['jugador' => 999999, 'cambio' => 50, 'motivo' => 'x']);
+check('…a un jugador que no existe -> 404', [false, 404], [$r['ok'], $r['http'] ?? null]);
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => 0, 'motivo' => 'x']);
+check('…0 créditos -> 400 cantidad_invalida', 'cantidad_invalida', $r['codigo'] ?? null);
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => 50, 'motivo' => 'compra N° 3 no llegó', 'quien' => 'control:dueno']);
+check('Dar 50 créditos a mano -> saldo 50', [true, 50, 50], [$r['ok'], $r['r'] ?? null, $saldo($JL)]);
+check('…en el libro con motivo manual', ['manual', 50, 'control:compra N° 3 no llegó'], array_values($fila('SELECT motivo, cambio, ref FROM movimientos_creditos WHERE jugador_id = ? ORDER BY id DESC LIMIT 1', [$JL])));
+check('…y en la auditoría (quién, qué y el saldo)', ['control:dueno', 'creditos_dar', $JL], array_values($fila("SELECT quien, accion, jugador_id FROM auditoria WHERE accion LIKE 'creditos_%' ORDER BY id DESC LIMIT 1") ?: []));
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => -80, 'motivo' => 'devolución']);
+check('Quitar más de lo que tiene -> 409 sin_creditos, saldo igual', [false, 409, 'sin_creditos', 50], [$r['ok'], $r['http'] ?? null, $r['codigo'] ?? null, $saldo($JL)]);
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => -20, 'motivo' => 'devolución']);
+check('Quitar 20 -> saldo 30 (auditoría creditos_quitar)', [true, 30, 'creditos_quitar'], [$r['ok'], $saldo($JL), $val("SELECT accion FROM auditoria WHERE accion LIKE 'creditos_%' ORDER BY id DESC LIMIT 1")]);
 check('Libro = saldo', 30, $libro($JL));
-$exec('DELETE FROM intentos');
-for ($i = 0; $i < 10; $i++) $adm('/admin.php', $AU, 'mala' . $i);
-[$h] = $adm('/admin.php', $AU, $AC);
-check('Panel: 10 claves malas -> 429 (aunque después pongan la buena)', 429, $h);
-$exec('DELETE FROM intentos');
+$hoy = (int) $val("SELECT COALESCE(SUM(ABS(cambio)), 0) FROM movimientos_creditos WHERE motivo = 'manual' AND creado >= ?", [strtotime('today')]);
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => 20001 - $hoy, 'motivo' => 'pasa el tope']);
+check('Tope diario de créditos a mano (20.000 por defecto) -> 409 tope_dia, saldo igual', [false, 409, 'tope_dia', 30], [$r['ok'], $r['http'] ?? null, $r['codigo'] ?? null, $saldo($JL)]);
+$r = $accion('creditos', ['jugador' => $JL, 'cambio' => 100001, 'motivo' => 'demasiado']);
+check('…más de 100.000 de una vez -> 400', [false, 400], [$r['ok'], $r['http'] ?? null]);
 
 // =====================================================================
 titulo('Sin credenciales de Plux');

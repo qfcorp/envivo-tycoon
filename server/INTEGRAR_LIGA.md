@@ -21,7 +21,7 @@ Archivos nuevos (no tocan nada de lo que ya existe):
   grupos consecutivos de ~8, así cada grupo es de liga parecida. Las demás entran cuando un miembro abre la liga: van a
   un grupo de su liga con menos de 10, o a uno nuevo.
 - **Tablero:** 12 encargos por asociación, sorteados con una semilla propia de (asociación, semana) y `LIGA_SECRETO`.
-  Las ligas altas piden más eventos y eventos más grandes (conciertos, LigaPro, finales) y dan más puntos. Nunca hay más de 2 encargos iguales a la vez.
+  Las ligas altas piden más eventos y eventos más grandes (conciertos, LigaPrima, finales) y dan más puntos. Nunca hay más de 2 encargos iguales a la vez.
   Un encargo completado o descartado se reemplaza a los 10 minutos.
 - **Miembros:** un encargo a la vez, máximo 9 por semana (el cupo se gasta al tomarlo; abandonar no lo devuelve).
   Cada encargo tiene un tiempo límite (12 h + 6 h por evento, máximo 48 h). Si se vence o el jugador sale de la asociación, el encargo vuelve al tablero con avance 0.

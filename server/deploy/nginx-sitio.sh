@@ -9,7 +9,9 @@
 #   - Se sirven SOLO los archivos del juego: /, /index.html, /sw.js, /manifest.webmanifest, /js/, /icons/
 #     (y /css/, /img/, /audio/, /sounds/, /fonts/ si algun dia existen).
 #   - /api/...            -> server/public/api.php  (PHP)
-#   - /pago.php, /admin.php -> server/public/        (PHP)
+#   - /pago.php, /admin.php (redirige a /control/) -> server/public/        (PHP)
+#   - /control/ (Centro de Control) -> server/public/control/index.php; /control/assets/control.{css,js}; lo demas 404
+#   - /discord/interacciones (bot de Discord) -> server/public/discord/interacciones.php
 #   - /terminos.html, /privacidad.html, /borrar-cuenta.html -> server/public/
 #   - /.well-known/assetlinks.json (app de Android) -> la raiz del juego
 #   - /pago-assets/...    -> server/public/assets/  (estilo y JavaScript de la pagina de pago)
@@ -29,12 +31,18 @@ HSTS="${HSTS:-}"   # se llena solo en el modo HTTPS (abajo)
 
 # Cabeceras de seguridad. OJO: en nginx, un add_header dentro de un "location" ANULA todos los de afuera; por eso
 # cada location que tiene su propio add_header repite estas lineas (auditoria A-09).
-CSP_JUEGO="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+CSP_JUEGO="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 CSP_LEGAL="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+# connect-src incluye las fuentes de Google porque el service worker (sw.js) las baja con fetch() para el modo sin
+# internet: con connect-src 'self' solo, desde la segunda visita el CSS de las fuentes falla (probado en Chromium).
+PERMISOS="camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()"
 cab() {
   [ -n "$HSTS" ] && printf '%s ' "add_header Strict-Transport-Security \"$HSTS\" always;"
-  printf '%s' "add_header X-Content-Type-Options nosniff always; add_header Referrer-Policy same-origin always; add_header X-Frame-Options DENY always;"
+  printf '%s' "add_header X-Content-Type-Options nosniff always; add_header Referrer-Policy same-origin always; add_header X-Frame-Options DENY always; add_header Permissions-Policy \"$PERMISOS\" always;"
 }
+# En las location de PHP: nginx pone estas cabeceras (cab); se ocultan las que manda PHP para que no salgan repetidas.
+# La CSP y el Cache-Control de cada pagina PHP se quedan (las pone PHP). $1 = cabeceras extra a ocultar.
+ocultar() { printf 'fastcgi_hide_header %s; ' X-Frame-Options X-Content-Type-Options Referrer-Policy Permissions-Policy Strict-Transport-Security "$@"; }
 cab_juego() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_JUEGO"; }
 cab_legal() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_LEGAL"; }
 
@@ -44,7 +52,9 @@ cat <<NGINX
     index index.html;
     server_tokens off;
     charset utf-8;
-    client_max_body_size 2m;
+    # Lo que puede mandar un navegador: 64 KB en general (formularios, pago, panel).
+    # /api/ permite 1 MB (abajo) porque ahi se guarda la partida (hasta 300 KB, unos 400 KB ya dentro del JSON).
+    client_max_body_size 64k;
 
     # IP real del visitante si el dominio pasa por el proxy de Cloudflare (nube naranja).
     # Rangos publicados en https://www.cloudflare.com/ips/ (si Cloudflare agrega rangos nuevos, se suman aqui).
@@ -88,10 +98,20 @@ cat <<NGINX
 
     # ---- Servidor del juego (PHP) ----
     location ^~ /api/ {
+        client_max_body_size 1m;
+        # Limites por IP (zonas en /etc/nginx/conf.d/envivo-limites.conf; cada una solo cuenta su direccion y solo POST)
+        limit_req zone=envivo_entrar burst=15 nodelay;
+        limit_req zone=envivo_registro burst=10 nodelay;
+        limit_req zone=envivo_pago burst=10 nodelay;
+        limit_req zone=envivo_chat burst=15 nodelay;
+        limit_req_status 429;
+        limit_req_log_level error;   # "error" para que quede en el registro (el nivel normal no guarda "warn")
+        error_page 429 = @envivo_429;
         include /etc/nginx/fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $PUB/api.php;
         fastcgi_param SCRIPT_NAME /api.php;
         fastcgi_param HTTP_PROXY "";
+        $(ocultar)
         fastcgi_read_timeout 90s;
         fastcgi_pass unix:$SOCK;
     }
@@ -100,6 +120,7 @@ cat <<NGINX
         fastcgi_param SCRIPT_FILENAME $PUB/pago.php;
         fastcgi_param SCRIPT_NAME /pago.php;
         fastcgi_param HTTP_PROXY "";
+        $(ocultar)
         fastcgi_pass unix:$SOCK;
     }
     location = /admin.php {
@@ -107,6 +128,7 @@ cat <<NGINX
         fastcgi_param SCRIPT_FILENAME $PUB/admin.php;
         fastcgi_param SCRIPT_NAME /admin.php;
         fastcgi_param HTTP_PROXY "";
+        $(ocultar)
         fastcgi_pass unix:$SOCK;
     }
     # Bot de Discord: Discord manda aquí los comandos (firmados con Ed25519; sin firma válida PHP responde 401)
@@ -115,6 +137,7 @@ cat <<NGINX
         fastcgi_param SCRIPT_FILENAME $PUB/discord/interacciones.php;
         fastcgi_param SCRIPT_NAME /discord/interacciones;
         fastcgi_param HTTP_PROXY "";
+        $(ocultar)
         fastcgi_read_timeout 60s;
         client_max_body_size 256k;
         fastcgi_pass unix:$SOCK;
@@ -129,6 +152,36 @@ cat <<NGINX
         try_files \$uri =404;
         expires 1h;
     }
+
+    # Respuesta del limite en JSON (asi el juego y la pagina de pago muestran el mensaje en vez de "error")
+    location @envivo_429 {
+        default_type application/json;
+        add_header Cache-Control "no-store" always;
+        add_header Retry-After 60 always;
+        $(cab)
+        return 429 '{"ok":false,"status":"failed","error":"Demasiados intentos. Espera un minuto e intenta de nuevo.","message":"Demasiados intentos. Espera un minuto e intenta de nuevo."}';
+    }
+
+    # ---- Centro de Control (/control/, docs/INTEGRAR_CONTROL.md): lista blanca. Solo index.php y sus dos archivos;
+    # todo lo demas bajo /control/ (lib/, etc.) da 404. PHP manda su propia CSP y noindex (Http::cabecerasPagina).
+    location = /control { return 301 /control/; }
+    location = /control/ {
+        # Opcional (A-04): solo estas IPs. Con Cloudflare, nginx ya tiene la IP real (real_ip_header).
+        # allow 190.12.34.56; deny all;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $PUB/control/index.php;
+        fastcgi_param SCRIPT_NAME /control/index.php;
+        fastcgi_param HTTP_PROXY "";
+        $(ocultar Cache-Control X-Robots-Tag)
+        fastcgi_pass unix:$SOCK;
+        add_header Cache-Control "no-store" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        $(cab)
+    }
+    # Exactas (no una expresion): con "^~ /control/" abajo, nginx no revisaria una expresion para /control/assets/...
+    location = /control/assets/control.css { alias $PUB/control/assets/control.css; expires 1h; }
+    location = /control/assets/control.js { alias $PUB/control/assets/control.js; expires 1h; }
+    location ^~ /control/ { return 404; }
 
     # ---- Todo lo demas: prohibido (codigo del servidor, pruebas, .git, .env, PLAN.md...) ----
     location / { return 404; }

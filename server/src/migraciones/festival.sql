@@ -89,14 +89,15 @@ CREATE TABLE IF NOT EXISTS festival_hitos (
     PRIMARY KEY (instancia_id, pct)
 );
 
--- Libro de Pases de Prensa: cada cambio (+ misión, VIP, compra; - intento). El saldo es la suma.
+-- Libro de Pases de Prensa: cada cambio (+ misión, VIP, compra, premios del Desafío del Día; - intento). El saldo es la suma.
+-- Es el ÚNICO saldo de pases del juego: Desafio::pases/sumarPases/gastarPases escriben aquí (Festival::moverPases).
 -- ref única por jugador = idempotencia ("diario:2026-10-23", "vip:2026-10-23", "mision:x:2026-10-23", "intento:12", "compra:2026-10-23:1").
 CREATE TABLE IF NOT EXISTS festival_pases (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     jugador_id INTEGER NOT NULL REFERENCES jugadores(id) ON DELETE CASCADE,
     cambio INTEGER NOT NULL,
     saldo INTEGER NOT NULL,
-    motivo TEXT NOT NULL CHECK (motivo IN ('diario', 'vip', 'mision', 'compra', 'intento', 'ajuste')),
+    motivo TEXT NOT NULL CHECK (motivo IN ('diario', 'vip', 'mision', 'compra', 'intento', 'ajuste', 'desafio', 'desafio_top', 'gasto')),
     ref TEXT NOT NULL,
     dia TEXT NOT NULL,
     creado INTEGER NOT NULL,

@@ -139,6 +139,9 @@ chown root:www-data "$CONF"; chmod 640 "$CONF"
 echo "== 4. Bajar o actualizar el juego en $APP"
 git config --global --add safe.directory "$APP" 2> /dev/null
 if [ -d "$APP/.git" ]; then
+  # js/intento.js es una COPIA de server/validador/intento.js (nginx solo sirve /js/; no un enlace). No está en git:
+  # se quita antes de bajar lo nuevo (así "git pull" nunca choca con ella) y se vuelve a copiar después.
+  git -C "$APP" ls-files --error-unmatch js/intento.js > /dev/null 2>&1 || rm -f "$APP/js/intento.js"
   if git -C "$APP" pull -q --ff-only origin "$RAMA"; then echo "   actualizado a $(git -C "$APP" rev-parse --short HEAD)"
   else echo "   ERROR: no se pudo actualizar (hay cambios hechos a mano en $APP?). Revisa:  git -C $APP status"; exit 1; fi
 elif [ -e "$APP" ] && [ -n "$(ls -A "$APP" 2> /dev/null)" ]; then
@@ -147,6 +150,9 @@ else
   mkdir -p "$(dirname "$APP")"
   if git clone -q -b "$RAMA" "$REPO" "$APP"; then echo "   bajado ($(git -C "$APP" rev-parse --short HEAD))"
   else echo "   ERROR: no se pudo bajar $REPO (revisa la conexion)."; exit 1; fi
+fi
+if [ -f "$APP/server/validador/intento.js" ] && ! git -C "$APP" ls-files --error-unmatch js/intento.js > /dev/null 2>&1; then
+  install -m 644 "$APP/server/validador/intento.js" "$APP/js/intento.js" && echo "   js/intento.js copiado de server/validador/intento.js (duelos y desafío)"
 fi
 # El codigo es de root (www-data solo lo lee: si alguien entrara por PHP no podria cambiar el programa)
 chown -R root:root "$APP"
@@ -172,7 +178,12 @@ CRON
 for l in envivo-tareas envivo-discord envivo-festival envivo-liga; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
 ( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
 
-echo "== 6. nginx: sitio $DOMINIO"
+echo "== 6. nginx: sitio $DOMINIO (y las zonas de límite /etc/nginx/conf.d/envivo-limites.conf)"
+# Zonas de límite por IP (limit_req_zone) que usa el sitio en /api/: deben existir ANTES de "nginx -t"
+LIMITES=/etc/nginx/conf.d/envivo-limites.conf
+grep -qE '^\s*include\s+/etc/nginx/conf\.d/\*\.conf;' /etc/nginx/nginx.conf || echo "   AVISO: /etc/nginx/nginx.conf no incluye /etc/nginx/conf.d/*.conf: nginx -t va a fallar (revisa: grep -n include /etc/nginx/nginx.conf)"
+LIM_ANTES=""; [ -f "$LIMITES" ] && LIM_ANTES="$(mktemp)" && cp -p "$LIMITES" "$LIM_ANTES"
+install -o root -g root -m 644 "$APP/server/deploy/ops/nginx-envivo-limites.conf" "$LIMITES"
 NUEVO="$(mktemp)"
 DOMINIO="$DOMINIO" APP="$APP" SOCK="$SOCK" bash "$APP/server/deploy/nginx-sitio.sh" > "$NUEVO"
 ANTES=""
@@ -186,10 +197,12 @@ else
   echo "   ERROR: nginx -t fallo. NO se recargo nginx y se deja como estaba. Detalle:"
   sed 's/^/     /' /tmp/envivo-nginx-t.log
   if [ -n "$ANTES" ]; then cp -p "$ANTES" "$SITIO"; else rm -f "$SITIO"; fi
+  if [ -n "$LIM_ANTES" ]; then cp -p "$LIM_ANTES" "$LIMITES"; else rm -f "$LIMITES"; fi
   [ "$ENLACE_NUEVO" = "1" ] && rm -f "/etc/nginx/sites-enabled/$DOMINIO"
   exit 1
 fi
 [ -n "$ANTES" ] && rm -f "$ANTES"
+[ -n "$LIM_ANTES" ] && rm -f "$LIM_ANTES"
 
 echo "== 7. Certificado HTTPS"
 if [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ]; then

@@ -43,10 +43,10 @@ final class Duelos
     public const LIGAS = [[0, 'Bronce'], [1100, 'Plata'], [1250, 'Oro'], [1400, 'Platino'], [1600, 'Diamante']];
     /** Roles del juego (js/datos.js ROLES_DATA). Las claves viejas (cam, dir, audio, stream) se aceptan y se traducen. */
     public const ROLES = [
-        'director' => 'Director / vMix', 'productor' => 'Productor', 'camarografo' => 'Camarógrafo', 'operador_ptz' => 'Operador PTZ',
-        'cablero' => 'Cablero', 'sonidista' => 'Sonidista', 'microfonista' => 'Microfonista', 'operador_repeticion' => 'Operador de repeticiones',
-        'operador_graficos' => 'Operador de gráficos', 'shader' => 'Shader', 'tecnico_transmision' => 'Técnico de transmisión',
-        'piloto_dron' => 'Piloto de dron', 'coordinador_piso' => 'Coordinador de piso', 'runner' => 'Runner',
+        'director' => 'Realizador / director', 'productor' => 'Productor / coordinador', 'camarografo' => 'Camarógrafo', 'operador_ptz' => 'Operador de cámaras robóticas (PTZ)',
+        'cablero' => 'Asistente de cámara / cablero', 'sonidista' => 'Sonidista', 'microfonista' => 'Microfonista / boom', 'operador_repeticion' => 'Operador de repeticiones',
+        'operador_graficos' => 'Operador de gráficos', 'shader' => 'Ingeniero de video (shader)', 'tecnico_transmision' => 'Técnico de transmisión',
+        'piloto_dron' => 'Piloto de dron', 'coordinador_piso' => 'Coordinador de piso', 'runner' => 'Asistente de producción (runner)',
     ];
     public const ROL_ALIAS = ['cam' => 'camarografo', 'dir' => 'director', 'audio' => 'sonidista', 'stream' => 'tecnico_transmision'];
     /** Nivel de experiencia => [fama mínima para tenerlo, ayuda en imprevistos (como TIERS_DATA.bonus)] */
@@ -60,14 +60,14 @@ final class Duelos
 
     /** Equipos que pueden ir a un duelo: [es cámara, orden entre cámaras, nombre]. Los del inventario van TODOS (salvo cámaras de más). */
     public const EQUIPOS = [
-        'cam_pro' => [true, 2, 'Cámara profesional'], 'switch_basic' => [false, 0, 'Laptop con vMix'],
-        'audio_basic' => [false, 0, 'Consola de audio 8 canales'], 'mics' => [false, 0, 'Micrófonos inalámbricos'],
-        'encoder' => [false, 0, 'Encoder SRT portátil'], 'router4g' => [false, 0, 'Router 4G de respaldo'],
-        'ups' => [false, 0, 'UPS / batería de respaldo'], 'raincover' => [false, 0, 'Cobertores de lluvia'],
-        'dron4k' => [true, 5, 'Dron 4K'], 'grua' => [true, 4, 'Cámara en grúa telescópica'],
-        'unidad_movil' => [false, 0, 'Unidad móvil de transmisión'], 'generador' => [false, 0, 'Generador diésel'],
-        'vip_cam8k' => [true, 6, 'Cámara de cine 8K Edición VIP'], 'vip_switcher' => [false, 0, 'Switcher de estudio VIP'],
-        'vip_satelital' => [false, 0, 'Enlace satelital VIP'],
+        'cam_pro' => [true, 2, 'Kanon XA65'], 'switch_basic' => [false, 0, 'Laptop con vMax Básico HD'],
+        'audio_basic' => [false, 0, 'Yamaka MG10XV'], 'mics' => [false, 0, 'Inalámbrico de mano doble Behringa ULM'],
+        'encoder' => [false, 0, 'Blackmagia Web Presentador 4K'], 'router4g' => [false, 0, 'Hotspot 5G NetGir M7'],
+        'ups' => [false, 0, 'APZ Smart-UPS 1500 VA'], 'raincover' => [false, 0, 'Cobertor de lluvia básico'],
+        'dron4k' => [true, 5, 'DGI Inspira 3X Cine (dron) Exclusivo'], 'grua' => [true, 4, 'Grúa telescópica de 12 m con cabeza remota'],
+        'unidad_movil' => [false, 0, 'Sprinto OB equipada (4 a 6 cámaras)'], 'generador' => [false, 0, 'Kummins 22 kVA diésel insonorizado'],
+        'vip_cam8k' => [true, 6, 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)'], 'vip_switcher' => [false, 0, 'Rosco Carbonita Ultra Edición VIP'],
+        'vip_satelital' => [false, 0, 'Enlace satelital portátil (flyaway) Edición VIP'],
     ];
     public const VIP_ITEMS = ['vip_cam8k', 'vip_switcher', 'vip_satelital'];
 
