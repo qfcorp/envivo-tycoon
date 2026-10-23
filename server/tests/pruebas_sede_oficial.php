@@ -228,6 +228,7 @@ $soc = [];
 Social::crear($dueno, ['nombre' => 'Asociación Sede', 'siglas' => 'SDE', 'color' => '#ff3b3b', 'pagado_en_juego' => true]);
 $asoc = (int) Db::valor('SELECT asociacion_id FROM asociacion_miembros WHERE jugador_id = ?', [$dueno]);
 for ($k = 1; $k <= 12; $k++) { $soc[$k] = $nuevo('Socia ' . $k); Social::unirse($soc[$k], $asoc); }
+Db::q('UPDATE asociacion_miembros SET desde = ?', [$T0]);   // más de 24 h en la asociación (AyudaAsoc: anti cuentas alternas)
 $fuera = $nuevo('De Afuera');
 $otra = $nuevo('Otra Asoc');
 Social::crear($otra, ['nombre' => 'Asociación Otra', 'siglas' => 'OTR', 'color' => '#00ff00', 'pagado_en_juego' => true]);
@@ -363,6 +364,7 @@ $H = $nuevo('Por HTTP', 40, 10);
 $H2 = $nuevo('Ayudante HTTP', 0, 10);
 Social::crear($H, ['nombre' => 'Asociación HTTP', 'siglas' => 'HTP', 'color' => '#ff3b3b', 'pagado_en_juego' => true]);
 Social::unirse($H2, (int) Db::valor('SELECT asociacion_id FROM asociacion_miembros WHERE jugador_id = ?', [$H]));
+Db::q('UPDATE asociacion_miembros SET desde = desde - 2 * 86400 WHERE jugador_id IN (?, ?)', [$H, $H2]);   // más de 24 h (AyudaAsoc)
 $tok = $sesion($H); $tok2 = $sesion($H2);
 check('GET /api/sede sin sesión -> 401 sesion_requerida', [401, 'sesion_requerida'], (function () use ($http) { [$c, $j] = $http('GET', '/api/sede'); return [$c, $j['codigo'] ?? null]; })());
 [$c, $j] = $http('GET', '/api/sede', null, $tok);

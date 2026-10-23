@@ -122,6 +122,9 @@
     const conChat = !(st.canal === 'asociacion' && !(st.ctx.Api.estado || {}).asociacion);
     p.querySelector('.chat-form').hidden = !conChat;
     p.querySelector('.chat-rapidos').hidden = !conChat;
+    // Ayudas / Investigación / Tienda de la asociación (js/ayuda_asoc.js, server/INTEGRAR_AYUDA_ASOC.md)
+    const barra = p.querySelector('#chat-asoc-barra');
+    if (barra) { barra.hidden = !(root.AyudaAsoc && st.canal === 'asociacion' && (st.ctx.Api.estado || {}).asociacion); if (!barra.hidden) root.AyudaAsoc.barra(barra); }
     pintarLista(); pintarBoton(); ciclo();
   }
   function cerrar() { st.abierto = false; document.getElementById('chat-panel').hidden = true; pintarBoton(); ciclo(); }
@@ -148,6 +151,7 @@
     p.id = 'chat-panel'; p.hidden = true;
     p.innerHTML = `<div class="chat-top"><div class="chat-tabs"><button data-chat-tab="servidor" data-i18n="chat.servidor">${T('chat.servidor')}</button><button data-chat-tab="asociacion" data-i18n="chat.asociacion">${T('chat.asociacion')}</button></div>
         <button class="btn sm" data-chat="cerrar" aria-label="${esc(T('chat.cerrar'))}" data-i18n-aria="chat.cerrar">${st.ctx.A.icon('close', 'sm')}</button></div>
+      <div id="chat-asoc-barra" hidden></div>
       <div class="chat-lista" id="chat-lista"></div>
       <div class="chat-rapidos">${RAPIDOS.map((k) => `<button data-chat="rapido" data-k="${k}" data-i18n="chat.rapido.${k}">${esc(T('chat.rapido.' + k))}</button>`).join('')}</div>
       <form class="chat-form" id="chat-form"><input id="chat-texto" maxlength="300" autocomplete="off" placeholder="${esc(T('chat.escribe'))}" aria-label="${esc(T('chat.mensaje'))}" data-i18n-ph="chat.escribe" data-i18n-aria="chat.mensaje">
@@ -212,6 +216,7 @@
 
   root.Chat = {
     iniciar(ctx) {
+      if (root.AyudaAsoc) root.AyudaAsoc.iniciar(ctx); else root.AyudaAsocCtx = ctx;   // js/ayuda_asoc.js usa el mismo ctx
       if (st.ctx) { st.ctx = ctx; pintarBoton(); return; }
       st.ctx = ctx;
       construir();
@@ -226,6 +231,7 @@
       const b = document.getElementById('chat-btn');
       if (b) b.setAttribute('aria-label', T('chat.abrir'));
       pintarBoton(); if (st.abierto) abrir();
+      if (root.AyudaAsoc) root.AyudaAsoc.refrescar();
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

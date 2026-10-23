@@ -1303,7 +1303,7 @@
         <div class="small muted">${esc(t('en_obra', { d: fmt(rest) }))} · ${esc(t('of_ayudas_obra', { n: o.ayudas, m: o.ayudas_max }))}</div></div></div>
         <div class="bar"><i style="width:${Math.round(100 * Math.min(1, Math.max(0, 1 - rest / Math.max(1, o.duracion))))}%"></i></div>
         <div class="sd-of-btns"><button class="btn main sd-btn" data-ext="sede" data-acc="acelerar" data-obra="${o.id}" data-costo="${c}">⚡ ${esc(t('of_acelerar', { n: c }))}</button>
-        ${sd.aceleradores_min > 0 ? `<button class="btn sd-btn" data-ext="sede" data-acc="acel_min" data-obra="${o.id}">⏩ ${esc(t('of_usar_acel'))}</button>` : ''}</div></div>`;
+        ${sd.aceleradores_min > 0 ? `<button class="btn sd-btn" data-ext="sede" data-acc="acel_min" data-obra="${o.id}">⏩ ${esc(t('of_usar_acel'))}</button>` : ''}${root.AyudaAsoc ? root.AyudaAsoc.botonPedir(o) : ''}</div></div>`;
     }).join('');
     let lista = '';
     if (e) {

@@ -141,9 +141,9 @@ for suite in discord festival liga control control_servidores duelos_desafio uni
 done
 
 echo
-echo "== 3d. Monetización (server/MONETIZACION.md): VIP y regalos, Sede oficial, Pase de temporada, Personal estrella"
+echo "== 3d. Monetización (server/MONETIZACION.md): VIP y regalos, Sede oficial, Pase de temporada, Personal estrella, Ayudas de asociación"
 echo "   (cada suite corre solo si su módulo ya está en server/: si falta el archivo de pruebas o la clase, se salta con aviso)"
-for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas; do
+for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas ayuda_asoc:AyudaAsoc; do
   suite=${par%%:*}; clase=${par##*:}
   if [ ! -f "$SRV/tests/pruebas_$suite.php" ] || [ ! -f "$SRV/src/$clase.php" ]; then
     echo "  AVISO pruebas_$suite.php: se salta (todavía no está el módulo: falta tests/pruebas_$suite.php o src/$clase.php)"

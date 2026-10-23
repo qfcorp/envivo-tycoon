@@ -1237,7 +1237,9 @@
   }
   function ctxChat() {
     return { Api, A, T, TL, I18N: I18, toast, ask, snd,
-      pagarAsociacion: (m) => { if (S.money < m) { toast(T('chat.asoc_falta_dinero', { m: M(m) })); return false; } S.money -= m; save(); render(); return true; } };
+      pagarAsociacion: (m) => { if (S.money < m) { toast(T('chat.asoc_falta_dinero', { m: M(m) })); return false; } S.money -= m; save(); render(); return true; },
+      // Donaciones a la Investigación de la asociación (js/ayuda_asoc.js): el servidor acepta y después se descuenta
+      dinero: () => S.money, gastarDinero: (m) => { S.money = Math.max(0, S.money - m); save(); render(); } };
   }
 
   function abrirCuenta(modo, nota) {
