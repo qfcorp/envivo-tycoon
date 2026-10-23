@@ -173,3 +173,6 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - [ ] Borrar la rama de respaldo `wip-dificultad` en GitHub (todo ya está en main; desde aquí no se pudo borrar)
 
 - 2026-10-23 (06:00): balance final para el demo (capítulo 3 en ~19 días, quiebra con aviso y contando lo que te deben, trabajar bien rinde más), textos del juego traducidos, enlace de demo con partida del capítulo 4. Guías `docs/DEMO.md` y `docs/DESPLIEGUE.md`. Economía del final ajustada (bot: caja al día 120 de $149k a $56k).
+- 2026-10-23 (07:30): fechas especiales (Halloween, Navidad, Pase del Niño, Fin de año, San Valentín, Semana Santa, Carnaval), mejoras de la sede estilo Kingshot (30 niveles con materiales), 3 servidores por universo con reparto parejo, Copa de Servidores semanal (motor determinista, equipo de la casa = mediano del universo, bono mixto), salud diaria y fusión de servidores abandonados (solo con aprobación), mudanza voluntaria, pestaña Servidores en el Centro de Control, datos de demo que se borran con un comando.
+- Pendiente menor: si se recarga la página justo después de contratar y completar un capítulo, a veces no vuelve a salir la ventana "Capítulo completado" (el premio sí se cobra). La prueba del navegador lo detecta a veces.
+

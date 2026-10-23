@@ -14,6 +14,8 @@ La guía larga con todos los detalles es `docs/DESPLIEGUE.md` (estos pasos son u
 | 7 | Probar el juego y una compra de prueba | Celular | 10 min |
 | 8 | Comprobaciones rápidas | VPS | 5 min |
 | 9 | Actualizar a la última versión (cuando te avise) | VPS | 2 min |
+| 10 | Llenar el mundo con productoras de muestra | VPS | 2 min |
+| 11 | Borrar las productoras de muestra (antes del sábado) | VPS | 1 min |
 
 ---
 
@@ -107,6 +109,32 @@ Debe terminar con `Listo.` Si te aviso que cambió nginx o las tareas, corre ade
 ```
 sudo bash /var/www/envivo/server/deploy/instalar.sh
 ```
+
+
+## Paso 10 · Productoras de muestra (para que el demo se vea vivo)
+
+Crea 24 productoras de muestra en los 3 servidores (Quito, Guayaquil, Cuenca), con asociaciones, chat, mercado,
+liga y la Copa de Servidores en marcha. No pueden entrar al juego y se borran con un comando.
+
+```
+sudo -u www-data ENVIVO_CONFIG=/etc/envivo/config.env php /var/www/envivo/server/bin/demo_datos.php --crear
+```
+
+Para ver qué hay:
+
+```
+sudo -u www-data ENVIVO_CONFIG=/etc/envivo/config.env php /var/www/envivo/server/bin/demo_datos.php --estado
+```
+
+## Paso 11 · Borrar las productoras de muestra
+
+⚠️ **Antes del sábado a las 00:00** (ese día se juega la Copa y podrían llevarse premios) y siempre antes de lanzar de verdad:
+
+```
+sudo -u www-data ENVIVO_CONFIG=/etc/envivo/config.env php /var/www/envivo/server/bin/demo_datos.php --borrar
+```
+
+Detalles y qué hacer si algo sale mal: `docs/DEMO_DATOS.md`.
 
 ---
 
