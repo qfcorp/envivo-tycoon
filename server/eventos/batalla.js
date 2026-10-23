@@ -11,6 +11,8 @@
    Como módulo:
      const B = require('./batalla.js');
      B.jugarCruce({ seed, torneo, contratos: [5], planA: [≤5 equipos], planB: [≤5 equipos], contexto? })
+       Cada equipo puede traer "bono" (0..12, ventajas pagadas, server/MONETIZACION.md §1): se suma a la calidad YA
+       validada de su partido (tope 100). Fuera de rango se recorta; si no es número, 0. El equipo de la casa: 0.
      B.poder(equipo)            → entero (para ordenar planteles en PHP)
      B.equipoCasa(contrato)     → { staff, equip } (equipo de la casa para ese contrato)
      B.contratosDe(torneo)      → los 5 contratos estándar del torneo
@@ -37,6 +39,9 @@ const CONTEXTO = { fama: 30, dinero: 1000, stock: { cable: 1, battery: 1 } };
 /* Equipo de la casa: personal de habilidad 2 (junior) y equipos normales del catálogo al 85 % (como el kit de duelo). */
 const CASA = { habilidad: 2, nivel: 'junior', moral: 80, estado: 85 };
 const CONTRATO_CLAVES = ['type', 'client', 'cams', 'audio', 'stream', 'outdoor', 'diff', 'pay'];
+/* Bono de ventajas por equipo (MONETIZACION.md §1): techo de lo pagado en competencia. */
+const BONO_MAX = 12;
+const bonoDe = (v) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(BONO_MAX, Math.round(v))) : 0);
 
 /* Torneos (parodias; rotan por semana). tipos: el tipo de evento de cada uno de los 5 partidos. */
 const TORNEOS = {
@@ -170,13 +175,14 @@ function equipoCasa(contrato) {
    duelo { personal: [{rol, habilidad, nivel, dueno}], inventario: [{item}] }. Devuelve null si no tiene forma de equipo. */
 function formaEquipo(e) {
   if (!esObj(e)) return null;
-  if (esObj(e.equipo)) return formaEquipo(Object.assign({}, e.equipo, { vip: e.vip === true || e.equipo.vip === true }));
-  if (Array.isArray(e.staff) && Array.isArray(e.equip)) return { staff: e.staff, equip: e.equip, vip: e.vip === true };
+  if (esObj(e.equipo)) return formaEquipo(Object.assign({}, e.equipo, { vip: e.vip === true || e.equipo.vip === true, bono: tiene(e, 'bono') ? e.bono : e.equipo.bono }));
+  if (Array.isArray(e.staff) && Array.isArray(e.equip)) return { staff: e.staff, equip: e.equip, vip: e.vip === true, bono: bonoDe(e.bono) };
   if (Array.isArray(e.personal)) {
     return {
       staff: e.personal.map((p) => (esObj(p) ? Object.assign({ role: p.rol, skill: p.habilidad, tier: p.nivel || 'junior', morale: CASA.moral }, p.dueno === true ? { owner: true } : {}) : p)),
       equip: (Array.isArray(e.inventario) ? e.inventario : []).map((x) => (esObj(x) ? { type: x.item, condition: 100 } : x)),
       vip: e.vip === true,
+      bono: bonoDe(e.bono),
     };
   }
   return null;
@@ -237,17 +243,23 @@ function jugarLado(seed, contrato, eq, ctx) {
   return { calidad: r.calidad, estrellas: r.estrellas, incidentes: (r.detalle.incidentes || []).map((x) => ({ clave: x.clave, eleccion: x.eleccion, q: x.q })) };
 }
 
-/* Un lado: su equipo; si falta o la lógica lo rechaza, el equipo de la casa (nunca pierde por no presentarse). */
+/* Un lado: su equipo; si falta o la lógica lo rechaza, el equipo de la casa (nunca pierde por no presentarse).
+   El bono del equipo se suma DESPUÉS de validar (la repetición no cambia) y solo si juega su propio equipo. */
 function lado(seed, contrato, eq, ctx) {
   if (eq) {
-    try { return Object.assign({ casa: false, motivo: null }, jugarLado(seed, contrato, eq, ctx)); } catch (e) {
+    let r = null;
+    try { r = jugarLado(seed, contrato, eq, ctx); } catch (e) {
       if (e && e.motivo === 'logica_no_determinista') throw e;
-      return Object.assign({ casa: true, motivo: (e && e.motivo) || 'equipo_invalido' }, jugarLado(seed, contrato, equipoCasa(contrato), ctx));
+      return Object.assign({ casa: true, motivo: (e && e.motivo) || 'equipo_invalido' }, conBono(jugarLado(seed, contrato, equipoCasa(contrato), ctx), 0));
     }
+    return Object.assign({ casa: false, motivo: null }, conBono(r, eq.bono));
   }
-  return Object.assign({ casa: true, motivo: null }, jugarLado(seed, contrato, equipoCasa(contrato), ctx));
+  return Object.assign({ casa: true, motivo: null }, conBono(jugarLado(seed, contrato, equipoCasa(contrato), ctx), 0));
 }
-
+function conBono(r, bono) {
+  const b = bonoDe(bono);
+  return Object.assign({}, r, { calidad_base: r.calidad, bono: b, calidad: Math.min(100, r.calidad + b) });
+}
 /* Plantel: hasta 5 equipos ordenados por poder (mayor primero; empate: el orden de llegada); los que faltan → casa (null). */
 function plantel(lista, nombre) {
   if (lista === undefined || lista === null) lista = [];
@@ -307,7 +319,7 @@ function cruce(x) {
       incidentes_a: a.incidentes, incidentes_b: b.incidentes,
       estrellas_a: a.estrellas, estrellas_b: b.estrellas, casa_a: a.casa, casa_b: b.casa,
       motivo_casa_a: a.motivo, motivo_casa_b: b.motivo, poder_a: A[n].poder, poder_b: B[n].poder,
-      orden_a: A[n].i, orden_b: B[n].i, seed: s, imprevistos: contrato.imprevistos, cams: contrato.cams, diff: contrato.diff });
+      orden_a: A[n].i, orden_b: B[n].i, bono_a: a.bono, bono_b: b.bono, calidad_base_a: a.calidad_base, calidad_base_b: b.calidad_base, seed: s, imprevistos: contrato.imprevistos, cams: contrato.cams, diff: contrato.diff });
   }
   return { ok: true, partidos, calidad_total_a: totA, calidad_total_b: totB, ganados_a: ganA, ganados_b: ganB, empates: emp,
     torneo: { clave: x.torneo, nombre: T.nombre, cadena: T.cadena, deporte: T.deporte }, politica: POLITICA, version_logica: m.version };
@@ -328,7 +340,7 @@ function atender(x) {
   return { ok: false, motivo: 'accion_desconocida' };
 }
 
-module.exports = { jugarCruce, poder, equipoCasa, contratosDe, atender, TORNEOS, CONTEXTO, CASA, PARTIDOS, POLITICA };
+module.exports = { jugarCruce, poder, equipoCasa, contratosDe, atender, TORNEOS, CONTEXTO, CASA, PARTIDOS, POLITICA, BONO_MAX };
 
 if (require.main === module) {
   const trozos = [];

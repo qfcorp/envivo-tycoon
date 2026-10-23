@@ -331,7 +331,7 @@ En la columna **Paths** deben aparecer `/etc/envivo` y `/var/backups/envivo`. Si
 | https://juego.tukanec.com/admin.php | Te lleva solo a `/control/`. |
 | https://juego.tukanec.com/terminos.html | Los términos (todavía con `[RUC]` y `[CORREO DE SOPORTE]`: normal hasta completarlos). |
 | En el juego: **Tienda** → **Crear cuenta** → comprar **700 créditos** con una **tarjeta de pruebas de Plux** | La compra sale aprobada, los créditos llegan, y la tienda avisa que está en **modo de pruebas**. En `/control/` → **Compras** aparece la venta. |
-| En el juego: pestaña **En línea** (ya con cuenta) | Salen Liga Semanal, Mega Festival, Duelo de Productoras y Desafío del Día. |
+| En el juego: pestaña **En línea** (ya con cuenta) | Salen Liga Semanal, Mega Festival, Duelo de Productoras, Desafío del Día y Copa de Servidores. La Liga pide unirse a una asociación (antes de las productoras de muestra no hay ninguna). |
 
 **En el VPS** (copia una línea a la vez):
 
@@ -429,3 +429,10 @@ sudo bash /var/www/envivo/server/deploy/ops/instalar_ops.sh
    `sudo grep PLUX_WEBHOOK /etc/envivo/config.env`, sin captura).
 4. **Facturación electrónica (SRI):** en `/control/` → **Compras** está el CSV con los datos del comprador de cada venta.
 5. **Discord** (`docs/DISCORD.md` y luego `docs/DISCORD_BOT.md`) y **Google Play** (`docs/ANDROID_GOOGLE_PLAY.md`).
+
+---
+
+**Para el técnico:** todo este documento y `docs/PASOS_DEMO_VPS.md` se ensayan de punta a punta en un contenedor
+desechable con `bash tests/ensayo_vps.sh` (root; nginx y php8.3-fpm reales, GitHub local con el árbol de trabajo,
+systemctl/certbot/Plux/Telegram falsos, Playwright en un celular; capturas en `tests/capturas/ensayo_*.png`).
+Comprueba las salidas exactas de los pasos 2, 7 y 8, `actualizar.sh` dos veces y `demo_datos.php`, y lo deja todo limpio.

@@ -742,6 +742,8 @@ final class Liga
             Db::q('UPDATE liga_intentos SET estado = ?, resultado_json = ?, calidad = ?, estrellas = ?, cuenta = ?, sospechoso = ?, motivo = ?, version_logica = COALESCE(?, version_logica) WHERE id = ?',
                 [$estado, json_encode($res, JSON_UNESCAPED_UNICODE), $res['calidad'], $res['estrellas'], $cuenta ? 1 : 0, $sospechoso ? 1 : 0, $nota, $version, $id]);
             Universos::marcarActivo((int) $it['jugador_id'], true);   // evento en línea validado (COPAS.md §1: actividad_diaria.eventos)
+            if (class_exists(Pase::class)) Pase::sumarXp((int) $it['jugador_id'], Pase::XP['liga'], 'liga', 'intento:' . $id);   // INTEGRAR_PASE.md §5
+            if ($estado === 'validado' && !$sospechoso && class_exists(SedeOficial::class)) SedeOficial::premioIntento((int) $it['jugador_id'], (int) $res['calidad'], (int) $res['estrellas'], 'liga', 'liga:' . $id);   // INTEGRAR_SEDE_OFICIAL.md §4
             $completada = false; $puntos = 0;
             if ($cuenta) {
                 $avance = (int) $t['avance'] + 1;

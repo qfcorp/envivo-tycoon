@@ -118,6 +118,12 @@ Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar` y `go
 | `discord_vinculado`, `discord_invitacion` | bot de Discord | `INTEGRAR_DISCORD.md` |
 | `universo` | `{id, nombre}` del universo del servidor del jugador (`null` sin sesión). Con sesión, `/api/estado` además anota el día jugado (`actividad_diaria`) | `COPAS.md` §1, `INTEGRAR_UNIVERSOS.md` |
 | `aviso_fusion` | `null`, o el aviso de que su servidor se unió a otro (14 días, hasta cerrarlo con `/api/servidor/aviso-visto`) | `INTEGRAR_FUSIONES.md` |
+| `vip_nivel`, `regalos_pendientes` | nivel VIP para siempre (0..10; distinto de `vip_activo` del Pase VIP de 30 días) y cofres de asociación por abrir. `0` sin sesión o sin el módulo | `INTEGRAR_VIP.md` |
+| `pase` | `{temporada: {numero, nombre, icono, fin} \| null, nivel, premium, por_reclamar}` del Pase de Temporada; `null` sin sesión o sin el módulo | `INTEGRAR_PASE.md` |
+| `sede_oficial` | `{nivel, bono}` (nivel oficial y bono de competencia 0..6); `null` sin sesión o sin el módulo | `INTEGRAR_SEDE_OFICIAL.md` |
+
+Las 4 claves de monetización salen SIEMPRE (lo arma `Cuentas::estado`, así llegan en `/api/estado` y en todas las respuestas
+con el estado completo); un módulo que falla nunca rompe `/api/estado`.
 
 `creditos` es el saldo real (`creditos - deuda`): puede ser NEGATIVO después de un reembolso o contracargo.
 `tienda.premium[]` trae `tipo` (`equipo`, `vip`, `consumo`, `refuerzo`) y `vip`; un exclusivo apagado en el Centro de
@@ -140,6 +146,27 @@ Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos`
 | `/api/duelos*`, `/api/desafio*` | | `INTEGRAR_DUELOS_DESAFIO.md` |
 | GET `/api/copa`, `/api/copa/equipo`, `/api/copa/intento/iniciar`, `/api/copa/intento/enviar` | | `COPAS.md` §2, `INTEGRAR_COPAS.md` |
 | GET `/api/servidor/opciones`, `/api/servidor/trasladar`, `/api/servidor/aviso-visto` | | `COPAS.md` §3, `INTEGRAR_FUSIONES.md` |
+| GET `/api/vip`, `/api/vip/regalo/reclamar {id}`, `/api/vip/mensual`, GET `/api/mecenas`, `/api/vip/ajustes {anonimo?, ocultar_mecenas?}` | | `INTEGRAR_VIP.md` |
+| GET `/api/pase`, `/api/pase/reclamar {nivel, pista, temporada?}`, `/api/pase/reclamar_todo`, `/api/pase/saltar {niveles}` | | `INTEGRAR_PASE.md` |
+| GET `/api/sede`, `/api/sede/mejorar`, `/subir`, `/cofre`, `/acelerar`, `/ayudar`, GET `/ayudas`, `/migrar` | | `INTEGRAR_SEDE_OFICIAL.md` |
+| GET `/api/estrellas`, `/api/estrellas/contratar`, `/api/estrellas/asignar`, `/api/pase_copa/comprar` | | `INTEGRAR_ESTRELLAS.md` |
+
+Las rutas de monetización solo responden si su módulo está instalado (si no, 404 como cualquier ruta que no existe).
+
+## Monetización (server/MONETIZACION.md)
+- **Ganchos** (`src/Ganchos.php`): `Compras::aprobar` emite `compra_aprobada {compra_id, jugador_id, producto, monto_usd,
+  canal: 'plux'|'google'}` (dentro de su transacción, cada oyente en un SAVEPOINT; no se emite si no se entregó nada: producto
+  desconocido o "una sola vez" pagado dos veces); `Compras::revertir` emite `compra_revertida {compra_id, jugador_id, motivo:
+  'reembolso'|'contracargo', detalle, producto}`; `Monedero::mover` emite `creditos_gastados {jugador_id, cantidad, motivo, ref}`
+  en cada débito que no es reversión, ajuste del Centro de Control ni cuenta borrada. Un oyente que falla nunca rompe la compra
+  (queda un aviso `gancho_fallo`). Los módulos se registran en `src/arranque.php` (una línea cada uno, solo si están).
+- **Techo de ventaja pagada** (`Ventajas::bono`, +12 por defecto): Copa = puntos de preparación (calidad + bono + estrellas extra)
+  y `bono` por equipo en cada cruce (lo suma `server/eventos/batalla.js` a la calidad ya validada, 0..12, recortado con
+  `Estrellas::bonoFinal`); Duelos = bono del retador y del fantasma fijado al retar (`bono_mio`/`bono_rival` en cada duelo cerrado).
+  Liga, Festival y Desafío: sin bono.
+- **Copa: intentos por día** = 10 + Pase de Copa (+5) + VIP 3/6/9 (+1 cada uno), nunca más de 18 (`intentos_max`; 429 `limite_dia` con `max`).
+- **Pase de temporada / Sede oficial**: cada intento validado de Liga, Festival, Copa, Duelos y Desafío suma XP
+  (`Pase::sumarXp`) y materiales (`SedeOficial::premioIntento`), idempotente por intento.
 
 **Pases de Prensa: UN solo saldo.** Los que da el Desafío del Día y los del Mega Festival (diarios, VIP, misiones, compra)
 son el mismo saldo: libro `festival_pases` (idempotente por `ref`, tope 10; lo que pase del tope no se suma).
@@ -149,6 +176,13 @@ son el mismo saldo: libro `festival_pases` (idempotente por `ref`, tope 10; lo q
 `creditos_250` $1,99 · `creditos_700` $4,99 · `creditos_1500` $9,99 · `creditos_3200` $19,99 · `bienvenida` $0,99 (una vez:
 150 créditos + camarógrafo senior por 3 eventos + 3 cables) · `inicio` $2,99 (una vez) · `tarjeta_mensual` $4,99 (30 días,
 20 créditos/día; otra compra suma días) · `vip30` $9,99 · `transferencia_cuenta` $9,99 (no sale en la tienda).
+Monetización (los mismos ids en Google Play; cada uno lleva `modulo` y queda apagado y oculto mientras su módulo no esté):
+`pase_premium` $4,99 y `pase_premium_plus` $9,99 (pase de temporada; pantalla propia, no salen en la lista general) ·
+`pack_obra_s` $1,99 / `pack_obra_m` $4,99 / `pack_obra_l` $9,99 (Sede oficial: aceleradores de obra + materiales, contenido
+fijo) · `pase_copa` $2,99 (+5 eventos de preparación por día en la copa de esa semana; también por 300 créditos en
+`/api/pase_copa/comprar`; pantalla propia) · ofertas escalonadas del VIP `oferta_vip_s` $1,99, `oferta_vip_m` $4,99,
+`oferta_vip_l` $9,99, `oferta_campeon` $4,99, `oferta_sede_5` $4,99, `oferta_sede_10` $9,99 (contenido fijo, solo en la ficha
+VIP de quien la desbloqueó, con tope). El personal estrella (`estrella_copa`) es solo por créditos (`/api/estrellas/contratar`).
 Las ofertas por tiempo (`oferta: {bono_pct, fin, creditos_extra}`) suman % de créditos; lo pagado con oferta se entrega
 aunque la oferta termine. Refuerzos y equipos VIP: `MERCADO.md` y `Catalogo::PREMIUM`. Roles, equipos y tipos de evento que revisa el servidor
 (Festival, Liga) salen de `js/datos.js` en `src/CatalogoJuego.php` (generado con `php server/bin/catalogo_juego.php`).

@@ -119,6 +119,31 @@ ok(B.poder({ personal: [{ rol: 'camarografo', habilidad: 1, nivel: 'junior' }], 
 ok(JSON.parse(cli({ accion: 'poder', equipo: debil() })).poder === B.poder(debil()), 'Consola: {accion:"poder"}');
 ok(JSON.parse(cli({ accion: 'contratos', torneo: 'el_gran_tazon' })).contratos.length === 5, 'Consola: {accion:"contratos"}');
 
+console.log('Bono de ventajas por equipo (MONETIZACION.md §1)');
+{
+  const base = { seed: 5150, torneo: 'liga_estelar_clubes', planA: [debil(), debil()], planB: [debil(), debil()] };
+  const r0 = B.jugarCruce(base);
+  const conB = (v) => B.jugarCruce(Object.assign({}, base, { planA: base.planA.map((e) => Object.assign({}, e, { bono: v })) }));
+  const r7 = conB(7);
+  ok(r0.ok && r7.ok, 'Cruce con y sin bono se juega');
+  ok(r0.partidos.every((p) => p.bono_a === 0 && p.bono_b === 0 && p.calidad_base_a === p.calidad_a), 'Sin bono: bono 0 y calidad = calidad validada');
+  ok(r7.partidos.every((p, i) => p.casa_a || (p.bono_a === 7 && p.calidad_base_a === r0.partidos[i].calidad_a && p.calidad_a === Math.min(100, p.calidad_base_a + 7))),
+    'Con bono 7: se suma a la calidad YA validada de ese partido (la repetición no cambia)');
+  ok(r7.partidos.every((p, i) => p.calidad_b === r0.partidos[i].calidad_b && p.bono_b === 0), 'El bono de A no toca al lado B');
+  ok(r7.partidos.every((p) => !p.casa_a || p.bono_a === 0), 'El equipo de la casa (lugar vacío) no lleva bono');
+  ok(JSON.stringify(conB(7)) === JSON.stringify(r7), 'Determinismo con bono: misma entrada → misma salida');
+  ok(JSON.stringify(JSON.parse(cli(Object.assign({}, base, { planA: base.planA.map((e) => Object.assign({}, e, { bono: 7 })) })))) === JSON.stringify(r7), 'Consola con bono = módulo');
+  const r99 = conB(99), rNeg = conB(-5), rTxt = conB('12'), rDec = conB(3.4);
+  ok(r99.partidos.filter((p) => !p.casa_a).every((p) => p.bono_a === B.BONO_MAX && B.BONO_MAX === 12), 'Bono 99 → se recorta a 12');
+  ok(rNeg.partidos.every((p) => p.bono_a === 0) && rTxt.partidos.every((p) => p.bono_a === 0), 'Bono negativo o texto → 0');
+  ok(rDec.partidos.filter((p) => !p.casa_a).every((p) => p.bono_a === 3), 'Bono con decimales → entero (3,4 → 3)');
+  const anid = B.jugarCruce(Object.assign({}, base, { planA: [{ equipo: debil(), bono: 5 }] }));
+  ok(anid.ok && anid.partidos[0].bono_a === 5, 'Acepta el bono en {equipo:{...}, bono}');
+  ok(B.poder(Object.assign({}, debil(), { bono: 12 })) === B.poder(debil()), 'El bono no cambia el poder (orden del plantel)');
+  const alto = B.jugarCruce({ seed: 5150, torneo: 'liga_estelar_clubes', planA: [Object.assign(fuerte('ligapro'), { bono: 12 })], planB: [] });
+  ok(alto.ok && alto.partidos[0].calidad_a <= 100, 'La calidad con bono nunca pasa de 100');
+}
+
 console.log('Rapidez');
 const pesado = { seed: 8080, torneo: 'liga_estelar_clubes', planA: T.liga_estelar_clubes.tipos.map((t) => fuerte(t)), planB: T.liga_estelar_clubes.tipos.map((t) => fuerte(t)) };
 let peor = 0;

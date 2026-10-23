@@ -260,8 +260,10 @@ echo "1) Version del juego: $(git -C "$APP" log -1 --format='%h %cd' --date=shor
 echo "2) Base de datos: $(stat -c '%U:%G %s bytes' "$DATOS/envivo.sqlite" 2> /dev/null)"
 if [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ]; then PRUEBA=(curl -sk --noproxy '*' --resolve "$DOMINIO:443:127.0.0.1" -o /dev/null -w '%{http_code}'); BASE="https://$DOMINIO"
 else PRUEBA=(curl -s --noproxy '*' --resolve "$DOMINIO:80:127.0.0.1" -o /dev/null -w '%{http_code}'); BASE="http://$DOMINIO"; fi
-echo "3) Prueba de la API en este servidor: $("${PRUEBA[@]}" "$BASE/api/estado") (debe ser 200)"
-echo "4) Prueba de que el codigo esta protegido: $("${PRUEBA[@]}" "$BASE/server/src/Config.php") (debe ser 404)"
+# "systemctl reload nginx" no espera a que nginx abra el puerto 443 nuevo: si sale 000 (no conecto) se reintenta unos segundos
+probar() { local c _; for _ in 1 2 3 4 5 6 7 8 9 10; do c="$("${PRUEBA[@]}" --max-time 10 "$1")"; [ "$c" != "000" ] && break; sleep 1; done; echo "$c"; }
+echo "3) Prueba de la API en este servidor: $(probar "$BASE/api/estado") (debe ser 200)"
+echo "4) Prueba de que el codigo esta protegido: $(probar "$BASE/server/src/Config.php") (debe ser 404)"
 if grep -qE '^ENVIVO_ADMIN_CLAVE_HASH=.+' "$CONF"; then
   grep -qE '^ENVIVO_ADMIN_TOTP=.+' "$CONF" && echo "5) Centro de Control /control/: con usuario, clave y codigo del celular" || echo "5) Centro de Control /control/: con usuario y clave (falta el codigo del celular)"
 else echo "5) Centro de Control /control/: SIN clave (borra $CONF y corre otra vez el instalador desde la consola)"; fi

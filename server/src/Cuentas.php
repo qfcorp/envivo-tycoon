@@ -61,6 +61,11 @@ final class Cuentas
                 Db::q("DELETE FROM $tabla WHERE $col = ?", [$jugador]);
             }
             Db::q('DELETE FROM chat_bloqueos WHERE bloqueado_id = ?', [$jugador]);
+            if (Migraciones::columnas('vip_regalos') !== null) {   // VIP y regalos de asociación (INTEGRAR_VIP.md §9), si el módulo está
+                Db::q('DELETE FROM vip_regalos WHERE receptor_id = ?', [$jugador]);
+                Db::q('UPDATE vip_regalos SET de_nombre = NULL WHERE comprador_id = ?', [$jugador]);   // su nombre ya no sale en cofres ajenos
+            }
+            if (Migraciones::columnas('vip_jugadores') !== null) Db::q('UPDATE vip_jugadores SET ocultar_mecenas = 1 WHERE jugador_id = ?', [$jugador]);
             Db::q("UPDATE jugadores SET email = ?, nombre = 'Cuenta borrada', alias = NULL, alias_clave = NULL, clave_hash = '!', estado = 'borrado',
                      estado_motivo = 'Borrada por el jugador', estado_desde = ?, creditos = 0, deuda = 0, vip_hasta = NULL, tarjeta_hasta = NULL, fama_publica = 0, riesgo_motivo = NULL WHERE id = ?",
                 ['borrado-' . $jugador . '@invalid', time(), $jugador]);
@@ -133,6 +138,34 @@ final class Cuentas
         return ['anuncio' => Ajustes::anuncio(), 'mantenimiento' => ['activo' => Ajustes::mantenimiento(), 'mensaje' => Ajustes::mantenimiento() ? Ajustes::mensajeMantenimiento() : '']];
     }
 
+    /**
+     * Bloque de los módulos de monetización en GET /api/estado (y en las demás respuestas con el estado completo):
+     * vip_nivel (0..10), regalos_pendientes (cofres por reclamar), pase {temporada, nivel, premium, por_reclamar} y
+     * sede_oficial {nivel, bono}. Las claves salen SIEMPRE (con 0 / null si el módulo no está o no hay sesión) y un módulo
+     * que falla nunca rompe /api/estado.
+     */
+    private static function monetizacion(?int $id): array
+    {
+        $o = ['vip_nivel' => 0, 'regalos_pendientes' => 0, 'pase' => null, 'sede_oficial' => null];
+        if (!$id) return $o;
+        $seguro = function (callable $f) {
+            try { return $f(); } catch (\Throwable $e) { error_log('EN VIVO estado: ' . get_class($e) . ' ' . mb_substr($e->getMessage(), 0, 200)); return null; }
+        };
+        $v = $seguro(fn() => class_exists(VipApi::class) && method_exists(VipApi::class, 'estado') ? VipApi::estado($id) : null);
+        if (is_array($v)) { $o['vip_nivel'] = (int) ($v['vip_nivel'] ?? 0); $o['regalos_pendientes'] = (int) ($v['regalos_pendientes'] ?? 0); }
+        $o['pase'] = $seguro(function () use ($id): ?array {
+            if (!class_exists(Pase::class) || !method_exists(Pase::class, 'estado')) return null;
+            $p = Pase::estado($id);
+            $t = $p['temporada'] ?? null;
+            return ['temporada' => $t === null ? null : ['numero' => (int) $t['numero'], 'nombre' => $t['nombre'], 'icono' => $t['icono'] ?? null, 'fin' => $t['fin']],
+                    'nivel' => (int) ($p['nivel'] ?? 0), 'premium' => (bool) ($p['premium'] ?? false), 'por_reclamar' => (int) ($p['por_reclamar']['total'] ?? 0)
+                    + (int) ($p['anterior']['por_reclamar']['total'] ?? 0)];
+        });
+        $o['sede_oficial'] = $seguro(fn() => class_exists(SedeOficial::class) && method_exists(SedeOficial::class, 'nivelOficial')
+            ? ['nivel' => SedeOficial::nivelOficial($id), 'bono' => method_exists(SedeOficial::class, 'bonoCompetencia') ? SedeOficial::bonoCompetencia($id) : 0] : null);
+        return $o;
+    }
+
     /** El JSON de GET /api/estado (con o sin sesión). */
     public static function estado(?int $jugador): array
     {
@@ -143,7 +176,8 @@ final class Cuentas
                     'inicio_comprado' => false, 'entregas' => [], 'tienda' => Catalogo::tienda(), 'plux' => $plux,
                     'inventario' => [], 'mercado' => Mercado::resumen(null), 'servidor' => null, 'asociacion' => null, 'perfil' => null,
                     'tarjeta_hasta' => null, 'tarjeta_activa' => false, 'tarjeta_reclamada_hoy' => false, 'cuenta_estado' => null, 'aviso' => null,
-                    'soporte_sin_leer' => 0, 'compras_recientes' => [], 'transferencia' => null, 'creditos_retenidos' => 0, 'duelos' => null, 'desafio' => null] + self::comun();
+                    'soporte_sin_leer' => 0, 'compras_recientes' => [], 'transferencia' => null, 'creditos_retenidos' => 0, 'duelos' => null, 'desafio' => null]
+                   + self::monetizacion(null) + self::comun();
         }
         $id = (int) $j['id'];
         Mercado::vencer();   // las publicaciones vencidas vuelven a la bodega antes de mostrar el inventario
@@ -179,6 +213,6 @@ final class Cuentas
             // Duelo de Productoras y Desafío del Día (server/INTEGRAR_DUELOS_DESAFIO.md): punto rojo del menú
             'duelos' => Duelos::estado($id),     // { rating, liga, restantes, tiene_equipo, defensas_nuevas, en_curso }
             'desafio' => Desafio::estado($id),   // { dia, modificador, nombre, icono, restantes, jugado_hoy, pases_prensa }
-        ] + self::comun();
+        ] + self::monetizacion($id) + self::comun();
     }
 }

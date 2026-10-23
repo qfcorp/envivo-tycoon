@@ -41,6 +41,9 @@ final class Compras
         Cuentas::exigirActiva($jugador);
         Fallo::si(!$p['activo'], 'Ese producto no está disponible ahora.', 409, ['codigo' => 'producto_inactivo']);
         Fallo::si($p['una_vez'] && self::yaComprado($jugador, $p['id']), 'Ya compraste el ' . $p['nombre'] . '. Solo se puede comprar una vez.', 409, ['codigo' => 'ya_comprado']);
+        // Reglas propias de los módulos de monetización (server/MONETIZACION.md), solo si el módulo está instalado
+        if (($p['tipo'] ?? '') === 'pase' && class_exists(Pase::class) && method_exists(Pase::class, 'exigirComprable')) Pase::exigirComprable($jugador, $p['id']);   // 409 pase_ya_premium / sin_temporada
+        if (!empty($p['oferta_vip']) && class_exists(Vip::class) && method_exists(Vip::class, 'exigirOferta')) Vip::exigirOferta($jugador, $p);   // 409 oferta_no_disponible
     }
 
     /**
@@ -100,33 +103,53 @@ final class Compras
             Db::q("UPDATE compras SET estado = 'pagado', pagado_en = ?, pagado_por = ?, plux_paso = 'pagado',
                      plux_transaccion = COALESCE(?, plux_transaccion), plux_respuesta = COALESCE(?, plux_respuesta) WHERE id = ? AND estado <> 'pagado'",
                 [time(), mb_substr($quien, 0, 150), $transaccion, $respuesta, $compraId]);
-            self::entregarCompra($c);
+            $entregada = self::entregarCompra($c);
+            if ($entregada) self::emitir('compra_aprobada', ['compra_id' => (int) $c['id'], 'jugador_id' => (int) $c['jugador_id'], 'producto' => (string) $c['producto'],
+                'monto_usd' => round((float) $c['total'], 2), 'canal' => $c['canal'] === 'google_play' ? 'google' : 'plux']);
             if ($previo === 'rechazado') Db::aviso('pagado_tras_rechazo', 'La compra N° ' . $compraId . ' estaba rechazada y luego llegó como pagada (' . $quien . '): se entregó.', $compraId);
             return [true, $c];
         });
         return $r[0];
     }
 
-    /** Entrega lo comprado (se llama SOLO desde aprobar(), dentro de su transacción). */
-    private static function entregarCompra(array $c): void
+    /**
+     * Avisa a los módulos (server/src/Ganchos.php, MONETIZACION.md §2). Nunca rompe la compra: Ganchos corre cada oyente
+     * aparte (SAVEPOINT dentro de la transacción) y aquí se atrapa cualquier otra cosa. Sin Ganchos no hace nada.
+     */
+    private static function emitir(string $evento, array $datos): void
+    {
+        try {
+            if (class_exists(Ganchos::class) && method_exists(Ganchos::class, 'emitir')) Ganchos::emitir($evento, $datos);
+        } catch (\Throwable $e) {
+            error_log('EN VIVO compras: gancho ' . $evento . ' ' . mb_substr($e->getMessage(), 0, 200));
+        }
+    }
+
+    /**
+     * Entrega lo comprado (se llama SOLO desde aprobar(), dentro de su transacción). false si no entregó nada
+     * (producto desconocido o un "una sola vez" pagado dos veces): entonces tampoco se avisa a los módulos.
+     * Los tipos de los módulos (pase, pase_copa, pack_obra) no traen entregas aquí: los entrega su gancho compra_aprobada.
+     */
+    private static function entregarCompra(array $c): bool
     {
         $j = (int) $c['jugador_id'];
         $id = (int) $c['id'];
         $p = Catalogo::productoCompra((string) $c['producto']);
-        if (!$p) { Db::aviso('producto_desconocido', 'La compra N° ' . $id . ' es de un producto que ya no está en el catálogo (' . $c['producto'] . '): entregar a mano.', $id); return; }
+        if (!$p) { Db::aviso('producto_desconocido', 'La compra N° ' . $id . ' es de un producto que ya no está en el catálogo (' . $c['producto'] . '): entregar a mano.', $id); return false; }
         $origen = 'compra:' . $id;
         if ($p['una_vez']) {
             $otra = Db::valor("SELECT id FROM compras WHERE jugador_id = ? AND producto = ? AND estado IN ('pagado', 'revertido') AND id <> ?", [$j, $c['producto'], $id]);
             if ($otra) {
                 // Se cobró dos veces un producto de una sola vez (dos pagos casi al mismo tiempo): NO se entrega otra vez.
                 Db::aviso($c['producto'] === 'inicio' ? 'inicio_duplicado' : 'una_vez_duplicado', 'El jugador ' . $j . ' pagó otra vez "' . $p['nombre'] . '" (compra N° ' . $id . ', la primera fue la N° ' . $otra . '). No se entregó: devolver el dinero o dar créditos a mano.', $id);
-                return;
+                return false;
             }
         }
         $lista = match ($p['tipo']) {
             'inicio' => Catalogo::INICIO_ENTREGAS,
             'bienvenida' => Catalogo::BIENVENIDA_ENTREGAS,
             'refuerzo_directo' => [$p['entrega']],
+            'oferta' => $p['entregas'] ?? [],   // ofertas escalonadas del VIP: contenido fijo (Vip::PRODUCTOS_OFERTA)
             default => [],
         };
         foreach ($lista as $e) {
@@ -138,6 +161,7 @@ final class Compras
         if ($p['tipo'] === 'transferencia' && $c['transferencia_id'] !== null) Transferencias::pagada((int) $c['transferencia_id'], $id);
         $cred = $c['creditos'] !== null ? (int) $c['creditos'] : (int) $p['creditos'];   // las compras viejas no guardaban los créditos
         if ($cred > 0) Monedero::mover($j, $cred, 'compra', $origen . ':' . $c['producto']);
+        return true;
     }
 
     /**
@@ -182,6 +206,8 @@ final class Compras
             }
             Db::q("UPDATE compras SET estado = 'revertido', revertida_en = ?, revertida_tipo = ?, revertida_motivo = ?, revertida_por = ? WHERE id = ?",
                 [time(), $tipo, mb_substr($motivo, 0, 300), mb_substr($quien, 0, 80), $id]);
+            // Los módulos quitan lo que dio la compra (pase, pase de copa, packs de obra, nivel VIP, cofres de regalo)
+            self::emitir('compra_revertida', ['compra_id' => $id, 'jugador_id' => $j, 'motivo' => $tipo, 'detalle' => $motivo, 'producto' => (string) $c['producto']]);
             Cuentas::suspender($j, ($tipo === 'contracargo' ? 'Contracargo' : 'Reembolso') . ' de la compra N° ' . $id . ($motivo !== '' ? ': ' . $motivo : ''), $quien);
             $res['baneado'] = self::revisarAbuso($j, $tipo, $quien);
             Auditoria::anotar($quien, 'compra_' . $tipo, 'Compra N° ' . $id . ' (' . $c['producto'] . ', $' . $c['total'] . ') revertida: ' . json_encode($res) . ($motivo !== '' ? ' · ' . $motivo : ''), $j, $id);

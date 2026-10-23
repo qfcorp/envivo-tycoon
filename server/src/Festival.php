@@ -641,6 +641,8 @@ final class Festival
             Db::q("UPDATE festival_intentos SET estado = 'validado', calidad = ?, estrellas = ?, aporte = ?, valido = ?, coincide = ?, sospechoso = ?, motivo = ?, via = ?, version_logica = ?, validado_en = ? WHERE id = ?",
                 [$cal, $est, $aporte, $valido ? 1 : 0, $coincide === null ? null : ($coincide ? 1 : 0), $sospechoso, $motivo, $via, $ver, $t, $id]);
             Universos::marcarActivo((int) $i['jugador_id'], true);   // evento en línea validado (COPAS.md §1: actividad_diaria.eventos)
+            if (class_exists(Pase::class)) Pase::sumarXp((int) $i['jugador_id'], Pase::XP['festival'], 'festival', 'intento:' . $id);   // INTEGRAR_PASE.md §5
+            if ($valido && !$sospechoso && $est !== null && class_exists(SedeOficial::class)) SedeOficial::premioIntento((int) $i['jugador_id'], $cal, $est, 'festival', 'festival:' . $id);   // INTEGRAR_SEDE_OFICIAL.md §4
             if ($aporte > 0) {
                 Db::q('UPDATE festival_escenarios SET acumulado = acumulado + ? WHERE instancia_id = ? AND n = ?', [$aporte, $i['instancia_id'], $i['escenario']]);
                 if ((int) $esc['acumulado'] + $aporte >= (int) $esc['meta']) {

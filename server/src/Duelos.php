@@ -429,6 +429,12 @@ final class Duelos
         Fallo::si(self::cupos($j)['restantes'] <= 0, 'Ya usaste tus duelos de hoy. Compra un intento extra o vuelve mañana.', 409, ['codigo' => 'sin_cupos']);
 
         $seed = random_int(1, 2147483646);
+        if (class_exists(Estrellas::class)) {   // personal estrella (server/INTEGRAR_ESTRELLAS.md): retar gasta 1 partido, defender no
+            $miEq = Estrellas::aplicarAEquipo($j, $miEq, 'duelo');
+            $suEq = Estrellas::aplicarAEquipo($rival, $suEq, 'duelo');
+        }
+        // Bono de ventajas pagadas (MONETIZACION.md §1, techo +12) para el retador y el fantasma: se fija al retar
+        $bonos = ['retador' => self::bonoVentajas($j), 'defensor' => self::bonoVentajas($rival)];
         $intR = self::armarIntento($miEq, $contrato, $seed, Monedero::vipActivo($j), $j);
         $intD = self::armarIntento($suEq, $contrato, $seed, Monedero::vipActivo($rival), $rival);
         $f = Repeticion::motor(['accion' => 'fantasma', 'intento' => $intD, 'politica' => self::POLITICA, 'fijar' => true]);
@@ -443,7 +449,7 @@ final class Duelos
             throw new Fallo('Los duelos están en mantenimiento. Intenta otra vez en unos minutos (no se gastó tu intento).', 503, ['codigo' => 'mantenimiento']);
         }
         $t = time();
-        return Db::tx(function () use ($j, $rival, $sid, $nivel, $contrato, $seed, $intR, $intD, $f, $dia, $t): array {
+        return Db::tx(function () use ($j, $rival, $sid, $nivel, $contrato, $seed, $intR, $intD, $f, $dia, $t, $bonos): array {
             Fallo::si((bool) Db::valor("SELECT 1 FROM duelos WHERE retador_id = ? AND estado IN ('abierto', 'validando')", [$j]), 'Ya tienes un duelo en curso. Termínalo primero.', 409, ['codigo' => 'duelo_abierto']);
             Fallo::si(self::cupos($j)['restantes'] <= 0, 'Ya usaste tus duelos de hoy.', 409, ['codigo' => 'sin_cupos']);
             $temp = self::temporada($t);
@@ -454,9 +460,10 @@ final class Duelos
                      politica, decisiones_defensor_json, calidad_defensor, estrellas_defensor, estado, version_logica, creado, vence)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'abierto\', ?, ?, ?)',
                 [$temp, $dia, $sid, $j, $rival, $nivel, $seed, self::json($contrato), self::json(self::CONTEXTO), self::json($intR), self::json($intD),
-                 $f['politica'] ?? self::POLITICA, self::json(['decisiones' => $f['decisiones'], 'incidentes' => $f['incidentes'] ?? []]),
+                 $f['politica'] ?? self::POLITICA, self::json(['decisiones' => $f['decisiones'], 'incidentes' => $f['incidentes'] ?? []] + ($bonos['retador'] || $bonos['defensor'] ? ['bonos' => $bonos] : [])),
                  (int) $f['calidad'], (int) $f['estrellas'], $f['version_logica'] ?? null, $t, $t + self::MINUTOS * 60]);
             $id = Db::ultimoId();
+            if (class_exists(Estrellas::class)) Estrellas::consumir($j, 'duelo', 'duelo:' . $id);
             $d = Db::fila('SELECT * FROM duelos WHERE id = ?', [$id]);
             return ['ok' => true, 'duelo' => self::duelJson($d, $j), 'intento' => $intR + ['duelo_id' => $id], 'cupos' => self::cupos($j),
                     'rival' => self::rivalJson($rival, $temp)];
@@ -537,7 +544,10 @@ final class Duelos
             $t = (string) $d['temporada']; $sid = (int) $d['servidor_id'];
             $rj = (int) $d['retador_id']; $dj = (int) $d['defensor_id'];
             $R = self::filaRating($t, $rj, $sid); $D = self::filaRating($t, $dj, $sid);
-            $cd = (int) $d['calidad_defensor'];
+            [$bR, $bD] = self::bonosDuelo($d);   // bono de ventajas fijado al retar (0 y 0 si no hay)
+            $calRaw = $calidad;
+            $cd = min(100, (int) $d['calidad_defensor'] + $bD);
+            $calidad = $calidad === null ? null : min(100, $calidad + $bR);
             $S = $calidad === null ? 0.0 : ($calidad > $cd ? 1.0 : ($calidad < $cd ? 0.0 : 0.5));
             $E = 1 / (1 + 10 ** (((int) $D['rating'] - (int) $R['rating']) / 400));
             $nR = max(self::RATING_MIN, (int) $R['rating'] + (int) round(self::K_RETADOR * ($S - $E)));
@@ -556,9 +566,11 @@ final class Duelos
             Db::q("UPDATE duelos SET estado = 'cerrado', calidad_retador = ?, estrellas_retador = ?, validacion_json = ?, version_logica = COALESCE(?, version_logica),
                    ganador = ?, motivo = ?, sospechoso = ?, rating_retador_antes = ?, rating_defensor_antes = ?, cambio_retador = ?, cambio_defensor = ?,
                    fama_retador = ?, fama_defensor = ?, cerrado = ? WHERE id = ?",
-                [$calidad, $estrellas, $val === null ? null : self::json($val), $val['version_logica'] ?? null, $ganador, $motivo, (int) $sospechoso,
+                [$calRaw, $estrellas, $val === null ? null : self::json($val), $val['version_logica'] ?? null, $ganador, $motivo, (int) $sospechoso,
                  (int) $R['rating'], (int) $D['rating'], $nR - (int) $R['rating'], $nD - (int) $D['rating'], $fR, $fD, $now, $id]);
             if ($calidad !== null) Universos::marcarActivo($rj, true);   // evento en línea validado (COPAS.md §1: actividad_diaria.eventos)
+            if ($calRaw !== null && $estrellas !== null && !$sospechoso && class_exists(SedeOficial::class)) SedeOficial::premioIntento($rj, $calRaw, $estrellas, 'duelo', 'duelo:' . $id);   // INTEGRAR_SEDE_OFICIAL.md §4
+            if ($calidad !== null && class_exists(Pase::class)) Pase::sumarXp($rj, Pase::XP['duelo'], 'duelo', 'duelo:' . $id);   // INTEGRAR_PASE.md §5
             try {
                 $quien = self::nombre($rj);
                 Chat::sistema($dj, match ($ganador) {
@@ -684,6 +696,7 @@ final class Duelos
             'calidad_rival' => $cerrado ? ($soyR ? (int) $d['calidad_defensor'] : ($d['calidad_retador'] === null ? null : (int) $d['calidad_retador'])) : null,
             'estrellas_mia' => $cerrado ? ($soyR ? ($d['estrellas_retador'] === null ? null : (int) $d['estrellas_retador']) : (int) $d['estrellas_defensor']) : null,
             'estrellas_rival' => $cerrado ? ($soyR ? (int) $d['estrellas_defensor'] : ($d['estrellas_retador'] === null ? null : (int) $d['estrellas_retador'])) : null,
+            'bono_mio' => $cerrado ? self::bonosDuelo($d)[$soyR ? 0 : 1] : null, 'bono_rival' => $cerrado ? self::bonosDuelo($d)[$soyR ? 1 : 0] : null,   // ventajas (MONETIZACION.md §1): suman a la calidad
             'cambio' => $cerrado ? (int) ($soyR ? $d['cambio_retador'] : $d['cambio_defensor']) : null,
             'fama' => (int) ($soyR ? $d['fama_retador'] : $d['fama_defensor']),
             'motivo' => $d['motivo'], 'creado' => Db::iso((int) $d['creado']), 'vence' => Db::iso((int) $d['vence']),
@@ -717,14 +730,24 @@ final class Duelos
         if (!Db::valor('SELECT 1 FROM duelo_temporadas_cerradas WHERE temporada = ?', [$ant]) && Db::valor('SELECT 1 FROM duelo_ratings WHERE temporada = ? LIMIT 1', [$ant])) self::cerrarTemporada($ant);
         $sid = self::servidorId($j);
         $mio = self::ratingDe($t, $j);
-        $rivales = Db::todas('SELECT j.id, j.alias, j.nombre, j.fama_publica, j.vip_hasta, e.resumen_json, e.poder, COALESCE(r.rating, ?) AS rt
+        $rivales = class_exists(Estrellas::class) && method_exists(Estrellas::class, 'rivalesSugeridos') ? Estrellas::rivalesSugeridos($j, 12) : Db::todas('SELECT j.id, j.alias, j.nombre, j.fama_publica, j.vip_hasta, e.resumen_json, e.poder, COALESCE(r.rating, ?) AS rt
                               FROM duelo_equipos e JOIN jugadores j ON j.id = e.jugador_id LEFT JOIN duelo_ratings r ON r.jugador_id = j.id AND r.temporada = ?
                               WHERE j.servidor_id = ? AND j.id <> ? ORDER BY ABS(COALESCE(r.rating, ?) - ?), e.actualizado DESC LIMIT 12',
             [self::RATING_INICIAL, $t, $sid, $j, self::RATING_INICIAL, $mio['rating']]);
+        if (!class_exists(Estrellas::class) && class_exists(Ventajas::class) && method_exists(Ventajas::class, 'poder')) {   // INTEGRAR_VIP.md §7b
+            try {
+                $miPoder = Ventajas::poder($j)['total'];
+                $clave = fn($f) => [intdiv(abs((int) $f['rt'] - (int) $mio['rating']), 50), abs(Ventajas::poder((int) $f['id'])['total'] - $miPoder)];
+                usort($rivales, fn($a, $b) => $clave($a) <=> $clave($b));   // mismo tramo de puntaje primero, y dentro, poder parecido
+            } catch (\Throwable $e) {
+                error_log('EN VIVO duelos: rivales por poder ' . mb_substr($e->getMessage(), 0, 200));
+            }
+        }
         $dia = Monedero::diaLocal();
         $rivales = array_map(function ($f) use ($t, $j, $dia) {
             $o = self::rivalJson((int) $f['id'], $t, $f);
             $o['retos_hoy'] = (int) Db::valor('SELECT COUNT(*) FROM duelos WHERE retador_id = ? AND defensor_id = ? AND dia = ?', [$j, (int) $f['id'], $dia]);
+            $o['parecido'] = (bool) ($f['parecido'] ?? false);   // poder parecido (±20 %): el juego lo marca como "rival parejo"
             return $o;
         }, $rivales);
         $abierto = Db::fila("SELECT * FROM duelos WHERE retador_id = ? AND estado IN ('abierto', 'validando', 'pendiente') ORDER BY id DESC LIMIT 1", [$j]);
@@ -752,6 +775,30 @@ final class Duelos
             'reglas' => ['minutos' => self::MINUTOS, 'max_par_dia' => self::MAX_PAR_DIA, 'fama_tope_dia' => self::FAMA_TOPE_DIA, 'politica' => self::POLITICA],
         ];
         return $o;
+    }
+
+    /**
+     * Bono de ventajas pagadas en duelos (MONETIZACION.md §1): Ventajas::bono($j, 'duelo'), recortado con
+     * Estrellas::bonoFinal (la estrella ya juega dentro del equipo). 0 sin Ventajas o si algo falla. Máximo 12.
+     */
+    public static function bonoVentajas(int $j): int
+    {
+        try {
+            if ($j < 1 || !class_exists(Ventajas::class) || !method_exists(Ventajas::class, 'bono')) return 0;
+            $b = (int) (Ventajas::bono($j, 'duelo')['total'] ?? 0);
+            if (class_exists(Estrellas::class) && method_exists(Estrellas::class, 'bonoFinal')) $b = Estrellas::bonoFinal($j, 'duelo', $b);
+            return max(0, min(12, $b));
+        } catch (\Throwable $e) {
+            error_log('EN VIVO duelos: bono de ventajas ' . mb_substr($e->getMessage(), 0, 200));
+            return 0;
+        }
+    }
+
+    /** [bono del retador, bono del fantasma] fijados al retar (guardados con las decisiones del fantasma). */
+    private static function bonosDuelo(array $d): array
+    {
+        $b = json_decode((string) ($d['decisiones_defensor_json'] ?? ''), true)['bonos'] ?? null;
+        return [max(0, min(12, (int) ($b['retador'] ?? 0))), max(0, min(12, (int) ($b['defensor'] ?? 0)))];
     }
 
     /** Bloque pequeño para GET /api/estado ("duelos"). */

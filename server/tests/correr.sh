@@ -141,6 +141,22 @@ for suite in discord festival liga control control_servidores duelos_desafio uni
 done
 
 echo
+echo "== 3d. Monetización (server/MONETIZACION.md): VIP y regalos, Sede oficial, Pase de temporada, Personal estrella"
+echo "   (cada suite corre solo si su módulo ya está en server/: si falta el archivo de pruebas o la clase, se salta con aviso)"
+for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas; do
+  suite=${par%%:*}; clase=${par##*:}
+  if [ ! -f "$SRV/tests/pruebas_$suite.php" ] || [ ! -f "$SRV/src/$clase.php" ]; then
+    echo "  AVISO pruebas_$suite.php: se salta (todavía no está el módulo: falta tests/pruebas_$suite.php o src/$clase.php)"
+    continue
+  fi
+  env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
+  grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'
+  echo "  ($(grep -v '^[[:space:]]*$' "$TMP/modulo_$suite.log" | grep -vE '^-+$|^=+$' | tail -1 | sed 's/^ *//'))"
+  check "pruebas_$suite.php sin fallas" 0 "$RM"
+  check "pruebas_$suite.php: sin líneas FALLA" 0 "$(grep -c 'FALLA' "$TMP/modulo_$suite.log")"
+done
+
+echo
 echo "== 4. Navegador de verdad (Playwright + Chromium, celular 390x844)"
 php -r '$p = new PDO("sqlite:" . $argv[1]); $p->exec("DELETE FROM intentos");' "$TMP/datos/envivo.sqlite"
 NP="${NODE_PATH:-/opt/npm-tools/node_modules}"

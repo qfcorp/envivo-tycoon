@@ -27,6 +27,8 @@ final class Copas
     public const HORAS_3 = [10, 14, 18];         // horas de los cruces con 3 rondas
     public const INTENTO_SEG = 1800;             // 30 min para jugar un intento después de pedirlo
     public const INTENTOS_DIA = 10;              // intentos de preparación por jugador por día
+    public const INTENTOS_TOPE = 18;             // con Pase de Copa (+5) y VIP (máx. +3): nunca más de 18 (MONETIZACION.md §4)
+    public const BONO_VENTAJAS_MAX = 12;         // campo "bono" por equipo en batalla.js: 0..12 (MONETIZACION.md §1)
     public const VALIDANDO_TRABADO = 120;
     public const PLANTEL = 5;                    // equipos por servidor en cada cruce
     public const HABILIDAD_CASA = 2;
@@ -319,10 +321,11 @@ final class Copas
         [$c, , $sid] = self::copaDelJugador($j);
         Fallo::si($c['fase'] !== 'preparacion', 'El registro de equipos cerró: la copa ya está en ' . ($c['fase'] === 'batalla' ? 'batalla' : 'su cierre') . '.', 409, ['codigo' => 'fase']);
         $eq = Festival::revisarEquipo($j, ['staff' => $in['staff'] ?? null, 'equip' => $in['equip'] ?? null], Monedero::vipActivo($j));
-        $poder = self::poder($eq);
+        $poder = self::poder(class_exists(Estrellas::class) ? Estrellas::aplicarAEquipo($j, $eq, 'copa') : $eq);   // con su estrella (se guarda sin ella)
         Db::q('INSERT INTO copa_equipos (copa_id, jugador_id, servidor_id, equipo_json, poder, registrado) VALUES (?, ?, ?, ?, ?, ?)
                ON CONFLICT (copa_id, jugador_id) DO UPDATE SET servidor_id = excluded.servidor_id, equipo_json = excluded.equipo_json, poder = excluded.poder, registrado = excluded.registrado',
             [$c['id'], $j, $sid, self::json($eq), $poder, self::ahora()]);
+        if (class_exists(Pase::class)) Pase::sumarXp($j, Pase::XP['copa_equipo'], 'copa_equipo', 'copa:' . $c['id']);   // INTEGRAR_PASE.md §5 (una vez por copa)
         return ['ok' => true, 'equipo' => $eq + ['poder' => $poder], 'copa' => self::estado($j)];
     }
 
@@ -488,8 +491,19 @@ final class Copas
         $semilla = (int) ($d['semilla'] ?? crc32('copa|' . $cruce['id']));
         $k = (string) $copa['torneo_key'];
         $casa = self::equipoCasa((int) $copa['id']);
-        $plan = function (int $sid) use ($copa, $casa): array {
+        $plan = function (int $sid) use ($copa, $casa, $cruce): array {
             $p = self::plantel((int) $copa['id'], $sid);
+            if (class_exists(Estrellas::class)) {   // personal estrella (server/INTEGRAR_ESTRELLAS.md)
+                $ref = 'copa_cruce:' . $cruce['id'];
+                foreach ($p as &$e) {
+                    $e['staff'] = Estrellas::aplicarAEquipo((int) $e['jugador_id'], ['staff' => $e['staff'], 'equip' => $e['equip']], 'copa', $ref)['staff'];
+                    $e['estrellas'] = Estrellas::activas((int) $e['jugador_id'], 'copa', $ref);
+                }
+                unset($e);
+            }
+            // Bono de ventajas pagadas (MONETIZACION.md §1, techo +12): batalla.js lo suma a la calidad del partido de ese equipo
+            foreach ($p as &$e) $e['bono'] = self::bonoVentajas((int) $e['jugador_id'], 'copa_cruce:' . $cruce['id']);
+            unset($e);
             if ($casa !== null) while (count($p) < self::PLANTEL) $p[] = $casa;   // copias del equipo mediano en los lugares vacíos
             return $p;
         };
@@ -545,6 +559,9 @@ final class Copas
             if (isset($r['version_logica'])) $d['version_logica'] = mb_substr((string) $r['version_logica'], 0, 40);
             Db::q("UPDATE copa_cruces SET estado = 'jugado', puntos_a = ?, puntos_b = ?, detalle_json = ? WHERE id = ? AND estado = 'pendiente'",
                 [$batA + $bA, $batB + $bB, self::json($d), $x['id']]);
+            if (class_exists(Estrellas::class)) foreach (array_merge($pet['planA'], $pet['planB']) as $e) {   // 1 partido de su estrella
+                if (empty($e['casa']) && !empty($e['jugador_id'])) Estrellas::consumir((int) $e['jugador_id'], 'copa', 'copa_cruce:' . $x['id']);
+            }
             self::recalcularTabla($cid);
             return true;
         });
@@ -609,6 +626,9 @@ final class Copas
         $n = Db::q('INSERT OR IGNORE INTO copa_premios (copa_id, jugador_id, clave, entregado) VALUES (?, ?, ?, ?)', [$copa['id'], $j, $clave, self::ahora()])->rowCount();
         if (!$n) return false;
         foreach (self::entregasPremio($clave, $copa, $aporte) as $e) Monedero::entregar($j, $e['tipo'], $e['item'], (int) $e['cantidad'], 'copa:' . $copa['id'] . ':' . $clave);
+        if ($clave === 'campeon') {   // oferta del campeón del VIP (INTEGRAR_VIP.md §12; Ganchos nunca lanza ni deshace el premio)
+            try { if (class_exists(Ganchos::class)) Ganchos::emitir('copa_ganada', ['jugador_id' => $j, 'copa_id' => (int) $copa['id']]); } catch (\Throwable) {}
+        }
         return true;
     }
 
@@ -655,6 +675,7 @@ final class Copas
                         self::premiar($copa, $j, 'participacion', $pts);
                     }
                     $premiados[] = [$j, $sid, $pts];
+                    if (class_exists(Estrellas::class)) Estrellas::ganarFichas($j, 4, 'copa_cierre:' . $id);
                 }
             }
             Db::q("UPDATE copas SET fase = 'cerrada' WHERE id = ?", [$id]);
@@ -793,6 +814,39 @@ final class Copas
                 'vence' => Db::iso((int) $i['vence'])];
     }
 
+    /**
+     * Intentos de preparación por día: 10 + Pase de Copa (+5) + VIP (máx. 3), nunca más de 18 (server/INTEGRAR_ESTRELLAS.md).
+     * Estrellas::limiteIntentos ya incluye el VIP; sin Estrellas, solo el VIP (Vip::intentosExtra). Si algo falla: 10.
+     */
+    public static function intentosMax(int $j, int $copa): int
+    {
+        try {
+            if (class_exists(Estrellas::class) && method_exists(Estrellas::class, 'limiteIntentos')) $n = Estrellas::limiteIntentos($j, $copa);
+            else $n = self::INTENTOS_DIA + (class_exists(Vip::class) && method_exists(Vip::class, 'intentosExtra') ? max(0, min(3, (int) Vip::intentosExtra($j))) : 0);
+            return max(self::INTENTOS_DIA, min(self::INTENTOS_TOPE, (int) $n));
+        } catch (\Throwable $e) {
+            error_log('EN VIVO copa: intentosMax ' . mb_substr($e->getMessage(), 0, 200));
+            return self::INTENTOS_DIA;
+        }
+    }
+
+    /**
+     * Bono de ventajas pagadas en la copa (MONETIZACION.md §1): Ventajas::bono($j, 'copa'). Con $ref (un cruce), recortado
+     * con Estrellas::bonoFinal (la estrella ya juega DENTRO del equipo). 0 sin Ventajas o si algo falla.
+     */
+    public static function bonoVentajas(int $j, ?string $ref = null): int
+    {
+        try {
+            if ($j < 1 || !class_exists(Ventajas::class) || !method_exists(Ventajas::class, 'bono')) return 0;
+            $b = (int) (Ventajas::bono($j, 'copa')['total'] ?? 0);
+            if ($ref !== null && class_exists(Estrellas::class) && method_exists(Estrellas::class, 'bonoFinal')) $b = Estrellas::bonoFinal($j, 'copa', $b, $ref);
+            return max(0, min($ref !== null ? self::BONO_VENTAJAS_MAX : Ventajas::TOPE_MAX, $b));
+        } catch (\Throwable $e) {
+            error_log('EN VIVO copa: bono de ventajas ' . mb_substr($e->getMessage(), 0, 200));
+            return 0;
+        }
+    }
+
     /** POST /api/copa/intento/iniciar {} → {id, seed, contrato, equipo, contexto, vip, firma, vence} (si ya hay uno abierto, el mismo). */
     public static function iniciarIntento(int $j, array $in = []): array
     {
@@ -808,7 +862,8 @@ final class Copas
         if ($abierto) return ['ok' => true, 'reanudado' => true] + self::intentoJson($abierto);
         $hoy = (new \DateTimeImmutable('@' . self::ahora()))->setTimezone(self::zona())->setTime(0, 0)->getTimestamp();
         $n = (int) Db::valor('SELECT COUNT(*) FROM copa_intentos WHERE jugador_id = ? AND creado >= ?', [$j, $hoy]);
-        Fallo::si($n >= self::INTENTOS_DIA, 'Ya jugaste tus ' . self::INTENTOS_DIA . ' eventos de copa de hoy. Vuelve mañana.', 429, ['codigo' => 'limite_dia']);
+        $max = self::intentosMax($j, (int) $c['id']);
+        Fallo::si($n >= $max, 'Ya jugaste tus ' . $max . ' eventos de copa de hoy. Vuelve mañana.', 429, ['codigo' => 'limite_dia', 'max' => $max]);
         $tipos = array_values(array_unique(self::TORNEOS[$c['torneo_key']]['tipos']));
         $tipo = $tipos[random_int(0, count($tipos) - 1)];
         $contrato = self::contrato((string) $c['torneo_key'], $tipo, fn() => random_int(0, 999999) / 1000000);
@@ -921,19 +976,22 @@ final class Copas
             $copa = Db::fila('SELECT * FROM copas WHERE id = ?', [$i['copa_id']]);
             $aTiempo = (int) $i['enviado'] < self::semana((int) $copa['inicio'])['sabado'] && $copa['fase'] !== 'cerrada'
                 && !Db::valor("SELECT 1 FROM copa_cruces WHERE copa_id = ? AND estado = 'jugado'", [$copa['id']]);
-            $puntos = $aTiempo ? self::puntosIntento($cal, $est) : 0;
+            $puntos = $aTiempo ? self::puntosIntento($cal, $est) + self::bonoVentajas((int) $i['jugador_id']) : 0;   // + bono de ventajas (MONETIZACION.md §1)
             $nota = !$aTiempo ? 'fuera_de_tiempo' : ($sospechoso ? ($motivo ?? 'resultado_no_coincide') : $motivo);
             Db::q("UPDATE copa_intentos SET estado = ?, calidad = ?, estrellas = ?, puntos = ?, valido = ?, sospechoso = ?, motivo = ?, version_logica = ?, validado_en = ? WHERE id = ?",
                 ['validado', $cal, $est, $puntos, $valido ? 1 : 0, $sospechoso ? 1 : 0, $nota, $ver, $t, $id]);
+            if ($valido && $aTiempo && class_exists(SedeOficial::class)) SedeOficial::premioIntento((int) $i['jugador_id'], $cal, $est, 'copa', 'copa:' . $id);   // INTEGRAR_SEDE_OFICIAL.md §4
             if ($puntos > 0) {
                 $asoc = Db::valor('SELECT asociacion_id FROM asociacion_miembros WHERE jugador_id = ?', [$i['jugador_id']]);
                 Db::q("INSERT OR IGNORE INTO copa_aportes (copa_id, jugador_id, servidor_id, asociacion_id, puntos, fuente, ref, creado) VALUES (?, ?, ?, ?, ?, 'intento', ?, ?)",
                     [$i['copa_id'], $i['jugador_id'], $i['servidor_id'], $asoc === null ? null : (int) $asoc, $puntos, 'intento:' . $id, $t]);
                 self::recalcularPrep((int) $i['copa_id']);
+                if (class_exists(Estrellas::class)) Estrellas::ganarFichas((int) $i['jugador_id'], 1, 'copa_intento:' . $id);
                 try {
                     if (class_exists(Universos::class) && method_exists(Universos::class, 'marcarActivo')) Universos::marcarActivo((int) $i['jugador_id'], true);
                 } catch (\Throwable) {
                 }
+                if (class_exists(Pase::class)) Pase::sumarXp((int) $i['jugador_id'], Pase::XP['copa'], 'copa', 'intento:' . $id);   // INTEGRAR_PASE.md §5
             }
             return Db::fila('SELECT * FROM copa_intentos WHERE id = ?', [$id]);
         });
@@ -1015,7 +1073,7 @@ final class Copas
                      'equipo_registrado' => (bool) Db::valor('SELECT 1 FROM copa_equipos WHERE copa_id = ? AND jugador_id = ?', [$cid, $j]),
                      'intento_abierto' => $abierto ? self::intentoJson($abierto) : null,
                      'intentos_hoy' => (int) Db::valor('SELECT COUNT(*) FROM copa_intentos WHERE jugador_id = ? AND creado >= ?', [$j, (new \DateTimeImmutable('@' . self::ahora()))->setTimezone(self::zona())->setTime(0, 0)->getTimestamp()]),
-                     'intentos_max' => self::INTENTOS_DIA, 'trofeos' => $trofeos,
+                     'intentos_max' => self::intentosMax($j, $cid), 'trofeos' => $trofeos,
                      'premios' => array_map(fn($p) => ['clave' => $p['clave'], 'entregado' => Db::iso((int) $p['entregado'])], Db::todas('SELECT * FROM copa_premios WHERE copa_id = ? AND jugador_id = ? ORDER BY clave', [$cid, $j]))],
             'top_aportantes' => array_map(fn($a) => ['alias' => Social::nombrePublico($a['alias'], $a['nombre']), 'siglas' => $a['siglas'], 'puntos' => (int) $a['puntos']], array_slice($ap, 0, 10)),
             'historial' => $hist,

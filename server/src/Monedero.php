@@ -29,8 +29,26 @@ final class Monedero
             Db::q('UPDATE jugadores SET creditos = ?, deuda = ? WHERE id = ?', [max(0, $nuevo), max(0, -$nuevo), $jugador]);
             Db::q('INSERT INTO movimientos_creditos (jugador_id, cambio, saldo, motivo, ref, creado) VALUES (?, ?, ?, ?, ?, ?)',
                 [$jugador, $cambio, $nuevo, $motivo, $ref === null ? null : mb_substr($ref, 0, 200), time()]);
+            if ($cambio < 0 && !$permitirNegativo && !in_array($motivo, self::NO_ES_GASTO, true)) self::avisarGasto($jugador, -$cambio, $motivo, $ref);
             return $nuevo;
         });
+    }
+
+    /** Débitos que NO son un gasto del jugador (reversiones, ajustes del Centro de Control, cuenta borrada): no avisan a los módulos. */
+    public const NO_ES_GASTO = ['reversion', 'pase_reversion', 'manual', 'cuenta_borrada'];
+
+    /**
+     * Gancho creditos_gastados {jugador_id, cantidad, motivo, ref} (server/MONETIZACION.md §2). Corre dentro de la misma
+     * transacción del gasto (cada oyente en su SAVEPOINT): un oyente que falla nunca deshace el gasto. Sin Ganchos no hace nada.
+     */
+    private static function avisarGasto(int $jugador, int $cantidad, string $motivo, ?string $ref): void
+    {
+        try {
+            if (class_exists(Ganchos::class) && method_exists(Ganchos::class, 'emitir'))
+                Ganchos::emitir('creditos_gastados', ['jugador_id' => $jugador, 'cantidad' => $cantidad, 'motivo' => $motivo, 'ref' => $ref]);
+        } catch (\Throwable $e) {
+            error_log('EN VIVO monedero: gancho creditos_gastados ' . mb_substr($e->getMessage(), 0, 200));
+        }
     }
 
     /** Saldo de verdad (créditos menos deuda; negativo si se revirtió una compra ya gastada). */

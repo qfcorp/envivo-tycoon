@@ -33,6 +33,32 @@ final class Catalogo
         'inicio'        => ['tipo' => 'inicio', 'nombre' => 'Paquete de inicio', 'detalle' => 'Una sola vez: cámara profesional, 5 cables, 3 baterías, técnico de streaming nivel 3 y 200 créditos', 'precio' => 2.99, 'creditos' => 200, 'una_vez' => true],
         'tarjeta_mensual' => ['tipo' => 'tarjeta', 'nombre' => 'Tarjeta mensual', 'detalle' => '30 días: reclama 20 créditos cada día (600 en total). No se renueva sola; si compras otra se suman 30 días', 'precio' => 4.99, 'creditos' => 0, 'una_vez' => false, 'dias' => 30, 'creditos_dia' => 20],
         'vip30'         => ['tipo' => 'vip', 'nombre' => 'Pase VIP 30 días', 'detalle' => 'No se renueva solo: bono diario de $150 + 10 créditos, reparaciones 30 % más baratas, 1 oferta extra al día, distintivo VIP', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false, 'dias' => 30],
+        // ---- Módulos de monetización (server/MONETIZACION.md §4). "modulo" = clase que lo entrega (por su gancho compra_aprobada):
+        //      mientras esa clase no esté instalada, el producto queda apagado y oculto (no se vende ni en la web ni en Google Play).
+        //      Google Play usa los MISMOS ids. El contenido es fijo y a la vista (sin cajas sorpresa).
+        // Pase de Temporada (server/INTEGRAR_PASE.md §1): no sale en la lista general de la tienda (tiene su pantalla)
+        'pase_premium'      => ['tipo' => 'pase', 'modulo' => 'Pase', 'nombre' => 'Pase de Temporada Premium', 'detalle' => 'Esta temporada: premio premium en los 40 niveles (materiales, aceleradores de obra, marco de productora, adorno de sede, título de chat, hasta 420 créditos y un contrato de personal estrella). Si ya avanzaste, reclamas los premios de los niveles que ya tienes. No se renueva solo', 'precio' => 4.99, 'creditos' => 0, 'una_vez' => false],
+        'pase_premium_plus' => ['tipo' => 'pase', 'modulo' => 'Pase', 'nombre' => 'Pase de Temporada Premium Plus', 'detalle' => 'Todo el Pase Premium de esta temporada y 10 niveles ya desbloqueados. No se renueva solo', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false],
+        // Sede oficial (server/INTEGRAR_SEDE_OFICIAL.md): contenido FIJO, lo entrega SedeOficial (gancho compra_aprobada). Igual a SedeOficial::PACKS.
+        'pack_obra_s' => ['tipo' => 'pack_obra', 'modulo' => 'SedeOficial', 'nombre' => 'Pack de obra S', 'detalle' => 'Sede oficial: 10 h de aceleradores de obra + 12 cables, 12 placas, 12 paneles LED, 12 credenciales, 12 planos y 1 chip 4K. Contenido fijo.', 'precio' => 1.99, 'creditos' => 0, 'una_vez' => false],
+        'pack_obra_m' => ['tipo' => 'pack_obra', 'modulo' => 'SedeOficial', 'nombre' => 'Pack de obra M', 'detalle' => 'Sede oficial: 30 h de aceleradores de obra + 32 cables, 32 placas, 32 paneles LED, 32 credenciales, 32 planos y 3 chips 4K. Contenido fijo.', 'precio' => 4.99, 'creditos' => 0, 'una_vez' => false],
+        'pack_obra_l' => ['tipo' => 'pack_obra', 'modulo' => 'SedeOficial', 'nombre' => 'Pack de obra L', 'detalle' => 'Sede oficial: 80 h de aceleradores de obra + 70 cables, 70 placas, 70 paneles LED, 70 credenciales, 70 planos y 8 chips 4K. Contenido fijo.', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false],
+        // Pase de Copa con dinero (server/INTEGRAR_ESTRELLAS.md §3; por créditos lo cobra Estrellas, ajuste pase_copa_creditos = 300).
+        // El personal estrella (estrella_copa) es solo por créditos: lo cobra Estrellas::contratar, no lleva fila aquí.
+        'pase_copa' => ['tipo' => 'pase_copa', 'modulo' => 'Estrellas', 'nombre' => 'Pase de Copa', 'detalle' => '+5 eventos de preparación por día durante la Copa de Servidores de esta semana', 'precio' => 2.99, 'creditos' => 0, 'una_vez' => false],
+        // Ofertas escalonadas del VIP (Vip::PRODUCTOS_OFERTA, contenido fijo con tope): solo en la ficha VIP de quien la desbloqueó
+            'oferta_vip_s' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta VIP: Primer impulso', 'detalle' => 'Oferta de nivel: 300 créditos, $2.000 del juego y 5 cables', 'precio' => 1.99, 'creditos' => 300, 'una_vez' => false,
+                'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 2000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5]]],
+            'oferta_vip_m' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta VIP: Productora en ascenso', 'detalle' => 'Oferta de nivel: 900 créditos, $5.000 del juego, 5 cables y 5 baterías', 'precio' => 4.99, 'creditos' => 900, 'una_vez' => false,
+                'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 5000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5]]],
+            'oferta_vip_l' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta VIP: Gran producción', 'detalle' => 'Oferta de nivel: 2.000 créditos, $12.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %', 'precio' => 9.99, 'creditos' => 2000, 'una_vez' => false,
+                'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 12000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 10], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 10], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+            'oferta_campeon' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta del campeón', 'detalle' => 'Por tu primera Copa: 1.000 créditos, $8.000 del juego, 5 cables, 5 baterías y todo tu equipo al 100 %', 'precio' => 4.99, 'creditos' => 1000, 'una_vez' => false,
+                'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 8000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+            'oferta_sede_5' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta Sede nivel 5', 'detalle' => 'Tu sede llegó a nivel 5: 800 créditos, $10.000 del juego, 5 cables y 5 baterías', 'precio' => 4.99, 'creditos' => 800, 'una_vez' => false,
+                'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 10000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5]]],
+            'oferta_sede_10' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta Sede nivel 10', 'detalle' => 'Tu sede llegó a nivel 10: 1.800 créditos, $25.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %', 'precio' => 9.99, 'creditos' => 1800, 'una_vez' => false,
+                'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 25000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 10], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 10], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
         // No sale en la tienda: lo crea POST /api/cuenta/transferir/iniciar (lo paga el dueño actual de la cuenta)
         'transferencia_cuenta' => ['tipo' => 'transferencia', 'nombre' => 'Transferencia oficial de cuenta', 'detalle' => 'Pasa esta cuenta (con todo lo comprado) a otro correo', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false, 'oculto' => true],
     ];
@@ -129,10 +155,36 @@ final class Catalogo
     }
 
     /** Producto con los cambios del Centro de Control y la oferta vigente: precio, creditos (con bono), activo, oferta. */
+    /** Tipos que no salen en la lista general de la tienda: tienen su propia pantalla (pase de temporada, pase de copa). */
+    public const TIPOS_CON_PANTALLA = ['pase', 'pase_copa'];
+
+    /** ¿Está instalado el módulo que entrega este producto? (los productos sin "modulo" siempre lo están) */
+    public static function moduloListo(array $p): bool
+    {
+        if (empty($p['modulo'])) return true;
+        try { return class_exists('EnVivo\\' . $p['modulo']); } catch (\Throwable) { return false; }
+    }
+
+    /** El contenido fijo lo manda el módulo (así el texto de la tienda nunca difiere de lo que se entrega). */
+    private static function contenidoModulo(string $id, array $p): array
+    {
+        try {
+            if (($p['modulo'] ?? '') === 'SedeOficial' && method_exists(SedeOficial::class, 'detallePack')) {
+                $d = SedeOficial::detallePack($id);
+                if ($d !== '') $p['detalle'] = $d;
+            } elseif (($p['modulo'] ?? '') === 'Vip' && isset(Vip::PRODUCTOS_OFERTA[$id])) {
+                foreach (['nombre', 'detalle', 'entregas'] as $k) if (isset(Vip::PRODUCTOS_OFERTA[$id][$k])) $p[$k] = Vip::PRODUCTOS_OFERTA[$id][$k];
+            }
+        } catch (\Throwable) {}
+        return $p;
+    }
+
     public static function producto(string $id): ?array
     {
         $p = self::PRODUCTOS[$id] ?? null;
         if ($p === null) return null;
+        $listo = self::moduloListo($p);
+        if ($listo && !empty($p['modulo'])) $p = self::contenidoModulo($id, $p);
         $p['id'] = $id;
         $p['precio_base'] = $p['precio'];
         $p['creditos_base'] = $p['creditos'];
@@ -143,6 +195,7 @@ final class Catalogo
             if ($a['creditos'] !== null) $p['creditos'] = (int) $a['creditos'];
             if ($a['activo'] !== null) $p['activo'] = (bool) (int) $a['activo'];
         }
+        if (!$listo) { $p['activo'] = false; $p['oculto'] = true; $p['sin_modulo'] = true; }   // nunca se vende algo que nadie entrega
         $p['bono_pct'] = 0;
         $p['oferta'] = null;
         $of = self::ofertas()[$id] ?? null;
@@ -262,7 +315,7 @@ final class Catalogo
         $p = [];
         foreach (array_keys(self::PRODUCTOS) as $id) {
             $x = self::producto($id);
-            if (!$x['activo'] || !empty($x['oculto'])) continue;
+            if (!$x['activo'] || !empty($x['oculto']) || !empty($x['oferta_vip']) || in_array($x['tipo'], self::TIPOS_CON_PANTALLA, true)) continue;
             $p[] = ['id' => $id, 'nombre' => $x['nombre'], 'detalle' => $x['detalle'], 'precio' => $x['precio'], 'creditos' => $x['creditos'], 'una_vez' => $x['una_vez'], 'tipo' => $x['tipo'],
                     'precio_base' => $x['precio_base'], 'creditos_base' => $x['creditos_base'], 'oferta' => $x['oferta']]
                  + (isset($x['dias']) ? ['dias' => $x['dias']] : []) + (isset($x['creditos_dia']) ? ['creditos_dia' => $x['creditos_dia']] : []);

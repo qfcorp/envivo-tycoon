@@ -40,15 +40,22 @@ curl -fsSL https://raw.githubusercontent.com/qfcorp/envivo-tycoon/main/server/de
 
 3. Pide tu clave de `sudo` (no se ve al escribir: es normal).
 4. Pide **usuario** y **clave del Centro de Control** (mínimo 10 caracteres): invéntalos y **anótalos**.
-5. Cuando pregunte por el **certificado HTTPS**: escribe `s` y Enter.
+   La clave no se ve al escribir. Si es muy corta dice `muy corta, otra vez` y la vuelve a pedir.
+5. Trabaja solo 1 a 3 minutos (pasos `== 4` a `== 9`). Al final pregunta
+   `Sacar el certificado HTTPS ahora con certbot? (s/n)`: escribe `s` y Enter.
+   (Si certbot te pide un correo o aceptar condiciones, escribe tu correo y `Y`.)
 
 ## Paso 3 · Lista RESULTADO
 
 Al final sale una lista. Mándame captura. Debe decir:
-- `3) Prueba de la API en este servidor: 200`
-- `4) Prueba de que el codigo esta protegido: 404`
+- `3) Prueba de la API en este servidor: 200 (debe ser 200)`
+- `4) Prueba de que el codigo esta protegido: 404 (debe ser 404)`
+- `5) Centro de Control /control/: con usuario y clave (falta el codigo del celular)` (normal: es el paso 6)
+- `6) Plux: SIN credenciales (...)` (normal: es el paso 4)
 - `7) HTTPS: si`
 - `8) Validador de partidas: activo`
+
+Debajo sale "Lista de lo que falta": ya está en estos pasos, no hace falta seguirla ahora.
 
 ## Paso 4 · Claves de prueba de Plux
 
@@ -65,19 +72,25 @@ En el celular: **https://juego.tukanec.com/control/** → usuario y clave del pa
 
 ## Paso 6 · Código del celular (2FA)
 
-1. En el VPS: `php /var/www/envivo/server/bin/control_totp.php dimitry` → copia las 32 letras y números (sin captura).
+1. En el VPS (sin `sudo`): `php /var/www/envivo/server/bin/control_totp.php dimitry` → sale `ENVIVO_ADMIN_TOTP=` y
+   **32 letras y números**: cópialos (sin captura). La línea `otpauth://...` de abajo no hace falta.
 2. En **Google Authenticator**: **+** → **Introducir una clave de configuración** → Cuenta `EN VIVO Control`, Clave: las 32 letras → **Añadir**.
 3. `sudo nano /etc/envivo/config.env` → **Ctrl + W** → `ENVIVO_ADMIN_TOTP` → pega el secreto después del `=` → **Ctrl + O**, Enter, **Ctrl + X**.
 4. `sudo systemctl reload php8.3-fpm`
-5. Vuelve a abrir `/control/`: ahora pide el código de 6 dígitos.
+5. Vuelve a abrir `/control/`: ahora pide usuario, clave **y** el código de 6 dígitos de la app.
 
 ## Paso 7 · Probar el juego
 
 En el celular **https://juego.tukanec.com**:
-1. Juega el tutorial (3 eventos).
-2. **Tienda** → **Crear cuenta** → comprar **700 créditos** con una **tarjeta de pruebas de Plux**.
+1. Juega el tutorial (3 eventos: **Clientes** → Preparar → En vivo).
+2. **Tienda** → **Crear cuenta** → la tienda avisa que está en **modo de pruebas** → comprar **700 créditos** con una
+   **tarjeta de pruebas de Plux** (te lleva a la página de pago y vuelve solo al juego con los créditos).
 3. Revisa que lleguen los créditos y que en `/control/` → **Compras** aparezca la venta.
-4. Pestaña **En línea**: deben salir Liga, Festival, Duelos y Desafío.
+4. **Inicio**: sale la tarjeta **Tu servidor** (por ejemplo `Servidor 1 · Quito`).
+5. Pestaña **En línea**: deben salir Liga Semanal, Mega Festival, Duelo de Productoras, Desafío del Día y
+   Copa de Servidores. La **Liga** pide unirse a una asociación: antes del paso 10 no hay ninguna (crear una cuesta
+   $5.000 del juego), así que el encargo de liga se prueba después del paso 10.
+6. El botón rojo redondo (abajo a la derecha) abre el **chat**; **Tienda** → **Mercado**; **Tienda** → **Ayuda y soporte**.
 
 ## Paso 8 · Comprobaciones rápidas (una línea a la vez)
 
@@ -96,6 +109,11 @@ systemctl is-active envivo-validador
 ```
 Debe salir `active`.
 
+```
+sudo crontab -u www-data -l | grep -c envivo
+```
+Debe salir `8` (las tareas programadas del juego).
+
 ## Paso 9 · Actualizar a la última versión
 
 Cuando te diga "hay versión nueva" (por ejemplo cuando entren los eventos de fechas especiales, la sede o la Copa de Servidores):
@@ -104,7 +122,9 @@ Cuando te diga "hay versión nueva" (por ejemplo cuando entren los eventos de fe
 sudo bash /var/www/envivo/server/deploy/actualizar.sh
 ```
 
-Debe terminar con `Listo.` Si te aviso que cambió nginx o las tareas, corre además:
+Debe terminar con `Listo. Si cambio la configuracion de nginx ...` (esa frase sale siempre: no es un error).
+Si dice `este script cambio en GitHub: se sigue con la version nueva`, el paso `== 1` sale dos veces: es normal.
+Si te aviso que cambió nginx o las tareas, corre además:
 
 ```
 sudo bash /var/www/envivo/server/deploy/instalar.sh
@@ -119,6 +139,11 @@ liga y la Copa de Servidores en marcha. No pueden entrar al juego y se borran co
 ```
 sudo -u www-data ENVIVO_CONFIG=/etc/envivo/config.env php /var/www/envivo/server/bin/demo_datos.php --crear
 ```
+
+Al final sale el resumen con `productoras    +24`, `asociaciones   +7`, `chat           +21`… Mándame captura.
+En el juego, **En línea** → **Liga** → **Buscar asociación** → **Unirme** a una de muestra → **Tomar** un encargo →
+**Jugar el encargo** → **Enviar resultado**. Ojo: el chat del **Servidor** muestra solo los mensajes de tu servidor
+(una cuenta nueva puede caer en Guayaquil o Cuenca, con menos mensajes que Quito).
 
 Para ver qué hay:
 

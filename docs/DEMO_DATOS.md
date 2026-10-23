@@ -52,8 +52,12 @@ sudo -u www-data ENVIVO_CONFIG=/etc/envivo/config.env php /var/www/envivo/server
 Muestra cuántas productoras demo hay por servidor, asociaciones, mensajes, publicaciones, puntos de liga y de copa.
 Si dice `asociaciones 7 (… miembros, 1 reales)` es que un jugador real entró a una asociación demo (está bien).
 
-En el juego: pestaña **En línea** → verás el chat con mensajes, las asociaciones para unirse, el mercado con equipos
-y la tabla de la Copa con los 3 servidores.
+En el juego (con una cuenta):
+- botón rojo redondo de abajo a la derecha → **chat** con mensajes. La pestaña **Servidor** muestra solo los de TU
+  servidor: una cuenta nueva puede caer en Guayaquil o Cuenca, que tienen menos mensajes que Quito (es normal);
+- **En línea** → **Liga** → **Buscar asociación**: las asociaciones de muestra para unirse (y luego jugar un encargo);
+- **En línea** → **Copa de Servidores**: el marcador con puntos de preparación (por ejemplo `S3 Cuenca 1.040 VS S1 Quito 1.340`);
+- **Tienda** → **Mercado**: equipos a la venta.
 
 ## Paso 3 · Borrar TODO lo demo (después de la demo)
 

@@ -27,8 +27,17 @@ try {
     $soloGet = fn() => $metodo === 'GET' || Http::error(405, 'Usa GET.');
     $soloPost = fn() => $metodo === 'POST' || Http::error(405, 'Usa POST.');
 
+    // Módulos de monetización (server/MONETIZACION.md): cada línea solo responde si su módulo está instalado (class_exists)
+    // Pase de Temporada (server/INTEGRAR_PASE.md): /api/pase*
+    if (class_exists(\EnVivo\PaseApi::class) && \EnVivo\PaseApi::esRuta($ruta)) \EnVivo\PaseApi::responder($ruta, $metodo, requiere_sesion());
+    // VIP 1–10, regalos de asociación y Mecenas (server/INTEGRAR_VIP.md): /api/vip* y /api/mecenas
+    if (class_exists(\EnVivo\VipApi::class) && \EnVivo\VipApi::esRuta($ruta)) \EnVivo\VipApi::responder($ruta, $metodo, requiere_sesion());
     // Copa de Servidores (server/INTEGRAR_COPAS.md): /api/copa*
     if (\EnVivo\CopasApi::esRuta($ruta)) \EnVivo\CopasApi::responder($ruta, $metodo, requiere_sesion());
+    // Personal estrella y Pase de Copa (server/INTEGRAR_ESTRELLAS.md): /api/estrellas* y /api/pase_copa/comprar
+    if (class_exists(\EnVivo\EstrellasApi::class) && \EnVivo\EstrellasApi::esRuta($ruta)) \EnVivo\EstrellasApi::responder($ruta, $metodo, requiere_sesion());
+    // Sede oficial (server/INTEGRAR_SEDE_OFICIAL.md): /api/sede*
+    if (class_exists(\EnVivo\SedeApi::class) && \EnVivo\SedeApi::esRuta($ruta)) \EnVivo\SedeApi::responder($ruta, $metodo, requiere_sesion());
     // Liga Semanal de Productoras (server/INTEGRAR_LIGA.md): responde y termina
     if (\EnVivo\LigaApi::esRuta($ruta)) \EnVivo\LigaApi::responder($ruta, $metodo, requiere_sesion());
     // Duelo de Productoras y Desafío Técnico del Día (server/INTEGRAR_DUELOS_DESAFIO.md): /api/duelos* y /api/desafio*

@@ -283,6 +283,8 @@ final class Desafio
                 [$estado, $cal, $est, Duelos::json($v), $v['version_logica'] ?? null, (int) ($cal === null || $motivo === 'resultado_no_coincide'), $motivo, time(), $id]);
             if ($cal !== null) self::premioParticipacion((int) $f['jugador_id'], (string) $f['dia'], (int) $f['servidor_id'], $est, $id);
             if ($cal !== null) Universos::marcarActivo((int) $f['jugador_id'], true);   // evento en línea validado (COPAS.md §1)
+            if ($cal !== null && class_exists(Pase::class)) Pase::sumarXp((int) $f['jugador_id'], Pase::XP['desafio'], 'desafio', 'intento:' . $id);   // INTEGRAR_PASE.md §5
+            if ($cal !== null && $est !== null && $motivo !== 'resultado_no_coincide' && class_exists(SedeOficial::class)) SedeOficial::premioIntento((int) $f['jugador_id'], $cal, $est, 'desafio', 'desafio:' . $id);   // INTEGRAR_SEDE_OFICIAL.md §4
         });
     }
 
@@ -296,6 +298,7 @@ final class Desafio
         if ($bat) Monedero::entregar($j, 'consumible', 'battery', $bat, $ref);
         if ($din) Monedero::entregar($j, 'dinero', '-', $din, $ref);
         if ($pas) self::sumarPases($j, $pas, 'desafio', $ref);
+        if (class_exists(Estrellas::class)) Estrellas::ganarFichas($j, 3, 'desafio:' . $dia);
         Db::q("INSERT INTO desafio_premios (dia, jugador_id, tipo, servidor_id, puesto, detalle_json, creado) VALUES (?, ?, 'participacion', ?, NULL, ?, ?)",
             [$dia, $j, $sid, Duelos::json(['estrellas' => $estrellas, 'cables' => $cab, 'baterias' => $bat, 'dinero' => $din, 'pases' => $pas, 'intento_id' => $intento]), time()]);
     }

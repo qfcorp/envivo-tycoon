@@ -64,12 +64,23 @@ final class Chat
         throw new Fallo('Canal no válido.', 400);
     }
 
+    /**
+     * Insignia VIP 1–10 en el chat (INTEGRAR_VIP.md §8): columna y LEFT JOIN de vip_jugadores, solo si esa tabla existe
+     * (sin el módulo VIP, vip_nivel sale 0).
+     */
+    private static function vipSql(): array
+    {
+        static $hay = null;
+        $hay ??= Migraciones::columnas('vip_jugadores') !== null;
+        return $hay ? [', COALESCE(vj.nivel, 0) AS vip_nivel', ' LEFT JOIN vip_jugadores vj ON vj.jugador_id = m.jugador_id'] : ['', ''];
+    }
+
     private static function mensajeJson(array $m, int $yo): array
     {
         $vip = $m['vip_hasta'] !== null && (int) $m['vip_hasta'] > time();
         return ['id' => (int) $m['id'], 'jugador_id' => $m['jugador_id'] === null ? null : (int) $m['jugador_id'],
                 'alias' => $m['jugador_id'] === null ? 'EN VIVO' : Social::nombrePublico($m['alias'], $m['nombre']),
-                'siglas' => $m['siglas'], 'color' => $m['color'], 'cargo' => $m['cargo'], 'vip' => $vip, 'texto' => $m['texto'], 'rapido' => $m['rapido'],
+                'siglas' => $m['siglas'], 'color' => $m['color'], 'cargo' => $m['cargo'], 'vip' => $vip, 'vip_nivel' => (int) ($m['vip_nivel'] ?? 0), 'texto' => $m['texto'], 'rapido' => $m['rapido'],
                 'creado' => Db::iso((int) $m['creado']), 'mio' => $m['jugador_id'] !== null && (int) $m['jugador_id'] === $yo];
     }
 
@@ -77,8 +88,9 @@ final class Chat
     public static function leer(int $jugador, string $canal, int $desde, ?int $coalicion = null): array
     {
         $c = self::canal($jugador, $canal, $coalicion);
-        $base = 'SELECT m.*, j.alias, j.nombre, j.vip_hasta, a.siglas, a.color, am.cargo FROM chat_mensajes m
-                 LEFT JOIN jugadores j ON j.id = m.jugador_id
+        [$vipCol, $vipJoin] = self::vipSql();
+        $base = 'SELECT m.*, j.alias, j.nombre, j.vip_hasta, a.siglas, a.color, am.cargo' . $vipCol . ' FROM chat_mensajes m
+                 LEFT JOIN jugadores j ON j.id = m.jugador_id' . $vipJoin . '
                  LEFT JOIN asociacion_miembros am ON am.jugador_id = m.jugador_id
                  LEFT JOIN asociaciones a ON a.id = am.asociacion_id
                  WHERE m.canal = ? AND m.oculto = 0 AND m.creado >= ?
@@ -139,7 +151,8 @@ final class Chat
             Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, rapido, creado) VALUES (?, ?, ?, ?, ?)', [$canal, $jugador, $texto, $rapido, time()]);
             $id = Db::ultimoId();
             if (random_int(1, 200) === 1) self::limpiarViejos();
-            $m = Db::fila('SELECT m.*, j.alias, j.nombre, j.vip_hasta, a.siglas, a.color, am.cargo FROM chat_mensajes m LEFT JOIN jugadores j ON j.id = m.jugador_id
+            [$vipCol, $vipJoin] = self::vipSql();
+            $m = Db::fila('SELECT m.*, j.alias, j.nombre, j.vip_hasta, a.siglas, a.color, am.cargo' . $vipCol . ' FROM chat_mensajes m LEFT JOIN jugadores j ON j.id = m.jugador_id' . $vipJoin . '
                            LEFT JOIN asociacion_miembros am ON am.jugador_id = m.jugador_id LEFT JOIN asociaciones a ON a.id = am.asociacion_id WHERE m.id = ?', [$id]);
             return ['ok' => true, 'canal' => $canalPedido, 'mensaje' => self::mensajeJson($m, $jugador)];
         });
