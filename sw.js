@@ -15,6 +15,7 @@ const SHELL = [
   './js/logic.js',
   './js/temporadas.js', // eventos especiales por fecha (Navidad, Fin de año, Halloween...)
   './js/sede.js',       // mejoras de la sede (extensión)
+  './js/decoracion.js', // decoración del local (extensión)
   './js/ui.js',
   './js/art.js',
   './js/plan_evento.js', // plan de personal y cámaras (opcional)

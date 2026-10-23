@@ -83,6 +83,7 @@
     "inicio.pl.vip": "VIP",
     "inicio.pl.pase": "赛季通行证",
     "inicio.pl.estrellas": "明星员工",
+    "inicio.pl.decoracion": "场地装饰",
     "inicio.ayuda_texto": "1）在{clientes}中接一个委托。2）挑选员工和设备。3）直播中处理突发状况。4）收款、赚名气，再去{bodega}买更好的设备。每场活动占用一天。负债超过 {m} 就会破产。",
     "inicio.nueva": "开始新游戏",
     "inicio.nueva_q": "当前存档将被删除。",

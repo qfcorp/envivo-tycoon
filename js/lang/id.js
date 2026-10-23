@@ -83,6 +83,7 @@
     "inicio.pl.vip": "VIP",
     "inicio.pl.pase": "Tiket musim",
     "inicio.pl.estrellas": "Kru bintang",
+    "inicio.pl.decoracion": "Dekorasi kantor",
     "inicio.ayuda_texto": "1) Ambil tawaran di {clientes}. 2) Pilih kru dan peralatan. 3) Atasi masalah saat siaran langsung. 4) Terima bayaran, raih ketenaran, dan beli peralatan lebih baik di {bodega}. Setiap acara memakan satu hari. Jika utangmu lebih dari {m}, kamu bangkrut.",
     "inicio.nueva": "Mulai permainan baru",
     "inicio.nueva_q": "Permainanmu saat ini akan dihapus.",

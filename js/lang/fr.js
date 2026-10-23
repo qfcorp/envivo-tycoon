@@ -83,6 +83,7 @@
     "inicio.pl.vip": "VIP",
     "inicio.pl.pase": "Passe de saison",
     "inicio.pl.estrellas": "Équipe vedette",
+    "inicio.pl.decoracion": "Décoration du local",
     "inicio.ayuda_texto": "1) Prends une offre dans {clientes}. 2) Choisis l'équipe et le matériel. 3) Gère les imprévus en direct. 4) Encaisse, gagne en renommée et achète du meilleur matériel dans {bodega}. Chaque événement prend une journée. Si tes dettes dépassent {m}, c'est la faillite.",
     "inicio.nueva": "Nouvelle partie",
     "inicio.nueva_q": "Ta partie actuelle sera effacée.",

@@ -91,6 +91,7 @@
     internacional_host: '<path d="M7 3h10v5a5 5 0 01-10 0z"/><path d="M7 5H4a3 3 0 003 4M17 5h3a3 3 0 01-3 4"/><path d="M12 13v4M8 21h8l-1-4H9z"/><circle cx="12" cy="7" r="1.5"/>',
     // Interfaz
     home: '<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>',
+    planta: '<path d="M7.5 15h9l-1.2 6H8.7z"/><path d="M12 15V9"/><path d="M12 12c-4.5 0-6.5-3-6.5-6.5 3.5 0 6.5 2.5 6.5 6.5zM12 10c0-4 2.5-6.5 6.5-6.5 0 3.5-2.5 6.5-6.5 6.5z"/>',
     clients: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4"/><path d="M8.5 10h7M8.5 14h7M8.5 18h4"/>',
     people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0121.5 19"/>',
     box: '<path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
@@ -1463,7 +1464,7 @@
       <rect x="0" y="-20" width="360" height="170" fill="${sky}"/>
       ${skyDeco}${hills}
       <ellipse cx="180" cy="141" rx="170" ry="5" fill="#000" opacity=".35"/>
-      ${building}${roof.join('')}
+      ${building}${root.Decoracion && root.Decoracion.capa ? root.Decoracion.capa(st, stage) : ''}${roof.join('')}
       <rect x="0" y="140" width="360" height="10" fill="${night ? '#1a1f2a' : '#5b6476'}"/><path d="M0 141h360" stroke="${night ? '#2a3242' : '#8f99aa'}" stroke-width="1.5"/><path d="M0 146h360" stroke="${night ? '#2a3242' : '#e9edf5'}" stroke-width="1" stroke-dasharray="10 8" opacity=".5"/>
       ${cosm.cielo}${lamp}${side.join('')}${camRow}${van}${cosm.piso}
       <rect x="8" y="-14" width="${Math.min(344, Math.round(label.length * 6.2 + 16))}" height="18" rx="9" fill="#0d0f14cc" stroke="#2a3242"/>
