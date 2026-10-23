@@ -1,0 +1,7 @@
+/* Bloque "Datos para tu factura electrónica" de la página de pago (Facturacion::htmlPago). Usa las variables de estilo.css. */
+.factura { background: var(--panel); border: 1px solid var(--borde); border-radius: 14px; padding: 10px 14px 6px; margin: 14px 0 6px; min-width: 0; }
+.factura legend { padding: 0 6px; font-weight: 700; font-size: .95rem; color: var(--texto); }
+.factura .casilla { margin: 8px 0; }
+.factura .casilla input[disabled] + span { opacity: .55; }
+.factura .campos { margin: 8px 0; }
+.factura .tenue { font-size: .82rem; margin: 6px 0 4px; }

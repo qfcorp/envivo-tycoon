@@ -31,4 +31,5 @@ $registrar(Regalos::class);       // solo si Regalos tiene su propio registrar()
 $registrar(SedeOficial::class);   // \EnVivo\SedeOficial::registrar(); packs de obra — INTEGRAR_SEDE_OFICIAL.md §2
 $registrar(Pase::class);          // \EnVivo\Pase::registrar(); pase de temporada — INTEGRAR_PASE.md §3
 $registrar(Estrellas::class);     // \EnVivo\Estrellas::registrar(); pase de copa ($2.99) — INTEGRAR_ESTRELLAS.md §2
+$registrar(Facturacion::class);     // \EnVivo\Facturacion::registrar(); factura / nota de crédito SRI pendiente — INTEGRAR_FACTURACION.md
 unset($registrar);

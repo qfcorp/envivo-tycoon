@@ -192,10 +192,11 @@ $TAREA
 15 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
 */10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/copas.php >> /var/log/envivo-copas.log 2>&1
 20 0 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/salud_servidores.php >> /var/log/envivo-servidores.log 2>&1
+*/5 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/facturacion.php >> /var/log/envivo-facturacion.log 2>&1
 CRON
 )"
-for l in envivo-tareas envivo-discord envivo-festival envivo-liga envivo-copas envivo-servidores; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
-( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga, copas, salud de servidores)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
+for l in envivo-tareas envivo-discord envivo-festival envivo-liga envivo-copas envivo-servidores envivo-facturacion; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
+( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga, copas, salud de servidores, facturación)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
 
 echo "== 8. Node y el validador de partidas (eventos en linea sin trampas)"
 VALIDADOR="no"

@@ -19,6 +19,8 @@ try {
     if ($ruta === '/plux/webhook') api_plux_webhook();
     // El regreso del banco (3DS) es una navegación normal del navegador (GET), no una petición del juego.
     if ($ruta === '/plux/3ds') api_plux_3ds();
+    // Facturación SRI para el ERP del dueño (server/INTEGRAR_FACTURACION.md): firmada con HMAC, sin sesión ni X-Envivo
+    if (class_exists(\EnVivo\FacturacionApi::class) && \EnVivo\FacturacionApi::esRuta($ruta)) \EnVivo\FacturacionApi::responder($ruta, $metodo);
 
     // Protección simple contra peticiones desde otros sitios (junto con SameSite=Lax de la galleta).
     if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.', [], 'cabecera_requerida');
@@ -248,9 +250,11 @@ function api_plux_pago(): never
     if (!preg_match('#^[A-Za-z0-9+/=]{40,1200}$#', $clave)) pago_json(422, ['status' => 'failed', 'message' => 'No se pudo preparar el pago. Recarga la página.']);
     try {
         $comprador = Plux::comprador($in, Cuentas::porId($j));
+        // Datos de la factura SRI (titular, otro/RUC o consumidor final): se revisan ANTES de cobrar (INTEGRAR_FACTURACION.md)
+        $factura = class_exists(\EnVivo\Facturacion::class) ? \EnVivo\Facturacion::datosDePago($in, $comprador, $c, Cuentas::porId($j)) : null;
         $cuerpo = Plux::cuerpo($c, $comprador, $in);
     } catch (\RuntimeException $e) {
-        pago_json(422, ['status' => 'failed', 'message' => $e->getMessage()]);
+        pago_json(422, ['status' => 'failed', 'message' => $e->getMessage()] + ($e instanceof Fallo && is_string($e->extra['codigo'] ?? null) ? ['codigo' => $e->extra['codigo']] : []));
     }
     $conOtp = isset($cuerpo['paramsOtp']);
     // Auditoría A-03: se "toma" la compra ANTES de llamar a Plux (en un solo UPDATE). Si llega otro pedido a la vez
@@ -268,6 +272,7 @@ function api_plux_pago(): never
             : ['status' => 'failed', 'message' => 'Ya estamos procesando este pago. Espera unos segundos: no lo mandes otra vez.', 'codigo' => 'pago_en_proceso']);
     }
     Compras::anotarComprador((int) $c['id'], $comprador);   // para la factura (sin datos de tarjeta)
+    if ($factura !== null) \EnVivo\Facturacion::anotarDatos((int) $c['id'], $factura);   // lo que eligió para la factura SRI
     Sesiones::recordarCompra((int) $c['id']);              // para reconocerla al volver del banco (3DS)
     $r = Plux::llamar(Plux::RUTA_PAGO, $cuerpo, $clave);
     unset($cuerpo, $in);   // la tarjeta (cifrada) no se guarda en ningún lado

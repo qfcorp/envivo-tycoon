@@ -89,7 +89,7 @@ check "Migraciones desde cero" "Base de datos al día: $TMP/datos/envivo.sqlite 
 check "Migraciones otra vez: igual, sin error" "0" "$(php "$SRV/bin/migrar.php" > /dev/null; echo $?)"
 TABLAS=$(php -r '$p = new PDO("sqlite:" . $argv[1]); echo implode(" ", $p->query("SELECT name FROM sqlite_master WHERE type = '"'"'table'"'"' AND name NOT LIKE '"'"'sqlite_%'"'"' ORDER BY name")->fetchAll(PDO::FETCH_COLUMN));' "$TMP/datos/envivo.sqlite")
 FALTAN=""
-for t in actividad ajustes asociacion_miembros asociacion_solicitudes asociaciones auditoria avisos bonos_vip chat_bloqueos chat_mensajes chat_palabras chat_reportes chat_sanciones coalicion_miembros coaliciones compras entregas esquema_modulos intentos inventario jugadores mercado_publicaciones mercado_retenciones movimientos_creditos ofertas partidas plux_3ds_usados productos_ajustes series servidores sesiones soporte_casos soporte_mensajes soporte_respuestas tarjeta_reclamos transferencias universos actividad_diaria copas copa_servidores copa_aportes copa_equipos copa_cruces copa_premios copa_intentos copa_ajustes servidor_salud fusiones traslados; do
+for t in actividad ajustes asociacion_miembros asociacion_solicitudes asociaciones auditoria avisos bonos_vip chat_bloqueos chat_mensajes chat_palabras chat_reportes chat_sanciones coalicion_miembros coaliciones compras entregas esquema_modulos intentos inventario jugadores mercado_publicaciones mercado_retenciones movimientos_creditos ofertas partidas plux_3ds_usados productos_ajustes series servidores sesiones soporte_casos soporte_mensajes soporte_respuestas tarjeta_reclamos transferencias universos actividad_diaria copas copa_servidores copa_aportes copa_equipos copa_cruces copa_premios copa_intentos copa_ajustes servidor_salud fusiones traslados facturas facturacion_datos_compra facturacion_eventos facturacion_nonces; do
   case " $TABLAS " in *" $t "*) ;; *) FALTAN="$FALTAN $t" ;; esac
 done
 check "Tablas del servidor creadas (y las de los modulos de src/migraciones/*.sql)" "" "$FALTAN"
@@ -131,7 +131,7 @@ check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo r
 
 echo
 echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo"
-for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos; do
+for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos facturacion; do
   # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
   env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
   grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'

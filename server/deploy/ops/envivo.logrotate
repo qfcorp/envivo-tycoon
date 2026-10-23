@@ -13,7 +13,7 @@
     create 0640 root adm
 }
 # Cron de www-data (instalar.sh): tarea diaria y Google Play (tareas), bot de Discord, Mega Festival, Liga Semanal, Copa de Servidores y salud de servidores
-/var/log/envivo-tareas.log /var/log/envivo-discord.log /var/log/envivo-festival.log /var/log/envivo-liga.log /var/log/envivo-copas.log /var/log/envivo-servidores.log {
+/var/log/envivo-tareas.log /var/log/envivo-discord.log /var/log/envivo-festival.log /var/log/envivo-liga.log /var/log/envivo-copas.log /var/log/envivo-servidores.log /var/log/envivo-facturacion.log {
     su root adm
     weekly
     rotate 8
