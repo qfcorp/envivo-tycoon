@@ -178,7 +178,7 @@ chown root:www-data "$CONF"; chmod 640 "$CONF"
 echo "== 6. Tablas de la base de datos"
 if sudo -u www-data env ENVIVO_CONFIG="$CONF" php "$APP/server/bin/migrar.php"; then echo "   listo"; else echo "   ERROR en las migraciones (mira el mensaje de arriba)"; exit 1; fi
 
-echo "== 7. Tareas programadas (tarea diaria 4:10, Google Play, Discord, Festival, Liga)"
+echo "== 7. Tareas programadas (tarea diaria 4:10, Google Play, Discord, Festival, Liga, Copa de Servidores, salud de servidores)"
 TAREA="10 4 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/tareas.php >> /var/log/envivo-tareas.log 2>&1"
 touch /var/log/envivo-tareas.log && chown www-data:www-data /var/log/envivo-tareas.log
 # Google Play: cada 6 horas reintenta avisos a Google y revisa compras anuladas (reembolsos / contracargos)
@@ -190,10 +190,12 @@ $TAREA
 */10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/festival.php >> /var/log/envivo-festival.log 2>&1
 1 0 * * 1 ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
 15 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
+*/10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/copas.php >> /var/log/envivo-copas.log 2>&1
+20 0 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/salud_servidores.php >> /var/log/envivo-servidores.log 2>&1
 CRON
 )"
-for l in envivo-tareas envivo-discord envivo-festival envivo-liga; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
-( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
+for l in envivo-tareas envivo-discord envivo-festival envivo-liga envivo-copas envivo-servidores; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
+( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga, copas, salud de servidores)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
 
 echo "== 8. Node y el validador de partidas (eventos en linea sin trampas)"
 VALIDADOR="no"

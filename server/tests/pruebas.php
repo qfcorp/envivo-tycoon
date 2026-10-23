@@ -111,7 +111,7 @@ foreach (['/' => 200, '/index.html' => 200, '/js/logic.js' => 200, '/icons/icon-
 titulo('Estado sin sesión: forma exacta de API.md');
 $est = $v->apiGet('/api/estado');
 check('GET /api/estado -> 200', 200, $v->http);
-$CLAVES_ESTADO = ['ok', 'logueado', 'jugador', 'creditos', 'vip_hasta', 'vip_activo', 'vip_bono_hoy', 'inicio_comprado', 'entregas', 'tienda', 'plux', 'inventario', 'mercado', 'servidor', 'asociacion', 'perfil',
+$CLAVES_ESTADO = ['universo', 'aviso_fusion', 'ok', 'logueado', 'jugador', 'creditos', 'vip_hasta', 'vip_activo', 'vip_bono_hoy', 'inicio_comprado', 'entregas', 'tienda', 'plux', 'inventario', 'mercado', 'servidor', 'asociacion', 'perfil',
     'tarjeta_hasta', 'tarjeta_activa', 'tarjeta_reclamada_hoy', 'cuenta_estado', 'aviso', 'soporte_sin_leer', 'compras_recientes', 'transferencia', 'creditos_retenidos', 'duelos', 'desafio', 'anuncio', 'mantenimiento', 'discord_vinculado', 'discord_invitacion'];
 check('Claves del estado (API.md + MERCADO.md + SOCIAL.md + SOPORTE.md + tarjeta, cuenta, anuncio, duelos, desafío, Discord)', $CLAVES_ESTADO, array_keys($est));
 check('Sin sesión: inventario [], mercado sin acceso, sin servidor ni asociación', [[], false, 0.05, null, null], [$est['inventario'], $est['mercado']['puede'], $est['mercado']['comision'], $est['servidor'], $est['asociacion']]);

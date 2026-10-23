@@ -282,6 +282,7 @@ final class Desafio
             Db::q('UPDATE desafio_intentos SET estado = ?, calidad = ?, estrellas = ?, validacion_json = ?, version_logica = COALESCE(?, version_logica), sospechoso = ?, motivo = ?, terminado = ? WHERE id = ?',
                 [$estado, $cal, $est, Duelos::json($v), $v['version_logica'] ?? null, (int) ($cal === null || $motivo === 'resultado_no_coincide'), $motivo, time(), $id]);
             if ($cal !== null) self::premioParticipacion((int) $f['jugador_id'], (string) $f['dia'], (int) $f['servidor_id'], $est, $id);
+            if ($cal !== null) Universos::marcarActivo((int) $f['jugador_id'], true);   // evento en línea validado (COPAS.md §1)
         });
     }
 

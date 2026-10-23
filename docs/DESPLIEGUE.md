@@ -97,8 +97,10 @@ El instalador deja estas tareas en el cron del usuario `www-data` (cada vez que 
 | Cada 10 minutos | Roles del bot de Discord (`bin/discord_sync.php`) | `/var/log/envivo-discord.log` |
 | Cada 10 minutos | Mega Festival (`bin/festival.php`) | `/var/log/envivo-festival.log` |
 | Lunes 0:01 y cada hora (minuto 15) | Liga Semanal (`bin/liga.php`) | `/var/log/envivo-liga.log` |
+| Cada 10 minutos | Copa de Servidores (`bin/copas.php`) | `/var/log/envivo-copas.log` |
+| Todos los días a las 0:20 | Salud de los servidores y avisos de abandono (`bin/salud_servidores.php`) | `/var/log/envivo-servidores.log` |
 
-Para verlas: `sudo crontab -u www-data -l` (deben salir **6 líneas**).
+Para verlas: `sudo crontab -u www-data -l` (deben salir **8 líneas**).
 Mientras Discord no esté configurado, `envivo-discord.log` solo dice "el bot no está configurado. Nada que hacer": es normal.
 
 ---
@@ -343,7 +345,7 @@ En la columna **Paths** deben aparecer `/etc/envivo` y `/var/backups/envivo`. Si
 | `curl -sI https://juego.tukanec.com/ \| grep -icE "content-security\|permissions-policy\|strict-transport\|x-frame\|referrer"` | `5` (las 5 cabeceras de seguridad) |
 | `curl -s https://juego.tukanec.com/api/soporte/contacto` | `{"ok":true,"correo":"","horario":""}` (con tu correo cuando lo pongas) |
 | `systemctl is-active envivo-validador` | `active` |
-| `sudo crontab -u www-data -l \| grep -c envivo` | `6` |
+| `sudo crontab -u www-data -l \| grep -c envivo` | `8` |
 | `sudo crontab -u root -l \| grep -c _envivo.sh` | `2` |
 | `sudo respaldo_envivo.sh --listar` | Al menos 1 respaldo diario |
 | `sudo DRY_RUN=1 salud_envivo.sh` | Una línea con `OK: todo bien` (en esta prueba no manda nada a Telegram) |

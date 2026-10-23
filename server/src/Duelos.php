@@ -558,6 +558,7 @@ final class Duelos
                    fama_retador = ?, fama_defensor = ?, cerrado = ? WHERE id = ?",
                 [$calidad, $estrellas, $val === null ? null : self::json($val), $val['version_logica'] ?? null, $ganador, $motivo, (int) $sospechoso,
                  (int) $R['rating'], (int) $D['rating'], $nR - (int) $R['rating'], $nD - (int) $D['rating'], $fR, $fD, $now, $id]);
+            if ($calidad !== null) Universos::marcarActivo($rj, true);   // evento en línea validado (COPAS.md §1: actividad_diaria.eventos)
             try {
                 $quien = self::nombre($rj);
                 Chat::sistema($dj, match ($ganador) {

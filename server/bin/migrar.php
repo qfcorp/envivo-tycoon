@@ -21,6 +21,7 @@ if (function_exists('posix_geteuid') && posix_geteuid() === 0 && (int) fileowner
 if (!is_writable($dir)) { fwrite(STDERR, "ERROR: no se puede escribir en $dir. Corre este script como www-data: sudo -u www-data php " . __FILE__ . "\n"); exit(1); }
 try {
     Db::pdo();   // al abrir ya aplica las que falten
+    \EnVivo\Universos::preparar();   // Universo Andino con UNIVERSO_SERVIDORES_INICIALES servidores (idempotente, no imprime nada)
     $v = (int) Db::valor('PRAGMA user_version');
     $modo = (string) Db::valor('PRAGMA journal_mode');
     echo "Base de datos al día: $ruta (versión $v de " . Db::versionEsperada() . ", modo $modo)\n";

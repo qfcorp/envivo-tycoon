@@ -44,7 +44,9 @@ El lunes empieza una copa nueva con **otro torneo** (los torneos rotan cada sema
 - Todos tus puntos son tu **aporte**. El aporte decide tus premios y el puesto en la lista de mejores aportantes.
 
 **Para qué sirven:** cada servidor recibe un **bono de preparación** en cada cruce del sábado (hasta **+15 puntos**).
-El servidor que más preparó recibe el bono completo y los demás reciben una parte proporcional.
+La mitad del bono depende de cuánto preparó tu servidor comparado con el que más preparó, y la otra mitad de cuánto
+preparó **cada jugador activo** en promedio comparado con el mejor promedio. Así un servidor chico pero muy activo
+también puede llevarse un bono grande.
 
 ---
 
@@ -64,7 +66,8 @@ El servidor que más preparó recibe el bono completo y los demás reciben una p
 
 - El **plantel** de tu servidor son los **5 equipos registrados más fuertes** de jugadores activos que siguen en el
   servidor.
-- Si tu servidor tiene **menos de 5 equipos registrados**, los lugares vacíos los ocupa el **equipo de la casa**.
+- Si tu servidor tiene **menos de 5 equipos registrados**, los lugares vacíos los ocupa el **equipo de la casa**: una
+  copia del equipo **mediano** del universo esa semana (el del medio, por fuerza, entre los equipos de quienes aportaron).
   Así **ningún servidor pierde por no presentarse**.
 - El equipo más fuerte de tu servidor enfrenta al más fuerte del rival, el segundo al segundo, y así hasta el quinto.
 
@@ -113,9 +116,9 @@ Los premios llegan una sola vez y aparecen como entrega en tu juego. El trofeo l
 
 **Para que un servidor chico pueda competir:**
 
-- El bono de preparación es **proporcional** al servidor que más preparó, con un máximo de 15 puntos: nunca vale más que
-  ganar dos partidos.
-- Siempre hay 5 equipos en la cancha gracias al **equipo de la casa**.
+- El bono de preparación cuenta **mitad el total y mitad el promedio por jugador activo**, con un máximo de 15 puntos:
+  nunca vale más que ganar dos partidos.
+- Siempre hay 5 equipos en la cancha gracias al **equipo de la casa**, que es tan fuerte como el equipo mediano del universo.
 - Todos juegan con el mismo ánimo y el mismo estado de los equipos.
 - Si tu servidor se queda casi sin jugadores, puedes pedir un **traslado gratis** a un servidor más activo, y el equipo
   del juego puede **unir servidores** (nunca se borra tu progreso). Ver el aviso en el juego cuando pase.

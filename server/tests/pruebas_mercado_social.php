@@ -207,15 +207,38 @@ check('El equipo vencido se puede volver a publicar', 200, $ven->http);
 
 // =====================================================================
 titulo('Servidores y perfil público');
-check('Jugadores nuevos entran al Servidor 1 · Quito', ['id' => 1, 'nombre' => 'Servidor 1 · Quito'], $com->apiGet('/api/estado')['servidor']);
-$exec('UPDATE servidores SET capacidad = ? WHERE id = 1', [(int) $val('SELECT COUNT(*) FROM jugadores WHERE servidor_id = 1')]);
+// Reparto parejo (COPAS.md §1, Universos::asignar): el jugador nuevo entra al servidor abierto del universo más nuevo con
+// MENOS jugadores activos (7 días), empate -> menos jugadores en total. El estado de partida se arma aquí a mano (no depende
+// de si migrar.php ya creó los servidores 2 y 3 ni de UNIVERSO_SERVIDORES_INICIALES): Universo 1 = servidores 1, 2 y 3, y
+// todos los jugadores de la prueba hasta ahora juntos en el Servidor 1 (las asociaciones y el chat de abajo los necesitan juntos).
+$exec("INSERT OR IGNORE INTO servidores (id, nombre, capacidad, abierto, creado, universo_id) VALUES (2, 'Servidor 2 · Guayaquil', 1000, 1, ?, 1), (3, 'Servidor 3 · Cuenca', 1000, 1, ?, 1)", [time(), time()]);
+$exec('UPDATE servidores SET capacidad = 1000, abierto = 1, universo_id = 1 WHERE id IN (1, 2, 3)');
+$juntarEnQuito = fn() => $exec('UPDATE jugadores SET servidor_id = 1');
+$juntarEnQuito();
+$soloQuitoAbierto = fn() => $exec('UPDATE servidores SET abierto = CASE WHEN id = 1 THEN 1 ELSE 0 END');
+check('Los jugadores de la prueba, juntos en el Servidor 1 · Quito', ['id' => 1, 'nombre' => 'Servidor 1 · Quito'], $com->apiGet('/api/estado')['servidor']);
 [$s2a, $JS2A] = $nuevo('Segundo Server');
 $e2 = $s2a->apiGet('/api/estado');
-check('Servidor 1 lleno -> se abre el Servidor 2 y el nuevo jugador entra ahí', [2, 'Servidor 2 · Guayaquil', 0], [$e2['servidor']['id'] ?? null, $e2['servidor']['nombre'] ?? null, (int) $val('SELECT abierto FROM servidores WHERE id = 1')]);
+check('Reparto parejo: el nuevo NO va al Servidor 1 (lleno de jugadores) sino al Servidor 2 · Guayaquil (vacío, id menor)', [2, 'Servidor 2 · Guayaquil'], [$e2['servidor']['id'] ?? null, $e2['servidor']['nombre'] ?? null]);
 [$s2b, $JS2B] = $nuevo('Segundo Bis');
-check('…el siguiente también va al servidor abierto más nuevo', 2, $s2b->apiGet('/api/estado')['servidor']['id'] ?? null);
-$exec('UPDATE servidores SET capacidad = 1000, abierto = 1 WHERE id = 1');
-$exec('UPDATE servidores SET abierto = 0 WHERE id = 2');   // para que los siguientes jugadores de la prueba vuelvan al Servidor 1
+check('…el siguiente va al Servidor 3 · Cuenca (el de menos jugadores)', 3, $s2b->apiGet('/api/estado')['servidor']['id'] ?? null);
+// Activos de 7 días: el del Servidor 3 jugó hoy, el del Servidor 2 no -> el 2 tiene menos activos y recibe al siguiente
+$exec('DELETE FROM actividad_diaria WHERE jugador_id IN (?, ?)', [$JS2A, $JS2B]);
+$exec('INSERT OR IGNORE INTO actividad_diaria (dia, jugador_id, servidor_id, eventos) VALUES (?, ?, 3, 0), (?, ?, 1, 0)', [date('Y-m-d'), $JS2B, date('Y-m-d'), $JVEN]);
+[$s2c, $JS2C] = $nuevo('Segundo Tris');
+check('Empate en total (1 y 1): gana el de MENOS activos de 7 días (Servidor 2)', 2, $s2c->apiGet('/api/estado')['servidor']['id'] ?? null);
+// Todos los servidores del universo llenos -> se cierran a nuevos y se abre un universo nuevo con sus servidores
+$exec('UPDATE servidores SET capacidad = (SELECT COUNT(*) FROM jugadores j WHERE j.servidor_id = servidores.id) WHERE id IN (1, 2, 3)');
+$antesMax = (int) $val('SELECT MAX(id) FROM servidores');
+[$s4, $JS4] = $nuevo('Universo Nuevo');
+$e4 = $s4->apiGet('/api/estado');
+$U2 = (int) $val('SELECT universo_id FROM servidores WHERE id = ?', [(int) ($e4['servidor']['id'] ?? 0)]);
+check('Universo 1 lleno -> se abre otro universo y el nuevo entra a su primer servidor (Servidor ' . ($antesMax + 1) . ')',
+    [$antesMax + 1, true, 0], [$e4['servidor']['id'] ?? null, $U2 > 1, (int) $val('SELECT COUNT(*) FROM servidores WHERE id IN (1, 2, 3) AND abierto = 1')]);
+check('…el universo lleno sigue activo (juega la copa); el nuevo queda en la auditoría como "sistema"', [1, 'sistema'],
+    [(int) $val('SELECT activo FROM universos WHERE id = 1'), $val("SELECT quien FROM auditoria WHERE accion = 'universo_crear' ORDER BY id DESC LIMIT 1")]);
+$exec('UPDATE servidores SET capacidad = 1000 WHERE id IN (1, 2, 3)');
+$soloQuitoAbierto();   // para que los siguientes jugadores de la prueba entren al Servidor 1, con los demás
 $r = $com->api('/api/perfil', ['alias' => 'Producciones Ñandú']);
 check('Alias con tildes y ñ -> ok', [200, 'Producciones Ñandú'], [$com->http, $r['perfil']['alias'] ?? null]);
 $r = $ven->api('/api/perfil', ['alias' => 'producciones ñandú']);

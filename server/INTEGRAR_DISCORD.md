@@ -48,8 +48,9 @@ por esta:
 
 <!-- prueba:estado_despues -->
 ```php
-        '/estado' => $soloGet() && Http::json(200, Cuentas::estado(Sesiones::jugadorId()) + \EnVivo\Discord::estado(Sesiones::jugadorId())),
+        '/estado' => $soloGet() && Http::json(200, \EnVivo\Universos::estado(Sesiones::jugadorId()) + \EnVivo\Fusiones::estado(Sesiones::jugadorId()) + Cuentas::estado(Sesiones::jugadorId()) + \EnVivo\Discord::estado(Sesiones::jugadorId())),
 ```
+(Línea tal como quedó integrada, con `universo` de Universos y `aviso_fusion` de Fusiones delante.)
 
 `/api/estado` agrega `"discord_vinculado": true|false` (false sin sesión) y `"discord_invitacion": "https://discord.gg/..." | null`
 (de `DISCORD_INVITACION`). Nunca falla: si algo sale mal, `discord_vinculado` queda en false.

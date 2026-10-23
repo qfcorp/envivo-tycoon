@@ -741,6 +741,7 @@ final class Liga
             elseif (!$cuenta) $nota = $nota ?? 'no_cumple';
             Db::q('UPDATE liga_intentos SET estado = ?, resultado_json = ?, calidad = ?, estrellas = ?, cuenta = ?, sospechoso = ?, motivo = ?, version_logica = COALESCE(?, version_logica) WHERE id = ?',
                 [$estado, json_encode($res, JSON_UNESCAPED_UNICODE), $res['calidad'], $res['estrellas'], $cuenta ? 1 : 0, $sospechoso ? 1 : 0, $nota, $version, $id]);
+            Universos::marcarActivo((int) $it['jugador_id'], true);   // evento en línea validado (COPAS.md §1: actividad_diaria.eventos)
             $completada = false; $puntos = 0;
             if ($cuenta) {
                 $avance = (int) $t['avance'] + 1;

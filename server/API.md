@@ -116,6 +116,8 @@ Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar` y `go
 | `anuncio`, `mantenimiento` | anuncio del sistema `{id, texto, tipo, hasta}` o `null`; `{activo, mensaje}` | Centro de Control |
 | `duelos`, `desafio` | `{rating, liga, restantes, tiene_equipo, defensas_nuevas, en_curso}` y `{dia, modificador, nombre, icono, restantes, jugado_hoy, pases_prensa}`; `null` sin sesión | `INTEGRAR_DUELOS_DESAFIO.md` |
 | `discord_vinculado`, `discord_invitacion` | bot de Discord | `INTEGRAR_DISCORD.md` |
+| `universo` | `{id, nombre}` del universo del servidor del jugador (`null` sin sesión). Con sesión, `/api/estado` además anota el día jugado (`actividad_diaria`) | `COPAS.md` §1, `INTEGRAR_UNIVERSOS.md` |
+| `aviso_fusion` | `null`, o el aviso de que su servidor se unió a otro (14 días, hasta cerrarlo con `/api/servidor/aviso-visto`) | `INTEGRAR_FUSIONES.md` |
 
 `creditos` es el saldo real (`creditos - deuda`): puede ser NEGATIVO después de un reembolso o contracargo.
 `tienda.premium[]` trae `tipo` (`equipo`, `vip`, `consumo`, `refuerzo`) y `vip`; un exclusivo apagado en el Centro de
@@ -136,6 +138,8 @@ Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos`
 | GET `/api/festival`, `/api/festival/intento/iniciar`, `/api/festival/intento/enviar`, `/api/festival/pases/comprar` | | `INTEGRAR_FESTIVAL.md` |
 | `/api/liga`, `/api/liga/tomar`, `/abandonar`, `/descartar`, `/intento`, `/completar`, `/tienda` | | `INTEGRAR_LIGA.md` |
 | `/api/duelos*`, `/api/desafio*` | | `INTEGRAR_DUELOS_DESAFIO.md` |
+| GET `/api/copa`, `/api/copa/equipo`, `/api/copa/intento/iniciar`, `/api/copa/intento/enviar` | | `COPAS.md` §2, `INTEGRAR_COPAS.md` |
+| GET `/api/servidor/opciones`, `/api/servidor/trasladar`, `/api/servidor/aviso-visto` | | `COPAS.md` §3, `INTEGRAR_FUSIONES.md` |
 
 **Pases de Prensa: UN solo saldo.** Los que da el Desafío del Día y los del Mega Festival (diarios, VIP, misiones, compra)
 son el mismo saldo: libro `festival_pases` (idempotente por `ref`, tope 10; lo que pase del tope no se suma).

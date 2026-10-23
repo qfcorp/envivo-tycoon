@@ -5,7 +5,8 @@ namespace EnVivo;
 
 /**
  * Servidores (reinos), perfil público de la productora y asociaciones (ver server/SOCIAL.md).
- * - Al registrarse, el jugador entra al servidor abierto más nuevo que tenga cupo (si todos están llenos se abre uno nuevo).
+ * - Al registrarse, el jugador entra al servidor del universo más nuevo con menos jugadores activos (Universos::asignar,
+ *   COPAS.md §1); si no queda cupo en ningún servidor se abre un universo nuevo.
  * - Alias: nombre público de la productora, único por servidor, 3 a 24 caracteres, pasa por el filtro.
  * - Fama pública: la manda el juego; puede subir como máximo FAMA_TOPE_DIA puntos por día (contra trampas).
  * - Asociaciones: máximo 20 miembros, un jugador en una sola. Crear: gratis con VIP activo o $5.000 del juego
@@ -19,19 +20,14 @@ final class Social
     public const CIUDADES = ['Quito', 'Guayaquil', 'Cuenca', 'Manta', 'Loja', 'Ambato', 'Ibarra', 'Riobamba', 'Machala', 'Esmeraldas', 'Portoviejo', 'Latacunga'];
 
     // ------------------------------------------------------------------ servidores
+    /**
+     * Servidor de un jugador que se registra: reparto parejo dentro del universo más nuevo con cupo (Universos::asignar,
+     * COPAS.md §1): el servidor abierto con menos jugadores activos en 7 días, empate -> menos jugadores en total. Los llenos
+     * se cierran a nuevos; si no queda cupo en ninguno, se abre un universo nuevo con UNIVERSO_SERVIDORES_INICIALES servidores.
+     */
     public static function servidorParaNuevo(): int
     {
-        return Db::tx(function (): int {
-            foreach (Db::todas('SELECT s.*, (SELECT COUNT(*) FROM jugadores j WHERE j.servidor_id = s.id) AS n FROM servidores s WHERE abierto = 1 ORDER BY id DESC') as $s) {
-                if ((int) $s['n'] < (int) $s['capacidad']) return (int) $s['id'];
-                Db::q('UPDATE servidores SET abierto = 0 WHERE id = ?', [$s['id']]);   // lleno: se cierra a nuevos jugadores
-            }
-            $n = (int) Db::valor('SELECT COALESCE(MAX(id), 0) FROM servidores') + 1;
-            $cap = (int) (Db::valor('SELECT capacidad FROM servidores ORDER BY id DESC LIMIT 1') ?? 1000);
-            Db::q('INSERT INTO servidores (id, nombre, capacidad, abierto, creado) VALUES (?, ?, ?, 1, ?)',
-                [$n, 'Servidor ' . $n . ' · ' . self::CIUDADES[($n - 1) % count(self::CIUDADES)], $cap, time()]);
-            return $n;
-        });
+        return Universos::asignar();
     }
 
     public static function servidorDe(int $jugador): ?array
