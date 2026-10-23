@@ -546,7 +546,7 @@
     const s = document.createElement('style');
     s.id = 'mis-css';
     s.textContent = `
-.mis-card h2{font-size:19px;margin:4px 0 8px;overflow-wrap:anywhere}
+.mis-card h3{font-size:19px;margin:4px 0 8px;overflow-wrap:anywhere}
 .mis-act{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 10px 8px;margin:0 0 10px;min-width:0}
 .mis-act-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
 .mis-bar{height:9px;background:var(--panel);border-radius:9px;overflow:hidden;margin-top:6px}
@@ -631,7 +631,7 @@
     const todo = n > 1 ? `<button class="btn green mis-todo" data-ext="misiones" data-acc="todo" ${st.ocupado ? 'disabled' : ''}>🎁 ${esc(t('reclamar_todo', { n }))}</button>` : '';
     return `<div class="card mis-card" data-mis="tarjeta">
       <div class="row between"><div class="story-tag">${esc(t('tag'))}</div><span class="small muted">${esc(t('renuevan', { t: tiempo(hastaMedianoche(1)) }))}</span></div>
-      <h2>${esc(t('titulo'))}</h2>
+      <h3>${esc(t('titulo'))}</h3>
       ${todo}
       ${cofresHtml(m, on)}
       <div class="mis-lista" data-mis="dia">${m.d.ids.map((id) => filaHtml(m, 'd', id, on)).join('')}</div>
