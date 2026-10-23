@@ -18,6 +18,8 @@ Tú haces 3 cosas a mano (crear el servidor, crear el bot y correr un comando) y
 
 ## Resumen rápido (los pasos en corto)
 
+> **Una sola aplicación "EN VIVO Bot" para todo.** Esta guía arma el servidor de Discord. Después, `docs/DISCORD_BOT.md` conecta ese mismo bot con el juego (vincular cuenta, roles, comandos). Haz primero esta guía y luego la otra. Si en algún momento tocas **Reset Token**, el token viejo deja de servir: pon el nuevo en `discord\.env` (este script) y en `/etc/envivo/config.env` como `DISCORD_BOT_TOKEN` (el bot del juego).
+
 1. Discord → **+** → **Crear mi propio servidor** → "EN VIVO Tycoon · Oficial". Activa la verificación en dos pasos en tu cuenta.
 2. https://discord.com/developers/applications → **New Application** "EN VIVO Bot" → pestaña **Bot** → **Reset Token** → copia el token.
 3. Invita al bot con el enlace del paso 2.4 (permiso Administrador) y copia el **ID del servidor**.
