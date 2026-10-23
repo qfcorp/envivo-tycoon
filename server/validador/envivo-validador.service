@@ -1,0 +1,38 @@
+# EN VIVO Tycoon — validador de intentos de evento (repite cada jugada en el servidor)
+# Copiar a /etc/systemd/system/envivo-validador.service (ver server/validador/README.md)
+# Escucha solo en 127.0.0.1:8790. La clave se lee de /etc/envivo/validador.clave (root, 600).
+
+[Unit]
+Description=EN VIVO Tycoon - validador de intentos de evento
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /var/www/envivo/server/validador/servidor.js
+Environment=ENVIVO_JUEGO=/var/www/envivo
+Environment=VALIDADOR_PUERTO=8790
+Environment=NODE_ENV=production
+# systemd entrega la clave al servicio sin que el usuario del servicio pueda leer /etc/envivo
+LoadCredential=clave:/etc/envivo/validador.clave
+Environment=VALIDADOR_CLAVE_ARCHIVO=%d/clave
+Restart=always
+RestartSec=2
+
+# Seguridad: usuario temporal sin permisos, solo lectura del disco, solo red local
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressAllow=localhost
+IPAddressDeny=any
+MemoryMax=256M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target
