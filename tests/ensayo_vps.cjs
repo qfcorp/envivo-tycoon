@@ -76,6 +76,7 @@ async function crearCuenta(p, nombre) {
   await p.fill('#cu-nombre', nombre);
   await p.fill('#cu-email', email);
   await p.fill('#cu-clave', 'clave-segura-123');
+  await p.check('#cu-terminos'); await p.check('#cu-edad');   // js/cuenta.js
   await p.click('#cu-btn');
   await p.waitForFunction(() => window.Api.logueado(), null, { timeout: 15000 });
   await cerrar(p);

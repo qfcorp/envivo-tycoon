@@ -40,7 +40,7 @@ const { chromium } = require('playwright');
     // página mínima solo para confirmar que llegamos a /?compra=ok.
     await ctx.route(new RegExp('^' + base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/(\\?.*)?$'), x => x.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>juego</title><p>juego</p>' }));
     const email = 'nav' + Date.now() + '@prueba.example';
-    const reg = await api(ctx, '/api/registro', { email, nombre: 'Nadia Navegador', clave: 'ClaveNavegador1' });
+    const reg = await api(ctx, '/api/registro', { email, nombre: 'Nadia Navegador', clave: 'ClaveNavegador1', acepta_terminos: true, edad_16: true });
     r.pasos.registro = reg.logueado === true;
     const p = vigilar(await ctx.newPage(), 'pago');
 

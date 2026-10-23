@@ -155,7 +155,7 @@ $n = 0;
 $nuevo = function (string $nombre, string $alias, int $fama) use (&$n, $api, $TMP, $exec): array {
     $n++;
     $jar = "$TMP/jar_$n";
-    $r = $api('/api/registro', ['email' => "jugador$n@prueba.example", 'nombre' => $nombre, 'clave' => 'ClaveSegura123'], $jar);
+    $r = $api('/api/registro', ['email' => "jugador$n@prueba.example", 'nombre' => $nombre, 'clave' => 'ClaveSegura123', 'acepta_terminos' => true, 'edad_16' => true], $jar);
     $id = (int) ($r['json']['jugador']['id'] ?? 0);
     $exec('UPDATE jugadores SET alias = ?, alias_clave = ?, fama_publica = ? WHERE id = ?', [$alias, mb_strtolower($alias), $fama, $id]);
     return [$jar, $id, "jugador$n@prueba.example"];

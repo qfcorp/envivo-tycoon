@@ -1163,7 +1163,7 @@
         ${vip}
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
         ${discordBtn('sm')}
-        <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button></div>`;
+        <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
     // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta
@@ -1248,6 +1248,7 @@
         ${reg ? `<label class="field">${T('cuenta.nombre')}<input id="cu-nombre" autocomplete="name" maxlength="60" required></label>` : ''}
         <label class="field">${T('cuenta.correo')}<input id="cu-email" type="email" autocomplete="email" maxlength="120" required></label>
         <label class="field">${reg ? T('cuenta.clave_min', { n: 8 }) : T('cuenta.clave')}<input id="cu-clave" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" minlength="${reg ? 8 : 1}" required></label>
+        ${reg && window.Cuenta ? window.Cuenta.camposRegistro() : ''}
         <p class="small neg" id="cu-error" aria-live="polite"></p>
         <button class="btn main" type="submit" id="cu-btn">${reg ? T('cuenta.crear_mia') : T('cuenta.entrar')}</button>
       </form>
@@ -1258,9 +1259,11 @@
   async function enviarCuenta(form) {
     const reg = form.dataset.modo === 'registro';
     const email = $('cu-email').value.trim(), clave = $('cu-clave').value;
+    const falta = reg && window.Cuenta ? window.Cuenta.faltaRegistro() : '';   // casillas de términos y edad (js/cuenta.js)
+    if (falta) { $('cu-error').textContent = falta; snd.play('error'); return; }
     const btn = $('cu-btn'); btn.disabled = true; $('cu-error').textContent = '';
     try {
-      if (reg) await Api.registro(email, $('cu-nombre').value.trim(), clave);
+      if (reg) await Api.registro(email, $('cu-nombre').value.trim(), clave, window.Cuenta ? window.Cuenta.datosRegistro() : undefined);
       else await Api.entrar(email, clave);
       closeModal();
       invalidarOnline(); vistaOnline = 'hub';
@@ -2078,6 +2081,7 @@
       case 'vista-tienda': vistaTienda = el.dataset.k; if (window.Mercado) window.Mercado.invalidar(); render(); break;
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
       case 'cuenta-info': avisoCuenta(); break;
+      case 'cuenta-borrar': if (window.Cuenta) window.Cuenta.abrirBorrar({ openModal, closeModal, toast, snd, alBorrar: () => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; if (window.Chat) window.Chat.refrescar(); render(); } }); break;
       case 'pl': plAlternar(el.dataset.k); break;
       case 'nombre': abrirNombre(); break;
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;

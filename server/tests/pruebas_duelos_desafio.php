@@ -99,7 +99,7 @@ $n = 0;
 $jugador = function (string $nombre, int $fama = 30) use ($BASE, &$n): array {
     $n++;
     $nav = new Nav($BASE, "j$n");
-    $r = $nav->post('/api/registro', ['email' => "j{$n}_" . getmypid() . '@prueba.example', 'nombre' => $nombre, 'clave' => 'ClaveDePrueba1']);
+    $r = $nav->post('/api/registro', ['email' => "j{$n}_" . getmypid() . '@prueba.example', 'nombre' => $nombre, 'clave' => 'ClaveDePrueba1', 'acepta_terminos' => true, 'edad_16' => true]);
     $id = (int) ($r['jugador']['id'] ?? 0);
     Db::q('UPDATE jugadores SET fama_publica = ?, alias = ?, alias_clave = ?, servidor_id = 1 WHERE id = ?', [$fama, $nombre, mb_strtolower($nombre) . $n, $id]);
     return [$nav, $id];

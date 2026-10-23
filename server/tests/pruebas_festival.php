@@ -368,7 +368,7 @@ $http = function (string $metodo, string $ruta, ?array $cuerpo = null, string $j
 $jar1 = $TMP . '/jar_h1';
 [$c] = $http('GET', '/api/festival');
 check('GET /api/festival sin sesión -> 401', 401, $c);
-[$c, $j] = $http('POST', '/api/registro', ['email' => 'http1.' . bin2hex(random_bytes(3)) . '@prueba.example', 'nombre' => 'Hugo Http', 'clave' => 'ClaveSegura99'], $jar1);
+[$c, $j] = $http('POST', '/api/registro', ['email' => 'http1.' . bin2hex(random_bytes(3)) . '@prueba.example', 'nombre' => 'Hugo Http', 'clave' => 'ClaveSegura99', 'acepta_terminos' => true, 'edad_16' => true], $jar1);
 check('Registro por HTTP', 200, $c);
 $http('POST', '/api/perfil', ['alias' => 'Hugo Http', 'fama' => 15], $jar1);
 [$c] = $http('POST', '/api/asociaciones/crear', ['nombre' => 'Rutas de Prueba', 'siglas' => 'RDP', 'color' => '#4da3ff', 'pagado_en_juego' => true], $jar1);

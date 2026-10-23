@@ -59,9 +59,9 @@ titulo('Códigos de error estables (para traducir en el juego)');
 $sinS = new Nav($URL, 'codigos');
 $r = $sinS->api('/api/gastar', ['item' => 'dron4k']);
 check('Sin sesión -> codigo sesion_requerida', [401, 'sesion_requerida'], [$sinS->http, $r['codigo'] ?? null]);
-$r = $sinS->api('/api/registro', ['email' => 'mal', 'nombre' => 'x', 'clave' => '12345678']);
+$r = $sinS->api('/api/registro', ['email' => 'mal', 'nombre' => 'x', 'clave' => '12345678', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Correo inválido -> email_invalido', 'email_invalido', $r['codigo'] ?? null);
-$r = $sinS->api('/api/registro', ['email' => 'corto@prueba.example', 'nombre' => 'x', 'clave' => '123']);
+$r = $sinS->api('/api/registro', ['email' => 'corto@prueba.example', 'nombre' => 'x', 'clave' => '123', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Clave corta -> clave_corta', 'clave_corta', $r['codigo'] ?? null);
 $r = $sinS->api('/api/entrar', ['email' => 'nadie@prueba.example', 'clave' => '12345678x']);
 check('Clave mala -> credenciales_invalidas', 'credenciales_invalidas', $r['codigo'] ?? null);
@@ -476,7 +476,7 @@ check('…partida, inventario, mensajes y sesiones borrados', [0, 0, 0, 0], [(in
 check('…las compras se CONSERVAN con los datos de factura (SRI)', [true, '1710034065'], [(bool) $val('SELECT 1 FROM compras WHERE id = ?', [$compraBO]), $val('SELECT comprador_cedula FROM compras WHERE id = ?', [$compraBO])]);
 $bo->api('/api/entrar', ['email' => $emailBO, 'clave' => $claveBO]);
 check('…ya no se puede entrar con esos datos', 401, $bo->http);
-$r = $bo->api('/api/registro', ['email' => $emailBO, 'nombre' => 'Vuelve', 'clave' => 'ClaveNueva2026']);
+$r = $bo->api('/api/registro', ['email' => $emailBO, 'nombre' => 'Vuelve', 'clave' => 'ClaveNueva2026', 'acepta_terminos' => true, 'edad_16' => true]);
 check('…y el correo queda libre para una cuenta NUEVA (sin nada de la anterior)', [200, true, 0], [$bo->http, ($r['jugador']['id'] ?? 0) !== $JBO, $r['creditos'] ?? null]);
 check('Auditoría: cuenta_borrada', 1, $auditado('cuenta_borrada', $JBO));
 

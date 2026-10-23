@@ -28,6 +28,8 @@ try {
     $soloPost = fn() => $metodo === 'POST' || Http::error(405, 'Usa POST.');
 
     // Módulos de monetización (server/MONETIZACION.md): cada línea solo responde si su módulo está instalado (class_exists)
+    // Aceptación de Términos y Privacidad (server/INTEGRAR_CUENTA.md): /api/cuenta/terminos
+    if (class_exists(\EnVivo\TerminosApi::class) && \EnVivo\TerminosApi::esRuta($ruta)) \EnVivo\TerminosApi::responder($ruta, $metodo, requiere_sesion());
     // Pase de Temporada (server/INTEGRAR_PASE.md): /api/pase*
     if (class_exists(\EnVivo\PaseApi::class) && \EnVivo\PaseApi::esRuta($ruta)) \EnVivo\PaseApi::responder($ruta, $metodo, requiere_sesion());
     // VIP 1–10, regalos de asociación y Mecenas (server/INTEGRAR_VIP.md): /api/vip* y /api/mecenas
@@ -128,7 +130,9 @@ function api_registro(): never
 {
     $in = Http::entrada(10000);
     if (Limite::contar('registro:' . Http::ip(), 50, 60)) Http::error(429, 'Demasiados registros desde esta conexión. Espera un rato e intenta de nuevo.', [], 'limite_intentos');
+    \EnVivo\Terminos::revisar($in);   // acepta_terminos y edad_16 (server/INTEGRAR_CUENTA.md)
     $id = Cuentas::registrar(texto_de($in, 'email'), texto_de($in, 'nombre'), texto_de($in, 'clave'));
+    \EnVivo\Terminos::aceptar($id, 'registro');
     Sesiones::abrir($id);
     Http::json(200, \EnVivo\Universos::estado($id) + \EnVivo\Fusiones::estado($id) + Cuentas::estado($id) + \EnVivo\Discord::estado($id));
 }
@@ -448,7 +452,9 @@ function api_chat_leer(): never
 function api_chat_escribir(): never
 {
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') Http::error(405, 'Usa GET o POST.');
-    Http::json(200, Chat::escribir(requiere_sesion(), Http::entrada(10000)));
+    $j = requiere_sesion();
+    \EnVivo\Terminos::exigir($j);   // sin aceptar los términos no se escribe (server/INTEGRAR_CUENTA.md)
+    Http::json(200, Chat::escribir($j, Http::entrada(10000)));
 }
 
 function api_chat_reportar(): never

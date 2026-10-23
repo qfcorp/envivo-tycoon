@@ -40,7 +40,8 @@ los ids aplicados dentro de su partida (`s.premium.aplicadas`).
 | `reparar_todo` | `-` | 1 | Repara todos los equipos al 100% |
 
 ## Cuenta
-- `POST /api/registro` `{ "email", "nombre", "clave" }` → mismo JSON que `/api/estado` (ya con sesión).
+- `POST /api/registro` `{ "email", "nombre", "clave", "acepta_terminos": true, "edad_16": true }` → mismo JSON que `/api/estado` (ya con sesión).
+  Sin `acepta_terminos: true` → 400 `terminos_requeridos`; sin `edad_16: true` → 400 `edad_requerida` (16 años o más). Ver `INTEGRAR_CUENTA.md`.
   Clave mínimo 8 caracteres. Email único.
 - `POST /api/entrar` `{ "email", "clave" }` → estado. Límite de intentos por IP y por email.
 - `POST /api/salir` → `{ "ok": true }`
@@ -122,6 +123,7 @@ Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar` y `go
 | `vip_nivel`, `regalos_pendientes` | nivel VIP para siempre (0..10; distinto de `vip_activo` del Pase VIP de 30 días) y cofres de asociación por abrir. `0` sin sesión o sin el módulo | `INTEGRAR_VIP.md` |
 | `pase` | `{temporada: {numero, nombre, icono, fin} \| null, nivel, premium, por_reclamar}` del Pase de Temporada; `null` sin sesión o sin el módulo | `INTEGRAR_PASE.md` |
 | `sede_oficial` | `{nivel, bono}` (nivel oficial y bono de competencia 0..6); `null` sin sesión o sin el módulo | `INTEGRAR_SEDE_OFICIAL.md` |
+| `terminos` | `{version, aceptados, aceptado_en, edad_minima: 16}`; `null` sin sesión. Con `aceptados: false` el juego pide aceptar una vez antes del chat, mercado y modos en línea | `INTEGRAR_CUENTA.md` |
 
 Las 4 claves de monetización salen SIEMPRE (lo arma `Cuentas::estado`, así llegan en `/api/estado` y en todas las respuestas
 con el estado completo); un módulo que falla nunca rompe `/api/estado`.
@@ -135,6 +137,7 @@ Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos`
 |---|---|---|
 | `/api/tarjeta/reclamar` | — | `{creditos, recibidos: 20, tarjeta_reclamada_hoy: true}`; 403 `tarjeta_requerida`, 409 `ya_reclamado` |
 | `/api/cuenta/borrar` | `{confirmar: "BORRAR", clave}` | `{borrada: true}`; anonimiza la cuenta, conserva las compras (SRI). Página pública: `/borrar-cuenta.html` |
+| `/api/cuenta/terminos` | `{acepta_terminos: true, edad_16: true}` (GET: solo consulta) | `{terminos: {version, aceptados, aceptado_en, edad_minima}}`; 400 `terminos_requeridos` / `edad_requerida`. Sin aceptar, `POST /api/chat` → 403 `terminos_pendientes` |
 | `/api/cuenta/transferir/iniciar` | `{email_nuevo}` | crea la orden de `transferencia_cuenta` ($9,99) para pagar con `/pago.php` |
 | `/api/cuenta/transferir/confirmar` | `{email, codigo, clave, nombre}` | el nuevo dueño entra con sesión (estado completo) |
 | `/api/cuenta/transferir/cancelar` | — | cancela la pendiente |
