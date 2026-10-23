@@ -1,10 +1,24 @@
-/* Capturas del juego real para la tienda (360x640 a 3x = 1080x1920).
-   Arma una partida avanzada con las reglas del juego (js/logic.js + js/premium.js),
-   la carga en el navegador y toma 6 pantallas en crudo en assets/promo/src/raw/.
+/* Capturas del juego real para Google Play (360x640 a 3x = 1080x1920, 9:16) en los 10 idiomas del juego.
+   Arma una partida avanzada con las reglas del juego (js/logic.js + extensiones), la abre en Chromium
+   desde un origen http simulado y toma 8 pantallas por idioma en assets/promo/src/raw/<idioma>/ (no se guardan en git).
+   Después: componer.js arma las capturas finales (marco de teléfono + título por idioma) en assets/promo/screens_<idioma>/.
+
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node assets/promo/src/capturar.js
-   Opcional: GAME_ROOT=<carpeta del juego> (por defecto la raíz del repo),
-             GAME_LANG=en (guarda 'envivo_lang' para cuando el juego tenga traducciones),
-             RAW_DIR=<carpeta de salida> (por defecto assets/promo/src/raw). */
+   Opcional: GAME_LANGS=es,en   (por defecto los 10 idiomas)
+             GAME_ROOT=<carpeta del juego> (por defecto la raíz del repo)
+             RAW_DIR=<carpeta de salida> (por defecto assets/promo/src/raw)
+
+   Plan de capturas (raw/<idioma>/):
+     01_inicio      Inicio: la sede con el letrero "Tukán Producciones" (filas plegadas)      · zoom: dibujo de la sede
+     02_clientes    Ofertas de clientes (disputada con MegaVisión e internacional)            · zoom: la oferta disputada
+     03_preparar    Preparar el evento: plano de cámaras                                       · zoom: tarjeta "Llévame" (03_preparar_b)
+     04_en_vivo     En vivo: franja animada + imprevisto con sus decisiones                    · zoom: la franja
+     05_resultado   Resultado: 5 estrellas, ganancia y duelo                                  · zoom: compartir (05_resultado_b)
+     06_bodega      Bodega: lentes con la Edición Exclusiva                                    · zoom: la tarjeta exclusiva
+     07_copa        En línea: Copa de Servidores en plena batalla (servidor simulado)          · zoom: la tabla
+     08_decoracion  Decorar el local (sofá, neón, trofeos...) y nivel de sede                  · zoom: el dibujo del local
+
+   Revisa el texto de cada pantalla (también el de los SVG) y falla si aparece una marca real (LigaPro, Sony, Canon...). */
 'use strict';
 const path = require('path');
 const fs = require('fs');
@@ -12,229 +26,369 @@ const { chromium } = require('playwright');
 
 const ROOT = path.resolve(process.env.GAME_ROOT || path.join(__dirname, '..', '..', '..'));
 const OUT = path.resolve(process.env.RAW_DIR || path.join(__dirname, 'raw'));
-const LANG = process.env.GAME_LANG || '';
-fs.mkdirSync(OUT, { recursive: true });
+const TODOS = ['es', 'en', 'pt-BR', 'fr', 'de', 'it', 'ru', 'tr', 'id', 'zh-CN'];
+const LANGS = (process.env.GAME_LANGS || TODOS.join(',')).split(',').map((x) => x.trim()).filter(Boolean);
+const LOCALE = { es: 'es-EC', en: 'en-US', 'pt-BR': 'pt-BR', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', ru: 'ru-RU', tr: 'tr-TR', id: 'id-ID', 'zh-CN': 'zh-CN' };
+const FECHA = '2026-11-10'; // día sin temporada especial (js/temporadas.js): pantallas iguales siempre
+const W = 360, H = 640, K = 3;
+
+/* Marcas reales que no pueden salir en las capturas (se buscan con mayúsculas y como palabra entera).
+   WhatsApp y Google Play no están: son los botones de compartir/calificar del propio juego, no marcas de mentira. */
+const MARCAS = ['LigaPro', 'Liga Pro', 'Sony', 'Canon', 'Nikon', 'Panasonic', 'Blackmagic', 'ATEM', 'vMix', 'GoPro', 'DJI', 'Uber', 'Cabify', 'inDrive', 'Didi',
+  'Shure', 'Sennheiser', 'Teradek', 'LiveU', 'Fujinon', 'Pelican', 'Cummins', 'Vizrt', 'EVS', 'Ross Video', 'Carbonite', 'Clear-Com', 'ClearCom', 'Hollyland',
+  'Netgear', 'Mercedes', 'Sprinter', 'Ford', 'Toyota', 'Chevrolet', 'Samsung', 'iPhone', 'Apple', 'Netflix', 'ESPN', 'FIFA', 'CONMEBOL', 'Copa Libertadores',
+  'Coca-Cola', 'Pepsi', 'Nike', 'Adidas', 'Red Bull', 'Twitch', 'YouTube', 'TikTok', 'Instagram', 'Facebook', 'Rode', 'Yamaha', 'Behringer', 'Midas'];
+const RX_MARCAS = new RegExp('(^|[^\\p{L}\\p{N}])(' + MARCAS.join('|') + ')(?=$|[^\\p{L}\\p{N}])', 'u');
 
 const G = require(path.join(ROOT, 'js/logic.js'));
-require(path.join(ROOT, 'js/premium.js')); // agrega los equipos exclusivos al catálogo
+require(path.join(ROOT, 'js/premium.js'));      // equipos exclusivos
+require(path.join(ROOT, 'js/decoracion.js'));   // s.decor
+require(path.join(ROOT, 'js/sede.js'));         // s.sede
 
-/* ---------- Partida avanzada: capítulo 4 (La rival) ---------- */
+/* ---------- Partida avanzada (capítulo 4 · La rival) ---------- */
 function partidaAvanzada() {
-  const s = G.newGame(4242);
-  s.chapter = 3; s.chapterSeen = 3;
-  s.day = 46; s.money = 18000; s.rep = 48;
-  s.stats = { events: 31, fiveStars: 9, earned: 61240, best: { misa: 5, boda: 5, prensa: 4, barrial: 5, graduacion: 4, lanzamiento: 5, concierto: 4 },
-    good: { lanzamiento: 3, concierto: 2, barrial: 4 }, duels: { won: 2, lost: 1 } };
-  s.chapterStats = { good: { concierto: 1 }, duels: 2 };
-  s.lastWorkDay = 46;
-  // Personal
-  const owner = s.staff[0];
-  owner.skill = 4; owner.events = 31;
-  const gente = [
-    ['Andrea Pazmiño', 'cam', 4, 85, 92], ['Kevin Toapanta', 'cam', 3, 70, 88], ['Daniela Cedeño', 'dir', 5, 110, 95],
-    ['Luis Quishpe', 'audio', 4, 90, 81], ['Mishell Salazar', 'stream', 4, 88, 90], ['Diego Andrade', 'cam', 3, 68, 76],
-  ];
-  gente.forEach(([name, role, skill, wage, morale], i) => s.staff.push({ id: ++s.idc, name, role, skill, wage, morale, events: 12 + i * 3, xp: 1 }));
-  s.staff.push({ id: ++s.idc, name: 'Majo Cifuentes', role: 'cam', skill: 5, wage: 115, morale: 100, events: 9, premium: true });
-  // Equipos
-  s.equip = [];
-  const eq = (type, condition, extra) => s.equip.push(Object.assign({ id: ++s.idc, type, condition }, extra || {}));
-  eq('dron4k', 100, { serie: 7 }); eq('grua', 96, { serie: 21 }); eq('unidad_movil', 98, { serie: 3 }); eq('generador', 100, { serie: 12 });
-  eq('cam_cine', 94); eq('cam_pro', 88); eq('cam_pro', 81); eq('cam_basic', 64, { nick: 'Cámara de Don Ramiro' });
-  eq('switch_pro', 92); eq('switch_basic', 77); eq('audio_pro', 90); eq('mics', 84); eq('encoder', 89);
-  eq('router4g', 93); eq('ups', 100); eq('raincover', 72);
-  s.stock = { cable: 4, battery: 3 };
-  // Ofertas: dos disputadas con MegaVisión
-  s.contracts = [];
-  const of = (type, client, extra) => s.contracts.push(Object.assign({ id: ++s.idc, type, client, cams: 3, audio: true, stream: true, outdoor: false,
-    diff: G.EVENT_TYPES[type].diff, pay: 2000, daysLeft: 3, rival: false, story: false }, extra));
-  of('concierto', 'Festival Sur Sonoro', { cams: 4, outdoor: true, diff: 5, pay: 4380, rival: true, rivalQuality: 71, daysLeft: 2 });
-  of('lanzamiento', 'Celulares Nébula', { cams: 3, diff: 4, pay: 2640, rival: true, rivalQuality: 66, daysLeft: 3 });
-  of('graduacion', 'Colegio San Gabriel', { cams: 2, diff: 2, pay: 1180, stream: false, daysLeft: 4 });
-  s.candidates = [];
-  G.refreshCandidates(s);
-  s.log = [];
-  const L = (d, t) => s.log.push({ day: d, text: t });
-  L(46, '⚔️ ¡Duelo ganado contra MegaVisión! Tu calidad 83 contra 71 de ellos (+3 de fama extra).');
-  L(46, '⭐⭐⭐⭐⭐ Concierto para Coliseo Rumiñahui: cobraste $3.920, sueldos $640, fama +4.');
-  L(45, 'Germán Vélez: "Disfruta mientras puedas. El estadio es mío."');
-  L(44, '📈 Daniela Cedeño subió a habilidad 5 y ahora cobra $110.');
-  L(43, '⭐⭐⭐⭐ Lanzamiento de marca para Bebidas Volcán: cobraste $2.310, sueldos $480, fama +3.');
-  L(41, '🎁 Llegó a tu bodega: Unidad móvil de transmisión #0003.');
+  const s = G.demoGame('cap4');
+  if (!s) throw new Error('No se pudo armar la partida de demostración');
+  delete s.demo;
+  s.chapterSeen = s.chapter;          // sin la presentación del capítulo
+  s.productora = 'Tukán Producciones';
+  s.money = 24850; s.rep = 52;
+  s.avisos = []; s.capCompletados = []; s.lastResult = null;
+  const add = (role, tier, skill, name) => s.staff.push({ id: ++s.idc, name, role, tier, skill, wage: G.baseWage(role, tier, skill), morale: 94,
+    events: 24, eventos_nacionales: 24, eventos_internacionales: 0, xp: 6 });
+  add('camarografo', 'senior', 5, 'Andrea Pazmiño'); add('cablero', 'semi_senior', 3, 'Kevin Toapanta'); add('coordinador_piso', 'senior', 4, 'Mishell Salazar');
+  add('operador_ptz', 'semi_senior', 3, 'Luis Quishpe'); add('piloto_dron', 'senior', 4, 'Diego Andrade'); add('operador_graficos', 'semi_senior', 4, 'Paola Endara');
+  const eq = (type, x) => s.equip.push(Object.assign({ id: ++s.idc, type, condition: 97 }, x || {}));
+  eq('grua', { serie: 21 }); eq('dron4k', { serie: 7 }); eq('generador', { serie: 12 }); eq('ex_lente_box', { serie: 4 });
+  eq('veh_van_pasajeros_usada');      // la van de la flota (lleva el nombre de la productora)
+  s.equip.forEach((e) => { e.condition = Math.max(e.condition, 92); });   // sin avisos de reparación
+  // Decoración del local (centro de producción: hasta 9 lugares)
+  s.decor = { items: ['recepcion', 'sofa', 'neon', 'tv', 'trofeos', 'cuadros', 'planta', 'flores', 'cafetera']
+    .map((k) => (k === 'flores' ? { k, dia: s.day, hasta: s.day + 6 } : { k, dia: s.day - 5 })), gastado: 1890, proxVisita: s.day + 2, visitas: 3 };
+  s.sede.nivel = 7;
+  s.stats.fiveStars = Math.max(s.stats.fiveStars || 0, 11);
   return s;
 }
+const BASE = partidaAvanzada();
+const contratoDe = (s, type) => s.contracts.find((c) => c.type === type && !c.internacional);
 
-/* Evento en vivo: partido bajo la lluvia (imprevisto 1 de 3) */
-function enVivoLluvia(base) {
+/* En vivo: concierto al aire libre, primer imprevisto de 3 (lluvia) */
+function enVivo(base) {
   const s = JSON.parse(JSON.stringify(base));
-  const id = ++s.idc;
-  s.contracts.unshift({ id, type: 'ligapro', client: 'Club Atlético del Valle', cams: 4, audio: true, stream: true, outdoor: true, diff: 4, pay: 4100, daysLeft: 2, rival: false, story: true });
-  const staffIds = s.staff.map((p) => p.id);
-  const gear = s.equip.filter((e) => ['cam_cine', 'cam_pro', 'grua', 'dron4k', 'unidad_movil', 'audio_pro', 'mics', 'encoder', 'router4g', 'raincover', 'generador'].includes(e.type)).map((e) => e.id);
-  const r = G.startEvent(s, id, staffIds, gear);
+  const c = contratoDe(s, 'concierto');
+  const lo = G.suggestLoadout(s, c.id);
+  const r = G.startEvent(s, c.id, lo.staffIds, lo.equipIds);
   if (!r.ok) throw new Error(r.msg);
   s.currentEvent.incidents = [{ key: 'lluvia', x: {}, done: false, result: null }, { key: 'epico', x: {}, done: false, result: null }, { key: 'internet', x: {}, done: false, result: null }];
   s.currentEvent.step = 0;
   return s;
 }
-
-/* Resultado: concierto disputado, 5 estrellas y duelo ganado */
+/* Resultado: graduación disputada con MegaVisión, 5 estrellas y duelo ganado */
 function paraResultado(base) {
   const s = JSON.parse(JSON.stringify(base));
-  const c = s.contracts.find((x) => x.type === 'concierto');
-  const staffIds = s.staff.map((p) => p.id);
-  const gear = s.equip.filter((e) => ['cam_cine', 'cam_pro', 'grua', 'unidad_movil', 'audio_pro', 'mics', 'encoder', 'router4g', 'generador'].includes(e.type)).map((e) => e.id);
-  const r = G.startEvent(s, c.id, staffIds, gear);
+  // Lanzamiento de marca disputado con MegaVisión (paga bien: el resultado sale en positivo)
+  const c = contratoDe(s, 'lanzamiento');
+  s.contracts.forEach((x) => { if (x !== c) x.rival = false; });
+  Object.assign(c, { rival: true, rivalQuality: 74 });
+  const lo = G.suggestLoadout(s, c.id);
+  const r = G.startEvent(s, c.id, lo.staffIds, lo.equipIds);
   if (!r.ok) throw new Error(r.msg);
-  s.currentEvent.base = 84;
+  s.currentEvent.base = 90;
   s.currentEvent.incidents = [{ key: 'epico', x: {}, done: false, result: null }];
   s.currentEvent.step = 0;
   return s;
 }
 
-const SAVE_KEY = 'envivo_tycoon_save_v1';
-const BASE = partidaAvanzada();
-
-/* ---------- Servidor simulado (solo para la pantalla de comunidad) ---------- */
-const ahora = Date.parse('2026-10-24T01:42:00Z'); // 20:42 en Ecuador
-const hace = (min) => new Date(ahora - min * 60000).toISOString();
+/* ---------- Servidor simulado (solo para la Copa de Servidores) ---------- */
+const AHORA = Date.parse('2026-10-24T20:10:00Z');           // sábado 15:10 en Ecuador: batalla en curso
+const LUNES = Date.parse('2026-10-19T00:00:00-05:00');
+const HR = 3600e3, DIA = 24 * HR;
+const iso = (ms) => new Date(ms).toISOString();
+function copaFalsa() {
+  const SRV = [[1, 'S1 · Quito'], [2, 'S2 · Guayaquil'], [3, 'S3 · Cuenca'], [4, 'S4 · Loja']];
+  const partidos = (n, base) => Array.from({ length: n }, (_, i) => {
+    const a = [88, 71, 64, 90, 77][i] + base, b = [80, 79, 61, 85, 81][i] - base;
+    return { n: i + 1, tipo: ['final', 'concierto', 'final', 'boxeo', 'final'][i], calidad_a: a, calidad_b: b, ganador: a > b ? 'a' : b > a ? 'b' : 'empate' };
+  });
+  const tabla = { 1: [6, 2, 0, 0, 1, 5240], 2: [3, 1, 0, 1, 2, 5120], 3: [1, 0, 1, 1, 3, 3980], 4: [1, 0, 1, 1, 4, 2410] };
+  return {
+    ok: true,
+    copa: { id: 7, nombre: 'Copa Planeta de Balompié', torneo_key: 'planeta', fase: 'batalla', inicio: iso(LUNES), fin: iso(LUNES + 7 * DIA - 1000), ahora: iso(AHORA) },
+    universo: { id: 1, nombre: 'Andes' },
+    servidores: SRV.map(([id, nombre]) => ({ id, nombre, puntos_prep: tabla[id][5], puntos_tabla: tabla[id][0], g: tabla[id][1], e: tabla[id][2], p: tabla[id][3], posicion: tabla[id][4], yo: id === 1 })),
+    cruces: [
+      { id: 21, ronda: 1, a: 1, b: 2, hora: iso(LUNES + 5 * DIA + 10 * HR), estado: 'jugado', puntos_a: 15, puntos_b: 13, partidos: partidos(5, 3) },
+      { id: 22, ronda: 2, a: 1, b: 3, hora: iso(LUNES + 5 * DIA + 14 * HR), estado: 'en_vivo', puntos_a: 2, puntos_b: 1, partidos: partidos(3, 2) },
+      { id: 23, ronda: 3, a: 4, b: 1, hora: iso(LUNES + 5 * DIA + 18 * HR), estado: 'pendiente', puntos_a: null, puntos_b: null, partidos: [] },
+    ],
+    yo: { aporte: 640, posicion_en_servidor: 3, equipo_registrado: true, intento_abierto: null },
+    top_aportantes: [{ alias: 'Lente Austral', siglas: 'ADA', puntos: 910 }, { alias: 'Señal Volcán', siglas: 'ADA', puntos: 720 },
+      { alias: 'Tukán Producciones', siglas: 'ADA', puntos: 640, yo: true }, { alias: 'Faro Visual', siglas: 'RLV', puntos: 455 }, { alias: 'Tarima Norte', siglas: 'ADA', puntos: 310 }],
+    historial: [{ semana: '2026-W42', nombre: 'La Pelea del Siglo', torneo_key: 'pelea', campeon: 'S2 · Guayaquil' }, { semana: '2026-W41', nombre: 'Gran Premio Fórmula Veloz', torneo_key: 'formula', campeon: 'S1 · Quito' }],
+  };
+}
 const ESTADO = {
-  ok: true, logueado: true, jugador: { id: 7, email: 'productora@ejemplo.com', nombre: 'Productora Cóndor' }, creditos: 320,
+  ok: true, logueado: true, jugador: { id: 7, email: 'productora@ejemplo.com', nombre: 'Tukán Producciones' }, creditos: 320,
   vip_hasta: null, vip_activo: false, vip_bono_hoy: false, inicio_comprado: true, entregas: [], inventario: [],
   tienda: { productos: [], premium: [] }, plux: { disponible: false, ambiente: 'sandbox' },
-  servidor: { id: 1, nombre: 'Servidor 1 · Quito' },
+  servidor: { id: 1, nombre: 'S1 · Quito' }, universo: { id: 1, nombre: 'Andes' },
   asociacion: { id: 4, nombre: 'Alianza de los Andes', siglas: 'ADA', color: '#ffb020', cargo: 'presidente' },
 };
-const MSGS = {
-  asociacion: [
-    { id: 101, jugador_id: 12, alias: 'Tarima Norte', siglas: 'ADA', texto: '¡Buenas, socios! El Mega Festival abre el sábado a las 20:00.', creado: hace(52) },
-    { id: 102, jugador_id: 15, alias: 'Lente Austral', siglas: 'ADA', vip: true, texto: 'Llevo dron y grúa. ¿Quién pone la unidad móvil?', creado: hace(47) },
-    { id: 103, jugador_id: 7, alias: 'Productora Cóndor', siglas: 'ADA', texto: 'Yo pongo la unidad móvil y dos cámaras 4K.', creado: hace(45) },
-    { id: 104, jugador_id: 21, alias: 'Señal Volcán', siglas: 'ADA', texto: 'Necesito un sonidista para el concierto de mañana 🎧', creado: hace(31) },
-    { id: 105, jugador_id: 12, alias: 'Tarima Norte', siglas: 'ADA', texto: 'Te presto a Luis, tiene 4 estrellas en audio.', creado: hace(29) },
-    { id: 106, jugador_id: 30, alias: 'Faro Visual', siglas: 'ADA', texto: 'Vamos 2.º en la Liga Semanal. ¡A meterle!', creado: hace(14) },
-    { id: 107, jugador_id: 7, alias: 'Productora Cóndor', siglas: 'ADA', texto: '¡Buen trabajo, equipo!', creado: hace(9) },
-    { id: 108, jugador_id: 15, alias: 'Lente Austral', siglas: 'ADA', vip: true, texto: '¡Esta semana le ganamos a MegaVisión! 🔴', creado: hace(3) },
-  ],
-  servidor: [
-    { id: 201, jugador_id: 40, alias: 'Ruta Live', siglas: 'RLV', texto: '¡Hola, productoras!', creado: hace(20) },
-  ],
-};
+
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp',
+  '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.woff2': 'font/woff2' };
+const ORIGEN = 'http://envivo.test';
 
 async function main() {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, reducedMotion: 'reduce', locale: 'es-EC', timezoneId: 'America/Guayaquil' });
-  const shots = [];
+  const marcasHalladas = [];
+  for (const lang of LANGS) {
+    const dir = path.join(OUT, lang);
+    fs.mkdirSync(dir, { recursive: true });
+    const rects = {};
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: K, isMobile: true, hasTouch: true,
+      reducedMotion: 'reduce', serviceWorkers: 'block', locale: LOCALE[lang] || lang, timezoneId: 'America/Guayaquil' });
 
-  async function abrir(state, opts) {
-    opts = opts || {};
-    const page = await ctx.newPage();
-    await page.clock.setFixedTime(new Date(ahora));
-    page.on('pageerror', (e) => console.error('pageerror:', e.message));
-    await page.addInitScript(([k, v, lang]) => { try { localStorage.setItem(k, v); localStorage.setItem('envivo_muted', '0'); if (lang) localStorage.setItem('envivo_lang', lang); } catch (e) { /* nada */ } }, [SAVE_KEY, JSON.stringify(state), LANG]);
-    if (opts.server) {
-      // Servido desde un origen http simulado: archivos del juego + API de mentira
-      await page.route('http://envivo.test/**', async (route) => {
+    async function abrir(state, opts) {
+      opts = opts || {};
+      const page = await ctx.newPage();
+      page.on('pageerror', (e) => console.error(`[${lang}] pageerror:`, e.message));
+      await page.route(ORIGEN + '/**', (route) => {
         const u = new URL(route.request().url());
         if (u.pathname.startsWith('/api/')) {
+          if (!opts.server) return route.abort('failed');          // sin servidor: el juego sigue solo
           let body = { ok: true };
           if (u.pathname === '/api/estado') body = ESTADO;
-          else if (u.pathname === '/api/chat') body = { ok: true, mensajes: MSGS[u.searchParams.get('canal')] || [] };
-          else if (u.pathname === '/api/partida') body = { ok: true, datos: null };
-          else if (u.pathname === '/api/asociaciones') body = { ok: true, asociaciones: [] };
+          else if (u.pathname === '/api/copa') body = copaFalsa();
+          else if (u.pathname === '/api/partida' || u.pathname === '/api/partida/meta') body = { ok: true, datos: null, existe: false };
+          else if (u.pathname === '/api/chat') body = { ok: true, mensajes: [] };
           return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
         }
-        const f = path.join(ROOT, decodeURIComponent(u.pathname === '/' ? '/index.html' : u.pathname));
-        if (!f.startsWith(ROOT) || !fs.existsSync(f)) return route.fulfill({ status: 404, body: '' });
-        const ext = path.extname(f);
-        const ct = { '.html': 'text/html', '.js': 'application/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.css': 'text/css' }[ext] || 'application/octet-stream';
-        return route.fulfill({ status: 200, contentType: ct, body: fs.readFileSync(f) });
+        const rel = decodeURIComponent(u.pathname).replace(/^\/+/, '') || 'index.html';
+        const f = path.join(ROOT, rel);
+        if (!f.startsWith(ROOT + path.sep) || !fs.existsSync(f) || !fs.statSync(f).isFile()) return route.abort('failed');
+        return route.fulfill({ status: 200, contentType: TIPOS[path.extname(f).toLowerCase()] || 'application/octet-stream', body: fs.readFileSync(f) });
       });
-      await page.goto('http://envivo.test/index.html', { waitUntil: 'load' });
-    } else {
-      await page.goto('file://' + path.join(ROOT, 'index.html'), { waitUntil: 'load' });
+      if (opts.server) await page.clock.setFixedTime(new Date(AHORA));
+      await page.addInitScript(([save, lang]) => {
+        try {
+          // Solo la primera vez en esta pestaña (si el juego recarga, no se pisa lo que guardó)
+          if (sessionStorage.getItem('promo_sembrado')) return;
+          sessionStorage.setItem('promo_sembrado', '1');
+          localStorage.clear();
+          localStorage.setItem('envivo_tycoon_save_v1', save);
+          localStorage.setItem('envivo_lang', lang);
+          localStorage.setItem('envivo_guia_v1', '1');          // sin la guía "toca aquí"
+          localStorage.setItem('envivo_aviso_cuenta', '9');     // sin el aviso de crear cuenta
+          localStorage.setItem('envivo_inicio_abiertos', '{}'); // Inicio con las filas plegadas
+          localStorage.setItem('envivo_muted', '0'); localStorage.setItem('envivo_musica_muted', '0');
+        } catch (e) { /* nada */ }
+      }, [G.serialize(state), lang]);
+      await page.goto(`${ORIGEN}/index.html?fecha=${opts.fecha || ''}&lang=${encodeURIComponent(lang)}`.replace('fecha=&', `fecha=${FECHA}&`), { waitUntil: 'load' });
+      await page.waitForFunction(() => window.__game && window.__game.state && document.querySelector('#tab-inicio') && document.querySelector('#tab-inicio').children.length, null, { timeout: 15000 });
+      await page.evaluate(() => (window.I18N && window.I18N.listo) || null);
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(900);
+      const idioma = await page.evaluate(() => (window.I18N ? window.I18N.idioma : 'es'));
+      if (idioma !== lang) throw new Error(`[${lang}] el juego quedó en "${idioma}"`);
+      return page;
     }
-    await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(700);
-    return page;
-  }
-  const tab = async (page, t) => { await page.click(`nav button[data-tab="${t}"]`); await page.waitForTimeout(250); };
-  const rects = {};
-  // Guarda la captura y el recuadro (en píxeles de la captura) de un elemento destacado
-  const shot = async (page, name, js) => {
-    const f = path.join(OUT, name + '.png'); await page.screenshot({ path: f }); shots.push(f);
-    if (js) {
-      const r = await page.evaluate(`(() => { const el = ${js}; if (!el) return null; const b = el.getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height }; })()`);
-      if (r) rects[name] = { x: Math.round(r.x * 3), y: Math.round(r.y * 3), w: Math.round(r.w * 3), h: Math.round(r.h * 3) };
-    }
-  };
+    // Cierra cualquier ventana que el juego haya abierto sola (resumen del día, novedades, nube...)
+    const limpiar = async (page) => {
+      for (let k = 0; k < 4; k++) {
+        const on = await page.evaluate(() => document.getElementById('overlay').classList.contains('on'));
+        if (!on) break;
+        const b = page.locator('#overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"], #overlay.on [data-act="close"]');
+        if (await b.count()) await b.first().click(); else await page.evaluate(() => document.getElementById('overlay').classList.remove('on'));
+        await page.waitForTimeout(250);
+      }
+      await page.evaluate(() => { document.querySelectorAll('.toast, #toast, .cmp-pop, .guia-capa').forEach((e) => { e.style.display = 'none'; }); });
+    };
+    const tab = async (page, t) => { await page.click(`nav button[data-tab="${t}"]`); await page.waitForTimeout(350); await limpiar(page); };
+    // Desplaza la página (o la ventana del modal) para que el elemento quede a `y` px del borde de arriba
+    const llevar = async (page, sel, y, enModal) => {
+      await page.evaluate(([sel, y, enModal]) => {
+        const el = typeof sel === 'string' ? document.querySelector(sel) : null;
+        if (!el) throw new Error('no está: ' + sel);
+        if (enModal) { const m = document.getElementById('modal'); m.scrollTop += el.getBoundingClientRect().top - y; }
+        else window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - y);
+      }, [sel, y, !!enModal]);
+      await page.waitForTimeout(250);
+    };
+    // o: { src: captura principal a la que pertenece este recuadro, pos: 'bottom', maxH: alto máximo en px CSS, hasta: selectores de adentro donde termina }
+    const shot = async (page, name, sel, o) => {
+      o = o || {};
+      // Con una ventana abierta, la pestaña de atrás no se asoma entre la cabecera y la ventana
+      await page.evaluate(() => { const on = document.getElementById('overlay').classList.contains('on');
+        document.querySelectorAll('main > section').forEach((x) => { x.style.visibility = on ? 'hidden' : ''; }); });
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.screenshot({ path: path.join(dir, name + '.png') });
+      // Marcas reales: todo el texto visible de la página (HTML y SVG)
+      const texto = await page.evaluate(() => {
+        const out = []; const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) { const p = n.parentElement; if (p && !/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(p.tagName)) out.push(n.nodeValue); }
+        return out.join(' ').replace(/\s+/g, ' ');
+      });
+      const m = RX_MARCAS.exec(texto);
+      if (m) { const i = m.index; marcasHalladas.push(`${lang}/${name}: "${m[2]}" en «…${texto.slice(Math.max(0, i - 40), i + 50)}…»`); }
+      if (sel) {
+        const r = await page.evaluate(([sel, maxH, hasta]) => {
+          const el = document.querySelector(sel); if (!el) return null; const b = el.getBoundingClientRect();
+          let h = b.height;
+          // hasta: el recuadro termina donde terminan estos elementos de adentro
+          if (hasta) { const bs = [...el.querySelectorAll(hasta)].map((d) => d.getBoundingClientRect().bottom - b.top); if (bs.length) h = Math.min(h, Math.max(...bs) + 10); }
+          // Recorte en maxH sin partir nada: hasta el final del último bloque que entra completo
+          if (maxH && h > maxH) {
+            // Línea de corte que no parta ningún renglón (elementos de menos de 44 px de alto)
+            const cajas = [...el.querySelectorAll('*')].map((d) => d.getBoundingClientRect()).filter((q) => q.height > 0 && q.height < 44)
+              .map((q) => [q.top - b.top, q.bottom - b.top]);
+            let cut = maxH;
+            for (let k = 0; k < 30; k++) {
+              const cruza = cajas.filter(([t, bo]) => t < cut - 1 && bo > cut + 1);
+              if (!cruza.length) break;
+              cut = Math.min(...cruza.map(([t]) => t)) - 3;
+            }
+            h = Math.max(40, cut + 4);
+          }
+          return { x: b.left, y: b.top, w: b.width, h };
+        }, [sel, o.maxH || 0, o.hasta || '']);
+        if (!r) throw new Error(`[${lang}] ${name}: no está ${sel}`);
+        const x = Math.max(0, r.x), y = Math.max(0, r.y), w = Math.min(W, r.x + r.w) - x, h = Math.min(H, r.y + r.h) - y;
+        rects[o.src || name] = Object.assign({ x: Math.round(x * K), y: Math.round(y * K), w: Math.round(w * K), h: Math.round(h * K) },
+          o.src ? { src: name } : {}, o.pos ? { pos: o.pos } : {});
+      }
+    };
 
-  // 1) Imprevisto en vivo: lluvia en el estadio
-  {
-    const page = await abrir(enVivoLluvia(BASE));
-    await page.waitForSelector('#overlay.on [data-act="choose"]');
-    await page.waitForTimeout(500);
-    await shot(page, '01_en_vivo', `document.querySelector('#overlay svg.scene')`);
-    await page.close();
-  }
-  // 2) Personal con avatares
-  {
-    const page = await abrir(BASE);
-    await tab(page, 'personal');
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await shot(page, '02_personal', `document.querySelectorAll('#tab-personal .card')[1]`);
-    await page.close();
-  }
-  // 3) Resultado: 5 estrellas y duelo ganado contra MegaVisión
-  {
-    const page = await abrir(paraResultado(BASE));
-    await page.waitForSelector('#overlay.on [data-act="choose"]');
-    await page.click('[data-act="choose"][data-i="0"]');
-    await page.click('[data-act="finish"]');
-    await page.waitForSelector('[data-act="after-result"]');
-    await page.waitForTimeout(400);
-    // Mostrar la parte de la tabla y el duelo dentro de la ventana
-    await page.evaluate(() => { const m = document.getElementById('modal'); const d = m.querySelector('.duel'); if (d) m.scrollTop = Math.max(0, d.offsetTop - 360); });
-    await page.waitForTimeout(200);
-    await shot(page, '03_resultado', `document.querySelector('#modal .duel')`);
-    await page.close();
-  }
-  // 4) Bodega con equipos exclusivos
-  {
-    const page = await abrir(BASE);
-    await tab(page, 'bodega');
-    await page.evaluate(() => { const t = [...document.querySelectorAll('#tab-bodega .sectitle')].find((x) => /Tus equipos/.test(x.textContent)); window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 10); });
-    await page.waitForTimeout(250);
-    await shot(page, '04_bodega', `document.querySelector('#tab-bodega .ggrid .gear')`);
-    await page.close();
-  }
-  // 5) Inicio: centro de producción con unidad móvil
-  {
-    // Capítulo 5 (Al estadio): la sede ya es un centro de producción
-    const st = JSON.parse(JSON.stringify(BASE)); st.chapter = 4; st.chapterSeen = 4; st.rep = 52;
-    const page = await abrir(st);
-    await shot(page, '05_inicio', `document.querySelector('#tab-inicio svg.hq')`);
-    await page.close();
-  }
-  // 6) Comunidad: chat de la asociación (servidor simulado)
-  {
-    const page = await abrir(BASE, { server: true });
-    await page.waitForSelector('#chat-btn:not([hidden])', { timeout: 8000 });
-    await page.click('#chat-btn');
-    await page.click('[data-chat-tab="asociacion"]');
-    await page.waitForTimeout(900);
-    await shot(page, '06_comunidad', `[...document.querySelectorAll('.chat-msg')].pop()`);
-    await page.close();
-  }
-  // Extra: tienda (vitrina de exclusivos sin servidor)
-  {
-    const page = await abrir(BASE);
-    await tab(page, 'tienda');
-    await shot(page, '07_tienda');
-    await page.close();
+    // 1) Inicio: la sede con el letrero de la productora
+    {
+      const page = await abrir(BASE);
+      await limpiar(page);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await shot(page, '01_inicio', '#tab-inicio .hqcard svg');
+      await page.close();
+    }
+    // 2) Clientes: ofertas (la disputada con MegaVisión y la internacional)
+    {
+      const page = await abrir(BASE);
+      await limpiar(page);
+      await tab(page, 'clientes');
+      await page.evaluate(() => { const c = [...document.querySelectorAll('#tab-clientes .card')].filter((x) => x.querySelector('[data-act="prep"]')); window.__ofertas = c; });
+      await page.evaluate(() => { const cards = window.__ofertas; const i = Math.max(0, cards.length - 3); window.scrollTo(0, cards[i].getBoundingClientRect().top + window.scrollY - 116); });
+      await page.waitForTimeout(250);
+      // Zoom: la etiqueta "Disputado" y la barra con la calidad que promete MegaVisión (no toda la tarjeta)
+      const sel = await page.evaluate(() => {
+        const d = window.__ofertas.find((x) => /MegaVisi/.test(x.textContent)); if (!d) return null;
+        const bar = [...d.querySelectorAll('*')].filter((e) => /MegaVisi/.test(e.textContent) && e.querySelector('.bar, i')).pop() || d;
+        const cab = d.firstElementChild;
+        const top = Math.min(cab.getBoundingClientRect().top, bar.getBoundingClientRect().top), bot = bar.getBoundingClientRect().bottom;
+        const m = document.createElement('div'); m.setAttribute('data-promo', 'rival');
+        const b = d.getBoundingClientRect();
+        Object.assign(m.style, { position: 'fixed', left: b.left + 'px', width: b.width + 'px', top: (top - 8) + 'px', height: (bot - top + 16) + 'px', pointerEvents: 'none' });
+        document.body.appendChild(m); return '[data-promo="rival"]';
+      });
+      await shot(page, '02_clientes', sel);
+      await page.close();
+    }
+    // 3) Preparar el evento: plano de cámaras + la tarjeta de Llévame
+    {
+      const page = await abrir(BASE);
+      await limpiar(page);
+      await tab(page, 'clientes');
+      const id = contratoDe(BASE, 'concierto').id;
+      await page.click(`[data-act="prep"][data-id="${id}"]`);
+      await page.waitForSelector('#overlay.on [data-act="go-live"]');
+      await page.waitForTimeout(500);
+      // El plano: el primer SVG grande de la preparación
+      await page.evaluate(() => { const svg = [...document.querySelectorAll('#modal svg')].find((s) => s.getBoundingClientRect().width > 250); svg.setAttribute('data-promo', 'plano'); });
+      // La sección del plan (título "Plan de cámaras") justo debajo del borde de la ventana
+      await page.evaluate(() => { const m = document.getElementById('modal'); const p = m.querySelector('.planev') || m.querySelector('[data-promo="plano"]');
+        m.scrollTop += p.getBoundingClientRect().top - m.getBoundingClientRect().top - 14; });
+      await page.waitForTimeout(250);
+      await shot(page, '03_preparar');
+      await llevar(page, '#modal .mov-app', 230, true);
+      await shot(page, '03_preparar_b', '#modal .mov-app', { src: '03_preparar', pos: 'bottom', maxH: 170 });
+      await page.close();
+    }
+    // 4) En vivo: franja animada e imprevisto (lluvia en el concierto)
+    {
+      const page = await abrir(enVivo(BASE));
+      await page.waitForSelector('#overlay.on [data-act="choose"]');
+      await page.waitForTimeout(1200);
+      await page.evaluate(() => { const m = document.getElementById('modal'); const all = m.querySelectorAll('[data-act="choose"]'); const last = all[all.length - 1];
+        const over = last.getBoundingClientRect().bottom + 14 - window.innerHeight;
+        const libre = m.firstElementChild.getBoundingClientRect().top - m.getBoundingClientRect().top - 4;   // sin tapar la franja de arriba
+        if (over > 0) m.scrollTop += Math.min(over, Math.max(0, libre)); });
+      await page.waitForTimeout(250);
+      await page.evaluate(() => { const f = document.getElementById('modal').firstElementChild; f.setAttribute('data-promo', 'franja'); });
+      await shot(page, '04_en_vivo', '[data-promo="franja"]');
+      await page.close();
+    }
+    // 5) Resultado: 5 estrellas, duelo ganado y compartir
+    {
+      const page = await abrir(paraResultado(BASE));
+      await page.waitForSelector('#overlay.on [data-act="choose"]');
+      await page.click('[data-act="choose"][data-i="0"]');
+      await page.waitForSelector('[data-act="finish"], [data-act="next-inc"]');
+      await page.click('[data-act="finish"]');
+      await page.waitForSelector('[data-act="after-result"]');
+      await page.waitForTimeout(1600);   // la ganancia sube contando
+      await page.evaluate(() => { document.querySelectorAll('.confetti, .confeti, [class*="confet"]').forEach((e) => e.remove()); });
+      await shot(page, '05_resultado');
+      if (await page.locator('#modal .cmp-res').count()) {
+        await llevar(page, '#modal .cmp-res', 300, true);
+        await shot(page, '05_resultado_b', '#modal .cmp-res', { src: '05_resultado', pos: 'bottom' });
+      }
+      await page.close();
+    }
+    // 6) Bodega: lentes, con la Edición Exclusiva
+    {
+      const page = await abrir(BASE);
+      await limpiar(page);
+      await tab(page, 'bodega');
+      await page.click('[data-act="cat"][data-k="lens"]');
+      await page.waitForTimeout(400);
+      await page.evaluate(() => { const c = document.querySelector('#tab-bodega .catchip.on') || document.querySelector('#tab-bodega .catchip'); if (c) c.scrollIntoView({ block: 'nearest', inline: 'center' }); });
+      await llevar(page, '#tab-bodega .exq', 205);
+      await shot(page, '06_bodega', '#tab-bodega .exq', { hasta: '.exq-body .art, .qrow' });
+      await page.close();
+    }
+    // 7) En línea: Copa de Servidores (servidor simulado, batalla del sábado)
+    {
+      const page = await abrir(BASE, { server: true });
+      await page.waitForFunction(() => window.Api && window.Api.disponible === true && window.Api.logueado && window.Api.logueado(), null, { timeout: 10000 });
+      await page.waitForTimeout(600);
+      await limpiar(page);
+      await page.evaluate(() => window.EnVivoAbrirOnline('copa'));
+      await page.waitForTimeout(1500);
+      await limpiar(page);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.evaluate(() => { const b = document.getElementById('chat-btn'); if (b) b.style.display = 'none'; });
+      const sel = await page.evaluate(() => { const v = document.querySelector('#online-cont .cp-vs'); if (!v) return null; const c = v.closest('.card') || v.parentElement; c.setAttribute('data-promo', 'marcador'); return '[data-promo="marcador"]'; });
+      await shot(page, '07_copa', sel);
+      await page.close();
+    }
+    // 8) Decoración del local y sede
+    {
+      const page = await abrir(BASE);
+      await limpiar(page);
+      await page.click('.pl[data-pl="decoracion"] .pl-cab');
+      await page.waitForTimeout(300);
+      await page.click('.pl[data-pl="decoracion"] button[data-ext="decoracion"][data-acc="abrir"]');
+      await page.waitForSelector('#overlay.on');
+      await page.waitForTimeout(500);
+      await page.evaluate(() => { document.getElementById('modal').scrollTop = 0; const p = [...document.querySelectorAll('#modal svg')].find((s) => s.getBoundingClientRect().width > 250); if (p) p.setAttribute('data-promo', 'local'); });
+      await shot(page, '08_decoracion', '[data-promo="local"]');
+      await page.close();
+    }
+    await ctx.close();
+    fs.writeFileSync(path.join(dir, 'rects.json'), JSON.stringify(rects, null, 2));
+    console.log(`ok ${lang}: ${fs.readdirSync(dir).filter((f) => f.endsWith('.png')).length} capturas`);
   }
   await browser.close();
-  fs.writeFileSync(path.join(OUT, 'rects.json'), JSON.stringify(rects, null, 2));
-  console.log(shots.join('\n'));
+  if (marcasHalladas.length) {
+    console.error('❌ Marcas reales en las capturas:\n' + marcasHalladas.join('\n'));
+    process.exit(2);
+  }
+  console.log('Sin marcas reales en ' + LANGS.length + ' idiomas.');
 }
 main().catch((e) => { console.error(e); process.exit(1); });
