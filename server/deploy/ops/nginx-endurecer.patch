@@ -1,0 +1,78 @@
+Cambio PROPUESTO para server/deploy/nginx-sitio.sh (la plantilla del sitio del juego). No se aplica solo.
+Hecho sobre la plantilla del 23-oct-2026 (la que ya trae las cabeceras de la auditoria A-09).
+Lo aplica quien mantiene la plantilla (desde la raiz del repositorio):
+    patch -p1 --dry-run < server/deploy/ops/nginx-endurecer.patch && patch -p1 < server/deploy/ops/nginx-endurecer.patch
+Necesita ANTES en el VPS el archivo /etc/nginx/conf.d/envivo-limites.conf (lo pone server/deploy/ops/instalar_ops.sh);
+si falta, "nginx -t" falla e instalar.sh deja el sitio como estaba (no se rompe nada).
+Lo prueba server/deploy/ops/probar_ops.sh (nginx -t de verdad, cabeceras, limite 429 en JSON, tamanos, CSP en Chromium
+con el service worker activo).
+Que cambia:
+  1. CSP del juego: connect-src agrega fonts.googleapis.com y fonts.gstatic.com. Con connect-src 'self' solo, el
+     service worker (sw.js) no puede bajar las fuentes y DESDE LA SEGUNDA VISITA el CSS de las fuentes falla
+     (net::ERR_FAILED, probado en Chromium). Las fuentes son lo unico de afuera que usa el juego.
+  2. Permissions-Policy en todas las respuestas (camara, microfono, ubicacion, pagos del navegador, etc. apagados).
+  3. Limites por IP en POST /api/entrar, /api/registro, /api/plux/pago y /api/chat, con respuesta 429 en JSON.
+  4. Tamano maximo de lo que se envia: 64 KB en general y 1 MB en /api/ (la partida guardada).
+
+--- a/server/deploy/nginx-sitio.sh	2026-10-23 02:34:54.560050975 -0500
++++ b/server/deploy/nginx-sitio.sh	2026-10-23 02:34:54.591609444 -0500
+@@ -29,11 +29,14 @@
+ 
+ # Cabeceras de seguridad. OJO: en nginx, un add_header dentro de un "location" ANULA todos los de afuera; por eso
+ # cada location que tiene su propio add_header repite estas lineas (auditoria A-09).
+-CSP_JUEGO="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
++CSP_JUEGO="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+ CSP_LEGAL="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
++# connect-src incluye las fuentes de Google porque el service worker (sw.js) las baja con fetch() para el modo sin
++# internet: con connect-src 'self' solo, desde la segunda visita el CSS de las fuentes falla (probado en Chromium).
++PERMISOS="camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()"
+ cab() {
+   [ -n "$HSTS" ] && printf '%s ' "add_header Strict-Transport-Security \"$HSTS\" always;"
+-  printf '%s' "add_header X-Content-Type-Options nosniff always; add_header Referrer-Policy same-origin always; add_header X-Frame-Options DENY always;"
++  printf '%s' "add_header X-Content-Type-Options nosniff always; add_header Referrer-Policy same-origin always; add_header X-Frame-Options DENY always; add_header Permissions-Policy \"$PERMISOS\" always;"
+ }
+ cab_juego() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_JUEGO"; }
+ cab_legal() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_LEGAL"; }
+@@ -44,7 +47,9 @@
+     index index.html;
+     server_tokens off;
+     charset utf-8;
+-    client_max_body_size 2m;
++    # Lo que puede mandar un navegador: 64 KB en general (formularios, pago, panel).
++    # /api/ permite 1 MB (abajo) porque ahi se guarda la partida (hasta 300 KB, unos 400 KB ya dentro del JSON).
++    client_max_body_size 64k;
+ 
+     # IP real del visitante si el dominio pasa por el proxy de Cloudflare (nube naranja).
+     # Rangos publicados en https://www.cloudflare.com/ips/ (si Cloudflare agrega rangos nuevos, se suman aqui).
+@@ -88,6 +93,15 @@
+ 
+     # ---- Servidor del juego (PHP) ----
+     location ^~ /api/ {
++        client_max_body_size 1m;
++        # Limites por IP (zonas en /etc/nginx/conf.d/envivo-limites.conf; cada una solo cuenta su direccion y solo POST)
++        limit_req zone=envivo_entrar burst=15 nodelay;
++        limit_req zone=envivo_registro burst=10 nodelay;
++        limit_req zone=envivo_pago burst=10 nodelay;
++        limit_req zone=envivo_chat burst=15 nodelay;
++        limit_req_status 429;
++        limit_req_log_level error;   # "error" para que quede en el registro (el nivel normal no guarda "warn")
++        error_page 429 = @envivo_429;
+         include /etc/nginx/fastcgi_params;
+         fastcgi_param SCRIPT_FILENAME $PUB/api.php;
+         fastcgi_param SCRIPT_NAME /api.php;
+@@ -120,6 +134,15 @@
+         expires 1h;
+     }
+ 
++    # Respuesta del limite en JSON (asi el juego y la pagina de pago muestran el mensaje en vez de "error")
++    location @envivo_429 {
++        default_type application/json;
++        add_header Cache-Control "no-store" always;
++        add_header Retry-After 60 always;
++        $(cab)
++        return 429 '{"ok":false,"status":"failed","error":"Demasiados intentos. Espera un minuto e intenta de nuevo.","message":"Demasiados intentos. Espera un minuto e intenta de nuevo."}';
++    }
++
+     # ---- Todo lo demas: prohibido (codigo del servidor, pruebas, .git, .env, PLAN.md...) ----
+     location / { return 404; }
+ NGINX
