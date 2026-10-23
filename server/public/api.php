@@ -52,6 +52,9 @@ try {
         '/entrar' => $soloPost() && api_entrar(),
         '/salir' => $soloPost() && api_salir(),
         '/partida' => api_partida($metodo),
+        // Versión de la partida y dispositivo activo, sin los datos (el juego la mira al volver a la pestaña y cada minuto)
+        '/partida/meta' => $soloGet() && Http::json(200, ['ok' => true] + \EnVivo\Partidas::meta(requiere_sesion(), \EnVivo\Partidas::dispositivo($_GET['dispositivo'] ?? null))),
+        '/partida/activar' => $soloPost() && Http::json(200, \EnVivo\Partidas::activar(requiere_sesion(), Http::entrada(10000))),
         '/gastar' => $soloPost() && api_gastar(),
         '/vip/bono' => $soloPost() && api_vip_bono(),
         '/orden' => $soloPost() && api_orden(),
@@ -160,19 +163,10 @@ function api_salir(): never
 function api_partida(string $metodo): never
 {
     $j = requiere_sesion();
-    if ($metodo === 'GET') {
-        $p = Db::fila('SELECT datos, actualizado FROM partidas WHERE jugador_id = ?', [$j]);
-        Http::json(200, ['ok' => true, 'datos' => $p['datos'] ?? null, 'actualizado' => $p ? Db::iso((int) $p['actualizado']) : null]);
-    }
+    if ($metodo === 'GET') Http::json(200, \EnVivo\Partidas::leer($j));
     if ($metodo !== 'POST') Http::error(405, 'Usa GET o POST.');
-    $in = Http::entrada(2 * 1024 * 1024);
-    $datos = $in['datos'] ?? null;
-    if (!is_string($datos) || $datos === '') Http::error(400, 'No llegó la partida.', [], 'partida_vacia');
-    if (strlen($datos) > 300 * 1024) Http::error(413, 'La partida es demasiado grande (máximo 300 KB).', [], 'partida_grande');
-    if (!json_validate($datos)) Http::error(400, 'La partida no es un JSON válido.', [], 'partida_invalida');
-    $t = time();
-    Db::q('INSERT INTO partidas (jugador_id, datos, actualizado) VALUES (?, ?, ?) ON CONFLICT (jugador_id) DO UPDATE SET datos = excluded.datos, actualizado = excluded.actualizado', [$j, $datos, $t]);
-    Http::json(200, ['ok' => true, 'actualizado' => Db::iso($t)]);
+    // Con versión (base) y dispositivo: no pisa una partida más nueva de otro dispositivo (src/Partidas.php)
+    Http::json(200, \EnVivo\Partidas::guardar($j, Http::entrada(2 * 1024 * 1024)));
 }
 
 function api_gastar(): never

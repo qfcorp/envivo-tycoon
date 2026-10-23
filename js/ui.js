@@ -162,23 +162,184 @@
 
   /* ---------- Guardado ---------- */
   function save() {
+    // Se está abriendo otra vez con la partida de la nube, u otro dispositivo tomó la partida: aquí no se guarda nada
+    if (nubeRecargando) return;
+    if (nubeBloqueo) { nubeAvisoOtro(); return; }
     try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
+    if (nubeInfo) lsSet(NUBE_KEY, nubeInfo);   // la versión de la nube va siempre junto a la partida guardada aquí
+    nubePendiente = true;
     nubeLuego();
   }
-  /* ---------- Partida en la nube ---------- */
+  /* ---------- Partida en la nube ----------
+     Una partida por cuenta, con versión (server/src/Partidas.php). Esta pestaña recuerda de qué versión de la nube partió
+     (nubeInfo.rev, guardada junto a la partida) y la manda al guardar. Si otro celular, computadora o pestaña guardó o
+     tiene la partida abierta, el servidor responde 409 y aquí NO se pisa nada:
+       - Al abrir el juego o entrar a la cuenta: si la nube es más nueva y aquí no hubo avance, se usa la de la nube; si
+         las dos avanzaron, se pregunta cuál usar (día, dinero y eventos de cada una). Después esta pestaña toma la partida.
+       - Con el juego abierto (al volver a la pestaña, al volver internet y cada minuto mientras se ve): si otro dispositivo
+         la tomó, "Tu partida se abrió en otro dispositivo" → "Usar la partida más nueva" (baja la de la nube y abre el
+         juego otra vez); aquí ya no se sube nada. Si aquí hay avance que la nube no tiene, se pregunta cuál usar.
+       - Sin internet se juega igual (se guarda en el celular); al volver la red se resuelve con las mismas reglas. */
   const Api = window.Api || { disponible: false, logueado: () => false };
   const Pm = window.Premium;
+  const NUBE_KEY = 'envivo_nube';   // { cuenta, rev, clave }: versión de la nube de la que partió la partida guardada aquí
+  const NUBE_AVISO = 'envivo_nube_cargada';
+  // Código de esta pestaña (nuevo cada vez que se abre el juego): así otra pestaña del mismo navegador también cuenta
+  const NUBE_DISP = (() => {
+    try { const a = new Uint8Array(12); crypto.getRandomValues(a); return 'd' + Array.from(a, (b) => b.toString(16).padStart(2, '0')).join(''); }
+    catch (e) { return 'd' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); }
+  })();
   let nubeT = null, nubeEstado = '';
+  let nubeInfo = lsGet(NUBE_KEY);
+  let nubeLista = null;        // cuenta con la que esta pestaña ya revisó la nube y tomó la partida
+  let nubeBloqueo = false;     // otro dispositivo guardó o tomó la partida: aquí no se sube ni se guarda nada
+  let nubeRecargando = false;  // se bajó la partida de la nube y el juego se abre otra vez
+  let nubePendiente = false;   // hubo guardados que la nube todavía no tiene
+  let nubeSubiendo = null, nubeRevisando = null, nubeUltima = 0;
+  const nubeCuenta = () => (Api.estado && Api.estado.jugador ? Api.estado.jugador.id : null);
+  const nubeActiva = () => !!(Api.disponible && Api.logueado && Api.logueado());
+  const nubeBase = () => (nubeInfo && nubeInfo.cuenta === nubeCuenta() && Number.isInteger(nubeInfo.rev) ? nubeInfo.rev : null);
+  const nubeClave = (x) => (x ? [x.day, x.money, x.stats ? x.stats.events : 0].join('|') : '');
+  // ¿Aquí hay avance (día, dinero o eventos) que la versión de la nube de la que partió no tiene?
+  const nubeAvance = () => !nubeInfo || nubeInfo.cuenta !== nubeCuenta() || nubeClave(S) !== nubeInfo.clave;
+  function nubeMarcar(rev, clave) { nubeInfo = { cuenta: nubeCuenta(), rev, clave }; lsSet(NUBE_KEY, nubeInfo); }
+  const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
+  const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo'));
   function nubeLuego() {
-    if (!Api.disponible || !Api.logueado() || cloudPendiente) return;
+    if (!nubeActiva() || cloudPendiente) return;
+    if (nubeBloqueo) { nubeAvisoOtro(); return; }
     clearTimeout(nubeT);
     nubeT = setTimeout(subirNube, 4000);
   }
-  async function subirNube() {
-    if (!Api.disponible || !Api.logueado() || cloudPendiente) return;
-    try { await Api.subirPartida(G.serialize(S)); nubeEstado = 'ok'; } catch (e) { nubeEstado = 'error'; }
+  async function subirNube(tomar) {
+    if (!nubeActiva() || cloudPendiente || nubeBloqueo || nubeRecargando) return;
+    const base = nubeBase();
+    if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
+    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar); }               // un guardado a la vez
+    clearTimeout(nubeT);
+    const datos = G.serialize(S), clave = nubeClave(S);
+    nubePendiente = false;
+    let bien = false;
+    nubeSubiendo = (async () => {
+      try {
+        const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar });
+        nubeMarcar(r.rev, clave); nubeEstado = 'ok'; bien = true;
+      } catch (e) {
+        nubePendiente = true; nubeEstado = 'error';
+        if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
+      }
+    })();
+    try { await nubeSubiendo; } finally { nubeSubiendo = null; }
+    if (bien && nubePendiente) nubeLuego();   // se guardó algo más mientras subía
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { clearTimeout(nubeT); subirNube(); } });
+  // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
+  function revisarNube(motivo) {
+    if (!nubeActiva() || cloudPendiente || nubeRecargando) return Promise.resolve();
+    if (nubeBloqueo) { if (motivo !== 'reloj') nubeAvisoOtro(); return Promise.resolve(); }
+    if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
+    return nubeRevisando;
+  }
+  async function nubeRevisar(intentos) {
+    const base = nubeBase();
+    if (base === null) return nubeSinBase();
+    let m;
+    try { m = await Api.partidaMeta(NUBE_DISP); } catch (e) { return; }   // sin red: se sigue con la del celular
+    if (!m.hay || m.rev < base) return nubeSinBase();
+    if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeMasNueva();
+    if (nubeLista !== nubeCuenta()) return nubeTomar(intentos);              // al día: esta pestaña toma la partida
+    if (m.activo && m.activo.dispositivo !== NUBE_DISP) return nubeConflicto();   // otro dispositivo la tomó
+    if (nubePendiente || nubeAvance()) return subirNube();                   // p. ej. avance de cuando no había internet
+  }
+  // Esta pestaña pasa a ser la que juega (los demás dispositivos dejan de guardar). Solo con la partida al día.
+  async function nubeTomar(intentos) {
+    try { await Api.activarPartida(nubeBase(), NUBE_DISP); }
+    catch (e) { if (esConflicto(e) && (intentos || 0) < 2) return nubeRevisar((intentos || 0) + 1); return; }   // alguien guardó justo ahora
+    nubeLista = nubeCuenta(); nubeBloqueo = false;
+    try { if (sessionStorage.getItem(NUBE_AVISO)) { sessionStorage.removeItem(NUBE_AVISO); toast(T('nube.cargada')); } } catch (e) { /* nada */ }
+    if (nubePendiente || nubeAvance()) return subirNube();
+  }
+  // Esta pestaña nunca se sincronizó con esta cuenta: comparar con la de la nube
+  async function nubeSinBase() {
+    let r;
+    try { r = await Api.partida(); } catch (e) { return; }
+    const nube = nubeLeer(r);
+    if (!nube) { nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); return subirNube(true); }   // no hay en la nube: sube la de aquí
+    if (S.stats.events === 0 && S.day <= 1) return nubeUsar(nube, r.datos, r.rev, false);       // aquí recién empieza
+    if (nubeClave(nube) === nubeClave(S)) { nubeMarcar(r.rev, nubeClave(nube)); return nubeTomar(0); }   // es la misma partida
+    return nubeElegir(nube, r.datos, r.rev);
+  }
+  // Al abrir el juego: la nube tiene una versión más nueva que la de aquí
+  async function nubeMasNueva() {
+    let r;
+    try { r = await Api.partida(); } catch (e) { return; }
+    const nube = nubeLeer(r);
+    if (!nube) return nubeSinBase();
+    if (!nubeAvance() || nubeClave(nube) === nubeClave(S)) return nubeUsar(nube, r.datos, r.rev, false);
+    return nubeElegir(nube, r.datos, r.rev);   // las dos avanzaron: que el jugador elija
+  }
+  // Usar la partida de la nube. En pleno evento o con el juego abierto hace rato: se guarda aquí y el juego se abre otra vez.
+  function nubeUsar(nube, datos, rev, recargar) {
+    if (recargar || S.currentEvent || VI) {
+      nubeRecargando = true; nubeBloqueo = true; clearTimeout(nubeT);
+      try {
+        localStorage.setItem(SAVE_KEY, datos);
+        nubeMarcar(rev, nubeClave(nube));
+        try { sessionStorage.setItem(NUBE_AVISO, '1'); } catch (e) { /* sin aviso */ }
+        location.reload();
+        return;
+      } catch (e) { nubeRecargando = false; nubeBloqueo = false; }   // no se pudo guardar aquí: se usa sin abrir otra vez
+    }
+    S = nube;
+    aplicarFecha();
+    nubeMarcar(rev, nubeClave(nube));
+    try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
+    nubePendiente = false;
+    render();
+    return nubeTomar(0);
+  }
+  // Otra pestaña o dispositivo guardó o tomó la partida: aquí se deja de subir y se avisa
+  async function nubeConflicto() {
+    nubeBloqueo = true; clearTimeout(nubeT);
+    if (nubeAvance()) {   // aquí hay avance que la nube no tiene: que el jugador elija (nunca se pisa sin preguntar)
+      try {
+        const r = await Api.partida();
+        const nube = nubeLeer(r);
+        if (nube && nubeClave(nube) !== nubeClave(S)) return nubeElegir(nube, r.datos, r.rev);
+      } catch (e) { /* sin red: la ventana de abajo */ }
+    }
+    nubeAvisoOtro();
+  }
+  function nubeAvisoOtro() {
+    if (nubeRecargando || cloudPendiente) return;
+    if ($('overlay').classList.contains('on') && $('modal').querySelector('[data-nube-otro]')) return;
+    eleccion = () => nubeUsarNueva();
+    openModal(`<div data-nube-otro><h2>${I('cloud')} ${T('nube.otro_titulo')}</h2>
+      <p>${T('nube.otro_texto')}</p>
+      <button class="btn main" data-act="partida" data-k="nueva">${I('cloud')}${T('nube.otro_usar')}</button>
+      <p class="small muted">${T('nube.otro_nota')}</p></div>`);
+  }
+  async function nubeUsarNueva() {
+    let r;
+    try { r = await Api.partida(); } catch (e) { toast(T('nube.sin_red')); eleccion = () => nubeUsarNueva(); return; }
+    const nube = nubeLeer(r);
+    if (nube) { nubeUsar(nube, r.datos, r.rev, true); return; }
+    // La otra pestaña no guardó nada todavía: esta toma la partida con la suya
+    closeModal(); nubeBloqueo = false; nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); render();
+    await subirNube(true);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { clearTimeout(nubeT); if (nubePendiente) subirNube(); }
+    else nubeFoco();
+  });
+  function nubeFoco() { const t = Date.now(); if (t - nubeUltima < 3000) return; nubeUltima = t; revisarNube('foco'); }
+  window.addEventListener('focus', nubeFoco);
+  window.addEventListener('pageshow', (e) => { if (e.persisted) nubeFoco(); });
+  window.addEventListener('online', () => revisarNube('red'));
+  window.addEventListener('storage', (e) => { if (e.key === NUBE_KEY) revisarNube('reloj'); });   // otra pestaña de este navegador guardó
+  setInterval(() => { if (document.visibilityState === 'visible') revisarNube('reloj'); }, 60000);
+  // Para las pruebas automáticas
+  window.__nube = { dispositivo: NUBE_DISP, get info() { return nubeInfo; }, get bloqueo() { return nubeBloqueo; }, get lista() { return nubeLista; },
+    revisar: (m) => revisarNube(m || 'foco'), subir: async () => { if (nubeSubiendo) await nubeSubiendo; return subirNube(); } };
   let cloudPendiente = false;   // mientras el jugador elige entre la partida de la nube y la del celular
   function load() {
     try { const raw = localStorage.getItem(SAVE_KEY); return raw ? G.deserialize(raw) : null; } catch (e) { return null; }
@@ -376,6 +537,8 @@
       lastTab = tab;
     }
     $('badgeC').textContent = S.contracts.length || '';
+    const bb = $('badgeB');   // equipos que pueden fallar en vivo
+    if (bb) { const n = equiposEnRiesgo().length; bb.textContent = n || ''; if (n) bb.setAttribute('aria-label', T('danos.badge', { n })); else bb.removeAttribute('aria-label'); }
     $('muteBtn').innerHTML = I(snd.muted() ? 'close' : 'sound', 'sm');
     $('muteBtn').setAttribute('aria-label', snd.muted() ? T('head.sonido_on') : T('head.silenciar'));
     const mb = $('musicBtn');
@@ -461,7 +624,7 @@
       : bk && bk.enPeligro ? strip(T('inicio.peligro', { m: lim, n: bk.graceLeft }))
       : bk && bk.mananaPeligro ? strip(T('inicio.manana_peligro', { g: `<b class="num">${M(G.dailyCost(S))}</b>`, m: lim }))
       : S.money < 0 ? strip(T('inicio.en_rojo', { m: lim })) : '';
-    $('tab-inicio').innerHTML = `${rojo}
+    $('tab-inicio').innerHTML = `${rojo}${stripDanos()}
       <div class="card hqcard">${A.hq(S)}
         <div class="in">
           <div class="row between prod-nom-row">${S.productora
@@ -836,6 +999,95 @@
     if (!Api.logueado()) { snd.play('tap'); abrirCuenta('registro', T('bodega.ex_cuenta')); return; }
     canjear(id);
   }
+  /* ---------- Equipos dañados: avisos para repararlos (resultado del evento, Inicio, Bodega y preparación) ----------
+     Solo pantalla (la lógica no cambia): al salir al aire se anota el estado de lo que se llevó y, en cada imprevisto,
+     lo que le restó (lluvia, luz, caída...). Al terminar se muestra antes → después con un botón para repararlo. */
+  const DANOS_KEY = 'envivo_danos_evento';
+  const WORN = () => (G.BALANCE && typeof G.BALANCE.worn === 'number' ? G.BALANCE.worn : 40);
+  const reparable = (e) => { const it = e && G.CATALOG[e.type]; return !!it && !it.alquiler; };
+  const costoRep = (e) => { try { return Math.max(0, G.repairCost(e) || 0); } catch (err) { return 0; } };
+  const enRiesgo = (e) => reparable(e) && e.condition < WORN() && costoRep(e) > 0;
+  const equiposEnRiesgo = () => (S && Array.isArray(S.equip) ? S.equip.filter(enRiesgo) : []);
+  let resDanos = null;   // equipos dañados del último resultado: [{ id, type, antes, despues, causas }]
+  function danosInicio() {
+    const ev = S.currentEvent;
+    if (!ev) return;
+    const antes = {};
+    S.equip.forEach((e) => { if (ev.equipIds.includes(e.id) && reparable(e)) antes[e.id] = e.condition; });
+    lsSet(DANOS_KEY, { cid: ev.contract.id, antes, golpes: {} });
+  }
+  const condsEvento = () => { const ev = S.currentEvent, o = {}; if (ev) S.equip.forEach((e) => { if (ev.equipIds.includes(e.id)) o[e.id] = e.condition; }); return o; };
+  function danosImprevisto(antes, key) {
+    const ev = S.currentEvent, d = lsGet(DANOS_KEY);
+    if (!ev || !d || d.cid !== ev.contract.id) return;
+    let cambio = false;
+    S.equip.forEach((e) => {
+      const a = antes[e.id];
+      if (typeof a === 'number' && e.condition < a) { (d.golpes[e.id] = d.golpes[e.id] || []).push(key || 'otro'); cambio = true; }
+    });
+    if (cambio) lsSet(DANOS_KEY, d);
+  }
+  // Al terminar: lo que quedó en riesgo, bajó mucho o lo dañó un imprevisto (lo más urgente primero)
+  function danosFin(ids, cid) {
+    const d = lsGet(DANOS_KEY);
+    lsSet(DANOS_KEY, null);
+    const tr = d && d.cid === cid ? d : null;
+    const lista = [];
+    S.equip.forEach((e) => {
+      if (!ids.includes(e.id) || !reparable(e)) return;
+      const antes = tr && typeof tr.antes[e.id] === 'number' ? tr.antes[e.id] : null;
+      const causas = tr && Array.isArray(tr.golpes[e.id]) ? tr.golpes[e.id].filter((k, i, a) => a.indexOf(k) === i) : [];
+      if (causas.length || e.condition < WORN() || (antes !== null && antes - e.condition >= 15)) lista.push({ id: e.id, type: e.type, antes, despues: e.condition, causas });
+    });
+    return lista.sort((a, b) => a.despues - b.despues);
+  }
+  const CAUSA_ICO = { lluvia: 'rain', luz: 'bolt', falla: 'wrench', dron: 'trend_down' };
+  const causaTxt = (k) => T(I18 && I18.T.has('danos.causa.' + k) ? 'danos.causa.' + k : 'danos.causa.otro');
+  function danosResHtml() {
+    const xs = (resDanos || []).map((d) => ({ d, e: S.equip.find((x) => x.id === d.id) })).filter((x) => x.e);
+    if (!xs.length) return '';
+    const pend = xs.filter((x) => costoRep(x.e) > 0);
+    const total = pend.reduce((a, x) => a + costoRep(x.e), 0);
+    const filas = xs.map(({ d, e }) => {
+      const rc = costoRep(e), falta = rc - S.money;
+      const causa = d.causas.length ? d.causas.map((k) => `<span class="dn-causa">${I(CAUSA_ICO[k] || 'bolt', 'sm')}${esc(causaTxt(k))}</span>`).join('')
+        : `<span class="dn-causa">${I('clock', 'sm')}${esc(T('danos.causa.desgaste'))}</span>`;
+      const bar = `<div class="bar dn-bar ${d.despues < WORN() ? 'red' : d.despues < 70 ? 'amber' : ''}">${d.antes !== null ? `<s style="width:${d.antes}%"></s>` : ''}<i style="width:${d.despues}%"></i></div>`;
+      const btn = rc <= 0 ? `<span class="dn-ok">${I('check', 'sm')}${T('danos.reparado')}</span>`
+        : `<button class="btn sm green dn-btn" data-act="repair-res" data-id="${e.id}" ${falta > 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${T('danos.reparar', { m: M(rc) })}</button>${falta > 0 ? `<div class="dn-falta">${T('danos.falta', { m: M(falta) })}</div>` : ''}`;
+      return `<div class="dn-it ${rc <= 0 ? 'ok' : ''}">${itemArt(e.type, 44, 'mini')}
+        <div class="grow" style="min-width:0"><b class="dn-nm">${esc(nmE(e))}</b><div class="dn-causas">${causa}</div>
+          <div class="dn-cond"><span class="num">${d.antes !== null ? `<span class="muted">${d.antes}%</span> → ` : ''}<b class="${d.despues < WORN() ? 'neg' : ''}">${d.despues}%</b></span></div>${bar}${d.despues < WORN() && rc > 0 ? `<span class="dn-riesgo">${I('bolt', 'sm')}${T('danos.riesgo')}</span>` : ''}</div>
+        <div class="dn-acc">${btn}</div></div>`;
+    }).join('');
+    const todo = pend.length > 1 ? `<button class="btn dn-todo" data-act="repair-all-res" ${S.money < total ? 'disabled' : ''}>${I('wrench', 'sm')}${T('danos.reparar_todo', { m: M(total) })}</button>${S.money < total ? `<div class="dn-falta" style="text-align:center">${T('danos.falta', { m: M(total - S.money) })}</div>` : ''}` : '';
+    return `<div class="danos" id="resDanos" role="status"><div class="dn-hd">${I('wrench', 'sm')}<b>${T('danos.titulo')}</b></div>
+      <div class="small muted" style="margin:2px 0 6px">${T('danos.sub')}</div>${filas}${todo}</div>`;
+  }
+  const pintarDanosRes = () => { const n = $('resDanos'); if (n) n.outerHTML = danosResHtml(); };
+  function repararVarios(ids) {
+    let n = 0;
+    ids.forEach((id) => { const e = S.equip.find((x) => x.id === id); if (e && costoRep(e) > 0 && S.money >= costoRep(e) && G.repair(S, id).ok) n++; });
+    if (n) { snd.play('buy'); toast(T('danos.reparados', { n })); } else snd.play('error');
+    save(); render();
+    return n;
+  }
+  // Inicio: franja compacta que lleva a la Bodega
+  function stripDanos() {
+    const xs = equiposEnRiesgo();
+    if (!xs.length || S.gameOver) return '';
+    const tot = xs.reduce((a, e) => a + costoRep(e), 0);
+    return `<button class="redstrip amberstrip dnstrip" data-act="ir-danos">${I('wrench', 'sm')}<span class="grow">${T('danos.inicio', { n: xs.length })} · ${T('danos.reparar', { m: `<b class="num">${M(tot)}</b>` })}</span><span class="dn-fl" aria-hidden="true">&#8250;</span></button>`;
+  }
+  // Preparación: aviso en el equipo elegido que puede fallar (se ve solo si está marcado)
+  function prepDano(e) {
+    if (!enRiesgo(e)) return '';
+    const rc = costoRep(e);
+    return `<div class="dn-prep">${I('bolt', 'sm')}<span>${T('danos.riesgo')}</span>${S.money >= rc
+      ? `<button type="button" class="dn-mini" data-act="repair-prep" data-id="${e.id}">${T('danos.reparar', { m: M(rc) })}</button>`
+      : `<span class="muted">· ${T('danos.reparar', { m: M(rc) })}</span>`}</div>`;
+  }
+
   function renderBodega() {
     const cons = Object.keys(G.CONSUMABLES).map((k) => {
       const it = G.CONSUMABLES[k];
@@ -845,7 +1097,8 @@
     }).join('');
     // Equipos ordenados por rareza (lo más valioso primero) y luego por estado
     const RORD = { vip: 0, exclusivo: 1, elite: 2, pro: 3, comun: 4 };
-    const sorted = S.equip.slice().sort((a, b) => (RORD[rar(a.type).key] - RORD[rar(b.type).key]) || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0) || (a.id - b.id));
+    // ...salvo lo que necesita reparación, que va primero (lo más gastado arriba)
+    const sorted = S.equip.slice().sort((a, b) => (enRiesgo(b) - enRiesgo(a)) || (enRiesgo(a) && enRiesgo(b) ? a.condition - b.condition : 0) || (RORD[rar(a.type).key] - RORD[rar(b.type).key]) || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0) || (a.id - b.id));
     const mine = sorted.map((e) => {
       const it = G.CATALOG[e.type] || { name: e.type, desc: '' };
       const r = rar(e.type);
@@ -862,15 +1115,16 @@
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
       }
       const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
-      return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${e.condition < 40 ? 'worn' : ''}">
+      const rgo = enRiesgo(e);
+      return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}">
         <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
-        <div class="art">${itemArt(e.type, 110)}</div>
+        <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
         <div class="nm">${esc(nmE(e))}</div>
         ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
         <div class="row2">
-          <button class="btn sm" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${rc > 0 ? M(rc) : T('bodega.nuevo')}</button>
+          <button class="btn sm ${rgo ? 'dn-rep' : ''}" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${rc > 0 ? M(rc) : T('bodega.nuevo')}</button>
           ${it.premium || delSrv ? `<button class="btn sm" disabled>${delSrv ? T('bodega.ex_mercado') : T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
     }).join('');
     const maxEq = maxEquip();
@@ -886,7 +1140,7 @@
     const nota = cur && cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
     $('tab-bodega').innerHTML = `
       <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
-      <div class="sectitle">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: S.equip.length, max: maxEq })}</span>` : ''}</div>
+      <div class="sectitle" id="tusEquipos">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: S.equip.length, max: maxEq })}</span>` : ''}</div>
       ${mine ? `<div class="ggrid">${mine}</div>` : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
       <p class="small muted">${T('bodega.desgaste')}</p>
       <div class="sectitle" id="tiendaEq">${T('bodega.tienda')}</div>${chips}
@@ -1279,7 +1533,10 @@
     const E = Api.estado;
     if (!E) { render(); return; }
     if (Pm) Pm.setVip(E.vip_activo);
-    if (E.logueado && recienEntro) await elegirPartida();
+    if (E.logueado) {
+      if (recienEntro) { nubeLista = null; nubeBloqueo = false; }   // otra cuenta (o la misma otra vez): revisar desde cero
+      await revisarNube('carga');
+    }
     aplicarEntregas();
     render();
   }
@@ -1296,19 +1553,20 @@
   }
 
   const resumen = (x) => `${T('comun.dia_n', { n: x.day })} · ${G.CHAPTERS[x.chapter] ? esc(TL(G.CHAPTERS[x.chapter].title).split('·')[0].trim()) : T('historia.completa')} · ${M(x.money)} · ${T('inicio.eventos', { n: x.stats.events })}`;
-  async function elegirPartida() {
-    let nube = null;
-    try { const r = await Api.partida(); nube = r.datos ? G.deserialize(r.datos) : null; } catch (e) { return; }
-    const localNueva = S.stats.events === 0 && S.day <= 1;
-    if (!nube) { await subirNube(); return; }
-    if (localNueva) { S = nube; save(); return; }
-    if (nube.day === S.day && nube.money === S.money && nube.stats.events === S.stats.events) return;
+  // La partida de la nube y la de aquí avanzaron las dos: el jugador elige (la otra se reemplaza; nunca sin preguntar)
+  function nubeElegir(nube, datos, rev) {
+    clearTimeout(nubeT);
     cloudPendiente = true;
-    await new Promise((listo) => {
+    return new Promise((listo) => {
       eleccion = (cual) => {
-        if (cual === 'nube') { S = nube; }
         cloudPendiente = false;
-        save(); subirNube(); closeModal(); render(); listo();
+        closeModal();
+        if (cual === 'nube') { listo(nubeUsar(nube, datos, rev, nubeLista === nubeCuenta())); return; }
+        // La de aquí: se sube encima de esa versión de la nube y esta pestaña toma la partida
+        nubeBloqueo = false;
+        nubeMarcar(rev, nubeClave(nube));
+        nubeLista = nubeCuenta(); nubePendiente = true;
+        save(); render(); listo(subirNube(true));
       };
       openModal(`<h2>${T('nube.titulo')}</h2>
         <p class="small muted">${T('nube.texto')}</p>
@@ -1552,7 +1810,7 @@
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
@@ -1635,7 +1893,7 @@
     if (VI) {
       r = window.EnVivoVivo.elegir(VI.v, i);
       if (r && r.ok) VI.incidentes.push({ clave: key, q: r.q });
-    } else r = G.resolveIncident(S, i);
+    } else { const c0 = condsEvento(); r = G.resolveIncident(S, i); if (r && r.ok) danosImprevisto(c0, key); }
     if (!r || !r.ok) { toast(TL((r && r.msg) || '')); snd.play('error'); return; }
     if (!VI) save();
     snd.play(r.q >= 0 ? 'good' : 'bad');
@@ -1658,6 +1916,7 @@
     const dia = S.day;
     const caja0 = dia0 && dia0.day === dia && typeof dia0.money === 'number' ? dia0.money : null;
     const ty = S.currentEvent && S.currentEvent.contract ? S.currentEvent.contract.type : '';
+    const evEq = S.currentEvent ? { ids: S.currentEvent.equipIds.slice(), cid: S.currentEvent.contract.id } : null;
     const f = G.finishEvent(S);
     save();
     snd.amb(null);
@@ -1665,7 +1924,8 @@
     const r = f.result;
     const caja = caja0 === null ? null : S.money - caja0;   // cuánto cambió la caja desde que empezó el día
     // Si se recarga en esta pantalla, el resultado se vuelve a mostrar (QA-09)
-    lsSet(RES_KEY, { r, ev: S.stats.events, caja, ty });
+    try { resDanos = evEq ? danosFin(evEq.ids, evEq.cid) : null; } catch (e) { resDanos = null; }
+    lsSet(RES_KEY, { r, ev: S.stats.events, caja, ty, danos: resDanos });
     showResult(r, caja, true, ty);
   }
 
@@ -1765,6 +2025,7 @@
       ${duel}
       ${intl}
       ${extrasRes(r)}
+      ${danosResHtml()}
       ${riesgo}
       <table style="margin-top:12px">
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
@@ -2134,12 +2395,23 @@
       }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
       case 'repair': act(G.repair(S, id), 'buy'); break;
+      // Equipos dañados (resultado del evento, Inicio y preparación)
+      case 'repair-res': act(G.repair(S, id), 'buy'); pintarDanosRes(); break;
+      case 'repair-all-res': repararVarios((resDanos || []).map((d) => d.id)); pintarDanosRes(); break;
+      case 'repair-prep': e.preventDefault(); act(G.repair(S, id), 'buy'); if (prep) renderPrep(); break;
+      case 'ir-danos': {
+        tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
+        const t = $('tusEquipos');
+        if (t) { try { t.scrollIntoView({ block: 'start' }); } catch (err) { window.scrollTo(0, 0); } } else window.scrollTo(0, 0);
+        break;
+      }
       case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(T('bodega.vender_q', { item: esc(itemName(it.type)), m: M(G.sellPrice(it)) }), T('bodega.vender_si'), () => act(G.sell(S, id), 'buy')); break; }
       case 'prep': { snd.play('tap'); const pc = S.contracts.find((x) => x.id === id); if (pc) mus.go(esFuneral(pc.type) ? 'funeral' : 'preparacion'); openPrep(id); break; }
       case 'auto': { const sg = G.suggestLoadout(S, prep.id); prep.staff = new Set(sg.staffIds); prep.equip = new Set(sg.equipIds); snd.play('tap'); marcarSeleccion(); renderPrep(true); break; }
       case 'go-live': {
         const r = G.startEvent(S, prep.id, [...prep.staff], [...prep.equip]);
         if (!r.ok) { toast(TL(r.msg)); snd.play('error'); break; }
+        danosInicio();
         save(); render();
         snd.play('live');
         const ty = S.currentEvent.contract.type;
@@ -2250,7 +2522,7 @@
     const pendOk = pend && !S.currentEvent && pend.ev === S.stats.events;
     if (pend && !pendOk) lsSet(RES_KEY, null);
     if (S.currentEvent) showIncident();       // si cerraste la app en pleno evento, sigue donde quedó
-    else if (pendOk && pend.r) { try { showResult(pend.r, pend.caja, false, pend.ty); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
+    else if (pendOk && pend.r) { try { resDanos = Array.isArray(pend.danos) ? pend.danos : null; showResult(pend.r, pend.caja, false, pend.ty); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
     else if (pendOk && pend.chapter) { try { showChapterDone(pend.chapter); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
     else continuar();
     // Guía del primer evento (js/guia.js, con defer): solo en una partida nueva; si aún no cargó, la toma al cargar
@@ -2269,8 +2541,7 @@
     await alConectar(false);
     if (window.Chat && Api.disponible) window.Chat.iniciar(ctxChat());
     if (Api.estado && Api.estado.logueado) {
-      // Si este celular no tiene partida avanzada pero la cuenta sí, traerla
-      if (S.stats.events === 0 && S.day <= 1) await elegirPartida();
+      // La partida de la nube ya se revisó en alConectar (más nueva, igual o hay que elegir): solo las entregas
       aplicarEntregas(); render();
     }
     if (volvioDePago && !enApp()) { tab = 'tienda'; trasCompra(); render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }

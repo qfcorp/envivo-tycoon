@@ -291,7 +291,9 @@
     "cuenta_baneado": "existe · Duelos.php / Copas.php · 403 · prefijo dinámico cuenta_<estado de la cuenta> (eventos en línea)",
     "cuenta_borrado": "existe · Duelos.php / Copas.php · 403 · prefijo dinámico cuenta_<estado de la cuenta> (eventos en línea)",
     "plan_ejecutada": "existe · Fusiones.php · 409 · prefijo dinámico plan_<estado del plan>",
-    "plan_cancelada": "existe · Fusiones.php · 409 · prefijo dinámico plan_<estado del plan>"
+    "plan_cancelada": "existe · Fusiones.php · 409 · prefijo dinámico plan_<estado del plan>",
+    "partida_desactualizada": "existe · Partidas.php · 409 (POST /api/partida y /api/partida/activar: en la nube hay una versión más nueva; trae \"nube\")",
+    "otro_dispositivo": "existe · Partidas.php · 409 (POST /api/partida: otro dispositivo o pestaña tiene la partida abierta; trae \"nube\")"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -584,7 +586,9 @@
     "cuenta_baneado": "Tu cuenta fue bloqueada y no puede participar en eventos en línea.",
     "cuenta_borrado": "Esta cuenta fue borrada.",
     "plan_ejecutada": "Ese plan ya se ejecutó.",
-    "plan_cancelada": "Ese plan está cancelado."
+    "plan_cancelada": "Ese plan está cancelado.",
+    "partida_desactualizada": "Tu partida se guardó en otro dispositivo o pestaña con más avance. Carga la más nueva antes de seguir.",
+    "otro_dispositivo": "Tu partida está abierta en otro dispositivo o pestaña. Carga la partida más nueva para seguir aquí."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -877,7 +881,9 @@
     "cuenta_baneado": "Your account was blocked and can't take part in online events.",
     "cuenta_borrado": "This account was deleted.",
     "plan_ejecutada": "That plan has already been carried out.",
-    "plan_cancelada": "That plan is cancelled."
+    "plan_cancelada": "That plan is cancelled.",
+    "partida_desactualizada": "Your game was saved on another device or tab with more progress. Load the newest one before you continue.",
+    "otro_dispositivo": "Your game is open on another device or tab. Load the newest game to keep playing here."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1170,7 +1176,9 @@
     "cuenta_baneado": "Sua conta foi bloqueada e não pode participar de eventos online.",
     "cuenta_borrado": "Esta conta foi excluída.",
     "plan_ejecutada": "Esse plano já foi executado.",
-    "plan_cancelada": "Esse plano está cancelado."
+    "plan_cancelada": "Esse plano está cancelado.",
+    "partida_desactualizada": "Seu jogo foi salvo em outro dispositivo ou aba com mais progresso. Carregue o mais recente antes de continuar.",
+    "otro_dispositivo": "Seu jogo está aberto em outro dispositivo ou aba. Carregue o jogo mais recente para continuar aqui."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1463,7 +1471,9 @@
     "cuenta_baneado": "Votre compte a été bloqué et ne peut pas participer aux événements en ligne.",
     "cuenta_borrado": "Ce compte a été supprimé.",
     "plan_ejecutada": "Ce plan a déjà été exécuté.",
-    "plan_cancelada": "Ce plan est annulé."
+    "plan_cancelada": "Ce plan est annulé.",
+    "partida_desactualizada": "Ta partie a été sauvegardée sur un autre appareil ou onglet avec plus de progrès. Charge la plus récente avant de continuer.",
+    "otro_dispositivo": "Ta partie est ouverte sur un autre appareil ou onglet. Charge la partie la plus récente pour continuer ici."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -1756,7 +1766,9 @@
     "cuenta_baneado": "Dein Konto wurde blockiert und kann nicht an Online-Events teilnehmen.",
     "cuenta_borrado": "Dieses Konto wurde gelöscht.",
     "plan_ejecutada": "Dieser Plan wurde schon ausgeführt.",
-    "plan_cancelada": "Dieser Plan ist abgebrochen."
+    "plan_cancelada": "Dieser Plan ist abgebrochen.",
+    "partida_desactualizada": "Dein Spielstand wurde auf einem anderen Gerät oder Tab mit mehr Fortschritt gespeichert. Lade den neuesten, bevor du weiterspielst.",
+    "otro_dispositivo": "Dein Spiel ist auf einem anderen Gerät oder Tab geöffnet. Lade den neuesten Spielstand, um hier weiterzuspielen."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2049,7 +2061,9 @@
     "cuenta_baneado": "Il tuo account è stato bloccato e non può partecipare agli eventi online.",
     "cuenta_borrado": "Questo account è stato eliminato.",
     "plan_ejecutada": "Questo piano è già stato eseguito.",
-    "plan_cancelada": "Questo piano è annullato."
+    "plan_cancelada": "Questo piano è annullato.",
+    "partida_desactualizada": "La tua partita è stata salvata su un altro dispositivo o scheda con più progressi. Carica la più recente prima di continuare.",
+    "otro_dispositivo": "La tua partita è aperta su un altro dispositivo o scheda. Carica la partita più recente per continuare qui."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -2342,7 +2356,9 @@
     "cuenta_baneado": "Ваш аккаунт заблокирован и не может участвовать в онлайн-событиях.",
     "cuenta_borrado": "Этот аккаунт удалён.",
     "plan_ejecutada": "Этот план уже выполнен.",
-    "plan_cancelada": "Этот план отменён."
+    "plan_cancelada": "Этот план отменён.",
+    "partida_desactualizada": "Твоя игра сохранена на другом устройстве или вкладке с бо́льшим прогрессом. Загрузи самое новое сохранение, прежде чем продолжить.",
+    "otro_dispositivo": "Твоя игра открыта на другом устройстве или вкладке. Загрузи самое новое сохранение, чтобы играть здесь."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -2635,7 +2651,9 @@
     "cuenta_baneado": "Hesabın engellendi ve çevrim içi etkinliklere katılamaz.",
     "cuenta_borrado": "Bu hesap silindi.",
     "plan_ejecutada": "Bu plan zaten uygulandı.",
-    "plan_cancelada": "Bu plan iptal edildi."
+    "plan_cancelada": "Bu plan iptal edildi.",
+    "partida_desactualizada": "Oyunun başka bir cihazda veya sekmede daha fazla ilerlemeyle kaydedildi. Devam etmeden önce en yenisini yükle.",
+    "otro_dispositivo": "Oyunun başka bir cihazda veya sekmede açık. Burada devam etmek için en yeni oyunu yükle."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -2928,7 +2946,9 @@
     "cuenta_baneado": "Akunmu diblokir dan tidak bisa ikut acara online.",
     "cuenta_borrado": "Akun ini sudah dihapus.",
     "plan_ejecutada": "Rencana itu sudah dijalankan.",
-    "plan_cancelada": "Rencana itu dibatalkan."
+    "plan_cancelada": "Rencana itu dibatalkan.",
+    "partida_desactualizada": "Permainanmu disimpan di perangkat atau tab lain dengan kemajuan lebih banyak. Muat yang terbaru sebelum lanjut.",
+    "otro_dispositivo": "Permainanmu terbuka di perangkat atau tab lain. Muat permainan terbaru untuk lanjut di sini."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -3221,6 +3241,8 @@
     "cuenta_baneado": "你的账号已被封禁，无法参加在线活动。",
     "cuenta_borrado": "该账号已被删除。",
     "plan_ejecutada": "该计划已执行。",
-    "plan_cancelada": "该计划已取消。"
+    "plan_cancelada": "该计划已取消。",
+    "partida_desactualizada": "你的进度已在其他设备或标签页上保存，且进度更多。请先加载最新的进度再继续。",
+    "otro_dispositivo": "你的游戏正在其他设备或标签页上打开。请加载最新的进度后在这里继续。"
   }
 }

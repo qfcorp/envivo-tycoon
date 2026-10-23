@@ -58,6 +58,7 @@
         const err = new Error(textoError(j));
         err.status = r.status;
         err.codigo = j.codigo || null;
+        err.respuesta = j;   // la respuesta completa (ej. 409 de la partida trae "nube": versión y dispositivo)
         throw err;
       }
       return j;
@@ -91,8 +92,13 @@
   Api.registro = async (email, nombre, clave) => guardarEstado(await req('POST', '/api/registro', { email, nombre, clave }));
   Api.entrar = async (email, clave) => guardarEstado(await req('POST', '/api/entrar', { email, clave }));
   Api.salir = async () => { await req('POST', '/api/salir', {}); return Api.refrescar(); };
+  // Partida en la nube con versión (server/src/Partidas.php): `base` = versión de la que partió esta partida y
+  // `dispositivo` = código de esta pestaña. Si otro dispositivo guardó o tiene la partida abierta → error 409
+  // (codigo partida_desactualizada / otro_dispositivo, con err.respuesta.nube). Sin `base` = juego viejo.
   Api.partida = () => req('GET', '/api/partida');
-  Api.subirPartida = (datos) => req('POST', '/api/partida', { datos }, 20000);
+  Api.partidaMeta = (dispositivo) => req('GET', '/api/partida/meta?' + new URLSearchParams({ dispositivo: dispositivo || '' }).toString(), undefined, 10000);
+  Api.activarPartida = (base, dispositivo) => req('POST', '/api/partida/activar', { base, dispositivo });
+  Api.subirPartida = (datos, o) => req('POST', '/api/partida', o ? { datos, base: o.base, dispositivo: o.dispositivo, tomar: !!o.tomar } : { datos }, 20000);
   Api.gastar = (item) => req('POST', '/api/gastar', { item });
   Api.bonoVip = () => req('POST', '/api/vip/bono', {});
   Api.orden = (producto) => req('POST', '/api/orden', { producto });
