@@ -84,6 +84,7 @@
     "inicio.pl.pase": "Pass stagionale",
     "inicio.pl.estrellas": "Personale stella",
     "inicio.pl.decoracion": "Arredamento della sede",
+    "inicio.pl.flota": "Flotta e trasporti",
     "inicio.ayuda_texto": "1) Accetta un'offerta in {clientes}. 2) Scegli staff e attrezzatura. 3) Risolvi gli imprevisti in diretta. 4) Incassa, guadagna fama e compra attrezzatura migliore in {bodega}. Ogni evento dura un giorno. Se i debiti superano {m}, fallisci.",
     "inicio.nueva": "Nuova partita",
     "inicio.nueva_q": "La partita attuale verrà cancellata.",

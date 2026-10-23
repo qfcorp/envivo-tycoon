@@ -84,6 +84,7 @@
     "inicio.pl.pase": "Passe de temporada",
     "inicio.pl.estrellas": "Equipe estrela",
     "inicio.pl.decoracion": "Decoração do local",
+    "inicio.pl.flota": "Frota e transporte",
     "inicio.ayuda_texto": "1) Aceite uma oferta em {clientes}. 2) Escolha equipe e equipamentos. 3) Resolva os imprevistos ao vivo. 4) Receba, ganhe fama e compre equipamentos melhores em {bodega}. Cada evento leva um dia. Se suas dívidas passarem de {m}, você vai à falência.",
     "inicio.nueva": "Começar novo jogo",
     "inicio.nueva_q": "Seu jogo atual será apagado.",

@@ -84,6 +84,7 @@
     "inicio.pl.pase": "Sezon kartı",
     "inicio.pl.estrellas": "Yıldız personel",
     "inicio.pl.decoracion": "Mekân dekorasyonu",
+    "inicio.pl.flota": "Filo ve ulaşım",
     "inicio.ayuda_texto": "1) {clientes} sekmesinden bir teklif al. 2) Ekip ve ekipman seç. 3) Canlı yayında sorunları çöz. 4) Parayı al, ün kazan ve {bodega} sekmesinden daha iyi ekipman al. Her etkinlik bir gün sürer. Borcun {m} tutarını geçerse iflas edersin.",
     "inicio.nueva": "Yeni oyuna başla",
     "inicio.nueva_q": "Mevcut oyunun silinecek.",

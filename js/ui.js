@@ -431,7 +431,7 @@
     try { cb = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null; } catch (e) { cb = null; }
     const costBox = cb ? `<div class="costbox"><div class="ci">${I('home')}</div><div class="t">
         <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>${AY('gastos')}
-        <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}${cb.fijoExt && window.Decoracion ? ` · ${esc(window.Decoracion.t('c_decor', { m: M(cb.fijoExt) }))}` : ''}</div>
+        <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}${cb.fijoExt && window.Decoracion ? ` · ${esc(window.Decoracion.t('c_decor', { m: M(cb.fijoExt) }))}` : ''}${cb.vehiculos && window.Movilizacion ? ` · ${esc(window.Movilizacion.t('gasto', { m: M(cb.vehiculos) }))}` : ''}</div>
         ${cb.nextPlace ? `<div class="small" style="color:var(--amber)">${T('inicio.siguiente_local', { n: cb.nextAt, tienes: cb.size, lugar: esc(TL(cb.nextPlace)), m: M(cb.nextRent) })}</div>` : ''}
       </div></div>` : '';
     let story;
@@ -487,6 +487,7 @@
     cuenta: ['cloud', 'avisoc.t'], temporadas: ['calendar', 'inicio.pl.temporadas'], sede: ['home', 'inicio.pl.sede'],
     servidores: ['globe', 'inicio.pl.servidores'], decoracion: ['planta', 'inicio.pl.decoracion'], copa: ['crown', 'inicio.pl.copa'], vip: ['vip', 'inicio.pl.vip'],
     pase: ['star', 'inicio.pl.pase'], estrellas: ['sparkle', 'inicio.pl.estrellas'], historia: ['flag', 'historia.tag'],
+    flota: ['unidad_movil', 'inicio.pl.flota'],
     ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
   };
   function plFirma(html) {
@@ -1449,8 +1450,9 @@
     const calcHtml = `${intlHtml}
       <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
         ${puede ? tip : ''}
-        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div></div>
-      ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}`;
+        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div></div>
+      ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
+      ${window.Movilizacion ? window.Movilizacion.seccionPrep(ctxInicio(), c, [...prep.staff], [...prep.equip]) : ''}`;
     const tablaHtml = `${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}
           ${rg ? `<tr><td>${T('prep.imprevistos_esperados', { n: rg.imprevistos != null ? N(rg.imprevistos) : '?' })}</td><td class="down">${rg.esperado - q.q}</td></tr>
             <tr><td>${T('prep.peor_mejor')}</td><td>${rg.peor}–${rg.mejor}</td></tr>` : ''}`;
@@ -1662,7 +1664,7 @@
         const b = gastoDia !== null && G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
         if (!b || b.total !== gastoDia) return '';
         const pers = (b.staff || 0) + (b.payroll || 0);
-        return [T('inicio.local', { m: M(b.rent) }), pers ? T('inicio.c_personal', { m: M(pers) }) : '', b.equip ? T('inicio.c_seguro', { m: M(b.equip) }) : '', b.fijoExt && window.Decoracion ? window.Decoracion.t('c_decor', { m: M(b.fijoExt) }) : ''].filter(Boolean).join(' · ');
+        return [T('inicio.local', { m: M(b.rent) }), pers ? T('inicio.c_personal', { m: M(pers) }) : '', b.equip ? T('inicio.c_seguro', { m: M(b.equip) }) : '', b.fijoExt && window.Decoracion ? window.Decoracion.t('c_decor', { m: M(b.fijoExt) }) : '', b.vehiculos && window.Movilizacion ? window.Movilizacion.t('gasto', { m: M(b.vehiculos) }) : ''].filter(Boolean).join(' · ');
       } catch (e) { return ''; }
     })();
     const neto = r.net - (gastoDia || 0);
@@ -1694,6 +1696,7 @@
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
+        ${window.Movilizacion ? window.Movilizacion.filaResultado(r, M) : ''}
         ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
@@ -2069,7 +2072,7 @@
         mus.go(esFuneral(ty) ? 'funeral' : temaDeEvento(ty));
         if (ty === 'final' || ty === 'ligapro') setTimeout(() => mus.stinger(), 900);
         prep = null;
-        showIncident();
+        if (window.Movilizacion && window.Movilizacion.animar) window.Movilizacion.animar(ctxInicio(), () => showIncident()); else showIncident();
         break;
       }
       case 'choose': choose(Number(el.dataset.i)); break;

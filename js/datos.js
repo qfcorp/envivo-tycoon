@@ -257,6 +257,7 @@
     'log.duelo_perdido': '⚔️ MegaVisión ganó el duelo: su calidad {rq} contra tu {q} (-{n} de fama extra). {frase}',
     'log.capitulo': '🏅 ¡{titulo} completado! {texto}',
     'log.intl_oferta': '🌎 ¡Oferta internacional! {cliente} ({pais}) te ofrece {monto}. Pide personal con experiencia internacional.',
+    'log.transporte': '🚐 Movilización a {cliente} (ida y vuelta, {km} km): {monto}.',
     'log.intl_viaje': '✈️ Pagaste {monto} en pasajes, viáticos y permisos para {pais}.',
     'log.intl_ok': '🌎 {cliente} quedó contento. Tu gente ya tiene experiencia internacional.',
     'log.intl_fallo': '🌎 El trabajo para {cliente} salió mal y se supo afuera: fama -{n} extra.',
@@ -611,6 +612,9 @@
     'item.rain_cobertor_broadcast.nombre': "Cobertor broadcast para cámara y lente box", 'item.rain_cobertor_broadcast.desc': "Cubre cámara, lente largo y operador en aguaceros de estadio.",
     'item.case_maletas_pelikano.nombre': "Juego de maletas rígidas Pelikano", 'item.case_maletas_pelikano.desc': "Los equipos se gastan menos en el transporte y en los viajes.",
     'item.veh_camioneta_carga.nombre': "Camioneta de carga usada", 'item.veh_camioneta_carga.desc': "Llegas a tiempo con todo el equipo; sin ella pagas fletes.",
+    'item.veh_sedan_usado.nombre': "Sedán usado (2009)", 'item.veh_sedan_usado.desc': "Para 4 personas y equipo chico en la cajuela. Barato de mantener, pero no lleva bultos grandes.",
+    'item.veh_van_pasajeros_usada.nombre': "Van de 12 pasajeros (usada)", 'item.veh_van_pasajeros_usada.desc': "Lleva a todo el equipo junto y algo de carga atrás. Ideal cuando el personal crece.",
+    'item.veh_furgon_carga.nombre': "Furgón de carga (nuevo)", 'item.veh_furgon_carga.desc': "Caja cerrada para 40 bultos: grúas, rieles y consolas van sin pagar fletes.",
     'item.veh_sprinto_ob_usada.nombre': "Furgoneta Sprinto de producción (usada)", 'item.veh_sprinto_ob_usada.desc': "Una pequeña sala de control con ruedas, lista para armarla.",
     'item.veh_trailer_ob_hd12.nombre': "Tráiler OB HD 12 cámaras (usado)", 'item.veh_trailer_ob_hd12.desc': "Sala de control de 12 cámaras: es tu canal de televisión sobre ruedas.",
     'item.veh_trailer_ob_uhd20.nombre': "Tráiler OB UHD 20 cámaras 4K", 'item.veh_trailer_ob_uhd20.desc': "La aspiración final: 20 cámaras 4K HDR, como la de un Mundial.",
@@ -847,7 +851,11 @@
     // case
     case_maletas_pelikano: { icon: 'box', cat: 'case', subtipo: 'maletas', q: 2, price: 570, minRep: 4, rareza: 'comun', durabilidad: 5, eventos: ['barrial','concierto','ligapro','internacional_unilateral'] },
     // vehicle
-    veh_camioneta_carga: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'camioneta', q: 2, price: 7650, minRep: 4, rareza: 'comun', durabilidad: 4, eventos: ['barrial','graduacion','concierto'] },
+    // mant: mantenimiento, seguro y matrícula por día (reemplaza el 0,2% de seguro de equipos). Capacidad y combustible: FLOTA (abajo)
+    veh_sedan_usado: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'sedan', q: 1, price: 2400, minRep: 2, rareza: 'comun', durabilidad: 3, mant: 2, eventos: ['misa','funeral','boda','prensa','irl'] },
+    veh_camioneta_carga: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'camioneta', q: 2, price: 5300, minRep: 4, rareza: 'comun', durabilidad: 4, mant: 4, eventos: ['barrial','graduacion','concierto'] },
+    veh_van_pasajeros_usada: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'van_pasajeros', q: 2, price: 7300, minRep: 12, rareza: 'comun', durabilidad: 4, mant: 5, eventos: ['lanzamiento','boxeo','concierto','ligapro'] },
+    veh_furgon_carga: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'furgon', q: 3, price: 9400, minRep: 20, rareza: 'profesional', durabilidad: 5, mant: 6, eventos: ['concierto','ligapro','final','lanzamiento_autos'] },
     veh_sprinto_ob_usada: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'ob_chica', q: 3, price: 7950, minRep: 12, rareza: 'profesional', durabilidad: 4, eventos: ['barrial','ligapro','concierto'] },
     veh_trailer_ob_hd12: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'ob_grande', q: 5, price: 61000, minRep: 45, rareza: 'elite', durabilidad: 5, requiere: ['generador'], eventos: ['ligapro','final','internacional_host'] },
     veh_trailer_ob_uhd20: { icon: 'unidad_movil', cat: 'vehicle', subtipo: 'ob_uhd', q: 6, price: 390000, minRep: 85, rareza: 'elite', durabilidad: 5, requiere: ['generador'], eventos: ['final','internacional_host'] },
@@ -869,6 +877,20 @@
     { key: 'rain', icon: 'raincover' }, { key: 'case', icon: 'box' }, { key: 'vehicle', icon: 'unidad_movil' },
     { key: 'service', icon: 'grua' },
   ];
+
+  /* ---------- Flota: lo que lleva cada vehículo (por subtipo) ----------
+     asientos: personas contando al que maneja · carga: bultos · maxBulto: el bulto más grande que entra (99 = cualquiera)
+     km: combustible por km recorrido (USD; gasolina o diésel de Ecuador). Los vehículos sin "mant" en el catálogo (las
+     unidades móviles OB) siguen pagando el seguro de equipos (0,2% de su valor por día). */
+  const FLOTA = {
+    sedan: { asientos: 5, carga: 5, maxBulto: 2, km: 0.06 },
+    camioneta: { asientos: 5, carga: 14, maxBulto: 99, km: 0.10 },
+    van_pasajeros: { asientos: 12, carga: 12, maxBulto: 3, km: 0.12 },
+    furgon: { asientos: 3, carga: 40, maxBulto: 99, km: 0.13 },
+    ob_chica: { asientos: 4, carga: 24, maxBulto: 99, km: 0.14 },
+    ob_grande: { asientos: 3, carga: 60, maxBulto: 99, km: 0.35 },
+    ob_uhd: { asientos: 3, carga: 80, maxBulto: 99, km: 0.40 },
+  };
 
   const CONSUMIBLES = {
     cable: { icon: '🔌', price: 40 },
@@ -1038,7 +1060,7 @@
   };
 
   const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE,
-    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS };
+    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA };
   if (typeof module !== 'undefined' && module.exports) module.exports = Datos;
   else root.Datos = Datos;
 })(typeof window !== 'undefined' ? window : globalThis);

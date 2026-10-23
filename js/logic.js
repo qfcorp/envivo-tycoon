@@ -44,6 +44,14 @@
      persona: { id, name, role, skill, tier, wage, morale, events, eventos_nacionales, eventos_internacionales, owner? }
      Game.searchStaff(s, rol?)  publica una vacante (si das un rol, llegan 2 candidatos de ese rol)
 
+   Movilización y flota (ver la sección MOVILIZACIÓN)
+     Game.planTransporte(s, contract, staffIds, equipIds, eleccion?) → { km, personas, bultos, vehiculos, resto, opciones,
+       eleccion, app, combustible, total, incluido, soloFlota }   (eleccion: 'economico' | 'xl' | 'carga'; si no, contract.movil)
+     contract.movil = clave elegida (la guarda la pantalla); startEvent guarda ev.transporte y finishEvent lo cobra:
+     result.transporte = { total, app, combustible, eleccion, km, vehiculos, autos, fletes, ... } (y result.net ya lo descuenta)
+     Game.flota(s) → vehículos con capacidad (asientos, carga, mant por día, estado, enTaller)
+     dailyCostBreakdown(s).vehiculos = mantenimiento y seguro diario de la flota
+
    Contratos internacionales (c.internacional === true)
      { pais, mult, travelDays, travelCost, repRisk, kind, requisitos: [{ key, texto, ok, obligatorio }] }
      Si falta un requisito obligatorio (personal con experiencia internacional), startEvent no deja salir.
@@ -155,6 +163,43 @@
       winRep: 3, loseRep: 4,
     },
     // Contratos internacionales: llegan cada cierto tiempo desde el capítulo 4
+    // Movilización: cómo llegan el personal y los equipos al evento (ver planTransporte). Precios en USD de Ecuador:
+    // carreras por aplicación ($3-12 un auto, $8-20 una XL) y flete con chofer ($25-60 por viaje). Ida y vuelta = 2 viajes.
+    // No usa números al azar: la distancia sale del cliente (cada cliente queda siempre a la misma distancia).
+    transporte: {
+      km: { misa: [3, 8], funeral: [3, 8], boda: [4, 14], prensa: [3, 9], irl: [3, 10], barrial: [4, 12], graduacion: [4, 11],
+        lucha_libre: [5, 12], lanzamiento: [5, 13], boxeo: [5, 14], lanzamiento_autos: [6, 18], concierto: [6, 20], ligapro: [6, 18],
+        final: [8, 22], def: [4, 12] },
+      kmTutorial: 3,             // los primeros eventos quedan cerca del garaje (un taxi de ~$5 ida y vuelta)
+      viajes: 2,
+      // Opciones de la aplicación (por auto y por viaje: base + km × precio, mínimo min). asientos sin contar al chofer.
+      // max: autos como mucho. carga: un flete (camioneta con chofer) y autos económicos para el resto de la gente.
+      app: {
+        economico: { asientos: 4, carga: 5, maxBulto: 2, base: 1.8, km: 0.42, min: 2.5, max: 4, eta: 3 },
+        xl: { asientos: 6, carga: 10, maxBulto: 3, base: 3.5, km: 0.7, min: 5, max: 4, eta: 6 },
+        carga: { asientos: 2, carga: 30, maxBulto: 99, base: 20, km: 1.6, min: 25, max: 4, eta: 14 },
+      },
+      // Bultos (cajas, maletas, trípodes) de cada equipo: por subtipo y, si no está, por categoría
+      bultosCat: { cam: 1, lens: 0.5, support: 1, switcher: 1, replay: 2, graphics: 1, monitor: 1, audio: 1, mics: 0.5, intercom: 1,
+        encoder: 0.5, internet: 0.5, wireless: 0.5, cable: 1, power: 2, rain: 0.5, case: 2, vehicle: 0, service: 0 },
+      bultosSub: { eng_hombro: 2, ptz_broadcast: 2, sistema: 3, sistema_4k: 3, super_lenta: 3, ultra_movimiento: 2, dron_cine: 2, grua: 4,
+        lente_eng: 1, lente_box: 3, adaptador_lente_box: 2, soporte_pesado: 3, steadicam: 2, jib: 4, dolly: 4,
+        sdi: 2, sdi_me: 3, grande_me: 6, servidor_medio: 2, servidor_broadcast: 3, cg_3d: 2, cg_ar: 2,
+        digital: 2, digital_superficie: 3, digital_grande: 4, broadcast: 4, inalambrico_digital: 2, bonding_broadcast: 1,
+        cable_fibra_smpte: 2, generador_portatil: 3, generador_diesel: 8, satelite: 3, maletas: 2 },
+      // Las cotizaciones incluyen la movilización: los clientes pagan un 3% más (así la movilización queda en proporción a lo
+      // que cobras: ~2-5% del pago). Lo que ahorras con tu flota es ganancia.
+      cotiza: 0.03,
+      // Nunca un evento sale en pérdida solo por la movilización: se cobra como mucho el 10% del pago acordado y nunca más
+      // de lo que te deja el evento (pago - sueldos - viaje); lo demás lo cubre el cliente como "movilización extra".
+      topePago: 0.1,
+      // Vehículos rotulados con el nombre de la productora: publicidad en la calle, los clientes pagan un poco más
+      // (por vehículo de la flota con mantenimiento propio; el sedán la mitad). Tope: +3%.
+      publicidad: { porVehiculo: 0.01, sedan: 0.005, max: 0.03 },
+      taller: 20,                // un vehículo con menos estado que esto está en el taller (no sale)
+      desgaste: { base: 1, porKm: 1 / 15 }, // estado que pierde un vehículo por evento (ida y vuelta)
+      repairFactor: 0.12,        // reparar un vehículo (mecánico) cuesta menos que un equipo de video
+    },
     chapter4Earn: 6000,          // capítulo 4: ganancia neta de eventos durante el capítulo
     intl: { fromChapter: 3, first: [10, 20], every: [18, 30], daysLeft: 5, latePayDays: 10 },
   };
@@ -207,6 +252,8 @@
     cadaExt(s, 'limites', (h) => { const l = h(s) || {}; const v = Number(l[campo]); if (isFinite(v)) n += Math.round(v); });
     return n;
   }
+  // Gastos fijos en dólares de las extensiones (decoración: café, agua, luz). No los toca multGastos.
+  function extSuma(s, nombre) { let n = 0; cadaExt(s, nombre, (h) => { const v = Number(h(s)); if (isFinite(v) && v > 0) n += v; }); return Math.round(n); }
   function maxStaff(s) { return BALANCE.maxStaff + extLimite(s, 'staff'); }
   function maxEquip(s) { return BALANCE.maxEquip + extLimite(s, 'equip'); }
   function migrarExt(s) { cadaExt(s, 'migrar', (h) => h(s)); return s; }
@@ -401,7 +448,11 @@
   function takeChapterDone(s) { const a = Array.isArray(s.capCompletados) ? s.capCompletados : []; s.capCompletados = []; return a; }
   function staffName(s) { return pick(s, FIRST_NAMES) + ' ' + pick(s, LAST_NAMES); }
   function itemOf(e) { return CATALOG[e.type] || CATALOG.cam_basic; }
-  function repairCost(e) { const it = itemOf(e); return it.alquiler ? 0 : Math.round(it.price * BALANCE.repairFactor * (100 - e.condition) / 100); }
+  function repairCost(e) {
+    const it = itemOf(e);
+    const f = typeof it.mant === 'number' ? BALANCE.transporte.repairFactor : BALANCE.repairFactor;
+    return it.alquiler ? 0 : Math.round(it.price * f * (100 - e.condition) / 100);
+  }
   function sellPrice(e) {
     const it = itemOf(e);
     if (it.alquiler) return Math.round(it.price * BALANCE.rentalRefund);
@@ -411,12 +462,22 @@
 
   /* Gastos fijos de cada día: local, personal (aunque no haya evento) y equipos.
      Cuanto más grande la productora, más cuesta mantenerla. Los alquileres por evento no cuentan. */
+  // Vehículos de la flota con mantenimiento propio (mant por día): no pagan el 0,2% de seguro de equipos
+  const conMant = (e) => typeof itemOf(e).mant === 'number';
+  const equipValueOf = (s) => owned(s).filter((e) => !conMant(e)).reduce((a, e) => a + itemOf(e).price, 0);
+  function vehiclesDaily(s) { return owned(s).filter(conMant).reduce((a, e) => a + itemOf(e).mant, 0); }
+  /* Publicidad de la flota rotulada: cuánto más pagan los clientes (0 a 0,06) */
+  function publicidadFlota(s) {
+    const P = BALANCE.transporte.publicidad;
+    if (!s || !Array.isArray(s.equip)) return 0;
+    const v = owned(s).filter(conMant).reduce((a, e) => a + (itemOf(e).subtipo === 'sedan' ? P.sedan : P.porVehiculo), 0);
+    return Math.min(P.max, Math.round(v * 1000) / 1000);
+  }
   function dailyCost(s) {
     const d = BALANCE.daily;
     const hired = s.staff.filter((p) => !p.owner);
     const payroll = hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare;
-    const equipValue = owned(s).reduce((a, e) => a + itemOf(e).price, 0);
-    return Math.round((rentFor(s) + d.perStaff * hired.length + equipValue * d.equipShare + payroll) * extMult(s, 'multGastos'));
+    return Math.round((rentFor(s) + d.perStaff * hired.length + equipValueOf(s) * d.equipShare + vehiclesDaily(s) + payroll) * extMult(s, 'multGastos')) + extSuma(s, 'gastoFijo');
   }
   function rentTier(s) {
     const size = s.staff.length + owned(s).length;
@@ -442,11 +503,13 @@
       nextPlace: next ? tx(next[2]) : null, nextAt: next ? next[0] : null, nextRent: next ? next[1] : null,
       staff: d.perStaff * hired.length,
       payroll: Math.round(hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare),
-      equip: Math.round(owned(s).reduce((a, e) => a + itemOf(e).price, 0) * d.equipShare),
+      equip: Math.round(equipValueOf(s) * d.equipShare),
+      vehiculos: Math.round(vehiclesDaily(s)), // mantenimiento, seguro y matrícula de la flota
     };
     out.total = dailyCost(s);
+    out.fijoExt = extSuma(s, 'gastoFijo');
     const fx = extMult(s, 'multGastos');
-    if (fx !== 1) out.ext = { mult: r2(fx), monto: out.total - Math.round(out.total / fx) }; // lo que suman o ahorran las extensiones
+    if (fx !== 1) { const base = out.total - out.fijoExt; out.ext = { mult: r2(fx), monto: base - Math.round(base / fx) }; } // lo que suman o ahorran las extensiones
     return out;
   }
   /* Sueldo de una persona en un evento (cobra más en eventos grandes) */
@@ -466,7 +529,8 @@
     const P = BALANCE.pay;
     const rep = s.rep || 0;
     const f = rep >= P.repFull ? 1 + (rep - P.repFull) / P.repBonus : P.repMin + (1 - P.repMin) * rep / P.repFull;
-    return f * (1 + P.perDiff * Math.max(0, (diff || 1) - 1)) * (badStreak(s) ? BALANCE.trust.payMul : 1);
+    return f * (1 + P.perDiff * Math.max(0, (diff || 1) - 1)) * (badStreak(s) ? BALANCE.trust.payMul : 1)
+      * (1 + BALANCE.transporte.cotiza + publicidadFlota(s));
   }
   /* Tus últimos eventos salieron casi todos con 1 estrella: los clientes desconfían */
   function badStreak(s) {
@@ -1458,6 +1522,167 @@
   }
 
   /* =========================================================
+     MOVILIZACIÓN: cómo llegan el personal y los equipos al evento
+     - Tu flota (todos tus vehículos con capacidad: sedán, camioneta, van, furgón, unidades OB) se usa sola: se elige la
+       combinación más barata (combustible) y cada vehículo necesita a alguien del personal que maneje.
+     - Lo que no entra va por la aplicación de transporte: Económico (autos), XL o Carga (flete con chofer + autos).
+       El jugador puede elegir (contrato.movil = 'economico' | 'xl' | 'carga'); si no, va la opción válida más barata.
+     - Se calcula al salir al aire (startEvent → ev.transporte) y se cobra al terminar (finishEvent → result.transporte).
+     - Contratos internacionales: el transporte va incluido en los gastos de viaje (no se cobra dos veces).
+     - Los intentos en línea (s.intento) no tienen movilización: el servidor repite el evento sin ella.
+     Nunca usa números al azar (no cambia los imprevistos ni la calidad).
+     ========================================================= */
+  const TRP = () => BALANCE.transporte;
+  // Número fijo de 0 a 1 a partir de un texto (así cada cliente queda siempre a la misma distancia)
+  function hashTxt(t) {
+    let h = 2166136261;
+    const str = String(t || '');
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15;
+    return (h >>> 0) / 4294967296;
+  }
+  /* Distancia (km) del garaje al lugar del evento */
+  function distanciaKm(s, c) {
+    if (!c) return 0;
+    if (typeof c.km === 'number' && isFinite(c.km) && c.km > 0) return c.km;
+    const T = TRP();
+    const r = T.km[c.type] || T.km.def;
+    let km = Math.round((r[0] + hashTxt(c.type + '|' + c.client) * (r[1] - r[0])) * 2) / 2;
+    if (s && s.stats && inTutorial(s)) km = Math.min(km, T.kmTutorial);
+    return Math.max(1, km);
+  }
+  /* Bultos que ocupa un equipo (los alquileres los lleva la empresa que alquila) */
+  function bultosDe(it) {
+    if (!it || it.alquiler) return 0;
+    const T = TRP();
+    if (Object.prototype.hasOwnProperty.call(T.bultosSub, it.subtipo)) return T.bultosSub[it.subtipo];
+    if (Object.prototype.hasOwnProperty.call(T.bultosCat, it.cat)) return T.bultosCat[it.cat];
+    return 1;
+  }
+  /* Capacidad de un vehículo (o null si no es de la flota) */
+  function flotaDe(it) {
+    if (!it || it.cat !== 'vehicle' || it.alquiler) return null;
+    const f = (D.FLOTA || {})[it.subtipo];
+    return f ? Object.assign({}, f, it.flota || {}) : null;
+  }
+  const esVehiculoFlota = (e) => !!(e && CATALOG[e.type] && flotaDe(itemOf(e)));
+  /* Tu flota: [{ id, type, nombre, asientos, carga, maxBulto, km (combustible por km), mant (por día), condition,
+     enTaller, reparar (costo para sacarlo del taller) }] */
+  function flota(s) {
+    return (s.equip || []).filter(esVehiculoFlota).map((e) => {
+      const it = itemOf(e), f = flotaDe(it);
+      return { id: e.id, type: e.type, nombre: equipName(e), asientos: f.asientos, carga: f.carga, maxBulto: f.maxBulto, km: f.km,
+        mant: typeof it.mant === 'number' ? it.mant : Math.round(it.price * BALANCE.daily.equipShare), condition: e.condition,
+        enTaller: e.condition < TRP().taller, reparar: repairCost(e) };
+    });
+  }
+  /* Precio de un auto de la aplicación en un viaje */
+  function tarifaApp(op, km) { const t = TRP().app[op]; return Math.round(Math.max(t.min, t.base + t.km * km) * 10) / 10; }
+  /* Opciones de la aplicación para llevar P personas y U bultos (el más grande: big) a km kilómetros */
+  function opcionesApp(P, U, big, km, seed) {
+    const T = TRP(), A = T.app, V = T.viajes;
+    if (P <= 0 && U <= 0) return [];
+    const out = [];
+    const eta = (k) => A[k].eta + Math.floor(hashTxt(seed + '|' + k) * 6);
+    const mk = (key, autos, fletes, ok, motivo) => {
+      const porViaje = Math.round((autos * tarifaApp(key === 'carga' ? 'economico' : key, km) + fletes * tarifaApp('carga', km)) * 10) / 10;
+      const asientos = key === 'carga' ? fletes * A.carga.asientos + autos * A.economico.asientos : autos * A[key].asientos;
+      const carga = key === 'carga' ? fletes * A.carga.carga : autos * A[key].carga;
+      out.push({ key, autos, fletes, asientos, carga, porViaje, precio: Math.round(porViaje * V), eta: eta(key), ok, motivo: ok ? null : motivo });
+    };
+    // Autos: los asientos que quedan libres también llevan bultos (una maleta en el asiento de atrás)
+    const autos = (o) => Math.max(1, Math.ceil(P / o.asientos), Math.ceil((P + U) / (o.asientos + o.carga)));
+    const nE = autos(A.economico);
+    mk('economico', nE, 0, big <= A.economico.maxBulto && nE <= A.economico.max, big > A.economico.maxBulto ? 'grande' : 'muchos');
+    const nX = autos(A.xl);
+    mk('xl', nX, 0, big <= A.xl.maxBulto && nX <= A.xl.max, big > A.xl.maxBulto ? 'grande' : 'muchos');
+    if (U > 0) {
+      const f = Math.max(1, Math.ceil(U / A.carga.carga));
+      const resto = Math.max(0, P - f * A.carga.asientos);
+      mk('carga', Math.ceil(resto / A.economico.asientos), f, true, null);
+    }
+    return out;
+  }
+  /* Plan de movilización para ese personal y esos equipos.
+     { km, personas, bultos, grande, vehiculos: [{ id, type, nombre, asientos, carga, combustible }], resto: { personas, bultos, grande },
+       opciones: [{ key, autos, fletes, asientos, carga, porViaje, precio (ida y vuelta), eta (min), ok, motivo }],
+       eleccion (clave de la opción que va) , app (lo de la aplicación), combustible, total, incluido ('viaje' si va en el viaje
+       internacional), soloFlota (todo va en tus vehículos) } */
+  function planTransporte(s, c, staffIds, equipIds, eleccion) {
+    const T = TRP();
+    const staff = staffOf(s, staffIds);
+    const equip = equipOf(s, equipIds);
+    const km = distanciaKm(s, c);
+    const bultosArr = equip.map((e) => bultosDe(itemOf(e))).filter((b) => b > 0);
+    const personas = staff.length;
+    const bultos = Math.round(bultosArr.reduce((a, b) => a + b, 0) * 10) / 10;
+    const grande = bultosArr.reduce((m, b) => Math.max(m, b), 0);
+    const out = { km, personas, bultos, grande, vehiculos: [], resto: { personas, bultos, grande }, opciones: [], eleccion: null,
+      app: 0, combustible: 0, total: 0, incluido: null, soloFlota: false, tutorial: !!(s && s.stats && inTutorial(s)) };
+    if (!c) return out;
+    if (c.internacional && c.travelCost) { out.incluido = 'viaje'; out.resto = { personas: 0, bultos: 0, grande: 0 }; return out; }
+    // Combinación de tu flota más barata (los que vas a llevar como equipo, por ejemplo la unidad móvil, van siempre)
+    const cand = flota(s).filter((v) => !v.enTaller).sort((a, b) => (b.carga + b.asientos) - (a.carga + a.asientos)).slice(0, 8);
+    const forced = cand.filter((v) => (equipIds || []).includes(v.id));
+    const libres = cand.filter((v) => !forced.includes(v));
+    let mejor = null;
+    const prueba = (sub) => {
+      if (sub.length > personas) return; // cada vehículo necesita quien lo maneje
+      const asientos = sub.reduce((a, v) => a + v.asientos, 0);
+      // Los asientos que sobran también llevan bultos
+      const carga = sub.reduce((a, v) => a + v.carga, 0) + Math.max(0, asientos - personas);
+      const maxB = sub.reduce((m, v) => Math.max(m, v.maxBulto), 0);
+      // Lo que no entra en la flota: los bultos más grandes que cualquier vehículo y lo que sobra de carga
+      // (la flota se llena primero con los bultos grandes; los chicos son los que van en la aplicación)
+      let cap = carga;
+      const app = bultosArr.filter((b) => b > maxB);
+      bultosArr.filter((b) => b <= maxB).sort((a, b) => b - a).forEach((b) => { if (b <= cap + 1e-9) cap -= b; else app.push(b); });
+      const U = Math.round(app.reduce((a, b) => a + b, 0) * 10) / 10;
+      const P = Math.max(0, personas - asientos);
+      const big = app.reduce((m, b) => Math.max(m, b), 0);
+      const comb = Math.round(sub.reduce((a, v) => a + v.km * km * T.viajes, 0) * 100) / 100;
+      const ops = opcionesApp(P, U, big, km, c.client);
+      const val = ops.filter((o) => o.ok);
+      const barata = val.length ? val.reduce((a, o) => (o.precio < a.precio ? o : a)) : null;
+      if (ops.length && !barata) return;
+      const costo = comb + (barata ? barata.precio : 0);
+      if (!mejor || costo < mejor.costo - 0.001 || (Math.abs(costo - mejor.costo) <= 0.001 && sub.length < mejor.sub.length)) {
+        mejor = { sub, costo, comb, ops, barata, resto: { personas: P, bultos: U, grande: big } };
+      }
+    };
+    for (let m = 0; m < (1 << libres.length); m++) prueba(forced.concat(libres.filter((v, i) => m & (1 << i))));
+    if (!mejor) { // ni con toda la flota (muchísima gente): todo por la aplicación
+      const ops = opcionesApp(personas, bultos, grande, km, c.client);
+      mejor = { sub: [], comb: 0, ops, barata: ops.find((o) => o.ok) || ops[ops.length - 1] || null, resto: { personas, bultos, grande } };
+    }
+    out.vehiculos = mejor.sub.map((v) => ({ id: v.id, type: v.type, nombre: v.nombre, asientos: v.asientos, carga: v.carga,
+      combustible: Math.round(v.km * km * T.viajes * 100) / 100 }));
+    out.resto = mejor.resto;
+    out.opciones = mejor.ops;
+    out.combustible = Math.round(mejor.comb);
+    const elegida = mejor.ops.find((o) => o.ok && o.key === (eleccion !== undefined ? eleccion : c.movil)) || mejor.barata;
+    out.eleccion = elegida ? elegida.key : null;
+    out.app = elegida ? elegida.precio : 0;
+    out.total = out.app + out.combustible;
+    out.tope = topeTransporte(c);
+    out.cobro = Math.min(out.total, out.tope); // lo que se cobra (si el evento deja ganancia)
+    out.pctPago = c.pay > 0 ? Math.round(out.cobro / c.pay * 1000) / 10 : 0;
+    out.soloFlota = !mejor.ops.length && out.vehiculos.length > 0;
+    return out;
+  }
+  /* Lo más que se cobra de movilización en un evento (parte del pago acordado) */
+  function topeTransporte(c) { return Math.max(0, Math.round((c && c.pay || 0) * TRP().topePago)); }
+  /* Desgaste de un vehículo por evento (ida y vuelta) */
+  function desgasteVehiculo(km) { const W = TRP().desgaste; return Math.max(1, Math.round(W.base + km * TRP().viajes * W.porKm)); }
+  /* Lo que se guarda en el resultado del evento (chico: el resultado se guarda en la partida) */
+  function resumenTransporte(tp, total, cubre) {
+    const op = (tp.opciones || []).find((o) => o.key === tp.eleccion) || null;
+    return { total, costo: tp.total || 0, cubreCliente: cubre || 0, app: tp.app || 0, combustible: tp.combustible || 0, eleccion: tp.eleccion || null, km: tp.km, personas: tp.personas, bultos: tp.bultos,
+      vehiculos: (tp.vehiculos || []).map((v) => ({ id: v.id, type: v.type, nombre: v.nombre })), autos: op ? op.autos : 0, fletes: op ? op.fletes : 0,
+      incluido: tp.incluido || null, soloFlota: !!tp.soloFlota };
+  }
+
+  /* =========================================================
      IMPREVISTOS
      Cada imprevisto: rol (de quién depende), cuándo puede pasar, peso y opciones.
      Los textos están en datos.js: inc.<clave>.t (y variantes), inc.<clave>.o<n> (opciones), inc.<clave>.r.<x> (resultados).
@@ -1944,6 +2169,8 @@
       crewPlan: crew,
       cameraPlan: base.cameraPlan,
     };
+    // Movilización (se cobra al terminar). Los intentos en línea no la tienen: el servidor los repite sin ella.
+    if (!esIntento(s)) ev.transporte = planTransporte(s, contract, ev.staffIds, ev.equipIds);
     if (contract.internacional && contract.travelCost) {
       s.money -= contract.travelCost;
       ev.travelCost = contract.travelCost;
@@ -2102,7 +2329,12 @@
       laterDays = LP.days;
     }
     if (payLater) { s.pending = s.pending || []; s.pending.push({ day: s.day + laterDays, amount: payLater, client: c.client }); }
-    s.money += payNow - ev.wages;
+    // Movilización: aplicación de transporte + combustible de tu flota (ida y vuelta)
+    const tp = ev.transporte && !esIntento(s) ? ev.transporte : null;
+    const tpTotal = tp ? Math.max(0, Math.round(tp.total || 0)) : 0;
+    const transporte = Math.min(tpTotal, topeTransporte(c), Math.max(0, pay - ev.wages - (ev.travelCost || 0)));
+    const cubreCliente = tpTotal - transporte;
+    s.money += payNow - ev.wages - transporte;
     s.rep = clamp(s.rep + repDelta, 0, 100);
     s.lastWorkDay = s.day + 1; // el evento ocupa el día
     // Desgaste de equipos (más en eventos grandes y en equipos frágiles), experiencia y moral del personal
@@ -2117,6 +2349,12 @@
     // Los alquileres por evento se devuelven
     const rented = view.equip.filter((e) => itemOf(e).alquiler);
     if (rented.length) s.equip = s.equip.filter((e) => !rented.includes(e));
+    // Los vehículos de la flota que fueron (y no se llevaron como equipo) también se gastan, según la distancia
+    if (tp) (tp.vehiculos || []).forEach((v) => {
+      if (view.equip.some((e) => e.id === v.id)) return;
+      const e = s.equip.find((x) => x.id === v.id);
+      if (e) e.condition = clamp(e.condition - desgasteVehiculo(tp.km), 1, 100);
+    });
     const ups = [];
     view.staff.forEach((p) => {
       p.events++;
@@ -2145,11 +2383,14 @@
     s.chapterStats = s.chapterStats || { good: {}, duels: 0 };
     if (stars >= 4) s.chapterStats.good[c.type] = (s.chapterStats.good[c.type] || 0) + 1;
     if (duel === 'won') s.chapterStats.duels++;
-    s.chapterStats.earned = (s.chapterStats.earned || 0) + pay - ev.wages - (ev.travelCost || 0);
+    s.chapterStats.earned = (s.chapterStats.earned || 0) + pay - ev.wages - (ev.travelCost || 0) - transporte;
     const title = tx('res.titulo', { icon: t.icon, evento: t.name, cliente: c.client });
     const result = {
       title, type: c.type,
-      quality, stars, pay, wages: ev.wages, net: pay - ev.wages - (ev.travelCost || 0), repDelta, ups,
+      quality, stars, pay, wages: ev.wages, net: pay - ev.wages - (ev.travelCost || 0) - transporte, repDelta, ups,
+      // Movilización: { total, app, combustible, eleccion ('economico' | 'xl' | 'carga' | null), km, personas, bultos,
+      //   vehiculos: [{ id, type, nombre }], autos, fletes, incluido ('viaje' en un internacional), soloFlota } o null
+      transporte: tp ? resumenTransporte(tp, transporte, cubreCliente) : null,
       rival: !!c.rival, duel, // duel: 'won' | 'lost' | null
       rivalQuality, // calidad de MegaVisión en un contrato disputado (o null)
       payNow, payLater, payLaterDays: laterDays, // cobro en dos partes
@@ -2162,6 +2403,7 @@
     log(s, 'log.resultado', { estrellas: '⭐'.repeat(stars), evento: { k: 'ev.' + c.type }, cliente: c.client, monto: money(payNow),
       despues: payLater ? { k: 'log.resultado_despues', p: { monto: money(payLater), n: laterDays } } : '', sueldos: money(ev.wages), fama: (repDelta >= 0 ? '+' : '') + repDelta });
     if (payLater) log(s, 'log.pago_mitad', { cliente: c.client, n: laterDays });
+    if (transporte > 0) log(s, 'log.transporte', { cliente: c.client, km: tp.km, monto: money(transporte) });
     ups.forEach((u) => log(s, 'log.subio', { texto: { k: u.k, p: u.p } }));
     if (intlFail) log(s, 'log.intl_fallo', { cliente: c.client, n: c.repRisk || 10 });
     else if (c.internacional) log(s, 'log.intl_ok', { cliente: c.client, pais: paisP(c) });
@@ -2372,8 +2614,10 @@
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
     // Extensiones
-    registrarExtension, extensiones, esIntento, extActivas, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
+    registrarExtension, extensiones, esIntento, extActivas, extSuma, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
     registrarImprevisto, incAyuda, itemOf,
+    // Movilización y flota
+    planTransporte, distanciaKm, bultosDe, flota, flotaDe, esVehiculoFlota, tarifaApp, desgasteVehiculo, vehiclesDaily, publicidadFlota, topeTransporte,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.Game = API;

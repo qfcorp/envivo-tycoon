@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v11';
+const VERSION = 'envivo-v12';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -19,6 +19,7 @@ const SHELL = [
   './js/ui.js',
   './js/art.js',
   './js/plan_evento.js', // plan de personal y cámaras (opcional)
+  './js/movilizacion.js', // movilización y flota (taxi, vehículos, escena al salir al aire)
   './js/ayuda.js',      // botones "?" con explicaciones cortas
   './js/sound.js',      // opcional: si no existe, no rompe la instalación
   './js/musica.js',     // música de fondo (opcional)
