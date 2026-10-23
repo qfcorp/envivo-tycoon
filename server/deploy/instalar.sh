@@ -192,6 +192,8 @@ $TAREA
 15 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
 */10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/copas.php >> /var/log/envivo-copas.log 2>&1
 20 0 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/salud_servidores.php >> /var/log/envivo-servidores.log 2>&1
+40 0 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/analitica.php >> /var/log/envivo-tareas.log 2>&1
+35 1-23 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/analitica.php --dias 2 > /dev/null 2>> /var/log/envivo-tareas.log
 CRON
 )"
 for l in envivo-tareas envivo-discord envivo-festival envivo-liga envivo-copas envivo-servidores; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done

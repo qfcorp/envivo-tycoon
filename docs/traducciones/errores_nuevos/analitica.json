@@ -1,0 +1,16 @@
+{
+  "_info": "Códigos nuevos del módulo de analítica (server/src/Analitica.php y AnaliticaApi.php) para unir a docs/traducciones/errores.json. El juego no los muestra (la analítica falla en silencio), pero van traducidos por consistencia.",
+  "_codigos": {
+    "analitica_invalida": "existe · Analitica.php / AnaliticaApi.php · 400 · lote de eventos mal armado (instalación, sesión o lista de eventos)"
+  },
+  "es": { "analitica_invalida": "Datos de estadísticas no válidos." },
+  "en": { "analitica_invalida": "Invalid statistics data." },
+  "pt-BR": { "analitica_invalida": "Dados de estatísticas inválidos." },
+  "fr": { "analitica_invalida": "Données de statistiques non valides." },
+  "de": { "analitica_invalida": "Ungültige Statistikdaten." },
+  "it": { "analitica_invalida": "Dati statistici non validi." },
+  "ru": { "analitica_invalida": "Неверные данные статистики." },
+  "tr": { "analitica_invalida": "Geçersiz istatistik verisi." },
+  "id": { "analitica_invalida": "Data statistik tidak valid." },
+  "zh-CN": { "analitica_invalida": "统计数据无效。" }
+}

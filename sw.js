@@ -25,6 +25,7 @@ const SHELL = [
   './js/musica.js',     // música de fondo (opcional)
   './js/soporte.js',    // ayuda y soporte (opcional)
   './js/googleplay.js', // compras de Google Play dentro de la app de Android (opcional)
+  './js/analitica.js',  // analítica propia (opcional)
   './js/pwa.js',
   './js/api.js',
   './js/premium.js',
