@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v3';
+const VERSION = 'envivo-v4';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -14,12 +14,24 @@ const SHELL = [
   './js/logic.js',
   './js/ui.js',
   './js/art.js',
+  './js/plan_evento.js', // plan de personal y cámaras (opcional)
   './js/sound.js',      // opcional: si no existe, no rompe la instalación
   './js/pwa.js',
   './js/api.js',
   './js/premium.js',
   './js/mercado.js',
   './js/chat.js',
+  './js/i18n.js',
+  './js/lang/es.js',
+  './js/lang/en.js',
+  './js/lang/pt-BR.js',
+  './js/lang/fr.js',
+  './js/lang/de.js',
+  './js/lang/it.js',
+  './js/lang/ru.js',
+  './js/lang/tr.js',
+  './js/lang/id.js',
+  './js/lang/zh-CN.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

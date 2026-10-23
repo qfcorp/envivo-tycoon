@@ -12,6 +12,26 @@
     estado: null,       // último /api/estado
   };
 
+  // Textos de error del juego (en el idioma elegido, si js/i18n.js está cargado)
+  const ES = {
+    'err.servidor': 'El servidor no respondió bien. Intenta de nuevo.',
+    'err.no_completo': 'No se pudo completar. Intenta de nuevo.',
+    'err.lento': 'El servidor tardó demasiado. Revisa tu internet.',
+  };
+  const T = (k) => { try { if (root.I18N && root.I18N.T.has(k)) return root.I18N.T(k); } catch (e) { /* español */ } return ES[k] || k; };
+  // Mensajes de error que manda el servidor: si trae `codigo` y hay texto para error.<codigo> (docs/traducciones/errores.json),
+  // se usa ese, llenando sus {marcadores} con los datos de la respuesta; si no, el texto del servidor (en español).
+  const TL = (t) => { try { return root.I18N ? root.I18N.TL(t) : t; } catch (e) { return t; } };
+  function textoError(j) {
+    try {
+      if (j.codigo && root.I18N && root.I18N.T.has('error.' + j.codigo)) {
+        const t = root.I18N.T('error.' + j.codigo, j);
+        if (!/\{\w+\}/.test(t)) return t;   // faltan datos para algún marcador: mejor el texto del servidor
+      }
+    } catch (e) { /* español */ }
+    return j.error ? TL(j.error) : T('err.no_completo');
+  }
+
   function puedeIntentar() {
     try {
       const p = root.location && root.location.protocol;
@@ -25,7 +45,7 @@
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' },
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -33,15 +53,16 @@
       });
       let j = null;
       try { j = await r.json(); } catch (e) { j = null; }
-      if (!j || typeof j !== 'object') throw new Error('El servidor no respondió bien. Intenta de nuevo.');
+      if (!j || typeof j !== 'object') throw new Error(T('err.servidor'));
       if (!r.ok || j.ok === false) {
-        const err = new Error(j.error || 'No se pudo completar. Intenta de nuevo.');
+        const err = new Error(textoError(j));
         err.status = r.status;
+        err.codigo = j.codigo || null;
         throw err;
       }
       return j;
     } catch (e) {
-      if (e && e.name === 'AbortError') throw new Error('El servidor tardó demasiado. Revisa tu internet.');
+      if (e && e.name === 'AbortError') throw new Error(T('err.lento'));
       throw e;
     } finally {
       if (t) clearTimeout(t);

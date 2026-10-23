@@ -7,11 +7,11 @@
 (function (root) {
   'use strict';
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  // Mensajes rápidos: la clave la entiende el servidor; el texto es lo que se ve
-  const RAPIDOS = [
-    ['hola', '¡Hola, productoras!'], ['vamos_festival', '¡Vamos al Festival!'], ['necesito_sonidista', 'Necesito un sonidista'],
-    ['buen_trabajo', '¡Buen trabajo, equipo!'], ['busco_asociacion', 'Busco asociación'], ['gracias', '¡Gracias!'],
-  ];
+  // Idiomas (js/i18n.js): T() textos de esta pantalla, TL() textos del servidor (en español)
+  const T = (k, p) => (root.I18N ? root.I18N.T(k, p) : k);
+  const TL = (t) => (root.I18N ? root.I18N.TL(t) : t);
+  // Mensajes rápidos: la clave la entiende el servidor; el texto (chat.rapido.<clave>) es lo que se ve
+  const RAPIDOS = ['hola', 'vamos_festival', 'necesito_sonidista', 'buen_trabajo', 'busco_asociacion', 'gracias'];
   const st = { ctx: null, abierto: false, canal: 'servidor', mensajes: { servidor: [], asociacion: [] }, ultimo: { servidor: 0, asociacion: 0 },
     leidos: { servidor: 0, asociacion: 0 }, timer: null, enviando: false, asociaciones: null };
 
@@ -56,7 +56,10 @@
     b.innerHTML = st.ctx.A.icon('social') + (n ? `<b>${n > 99 ? '99+' : n}</b>` : '');
   }
 
-  function hora(iso) { try { return new Date(iso).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+  function hora(iso) {
+    if (root.I18N) return root.I18N.hora(iso);
+    try { return new Date(iso).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+  }
 
   function pintarLista() {
     const el = document.getElementById('chat-lista');
@@ -66,24 +69,24 @@
     const yo = E.jugador ? E.jugador.id : null;
     const ms = st.mensajes[st.canal];
     el.innerHTML = ms.length ? ms.map((m) => `<div class="chat-msg ${m.jugador_id === yo ? 'yo' : ''}" data-msg="${m.id}">
-        <div class="quien">${m.siglas ? '[' + esc(m.siglas) + '] ' : ''}${esc(m.alias || 'Productora')}${m.vip ? ' ⭐' : ''}<span>${hora(m.creado)}</span></div>
+        <div class="quien">${m.siglas ? '[' + esc(m.siglas) + '] ' : ''}${esc(m.alias || T('chat.productora'))}${m.vip ? ' ⭐' : ''}<span>${hora(m.creado)}</span></div>
         <p>${esc(m.texto)}</p></div>`).join('')
-      : `<p class="chat-vacio">Todavía no hay mensajes. ¡Saluda a ${st.canal === 'servidor' ? 'las productoras del servidor' : 'tu asociación'}!</p>`;
+      : `<p class="chat-vacio">${st.canal === 'servidor' ? T('chat.vacio_servidor') : T('chat.vacio_asoc')}</p>`;
     el.scrollTop = el.scrollHeight;
     st.leidos[st.canal] = ms.length ? ms[ms.length - 1].id : st.leidos[st.canal];
   }
 
   async function pintarAsociaciones(el) {
-    el.innerHTML = '<p class="chat-vacio">Buscando asociaciones…</p>';
+    el.innerHTML = `<p class="chat-vacio">${T('chat.buscando')}</p>`;
     let lista = [];
-    try { const r = await st.ctx.Api.asociaciones(''); lista = r.asociaciones || []; } catch (e) { el.innerHTML = `<p class="chat-vacio">${esc(e.message)}</p>`; return; }
+    try { const r = await st.ctx.Api.asociaciones(''); lista = r.asociaciones || []; } catch (e) { el.innerHTML = `<p class="chat-vacio">${esc(TL(e.message))}</p>`; return; }
     if (st.canal !== 'asociacion') return;
-    el.innerHTML = `<div class="card"><h3>Únete a una asociación</h3><p class="small muted">Con tu asociación juegas la Liga Semanal, el Mega Festival y la Gran Licitación, y tienes chat propio.</p>
-        <button class="btn main" data-chat="crear">Crear una asociación</button></div>
+    el.innerHTML = `<div class="card"><h3>${T('chat.unete')}</h3><p class="small muted">${T('chat.unete_det')}</p>
+        <button class="btn main" data-chat="crear">${T('chat.crear_asoc')}</button></div>
       ${lista.map((a) => `<div class="card"><div class="row between"><div><b style="color:${/^#[0-9a-f]{6}$/i.test(a.color || '') ? a.color : 'var(--amber)'}">[${esc(a.siglas)}]</b> <b>${esc(a.nombre)}</b>
-          <div class="small muted">${a.miembros || 0}/20 socios · ${a.ingreso === 'abierto' ? 'entrada libre' : 'con solicitud'}</div></div>
-          <button class="btn sm" data-chat="unirse" data-id="${a.id}">${a.ingreso === 'abierto' ? 'Unirme' : 'Pedir entrar'}</button></div></div>`).join('')
-      || '<p class="chat-vacio">Todavía no hay asociaciones en tu servidor. ¡Crea la primera!</p>'}`;
+          <div class="small muted">${T('chat.socios', { n: a.miembros || 0, max: 20 })} · ${a.ingreso === 'abierto' ? T('chat.entrada_libre') : T('chat.con_solicitud')}</div></div>
+          <button class="btn sm" data-chat="unirse" data-id="${a.id}">${a.ingreso === 'abierto' ? T('chat.unirme') : T('chat.pedir_entrar')}</button></div></div>`).join('')
+      || `<p class="chat-vacio">${T('chat.sin_asoc')}</p>`}`;
   }
 
   async function consultar(canal) {
@@ -131,24 +134,24 @@
       else await st.ctx.Api.escribir(st.canal, texto);
       document.getElementById('chat-texto').value = '';
       await consultar(st.canal); pintarLista();
-    } catch (e) { st.ctx.toast(e.message); st.ctx.snd.play('error'); }
+    } catch (e) { st.ctx.toast(TL(e.message)); st.ctx.snd.play('error'); }
     st.enviando = false;
   }
 
   function construir() {
     css();
     const b = document.createElement('button');
-    b.id = 'chat-btn'; b.hidden = true; b.setAttribute('aria-label', 'Abrir chat');
+    b.id = 'chat-btn'; b.hidden = true; b.setAttribute('aria-label', T('chat.abrir'));
     b.onclick = abrir;
     document.body.appendChild(b);
     const p = document.createElement('div');
     p.id = 'chat-panel'; p.hidden = true;
-    p.innerHTML = `<div class="chat-top"><div class="chat-tabs"><button data-chat-tab="servidor">Servidor</button><button data-chat-tab="asociacion">Asociación</button></div>
-        <button class="btn sm" data-chat="cerrar" aria-label="Cerrar chat">${st.ctx.A.icon('close', 'sm')}</button></div>
+    p.innerHTML = `<div class="chat-top"><div class="chat-tabs"><button data-chat-tab="servidor" data-i18n="chat.servidor">${T('chat.servidor')}</button><button data-chat-tab="asociacion" data-i18n="chat.asociacion">${T('chat.asociacion')}</button></div>
+        <button class="btn sm" data-chat="cerrar" aria-label="${esc(T('chat.cerrar'))}" data-i18n-aria="chat.cerrar">${st.ctx.A.icon('close', 'sm')}</button></div>
       <div class="chat-lista" id="chat-lista"></div>
-      <div class="chat-rapidos">${RAPIDOS.map(([k, t]) => `<button data-chat="rapido" data-k="${k}">${esc(t)}</button>`).join('')}</div>
-      <form class="chat-form" id="chat-form"><input id="chat-texto" maxlength="300" autocomplete="off" placeholder="Escribe un mensaje" aria-label="Mensaje">
-        <button class="btn sm main" type="submit">Enviar</button></form>`;
+      <div class="chat-rapidos">${RAPIDOS.map((k) => `<button data-chat="rapido" data-k="${k}" data-i18n="chat.rapido.${k}">${esc(T('chat.rapido.' + k))}</button>`).join('')}</div>
+      <form class="chat-form" id="chat-form"><input id="chat-texto" maxlength="300" autocomplete="off" placeholder="${esc(T('chat.escribe'))}" aria-label="${esc(T('chat.mensaje'))}" data-i18n-ph="chat.escribe" data-i18n-aria="chat.mensaje">
+        <button class="btn sm main" type="submit" data-i18n="chat.enviar">${T('chat.enviar')}</button></form>`;
     document.body.appendChild(p);
     p.addEventListener('click', (ev) => {
       const t = ev.target.closest('[data-chat-tab]');
@@ -158,7 +161,7 @@
         const k = a.dataset.chat;
         if (k === 'cerrar') cerrar();
         else if (k === 'rapido') enviar('', a.dataset.k);
-        else if (k === 'unirse') st.ctx.Api.unirse(Number(a.dataset.id)).then(async (r) => { await st.ctx.Api.refrescar(); st.ctx.toast(r.mensaje || '¡Listo!'); abrir(); }).catch((e) => st.ctx.toast(e.message));
+        else if (k === 'unirse') st.ctx.Api.unirse(Number(a.dataset.id)).then(async (r) => { await st.ctx.Api.refrescar(); st.ctx.toast(r.mensaje ? TL(r.mensaje) : T('chat.listo')); abrir(); }).catch((e) => st.ctx.toast(TL(e.message)));
         else if (k === 'crear') crearAsociacion();
         return;
       }
@@ -176,12 +179,13 @@
     const nombre = prompt === undefined ? null : null;   // el visor no permite prompt(): se usa un formulario propio
     void nombre;
     const el = document.getElementById('chat-lista');
-    el.innerHTML = `<form class="card" id="form-asoc"><h3>Nueva asociación</h3>
-        <label class="field">Nombre (3 a 30 letras)<input id="as-nombre" maxlength="30" required></label>
-        <label class="field">Siglas (3 letras)<input id="as-siglas" maxlength="3" required style="text-transform:uppercase"></label>
-        <label class="field">Color<input id="as-color" type="color" value="#ff3b3b"></label>
-        <p class="small muted">Cuesta $5.000 del juego, o es gratis si tienes VIP.</p>
-        <button class="btn main" type="submit">Crear</button></form>`;
+    const dinero = (n) => (root.I18N ? root.I18N.money(n) : '$' + n);
+    el.innerHTML = `<form class="card" id="form-asoc"><h3>${T('chat.nueva_asoc')}</h3>
+        <label class="field">${T('chat.asoc_nombre', { min: 3, max: 30 })}<input id="as-nombre" maxlength="30" required></label>
+        <label class="field">${T('chat.asoc_siglas', { n: 3 })}<input id="as-siglas" maxlength="3" required style="text-transform:uppercase"></label>
+        <label class="field">${T('chat.asoc_color')}<input id="as-color" type="color" value="#ff3b3b"></label>
+        <p class="small muted">${T('chat.asoc_costo', { m: dinero(5000) })}</p>
+        <button class="btn main" type="submit">${T('chat.crear')}</button></form>`;
     el.querySelector('#form-asoc').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       try {
@@ -190,18 +194,18 @@
         await st.ctx.Api.crearAsociacion({ nombre: el.querySelector('#as-nombre').value.trim(), siglas: el.querySelector('#as-siglas').value.trim().toUpperCase(),
           color: el.querySelector('#as-color').value, pagado_en_juego: !vip });
         await st.ctx.Api.refrescar();
-        st.ctx.toast('¡Asociación creada! Ya eres su presidente.'); st.ctx.snd.play('chapter');
+        st.ctx.toast(T('chat.asoc_creada')); st.ctx.snd.play('chapter');
         abrir();
-      } catch (e) { st.ctx.toast(e.message); st.ctx.snd.play('error'); }
+      } catch (e) { st.ctx.toast(TL(e.message)); st.ctx.snd.play('error'); }
     });
   }
 
   function opcionesMensaje(id) {
     const m = st.mensajes[st.canal].find((x) => x.id === id);
     if (!m) return;
-    st.ctx.ask(`Mensaje de <b>${esc(m.alias || 'Productora')}</b>: "${esc(m.texto)}"<br><br>¿Lo reportas por ofensivo o estafa? También dejarás de ver sus mensajes.`, 'Reportar y bloquear', async () => {
-      try { await st.ctx.Api.reportar(id, 'ofensivo'); await st.ctx.Api.bloquear(m.jugador_id); st.mensajes[st.canal] = st.mensajes[st.canal].filter((x) => x.jugador_id !== m.jugador_id); st.ctx.toast('Gracias. Lo revisaremos.'); }
-      catch (e) { st.ctx.toast(e.message); }
+    st.ctx.ask(T('chat.reportar_q', { nombre: `<b>${esc(m.alias || T('chat.productora'))}</b>`, texto: esc(m.texto) }), T('chat.reportar_si'), async () => {
+      try { await st.ctx.Api.reportar(id, 'ofensivo'); await st.ctx.Api.bloquear(m.jugador_id); st.mensajes[st.canal] = st.mensajes[st.canal].filter((x) => x.jugador_id !== m.jugador_id); st.ctx.toast(T('chat.reportado')); }
+      catch (e) { st.ctx.toast(TL(e.message)); }
       abrir();
     });
   }
@@ -214,6 +218,14 @@
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ciclo(); });
       ciclo();
     },
-    refrescar() { if (st.ctx) { pintarBoton(); if (st.abierto) abrir(); } },
+    refrescar() {
+      if (!st.ctx) return;
+      // Textos fijos del panel (por si cambió el idioma)
+      const p = document.getElementById('chat-panel');
+      if (p && root.I18N && root.I18N.aplicar) root.I18N.aplicar(p);
+      const b = document.getElementById('chat-btn');
+      if (b) b.setAttribute('aria-label', T('chat.abrir'));
+      pintarBoton(); if (st.abierto) abrir();
+    },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
