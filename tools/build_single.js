@@ -11,3 +11,9 @@ if (/<script src="js\//.test(html)) throw new Error('No se pudo incrustar un scr
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist', 'envivo-tycoon.html'), html);
 console.log('✅ dist/envivo-tycoon.html creado (' + Math.round(html.length / 1024) + ' KB)');
+// Versión para publicar como página en Claude (sin <html>, <head>, <body>)
+const art = html.replace(/<!doctype html>\s*/i, '').replace(/<html[^>]*>\s*/i, '').replace(/<\/?head>\s*/gi, '')
+  .replace(/<\/?body>\s*/gi, '').replace(/<\/html>\s*/i, '').replace(/<meta charset="utf-8">\s*/i, '')
+  .replace(/<meta name="viewport"[^>]*>\s*/i, '');
+fs.writeFileSync(path.join(root, 'dist', 'artifact.html'), art);
+console.log('✅ dist/artifact.html creado');

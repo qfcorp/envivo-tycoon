@@ -5,23 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d0f14">
 <title>EN VIVO Tycoon</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=IBM+Plex+Sans:wght@400;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0d0f14; --panel:#161a22; --panel2:#1e2430; --line:#2a3242;
     --text:#e9edf5; --muted:#8b95a8; --red:#ff3b3b; --amber:#ffb020; --green:#2ecc71; --blue:#4da3ff;
     --radius:14px;
+    color-scheme:dark;
   }
+  .gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:15px}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   button{font:inherit;color:inherit;cursor:pointer}
-  .num{font-family:"JetBrains Mono",monospace}
-  h1,h2,h3{font-family:"Barlow Condensed",sans-serif;letter-spacing:.5px;margin:0}
+  .num{font-family:"JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.5px;margin:0}
 
   /* Barra superior */
-  header{position:sticky;top:0;z-index:5;background:linear-gradient(#0d0f14 80%,#0d0f1400);padding:10px 16px 12px}
+  header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:linear-gradient(var(--bg) 80%,#0d0f1400);padding-block:10px 12px}
   .brand{display:flex;align-items:center;gap:8px;font-family:"Barlow Condensed";font-weight:800;font-size:20px;text-transform:uppercase}
   .tally{width:11px;height:11px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);animation:blink 1.4s infinite}
   @keyframes blink{50%{opacity:.35}}
@@ -31,7 +35,7 @@
   .chip b{font-family:"JetBrains Mono";font-size:15px}
   .neg{color:var(--red)}
 
-  main{padding:0 16px;max-width:640px;margin:0 auto}
+  main{max-width:640px;margin:0 auto;padding-block:0}
   section{display:none}
   section.on{display:block}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
@@ -63,7 +67,7 @@
   .log p span{color:var(--muted);font-family:"JetBrains Mono";font-size:11px;margin-right:6px}
 
   /* Navegación inferior */
-  nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:#11141bf2;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(8px)}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:6;padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);background:#11141bf2;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(8px)}
   nav button{flex:1;background:none;border:0;padding:9px 0 8px;font-size:11px;color:var(--muted)}
   nav button span{display:block;font-size:21px;margin-bottom:2px}
   nav button.on{color:var(--text)}
@@ -94,10 +98,12 @@
   .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:30;background:#000e;border:1px solid var(--line);padding:10px 14px;border-radius:10px;font-size:14px;max-width:90%;display:none}
   .story{font-size:16px;line-height:1.5}
   .story-tag{color:var(--amber);font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:1px}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){.tally,.live i{animation:none}}
 </style>
 </head>
 <body>
-<header>
+<header class="gut">
   <div class="brand"><span class="tally"></span> En Vivo Tycoon</div>
   <div class="stats">
     <div class="chip"><small>Dinero</small><b id="hMoney">$0</b></div>
@@ -106,7 +112,7 @@
   </div>
 </header>
 
-<main>
+<main class="gut">
   <section id="tab-inicio" class="on"></section>
   <section id="tab-clientes"></section>
   <section id="tab-personal"></section>

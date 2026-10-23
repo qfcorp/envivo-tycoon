@@ -67,4 +67,5 @@ transmitir finales en estadios.
 ## 📝 Bitácora
 
 - 2026-10-22: se crea el proyecto y el plan.
+- 2026-10-22: publicada versión jugable en Claude: https://claude.ai/artifact/3Sr6tCaVc7Yg3DyYfpPq47
 - 2026-10-22: prototipo completo y probado. Balance medido con bot: gana la historia en ~53 días de juego (mediana), 0 quiebras en 400 partidas.
