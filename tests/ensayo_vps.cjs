@@ -279,7 +279,8 @@ async function intentoLiga(p, ok, foto) {
     const t = await p.evaluate(() => (document.getElementById('online-cont') || document.body).innerText);
     // Sin productoras de muestra no hay asociaciones a las que unirse, y crear una cuesta $5.000 del juego:
     // el intento de liga se juega en el modo con-demo (uniéndose a una asociación de muestra)
-    ok(/asociaci/i.test(t) && (await p.locator('[data-liga="asociaciones"]').count()) === 1, 'Liga: pide unirse a una asociación (botón Buscar asociación)');
+    // (desde de5b3ff la Liga sin asociación muestra la lista con "Unirme" y la tarjeta "Crear"; antes un botón "Buscar asociación")
+    ok(/asociaci/i.test(t) && (await p.locator('[data-liga="crear"], [data-liga="unirme"], [data-liga="asociaciones"]').count()) >= 1, 'Liga: pide unirse a una asociación (Unirme / Crear)');
   });
   // 5) Chat
   await paso('chat', async () => {

@@ -28,6 +28,13 @@ if [ -z "${IPV6:-}" ]; then [ -s /proc/net/if_inet6 ] && IPV6=1 || IPV6=0; fi
 v6() { [ "$IPV6" = "1" ] && echo "    listen [::]:$1;"; return 0; }
 PUB="$APP/server/public"
 HSTS="${HSTS:-}"   # se llena solo en el modo HTTPS (abajo)
+# Cloudflare (docs/CLOUDFLARE_PRODUCCION.md; los dos archivos los escribe server/deploy/ops/cloudflare_ips.sh y se
+# ponen al dia cada semana). Si no estan, va la lista de rangos de abajo (la de siempre).
+CF_REALIP="${CF_REALIP:-/etc/nginx/snippets/envivo-cloudflare-realip.conf}"
+CF_GEO="${CF_GEO:-/etc/nginx/conf.d/envivo-cloudflare-geo.conf}"
+SOLO_CF="${SOLO_CF:-/etc/envivo/solo-cloudflare}"     # si existe: solo se atiende lo que llega por Cloudflare (403 al resto)
+# Modo mantenimiento (server/deploy/ops/mantenimiento.sh): si existe este archivo, /api/ y /pago.php responden 503
+MANT="${MANT:-/etc/envivo/MANTENIMIENTO}"
 
 # Cabeceras de seguridad. OJO: en nginx, un add_header dentro de un "location" ANULA todos los de afuera; por eso
 # cada location que tiene su propio add_header repite estas lineas (auditoria A-09).
@@ -46,18 +53,12 @@ ocultar() { printf 'fastcgi_hide_header %s; ' X-Frame-Options X-Content-Type-Opt
 cab_juego() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_JUEGO"; }
 cab_legal() { printf '%s add_header Content-Security-Policy "%s" always;' "$(cab)" "$CSP_LEGAL"; }
 
-reglas() {
-cat <<NGINX
-    root $APP;
-    index index.html;
-    server_tokens off;
-    charset utf-8;
-    # Lo que puede mandar un navegador: 64 KB en general (formularios, pago, panel).
-    # /api/ permite 1 MB (abajo) porque ahi se guarda la partida (hasta 300 KB, unos 400 KB ya dentro del JSON).
-    client_max_body_size 64k;
-
-    # IP real del visitante si el dominio pasa por el proxy de Cloudflare (nube naranja).
-    # Rangos publicados en https://www.cloudflare.com/ips/ (si Cloudflare agrega rangos nuevos, se suman aqui).
+realip() {
+  if [ -f "$CF_REALIP" ]; then
+    echo "    include $CF_REALIP;"
+    return 0
+  fi
+  cat <<NGINX
     set_real_ip_from 127.0.0.1;   # por si se publica con un tunel de Cloudflare (cloudflared en este servidor)
     set_real_ip_from ::1;
     set_real_ip_from 173.245.48.0/20;
@@ -83,9 +84,41 @@ cat <<NGINX
     set_real_ip_from 2a06:98c0::/29;
     set_real_ip_from 2c0f:f248::/32;
     real_ip_header CF-Connecting-IP;
+NGINX
+}
+# Solo Cloudflare (opcional, docs/CLOUDFLARE_PRODUCCION.md paso 7): lo que llegue directo a la IP del VPS sin pasar por
+# Cloudflare recibe 403 (solo en ESTE sitio; el ERP y TuPass no cambian). 127.0.0.1 (chequeo de salud) siempre entra.
+solo_cf() {
+  [ -f "$SOLO_CF" ] && [ -f "$CF_GEO" ] || return 0
+  echo "    if (\$envivo_desde_cf = 0) { return 403; }"
+}
+
+reglas() {
+cat <<NGINX
+    root $APP;
+    index index.html;
+    server_tokens off;
+    charset utf-8;
+    # Lo que puede mandar un navegador: 64 KB en general (formularios, pago, panel).
+    # /api/ permite 1 MB (abajo) porque ahi se guarda la partida (hasta 300 KB, unos 400 KB ya dentro del JSON).
+    client_max_body_size 64k;
+
+    # IP real del visitante si el dominio pasa por el proxy de Cloudflare (nube naranja).
+    # Rangos publicados en https://www.cloudflare.com/ips/ (cloudflare_ips.sh los pone al dia cada semana en $CF_REALIP).
+$(realip)
+$(solo_cf)
 
     # Para todo lo que no tiene su propio add_header (API, PHP, js, iconos...)
     $(cab)
+
+    # Mantenimiento (server/deploy/ops/mantenimiento.sh on|off): con $MANT, /api/ y /pago.php dan 503 en JSON.
+    # Siguen funcionando: el juego sin conexion (archivos), /api/salud, los avisos de pago de Plux y el Centro de Control.
+    set \$envivo_mant "";
+    if (-f $MANT) { set \$envivo_mant "1"; }
+    if (\$uri !~ "^/(api/|pago\\.php)") { set \$envivo_mant ""; }
+    if (\$uri ~ "^/api/(salud|plux/webhook|plux/3ds)/?\$") { set \$envivo_mant ""; }
+    if (\$envivo_mant) { return 503; }
+    error_page 503 = @envivo_503;
 
     # ---- Archivos del juego (lista blanca) ----
     location = / { try_files /index.html =404; add_header Cache-Control "no-cache"; $(cab_juego) }
@@ -104,6 +137,9 @@ cat <<NGINX
         limit_req zone=envivo_registro burst=10 nodelay;
         limit_req zone=envivo_pago burst=10 nodelay;
         limit_req zone=envivo_chat burst=15 nodelay;
+        limit_req zone=envivo_error burst=20 nodelay;
+        limit_req zone=envivo_eventos burst=30 nodelay;
+        limit_req zone=envivo_api burst=200 nodelay;
         limit_req_status 429;
         limit_req_log_level error;   # "error" para que quede en el registro (el nivel normal no guarda "warn")
         error_page 429 = @envivo_429;
@@ -160,6 +196,14 @@ cat <<NGINX
         add_header Retry-After 60 always;
         $(cab)
         return 429 '{"ok":false,"status":"failed","error":"Demasiados intentos. Espera un minuto e intenta de nuevo.","message":"Demasiados intentos. Espera un minuto e intenta de nuevo."}';
+    }
+    # Respuesta del modo mantenimiento (JSON, con el mismo codigo que usa PHP para la tienda)
+    location @envivo_503 {
+        default_type application/json;
+        add_header Cache-Control "no-store" always;
+        add_header Retry-After 600 always;
+        $(cab)
+        return 503 '{"ok":false,"status":"failed","codigo":"mantenimiento","error":"El juego está en mantenimiento. Volvemos en un rato; tu partida y tus compras están a salvo.","message":"El juego está en mantenimiento. Volvemos en un rato; tu partida y tus compras están a salvo."}';
     }
 
     # ---- Centro de Control (/control/, docs/INTEGRAR_CONTROL.md): lista blanca. Solo index.php y sus dos archivos;

@@ -19,6 +19,8 @@ try {
     if ($ruta === '/plux/webhook') api_plux_webhook();
     // El regreso del banco (3DS) es una navegación normal del navegador (GET), no una petición del juego.
     if ($ruta === '/plux/3ds') api_plux_3ds();
+    // Monitor externo (docs/MONITOREO.md): sin sesión ni cabecera, GET o HEAD; prueba que PHP y la base respondan.
+    if ($ruta === '/salud') api_salud($metodo);
 
     // Protección simple contra peticiones desde otros sitios (junto con SameSite=Lax de la galleta).
     if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.', [], 'cabecera_requerida');
@@ -104,6 +106,16 @@ try {
 } catch (\Throwable $e) {
     error_log('EN VIVO api ' . $ruta . ': ' . get_class($e) . ' en ' . basename($e->getFile()) . ':' . $e->getLine() . ' ' . mb_substr($e->getMessage(), 0, 300));
     Http::error(500, 'Ocurrió un error en el servidor. Intenta otra vez en un momento.');
+}
+
+/** GET /api/salud: {"ok":true,"servicio":"envivo","db":"ok","mantenimiento":false,"hora":...}; 503 si la base no responde. */
+function api_salud(string $metodo): never
+{
+    if ($metodo !== 'GET' && $metodo !== 'HEAD') Http::error(405, 'Usa GET.');
+    $ok = false;
+    try { $ok = (int) Db::valor('SELECT 1') === 1; } catch (\Throwable $e) { error_log('EN VIVO salud: ' . mb_substr($e->getMessage(), 0, 200)); }
+    Http::json($ok ? 200 : 503, ['ok' => $ok, 'servicio' => 'envivo', 'db' => $ok ? 'ok' : 'falla',
+        'mantenimiento' => is_file('/etc/envivo/MANTENIMIENTO'), 'hora' => time()]);
 }
 
 function requiere_sesion(): int

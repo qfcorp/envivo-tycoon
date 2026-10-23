@@ -1,6 +1,6 @@
 # EN VIVO Tycoon: registros del juego. Una vez por semana, 8 semanas.
 # Lo instala server/deploy/ops/instalar_ops.sh en /etc/logrotate.d/envivo (y actualizar.sh lo pone al dia).
-# Si una tarea programada nueva escribe otro /var/log/envivo-*.log, se suma aqui.
+# Si una tarea programada nueva escribe otro /var/log/envivo-*.log, se suma aqui (abajo: Cloudflare y PHP lento).
 # Cron de root (instalar_ops.sh): respaldo y chequeo de salud
 /var/log/envivo-respaldo.log /var/log/envivo-salud.log {
     su root adm
@@ -22,4 +22,25 @@
     missingok
     notifempty
     create 0640 www-data www-data
+}
+# Rangos de Cloudflare (cron semanal de ops/cloudflare_ips.sh)
+/var/log/envivo-cloudflare.log {
+    su root adm
+    monthly
+    rotate 6
+    compress
+    missingok
+    notifempty
+    create 0640 root adm
+}
+# Peticiones lentas del grupo de PHP del juego (ops/pool_fpm.sh). PHP-FPM lo tiene abierto: se copia y se vacia.
+/var/log/envivo-php-lento.log {
+    su root adm
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
 }

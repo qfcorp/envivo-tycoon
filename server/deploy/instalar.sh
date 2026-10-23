@@ -18,7 +18,9 @@
 #      la clave del validador se crea al azar). Nunca cambia un valor que ya estaba (server/deploy/comun.sh).
 #   6. Crea las tablas (migraciones).   7. Programa las tareas (cron de www-data).
 #   8. Node 22 (NodeSource) si falta o es viejo, y el servicio envivo-validador (systemd): lo enciende y prueba /salud.
-#   9. Escribe el sitio de nginx /etc/nginx/sites-available/juego.tukanec.com, prueba con "nginx -t"
+#  8b. Grupo propio de PHP para el juego (/etc/php/8.3/fpm/pool.d/envivo.conf, socket php8.3-fpm-envivo.sock), probado
+#      con "php-fpm8.3 -t" antes de recargar; si no se puede, el juego sigue en el PHP compartido (ops/pool_fpm.sh).
+#   9. Rangos de Cloudflare (ops/cloudflare_ips.sh, cron semanal). Escribe el sitio de nginx /etc/nginx/sites-available/juego.tukanec.com, prueba con "nginx -t"
 #      y SOLO si la prueba sale bien recarga nginx (si sale mal, deja todo como estaba).
 #  10. Ofrece el certificado HTTPS con certbot.
 #  Variables opcionales: DOMINIO (juego.tukanec.com), APP (/var/www/envivo), RAMA (main), PHPV (8.3).
@@ -148,6 +150,8 @@ if [ -d "$APP/.git" ]; then
   # js/intento.js es una COPIA de server/validador/intento.js (nginx solo sirve /js/; no un enlace). No está en git:
   # se quita antes de bajar lo nuevo (así "git pull" nunca choca con ella) y se vuelve a copiar después.
   git -C "$APP" ls-files --error-unmatch js/intento.js > /dev/null 2>&1 || rm -f "$APP/js/intento.js"
+  # Despues de volver a una version anterior (actualizar.sh --version) la copia queda fuera de la rama: se vuelve a ella
+  git -C "$APP" symbolic-ref -q HEAD > /dev/null || git -C "$APP" checkout -q "$RAMA"
   if git -C "$APP" pull -q --ff-only origin "$RAMA"; then echo "   actualizado a $(git -C "$APP" rev-parse --short HEAD)"
   else echo "   ERROR: no se pudo actualizar (hay cambios hechos a mano en $APP?). Revisa:  git -C $APP status"; exit 1; fi
 elif [ -e "$APP" ] && [ -n "$(ls -A "$APP" 2> /dev/null)" ]; then
@@ -201,8 +205,15 @@ echo "== 8. Node y el validador de partidas (eventos en linea sin trampas)"
 VALIDADOR="no"
 if preparar_node && instalar_validador "$APP" "$CONF"; then VALIDADOR="si"; fi
 
+echo "== 8b. PHP: grupo propio del juego (el ERP y TuPass siguen en el suyo)"
+POOL_SOCK=""
+# shellcheck source=ops/pool_fpm.sh
+[ -f "$APP/server/deploy/ops/pool_fpm.sh" ] && . "$APP/server/deploy/ops/pool_fpm.sh" && instalar_pool_fpm && SOCK="$POOL_SOCK"
+
 export DOMINIO APP SOCK   # los usa nginx-sitio.sh
 echo "== 9. nginx: sitio $DOMINIO (y las zonas de límite /etc/nginx/conf.d/envivo-limites.conf)"
+# Rangos de Cloudflare para la IP real (solo los usa este sitio) y su cron semanal (ops/cloudflare_ips.sh)
+[ -f "$APP/server/deploy/ops/cloudflare_ips.sh" ] && SIN_RECARGAR=1 bash "$APP/server/deploy/ops/cloudflare_ips.sh" --instalar
 # Zonas de límite por IP (limit_req_zone) que usa el sitio en /api/: deben existir ANTES de "nginx -t"
 LIMITES=/etc/nginx/conf.d/envivo-limites.conf
 grep -qE '^\s*include\s+/etc/nginx/conf\.d/\*\.conf;' /etc/nginx/nginx.conf || echo "   AVISO: /etc/nginx/nginx.conf no incluye /etc/nginx/conf.d/*.conf: nginx -t va a fallar (revisa: grep -n include /etc/nginx/nginx.conf)"
@@ -271,12 +282,13 @@ if grep -qE '^PLUX_CLAVE_SECRETA=.+' "$CONF"; then echo "6) Plux: credenciales p
 else echo "6) Plux: SIN credenciales (la tienda muestra 'pago no disponible' hasta ponerlas)"; fi
 [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ] && echo "7) HTTPS: si" || echo "7) HTTPS: todavia no"
 [ "$VALIDADOR" = "si" ] && echo "8) Validador de partidas: activo" || echo "8) Validador de partidas: NO activo (mira el paso 8 de arriba; el juego usa Node directo, mas lento)"
+[ -n "$POOL_SOCK" ] && echo "9) PHP del juego: grupo propio envivo ($POOL_SOCK)" || echo "9) PHP del juego: compartido con los otros sitios (mira el paso 8b de arriba)"
 echo "================================="
 echo
 echo "Lista de lo que falta (en orden):"
 echo " a) DNS en Cloudflare (tukanec.com > DNS > Records > Add record):"
 echo "      Tipo A   Nombre: juego   IPv4: $(curl -s -4 --max-time 5 https://ifconfig.me 2> /dev/null || echo 'LA_IP_DE_ESTE_VPS')   Proxy: DNS only (nube gris)"
-echo "    (con la nube gris certbot funciona directo; si luego la pones naranja, en SSL/TLS elige 'Full (strict)')"
+echo "    (con la nube gris certbot funciona directo; para ponerla naranja sigue docs/CLOUDFLARE_PRODUCCION.md)"
 echo " b) Certificado:   sudo certbot --nginx -d $DOMINIO     y despues otra vez:   sudo bash $APP/server/deploy/instalar.sh"
 echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_CLIENTE, PLUX_CLAVE_SECRETA y PLUX_LLAVE_PUBLICA"
 echo "    (claves de PRODUCCION; PLUX_AMBIENTE=produccion ya viene puesto), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
