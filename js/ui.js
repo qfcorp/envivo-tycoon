@@ -76,7 +76,8 @@
   const tile = (iconName, color) => `<div class="tile ${color ? 't-' + color : ''}">${I(iconName)}</div>`;
   function reqTags(c) {
     const t = [];
-    if (c.rival) t.push(`<span class="tag rival">${I('rival')}MegaVisión también lo quiere</span>`);
+    if (c.story) t.push(`<span class="tag amber">${I('star')}Oferta de la historia</span>`);
+    if (c.rival) t.push(`<span class="tag rival">${I('rival')}Disputado con MegaVisión</span>`);
     t.push(`<span class="tag">${I('cam_basic')}${c.cams} cámara${c.cams > 1 ? 's' : ''}</span>`);
     if (c.cams >= 2) t.push(`<span class="tag">${I('switch_pro')}switcher + director</span>`);
     if (c.audio) t.push(`<span class="tag">${I('role_audio')}audio</span>`);
@@ -364,6 +365,7 @@
         <tr><td><b>Ganancia</b></td><td class="${r.net >= 0 ? 'up' : 'down'}"><b>${M(r.net)}</b></td></tr>
         <tr><td>Fama</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
+      ${r.duel === 'won' ? `<p class="small up">${I('rival', 'sm')} ¡Le ganaste el duelo a MegaVisión! Fama extra.</p>` : r.duel === 'lost' ? `<p class="small down">${I('rival', 'sm')} MegaVisión te ganó el duelo. Perdiste fama extra.</p>` : ''}
       ${r.ups.length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map(esc).join(' · ')}</p>` : ''}
       <details><summary>Ver detalle</summary>
         <p class="small"><b>Calidad inicial: ${r.base}</b></p>

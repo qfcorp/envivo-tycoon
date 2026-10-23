@@ -65,9 +65,10 @@
                    clients: ['Cervecería Montaña', 'Bebidas Volcán', 'Motos Kawa-Andes', 'Celulares Nébula'] },
     concierto:   { name: 'Concierto',                icon: '🎸', cams: [3, 4], audio: true,  stream: 1,   outdoor: 0.6, diff: 4, pay: [1600, 3000],  minRep: 28,
                    clients: ['Festival Sur Sonoro', 'Productora Tarima Viva', 'Coliseo Rumiñahui'] },
-    ligapro:     { name: 'Partido de LigaPro',       icon: '🏟️', cams: [4, 4], audio: true,  stream: 1,   outdoor: 1,   diff: 4, pay: [2600, 4500],  minRep: 40,
+    // minChapter: el cliente solo aparece desde ese capítulo (o en modo libre)
+    ligapro:     { name: 'Partido de LigaPro',       icon: '🏟️', cams: [4, 4], audio: true,  stream: 1,   outdoor: 1,   diff: 4, pay: [2600, 4500],  minRep: 40, minChapter: 4,
                    clients: ['Club Atlético del Valle', 'Deportivo Cumbayá FC', 'Sporting Pichincha'] },
-    final:       { name: 'Final de campeonato',      icon: '🏆', cams: [5, 6], audio: true,  stream: 1,   outdoor: 1,   diff: 5, pay: [6000, 10000], minRep: 65,
+    final:       { name: 'Final de campeonato',      icon: '🏆', cams: [5, 6], audio: true,  stream: 1,   outdoor: 1,   diff: 5, pay: [6000, 10000], minRep: 65, minChapter: 5,
                    clients: ['Liga Nacional de Fútbol', 'Federación del Torneo'] },
   };
 
@@ -80,9 +81,19 @@
   const STARS_REP = [0, -5, -0.5, 2, 4, 6];
 
   /* ---------- Historia (capítulos) ---------- */
+  // character: quién habla en el capítulo (la pantalla dibuja su retrato)
+  //   'ramiro' = Don Ramiro (mentor) · 'mega' = Germán Vélez, dueño de MegaVisión (rival)
+  //   'marca' = Lucía Mena (gerente de marketing) · 'dirigente' = Don Aurelio (dirigente de club)
+  // target: tipo de evento que pide el capítulo. offer: cada cuántos días llega una oferta
+  //   "de la historia" de ese tipo (first = días hasta la primera, every = días entre ofertas).
+  // Lo que cuenta para el capítulo actual (se reinicia al empezar cada capítulo)
+  const good = (s, type) => (s.chapterStats && s.chapterStats.good[type]) || 0;
+  const duelsWon = (s) => (s.chapterStats && s.chapterStats.duels) || 0;
+  const hasType = (s, type) => s.equip.some((e) => e.type === type);
   const CHAPTERS = [
     {
       title: 'Capítulo 1 · El garaje',
+      character: 'ramiro',
       intro: 'Don Ramiro, tu antiguo jefe en el canal, se jubiló y te regaló su vieja cámara: "Con esto empecé yo. Ahora te toca a ti." Tienes un garaje, una cámara y muchas ganas.',
       goal: 'Completa 3 eventos',
       check: (s) => s.stats.events >= 3,
@@ -92,53 +103,84 @@
     },
     {
       title: 'Capítulo 2 · Armando el equipo',
-      intro: 'Solo no vas a llegar lejos. Necesitas gente de confianza y más equipo para cubrir eventos con varias cámaras.',
+      character: 'ramiro',
+      intro: 'Don Ramiro te visita en el garaje: "Solo no vas a llegar lejos, mijo. Necesitas gente de confianza y más equipo para cubrir eventos con varias cámaras."',
       goal: 'Ten 2 cámaras, 2 personas contratadas y 12 de fama',
       check: (s) => countCat(s, 'cam') >= 2 && s.staff.length >= 3 && s.rep >= 12,
       progress: (s) => `Cámaras ${Math.min(countCat(s, 'cam'), 2)}/2 · Personal ${Math.min(s.staff.length - 1, 2)}/2 · Fama ${Math.min(Math.floor(s.rep), 12)}/12`,
       reward: 800,
-      done: 'Tu productora ya parece una empresa de verdad. Un amigo te recomienda con una marca grande: +$800 de adelanto.',
+      done: 'Tu productora ya parece una empresa de verdad. Don Ramiro te recomienda con una marca grande: +$800 de adelanto.',
     },
     {
       title: 'Capítulo 3 · El gran lanzamiento',
-      intro: 'Una marca busca productora para el lanzamiento de su nuevo producto. Habrá prensa e influencers. Es tu oportunidad de jugar en grande.',
-      goal: 'Cubre un "Lanzamiento de marca" con 4 estrellas o más',
+      character: 'marca',
+      intro: 'Lucía Mena, gerente de marketing, te llama: "Tenemos varios lanzamientos este año, con prensa e influencers. Si me haces quedar bien dos veces, te recomiendo con todas las marcas."',
+      goal: 'Cubre 2 "Lanzamientos de marca" con 4 estrellas o más',
       target: 'lanzamiento',
-      check: (s) => (s.stats.best.lanzamiento || 0) >= 4,
-      progress: (s) => `Mejor resultado: ${s.stats.best.lanzamiento || 0}⭐ de 4⭐`,
+      offer: { first: 3, every: 6 },
+      check: (s) => good(s, 'lanzamiento') >= 2,
+      progress: (s) => `Lanzamientos con 4⭐ o más: ${Math.min(good(s, 'lanzamiento'), 2)}/2`,
       reward: 1500,
-      done: 'El video del lanzamiento se hizo viral. Te llueven mensajes: +$1.500 de bono del cliente.',
+      done: 'Lucía Mena quedó encantada: "Los videos se hicieron virales." Te manda un bono de $1.500.',
     },
     {
       title: 'Capítulo 4 · La rival',
-      intro: 'MegaVisión, la productora más grande de la ciudad, se enteró de ti. Empiezan a robarte clientes con precios más bajos. Tienes que ganarte un nombre.',
-      goal: 'Llega a 40 de fama y junta $10.000',
-      check: (s) => s.rep >= 40 && s.money >= 10000,
-      progress: (s) => `Fama ${Math.min(Math.floor(s.rep), 40)}/40 · Dinero ${money(Math.min(s.money, 10000))}/$10.000`,
+      character: 'mega',
+      intro: 'Germán Vélez, dueño de MegaVisión, se enteró de ti: "Esta ciudad tiene una sola productora grande, y es la mía." Ahora pelea contigo algunos contratos. Los verás marcados como DISPUTADOS.',
+      goal: 'Gana 3 duelos (contratos disputados con 4⭐ o más), llega a 40 de fama y junta $12.000',
+      check: (s) => duelsWon(s) >= 3 && s.rep >= 40 && s.money >= 12000,
+      progress: (s) => `Duelos ${Math.min(duelsWon(s), 3)}/3 · Fama ${Math.min(Math.floor(s.rep), 40)}/40 · Dinero ${money(Math.min(s.money, 12000))}/$12.000`,
       reward: 2000,
-      done: 'Un club de LigaPro quedó mal con MegaVisión: se les cayó la transmisión en pleno partido. Te llaman a ti. +$2.000 para prepararte.',
+      done: 'A MegaVisión se le cayó la transmisión en pleno partido de LigaPro. Don Aurelio, dirigente del club, te llama a ti. +$2.000 para prepararte.',
     },
     {
       title: 'Capítulo 5 · Al estadio',
-      intro: 'Transmitir fútbol profesional es otra liga: 4 cámaras, gráficos, repeticiones y miles de personas mirando en vivo.',
-      goal: 'Transmite un "Partido de LigaPro" con 4 estrellas o más',
+      character: 'dirigente',
+      intro: 'Don Aurelio te recibe en el estadio: "Aquí no se perdona nada. Cuatro cámaras, repeticiones y miles mirando. Necesito un switcher de verdad y dos partidos impecables."',
+      goal: 'Compra un "Switcher ATEM" y transmite 2 "Partidos de LigaPro" con 4 estrellas o más',
       target: 'ligapro',
-      check: (s) => (s.stats.best.ligapro || 0) >= 4,
-      progress: (s) => `Mejor resultado: ${s.stats.best.ligapro || 0}⭐ de 4⭐`,
+      offer: { first: 8, every: 10 },
+      check: (s) => hasType(s, 'switch_pro') && good(s, 'ligapro') >= 2,
+      progress: (s) => `Switcher ATEM ${hasType(s, 'switch_pro') ? '✅' : '❌'} · Partidos con 4⭐ o más ${Math.min(good(s, 'ligapro'), 2)}/2`,
       reward: 3000,
-      done: 'Los dirigentes quedaron felices. Te ofrecen la gran final: +$3.000 de adelanto.',
+      done: 'Don Aurelio quedó feliz: "Ustedes son los nuestros." Te ofrecen transmitir la gran final: +$3.000 de adelanto.',
     },
     {
       title: 'Capítulo 6 · La final',
-      intro: 'La final del campeonato. Todo el país estará mirando y MegaVisión hará lo imposible por verte fallar. Don Ramiro estará en primera fila.',
-      goal: 'Transmite una "Final de campeonato" con 5 estrellas',
+      character: 'ramiro',
+      intro: 'La final del campeonato se juega en unas tres semanas. Todo el país estará mirando y MegaVisión hará lo imposible por verte fallar. Don Ramiro estará en primera fila. Prepara a tu mejor equipo.',
+      goal: 'Transmite una "Final de campeonato" con 5 estrellas (necesitas 65 de fama)',
       target: 'final',
+      offer: { first: 18, every: 10 },
       check: (s) => (s.stats.best.final || 0) >= 5,
-      progress: (s) => `Mejor resultado: ${s.stats.best.final || 0}⭐ de 5⭐`,
+      progress: (s) => {
+        const best = s.stats.best.final || 0;
+        const offered = s.contracts.some((c) => c.type === 'final');
+        const left = Math.max(0, (s.storyNext || 0) - s.day);
+        const when = offered ? 'la oferta ya llegó' : s.rep < EVENT_TYPES.final.minRep ? `fama ${Math.floor(s.rep)}/${EVENT_TYPES.final.minRep}`
+          : left > 0 ? `la final se juega en ${left} día${left > 1 ? 's' : ''}` : 'la oferta llega pronto';
+        return `Mejor resultado ${best}⭐ de 5⭐ · ${when}`;
+      },
       reward: 5000,
       done: '¡Transmisión perfecta! Don Ramiro te abraza: "Ya no eres mi alumno, eres el mejor." Ganaste el modo historia. Puedes seguir jugando libre.',
     },
   ];
+
+  /* Frases cortas que aparecen en el registro cuando pasan cosas */
+  const TAUNTS = {
+    duelWin: [
+      'Germán Vélez (MegaVisión): "Fue suerte. La próxima no te va a pasar."',
+      'Germán Vélez (MegaVisión): "Disfruta mientras puedas, garajero."',
+      'Don Ramiro: "¡Le ganaste en su propia cancha! Así se hace."',
+    ],
+    duelLose: [
+      'Germán Vélez (MegaVisión): "¿Viste? El cliente ya me está llamando a mí."',
+      'Germán Vélez (MegaVisión): "Esto es para grandes. Vuelve a tus misas."',
+    ],
+    stolen: [
+      'Germán Vélez (MegaVisión): "Nada personal, solo negocios."',
+    ],
+  };
 
   /* ---------- Ayudantes ---------- */
   function countCat(s, cat) { return s.equip.filter((e) => CATALOG[e.type].cat === cat).length; }
@@ -172,7 +214,9 @@
       currentEvent: null,
       lastResult: null,
       daily: { redes: 0, anuncio: 0 },
-      stats: { events: 0, fiveStars: 0, earned: 0, best: {} },
+      stats: { events: 0, fiveStars: 0, earned: 0, best: {}, good: {}, duels: { won: 0, lost: 0 } },
+      storyNext: 0, // día en que llega la próxima oferta de la historia (si el capítulo tiene target)
+      chapterStats: { good: {}, duels: 0 }, // avance dentro del capítulo actual
       log: [],
     };
     s.staff.push({ id: nextId(s), name: 'Tú (dueño)', role: 'cam', skill: 2, wage: 0, morale: 100, events: 0, owner: true });
@@ -186,10 +230,22 @@
 
   /* ---------- Clientes / contratos ---------- */
   function availableTypes(s) {
-    return Object.keys(EVENT_TYPES).filter((k) => EVENT_TYPES[k].minRep <= s.rep);
+    const ch = !s.storyDone && CHAPTERS[s.chapter];
+    return Object.keys(EVENT_TYPES).filter((k) => {
+      const t = EVENT_TYPES[k];
+      if (t.minRep > s.rep) return false;
+      if (!s.storyDone && t.minChapter && s.chapter < t.minChapter) return false;
+      // El evento que pide el capítulo solo llega como oferta de la historia
+      if (ch && ch.target === k) return false;
+      return true;
+    });
   }
 
-  function addContract(s, typeKey, payBoost) {
+  // La rival pelea contratos desde el capítulo 4 (y en modo libre)
+  function rivalActive(s) { return s.storyDone || s.chapter >= 3; }
+
+  function addContract(s, typeKey, payBoost, opts) {
+    opts = opts || {};
     if (s.contracts.length >= 7) return null;
     const types = availableTypes(s);
     if (!typeKey) {
@@ -212,9 +268,42 @@
       diff: t.diff,
       pay: Math.round(randInt(s, t.pay[0], t.pay[1]) * (1 + s.rep / 250) * (payBoost || 1) / 10) * 10,
       daysLeft: randInt(s, 2, 4),
+      rival: false, // true = "disputado": MegaVisión también lo quiere
+      story: !!opts.story, // true = oferta de la historia (la pide el capítulo)
     };
+    if (c.story) c.daysLeft = randInt(s, 4, 5);
+    // Disputado: MegaVisión también lo quiere, así que el cliente exige más (dificultad +1) y paga más
+    if (!c.story && t.diff >= 2 && rivalActive(s) && chance(s, 0.2)) {
+      c.rival = true;
+      c.diff = Math.min(5, c.diff + 1);
+      c.pay = Math.round(c.pay * 1.3 / 10) * 10;
+    }
     s.contracts.push(c);
     return c;
+  }
+
+  /* Oferta especial que pide el capítulo actual (llega cada cierto tiempo) */
+  const STORY_CALLS = {
+    lanzamiento: (c) => `📞 Lucía Mena te recomendó: ${c.client} quiere que cubras su lanzamiento.`,
+    ligapro: (c) => `📞 Don Aurelio te consiguió un partido: ${c.client} quiere su transmisión.`,
+    final: () => '📞 ¡Llegó la oferta para transmitir la Final de campeonato! Revisa tus ofertas.',
+  };
+  function storyOffer(s) {
+    const ch = CHAPTERS[s.chapter];
+    if (s.storyDone || !ch || !ch.target || !ch.offer) return;
+    if (s.day < (s.storyNext || 0)) return;
+    if (EVENT_TYPES[ch.target].minRep > s.rep) return;
+    if (s.contracts.some((c) => c.type === ch.target && c.story)) return;
+    if (s.contracts.length >= 7) {
+      // Hace espacio quitando la oferta normal que vence primero
+      const normal = s.contracts.filter((c) => !c.story).sort((a, b) => a.daysLeft - b.daysLeft)[0];
+      if (!normal) return;
+      s.contracts = s.contracts.filter((c) => c !== normal);
+    }
+    const c = addContract(s, ch.target, 1, { story: true });
+    if (!c) return;
+    s.storyNext = s.day + ch.offer.every;
+    log(s, (STORY_CALLS[ch.target] || (() => '📞 Llegó una oferta especial de la historia.'))(c));
   }
 
   /* Acciones para conseguir clientes */
@@ -360,18 +449,15 @@
     // Nuevas ofertas según la fama
     const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 ? 1 : 0);
     for (let i = 0; i < n; i++) addContract(s);
-    // Si el capítulo pide un evento especial, que aparezca
-    const ch = CHAPTERS[s.chapter];
-    if (ch && ch.target && !s.storyDone && EVENT_TYPES[ch.target].minRep <= s.rep &&
-        !s.contracts.some((c) => c.type === ch.target) && chance(s, 0.5)) {
-      addContract(s, ch.target);
-    }
-    // La rival roba clientes (desde el capítulo 4)
-    if (s.chapter >= 3 && s.contracts.length > 1 && chance(s, 0.15)) {
-      const i = randInt(s, 0, s.contracts.length - 1);
-      const c = s.contracts[i];
-      s.contracts.splice(i, 1);
+    // Si el capítulo pide un evento especial, llega cada cierto tiempo
+    storyOffer(s);
+    // La rival roba clientes (desde el capítulo 4), nunca las ofertas de la historia
+    const stealable = s.contracts.filter((c) => !c.story);
+    if (rivalActive(s) && stealable.length > 1 && chance(s, 0.15)) {
+      const c = pick(s, stealable);
+      s.contracts = s.contracts.filter((x) => x !== c);
       log(s, `😠 MegaVisión le ofreció un precio más bajo a ${c.client} y te quitó el contrato.`);
+      if (chance(s, 0.3)) log(s, pick(s, TAUNTS.stolen));
     }
     // Moral y renuncias
     s.staff.forEach((p) => { if (!p.owner) p.morale = clamp(p.morale + (p.morale < 60 ? 2 : 0), 0, 100); });
@@ -731,7 +817,14 @@
     const pay = Math.round(c.pay * STARS_PAY[stars]);
     const repRaw = STARS_REP[stars] * (0.5 + c.diff * 0.15);
     // Cuanta más fama tienes, más cuesta seguir subiendo
-    const repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
+    let repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
+    // Contrato disputado con MegaVisión: duelo ganado (4+) o perdido (2 o menos)
+    let duel = null;
+    if (c.rival) {
+      if (stars >= 4) { duel = 'won'; repDelta += 3; }
+      else if (stars <= 2) { duel = 'lost'; repDelta -= 3; }
+      else duel = 'tie';
+    }
     s.money += pay - ev.wages;
     s.rep = clamp(s.rep + repDelta, 0, 100);
     // Desgaste de equipos, experiencia y moral del personal
@@ -751,14 +844,26 @@
     if (stars === 5) s.stats.fiveStars++;
     s.stats.earned += pay;
     s.stats.best[c.type] = Math.max(s.stats.best[c.type] || 0, stars);
+    s.stats.good = s.stats.good || {};
+    if (stars >= 4) s.stats.good[c.type] = (s.stats.good[c.type] || 0) + 1;
+    s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
+    if (duel === 'won') s.stats.duels.won++;
+    if (duel === 'lost') s.stats.duels.lost++;
+    s.chapterStats = s.chapterStats || { good: {}, duels: 0 };
+    if (stars >= 4) s.chapterStats.good[c.type] = (s.chapterStats.good[c.type] || 0) + 1;
+    if (duel === 'won') s.chapterStats.duels++;
     const result = {
-      title: `${t.icon} ${t.name} — ${c.client}`,
+      title: `${t.icon} ${t.name} · ${c.client}`,
       quality, stars, pay, wages: ev.wages, net: pay - ev.wages, repDelta, ups,
+      rival: !!c.rival, duel, // duel: 'won' | 'lost' | 'tie' | null
       base: ev.base, parts: ev.parts,
       incidents: ev.incidents.map((i) => ({ text: INCIDENTS[i.key].text(view, i.x), result: i.result })),
     };
     log(s, `${'⭐'.repeat(stars)} ${t.name} para ${c.client}: cobraste ${money(pay)}, sueldos ${money(ev.wages)}, fama ${repDelta >= 0 ? '+' : ''}${repDelta}.`);
     ups.forEach((u) => log(s, `📈 ${u}.`));
+    if (duel === 'won') log(s, `⚔️ ¡Duelo ganado contra MegaVisión! (+3 de fama extra) ${pick(s, TAUNTS.duelWin)}`);
+    if (duel === 'lost') log(s, `⚔️ Perdiste el duelo contra MegaVisión (-3 de fama extra). ${pick(s, TAUNTS.duelLose)}`);
+    storyMilestone(s, c.type, stars, duel);
     s.currentEvent = null;
     s.lastResult = result;
     nextDay(s);
@@ -775,8 +880,33 @@
     log(s, `🏅 ¡${ch.title} completado! ${ch.done}`);
     const done = { title: ch.title, text: ch.done, reward: ch.reward };
     if (s.chapter >= CHAPTERS.length - 1) s.storyDone = true;
-    else s.chapter++;
+    else {
+      s.chapter++;
+      s.chapterStats = { good: {}, duels: 0 };
+      const next = CHAPTERS[s.chapter];
+      s.storyNext = next.offer ? s.day + next.offer.first : 0;
+    }
     return done;
+  }
+
+  /* Mensajes cortos de la historia a mitad de capítulo */
+  function storyMilestone(s, type, stars, duel) {
+    if (s.storyDone) return;
+    const g = good(s, type);
+    if (s.chapter === 2 && type === 'lanzamiento') {
+      if (stars >= 4 && g === 1) log(s, 'Lucía Mena: "¡Excelente trabajo! Uno más así y te recomiendo con todas las marcas."');
+      else if (stars < 4) log(s, 'Lucía Mena: "Estuvo regular. El próximo tiene que salir mejor."');
+    }
+    if (s.chapter === 3 && duel === 'won' && duelsWon(s) === 1) {
+      log(s, 'Don Ramiro: "Primera victoria contra MegaVisión. Sigue así, junta plata y fama, que el estadio te espera."');
+    }
+    if (s.chapter === 4 && type === 'ligapro') {
+      if (stars >= 4 && g === 1) log(s, 'Don Aurelio: "Buen partido. Si el próximo sale igual, la final es tuya."');
+      else if (stars < 4) log(s, 'Don Aurelio: "Así no, joven. La hinchada se quejó en redes."');
+    }
+    if (s.chapter === 5 && type === 'final' && stars < 5) {
+      log(s, 'Don Ramiro: "Casi, mijo. Habrá otra final en unos días. Repara el equipo y descansa al personal."');
+    }
   }
 
   /* ---------- Guardar / cargar ---------- */
@@ -785,6 +915,25 @@
     try {
       const s = JSON.parse(str);
       if (!s || s.v !== SAVE_VERSION || !Array.isArray(s.staff)) return null;
+      // Rellenar campos nuevos en partidas guardadas antes
+      s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
+      s.stats.best = s.stats.best || {};
+      if (!s.stats.good) {
+        s.stats.good = {};
+        Object.keys(s.stats.best).forEach((k) => { if (s.stats.best[k] >= 4) s.stats.good[k] = 1; });
+      }
+      s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
+      if (!s.chapterStats) {
+        // Partida vieja: lo mejor que se sabe es el mejor resultado de cada tipo
+        s.chapterStats = { good: {}, duels: 0 };
+        const ch = CHAPTERS[s.chapter];
+        if (ch && ch.target && (s.stats.best[ch.target] || 0) >= 4) s.chapterStats.good[ch.target] = 1;
+      }
+      if (typeof s.storyNext !== 'number') {
+        const ch = CHAPTERS[s.chapter];
+        s.storyNext = ch && ch.offer ? s.day + 1 : 0;
+      }
+      (s.contracts || []).forEach((c) => { c.rival = !!c.rival; c.story = !!c.story; });
       return s;
     } catch (e) { return null; }
   }

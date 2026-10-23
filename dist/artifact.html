@@ -95,13 +95,70 @@
   .story-tag{color:var(--amber);font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:1px}
   button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
   @media (prefers-reduced-motion:reduce){.tally,.live i{animation:none}}
+
+  /* ---- Gráficos ---- */
+  .ico{width:22px;height:22px;flex:none;vertical-align:middle}
+  .ico.sm{width:15px;height:15px;margin-top:-2px}
+  .ico.lg{width:28px;height:28px}
+  nav button span{display:flex;justify-content:center;margin-bottom:3px;font-size:0}
+  nav button span .ico{width:23px;height:23px}
+  nav button.on span{color:var(--red);filter:none}
+  .tile{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--text)}
+  .tile.t-red{background:#3a1519;border-color:#5a2026;color:#ff8f8f}
+  .tile.t-amber{background:#3a2a0d;border-color:#5a4214;color:#ffcf6e}
+  .tile.t-blue{background:#0f2440;border-color:#1c3d66;color:#8cc4ff}
+  .tile.t-green{background:#0e2e1d;border-color:#1a4d31;color:#7fe0a8}
+  .tag .ico{width:13px;height:13px;margin:-2px 3px 0 0}
+  .tag.rival{border-color:#ff3b3b;background:#3a1519;color:#ffb3b3;font-weight:600}
+  .btn .ico{margin:-3px 6px 0 0}
+  .chip small{display:flex;justify-content:center;align-items:center;gap:4px}
+  .chip small .ico{width:12px;height:12px}
+  .hq,.scene{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--line);background:#0d0f14}
+  .hqcard{padding:0;overflow:hidden}
+  .hqcard .hq{border:0;border-radius:0}
+  .hqcard .in{padding:12px 14px 14px}
+  .speaker{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+  .speaker .who{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:14px;color:var(--amber);text-transform:uppercase;letter-spacing:1px}
+  .portrait{flex:none;display:block}
+  .bubble{background:var(--panel2);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:12px 14px}
+  .starsvg{display:flex;justify-content:center;gap:6px;margin:10px 0}
+  .starsvg svg{width:38px;height:38px}
+  .starsvg .on{fill:var(--amber);stroke:var(--amber);animation:pop .45s backwards}
+  .starsvg .off{fill:none;stroke:var(--line)}
+  @keyframes pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+  .iconbtn{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:36px;height:32px;display:grid;place-items:center;margin-left:auto}
+  /* Animaciones de las escenas */
+  .blink{animation:blink 1.1s infinite}
+  .bulb{animation:glow 2.4s infinite}
+  @keyframes glow{50%{opacity:.5}}
+  .crowd{animation:bob 1.6s ease-in-out infinite;transform-box:fill-box}
+  @keyframes bob{50%{transform:translateY(-2px)}}
+  .beam{animation:sway 3s ease-in-out infinite;transform-origin:top center;transform-box:fill-box}
+  @keyframes sway{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  .fx-rain path{animation:rain .5s linear infinite}
+  @keyframes rain{from{transform:translate(0,-20px)}to{transform:translate(-8px,30px)}}
+  .fx-dark{animation:dark 2.2s infinite}
+  @keyframes dark{0%,100%{fill-opacity:.72}8%{fill-opacity:.2}12%{fill-opacity:.72}40%{fill-opacity:.82}}
+  .fx-spark{animation:spark .35s steps(2) infinite}
+  @keyframes spark{50%{opacity:.2}}
+  .fx-blink{animation:blink .8s infinite}
+  .fx-wave circle{animation:wave 1s ease-out infinite;transform-origin:180px 90px}
+  @keyframes wave{from{transform:scale(.4);opacity:1}to{transform:scale(1.3);opacity:0}}
+  .fx-flash{animation:flash 1.6s ease-out 1}
+  @keyframes flash{0%{opacity:.85}100%{opacity:0}}
+  .fx-confetti{animation:fall 2.2s linear infinite}
+  @keyframes fall{from{transform:translateY(0) rotate(0)}to{transform:translateY(190px) rotate(300deg)}}
+  .fx-glitch{animation:glitch .25s steps(3) infinite}
+  @keyframes glitch{0%{transform:translateX(0)}33%{transform:translateX(-4px)}66%{transform:translateX(3px)}}
+  .cam-off{opacity:.35}
+  @media (prefers-reduced-motion:reduce){.blink,.bulb,.crowd,.beam,.fx-rain path,.fx-dark,.fx-spark,.fx-blink,.fx-wave circle,.fx-confetti,.fx-glitch,.starsvg .on{animation:none}.fx-flash{display:none}}
 </style>
 <header class="gut">
-  <div class="brand"><span class="tally"></span> En Vivo Tycoon</div>
+  <div class="brand"><span class="tally"></span> En Vivo Tycoon<button class="iconbtn" id="muteBtn" data-act="mute" aria-label="Sonido"></button></div>
   <div class="stats">
-    <div class="chip"><small>Dinero</small><b id="hMoney">$0</b></div>
-    <div class="chip"><small>Fama</small><b id="hRep">0</b></div>
-    <div class="chip"><small>Día</small><b id="hDay">1</b></div>
+    <div class="chip"><small data-ico="money">Dinero</small><b id="hMoney">$0</b></div>
+    <div class="chip"><small data-ico="star">Fama</small><b id="hRep">0</b></div>
+    <div class="chip"><small data-ico="calendar">Día</small><b id="hDay">1</b></div>
   </div>
 </header>
 
@@ -114,11 +171,11 @@
 </main>
 
 <nav>
-  <button data-tab="inicio" class="on"><span>🏠</span>Inicio</button>
-  <button data-tab="clientes"><span>📋</span>Clientes <b class="badge" id="badgeC"></b></button>
-  <button data-tab="personal"><span>👥</span>Personal</button>
-  <button data-tab="bodega"><span>📦</span>Bodega</button>
-  <button data-tab="registro"><span>📜</span>Registro</button>
+  <button data-tab="inicio" class="on"><span data-ico="home"></span>Inicio</button>
+  <button data-tab="clientes"><span data-ico="clients"></span>Clientes <b class="badge" id="badgeC"></b></button>
+  <button data-tab="personal"><span data-ico="people"></span>Personal</button>
+  <button data-tab="bodega"><span data-ico="box"></span>Bodega</button>
+  <button data-tab="registro"><span data-ico="log"></span>Registro</button>
 </nav>
 
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
@@ -192,9 +249,10 @@
                    clients: ['Cervecería Montaña', 'Bebidas Volcán', 'Motos Kawa-Andes', 'Celulares Nébula'] },
     concierto:   { name: 'Concierto',                icon: '🎸', cams: [3, 4], audio: true,  stream: 1,   outdoor: 0.6, diff: 4, pay: [1600, 3000],  minRep: 28,
                    clients: ['Festival Sur Sonoro', 'Productora Tarima Viva', 'Coliseo Rumiñahui'] },
-    ligapro:     { name: 'Partido de LigaPro',       icon: '🏟️', cams: [4, 4], audio: true,  stream: 1,   outdoor: 1,   diff: 4, pay: [2600, 4500],  minRep: 40,
+    // minChapter: el cliente solo aparece desde ese capítulo (o en modo libre)
+    ligapro:     { name: 'Partido de LigaPro',       icon: '🏟️', cams: [4, 4], audio: true,  stream: 1,   outdoor: 1,   diff: 4, pay: [2600, 4500],  minRep: 40, minChapter: 4,
                    clients: ['Club Atlético del Valle', 'Deportivo Cumbayá FC', 'Sporting Pichincha'] },
-    final:       { name: 'Final de campeonato',      icon: '🏆', cams: [5, 6], audio: true,  stream: 1,   outdoor: 1,   diff: 5, pay: [6000, 10000], minRep: 65,
+    final:       { name: 'Final de campeonato',      icon: '🏆', cams: [5, 6], audio: true,  stream: 1,   outdoor: 1,   diff: 5, pay: [6000, 10000], minRep: 65, minChapter: 5,
                    clients: ['Liga Nacional de Fútbol', 'Federación del Torneo'] },
   };
 
@@ -207,9 +265,19 @@
   const STARS_REP = [0, -5, -0.5, 2, 4, 6];
 
   /* ---------- Historia (capítulos) ---------- */
+  // character: quién habla en el capítulo (la pantalla dibuja su retrato)
+  //   'ramiro' = Don Ramiro (mentor) · 'mega' = Germán Vélez, dueño de MegaVisión (rival)
+  //   'marca' = Lucía Mena (gerente de marketing) · 'dirigente' = Don Aurelio (dirigente de club)
+  // target: tipo de evento que pide el capítulo. offer: cada cuántos días llega una oferta
+  //   "de la historia" de ese tipo (first = días hasta la primera, every = días entre ofertas).
+  // Lo que cuenta para el capítulo actual (se reinicia al empezar cada capítulo)
+  const good = (s, type) => (s.chapterStats && s.chapterStats.good[type]) || 0;
+  const duelsWon = (s) => (s.chapterStats && s.chapterStats.duels) || 0;
+  const hasType = (s, type) => s.equip.some((e) => e.type === type);
   const CHAPTERS = [
     {
       title: 'Capítulo 1 · El garaje',
+      character: 'ramiro',
       intro: 'Don Ramiro, tu antiguo jefe en el canal, se jubiló y te regaló su vieja cámara: "Con esto empecé yo. Ahora te toca a ti." Tienes un garaje, una cámara y muchas ganas.',
       goal: 'Completa 3 eventos',
       check: (s) => s.stats.events >= 3,
@@ -219,53 +287,84 @@
     },
     {
       title: 'Capítulo 2 · Armando el equipo',
-      intro: 'Solo no vas a llegar lejos. Necesitas gente de confianza y más equipo para cubrir eventos con varias cámaras.',
+      character: 'ramiro',
+      intro: 'Don Ramiro te visita en el garaje: "Solo no vas a llegar lejos, mijo. Necesitas gente de confianza y más equipo para cubrir eventos con varias cámaras."',
       goal: 'Ten 2 cámaras, 2 personas contratadas y 12 de fama',
       check: (s) => countCat(s, 'cam') >= 2 && s.staff.length >= 3 && s.rep >= 12,
       progress: (s) => `Cámaras ${Math.min(countCat(s, 'cam'), 2)}/2 · Personal ${Math.min(s.staff.length - 1, 2)}/2 · Fama ${Math.min(Math.floor(s.rep), 12)}/12`,
       reward: 800,
-      done: 'Tu productora ya parece una empresa de verdad. Un amigo te recomienda con una marca grande: +$800 de adelanto.',
+      done: 'Tu productora ya parece una empresa de verdad. Don Ramiro te recomienda con una marca grande: +$800 de adelanto.',
     },
     {
       title: 'Capítulo 3 · El gran lanzamiento',
-      intro: 'Una marca busca productora para el lanzamiento de su nuevo producto. Habrá prensa e influencers. Es tu oportunidad de jugar en grande.',
-      goal: 'Cubre un "Lanzamiento de marca" con 4 estrellas o más',
+      character: 'marca',
+      intro: 'Lucía Mena, gerente de marketing, te llama: "Tenemos varios lanzamientos este año, con prensa e influencers. Si me haces quedar bien dos veces, te recomiendo con todas las marcas."',
+      goal: 'Cubre 2 "Lanzamientos de marca" con 4 estrellas o más',
       target: 'lanzamiento',
-      check: (s) => (s.stats.best.lanzamiento || 0) >= 4,
-      progress: (s) => `Mejor resultado: ${s.stats.best.lanzamiento || 0}⭐ de 4⭐`,
+      offer: { first: 3, every: 6 },
+      check: (s) => good(s, 'lanzamiento') >= 2,
+      progress: (s) => `Lanzamientos con 4⭐ o más: ${Math.min(good(s, 'lanzamiento'), 2)}/2`,
       reward: 1500,
-      done: 'El video del lanzamiento se hizo viral. Te llueven mensajes: +$1.500 de bono del cliente.',
+      done: 'Lucía Mena quedó encantada: "Los videos se hicieron virales." Te manda un bono de $1.500.',
     },
     {
       title: 'Capítulo 4 · La rival',
-      intro: 'MegaVisión, la productora más grande de la ciudad, se enteró de ti. Empiezan a robarte clientes con precios más bajos. Tienes que ganarte un nombre.',
-      goal: 'Llega a 40 de fama y junta $10.000',
-      check: (s) => s.rep >= 40 && s.money >= 10000,
-      progress: (s) => `Fama ${Math.min(Math.floor(s.rep), 40)}/40 · Dinero ${money(Math.min(s.money, 10000))}/$10.000`,
+      character: 'mega',
+      intro: 'Germán Vélez, dueño de MegaVisión, se enteró de ti: "Esta ciudad tiene una sola productora grande, y es la mía." Ahora pelea contigo algunos contratos. Los verás marcados como DISPUTADOS.',
+      goal: 'Gana 3 duelos (contratos disputados con 4⭐ o más), llega a 40 de fama y junta $12.000',
+      check: (s) => duelsWon(s) >= 3 && s.rep >= 40 && s.money >= 12000,
+      progress: (s) => `Duelos ${Math.min(duelsWon(s), 3)}/3 · Fama ${Math.min(Math.floor(s.rep), 40)}/40 · Dinero ${money(Math.min(s.money, 12000))}/$12.000`,
       reward: 2000,
-      done: 'Un club de LigaPro quedó mal con MegaVisión: se les cayó la transmisión en pleno partido. Te llaman a ti. +$2.000 para prepararte.',
+      done: 'A MegaVisión se le cayó la transmisión en pleno partido de LigaPro. Don Aurelio, dirigente del club, te llama a ti. +$2.000 para prepararte.',
     },
     {
       title: 'Capítulo 5 · Al estadio',
-      intro: 'Transmitir fútbol profesional es otra liga: 4 cámaras, gráficos, repeticiones y miles de personas mirando en vivo.',
-      goal: 'Transmite un "Partido de LigaPro" con 4 estrellas o más',
+      character: 'dirigente',
+      intro: 'Don Aurelio te recibe en el estadio: "Aquí no se perdona nada. Cuatro cámaras, repeticiones y miles mirando. Necesito un switcher de verdad y dos partidos impecables."',
+      goal: 'Compra un "Switcher ATEM" y transmite 2 "Partidos de LigaPro" con 4 estrellas o más',
       target: 'ligapro',
-      check: (s) => (s.stats.best.ligapro || 0) >= 4,
-      progress: (s) => `Mejor resultado: ${s.stats.best.ligapro || 0}⭐ de 4⭐`,
+      offer: { first: 8, every: 10 },
+      check: (s) => hasType(s, 'switch_pro') && good(s, 'ligapro') >= 2,
+      progress: (s) => `Switcher ATEM ${hasType(s, 'switch_pro') ? '✅' : '❌'} · Partidos con 4⭐ o más ${Math.min(good(s, 'ligapro'), 2)}/2`,
       reward: 3000,
-      done: 'Los dirigentes quedaron felices. Te ofrecen la gran final: +$3.000 de adelanto.',
+      done: 'Don Aurelio quedó feliz: "Ustedes son los nuestros." Te ofrecen transmitir la gran final: +$3.000 de adelanto.',
     },
     {
       title: 'Capítulo 6 · La final',
-      intro: 'La final del campeonato. Todo el país estará mirando y MegaVisión hará lo imposible por verte fallar. Don Ramiro estará en primera fila.',
-      goal: 'Transmite una "Final de campeonato" con 5 estrellas',
+      character: 'ramiro',
+      intro: 'La final del campeonato se juega en unas tres semanas. Todo el país estará mirando y MegaVisión hará lo imposible por verte fallar. Don Ramiro estará en primera fila. Prepara a tu mejor equipo.',
+      goal: 'Transmite una "Final de campeonato" con 5 estrellas (necesitas 65 de fama)',
       target: 'final',
+      offer: { first: 18, every: 10 },
       check: (s) => (s.stats.best.final || 0) >= 5,
-      progress: (s) => `Mejor resultado: ${s.stats.best.final || 0}⭐ de 5⭐`,
+      progress: (s) => {
+        const best = s.stats.best.final || 0;
+        const offered = s.contracts.some((c) => c.type === 'final');
+        const left = Math.max(0, (s.storyNext || 0) - s.day);
+        const when = offered ? 'la oferta ya llegó' : s.rep < EVENT_TYPES.final.minRep ? `fama ${Math.floor(s.rep)}/${EVENT_TYPES.final.minRep}`
+          : left > 0 ? `la final se juega en ${left} día${left > 1 ? 's' : ''}` : 'la oferta llega pronto';
+        return `Mejor resultado ${best}⭐ de 5⭐ · ${when}`;
+      },
       reward: 5000,
       done: '¡Transmisión perfecta! Don Ramiro te abraza: "Ya no eres mi alumno, eres el mejor." Ganaste el modo historia. Puedes seguir jugando libre.',
     },
   ];
+
+  /* Frases cortas que aparecen en el registro cuando pasan cosas */
+  const TAUNTS = {
+    duelWin: [
+      'Germán Vélez (MegaVisión): "Fue suerte. La próxima no te va a pasar."',
+      'Germán Vélez (MegaVisión): "Disfruta mientras puedas, garajero."',
+      'Don Ramiro: "¡Le ganaste en su propia cancha! Así se hace."',
+    ],
+    duelLose: [
+      'Germán Vélez (MegaVisión): "¿Viste? El cliente ya me está llamando a mí."',
+      'Germán Vélez (MegaVisión): "Esto es para grandes. Vuelve a tus misas."',
+    ],
+    stolen: [
+      'Germán Vélez (MegaVisión): "Nada personal, solo negocios."',
+    ],
+  };
 
   /* ---------- Ayudantes ---------- */
   function countCat(s, cat) { return s.equip.filter((e) => CATALOG[e.type].cat === cat).length; }
@@ -299,7 +398,9 @@
       currentEvent: null,
       lastResult: null,
       daily: { redes: 0, anuncio: 0 },
-      stats: { events: 0, fiveStars: 0, earned: 0, best: {} },
+      stats: { events: 0, fiveStars: 0, earned: 0, best: {}, good: {}, duels: { won: 0, lost: 0 } },
+      storyNext: 0, // día en que llega la próxima oferta de la historia (si el capítulo tiene target)
+      chapterStats: { good: {}, duels: 0 }, // avance dentro del capítulo actual
       log: [],
     };
     s.staff.push({ id: nextId(s), name: 'Tú (dueño)', role: 'cam', skill: 2, wage: 0, morale: 100, events: 0, owner: true });
@@ -313,10 +414,22 @@
 
   /* ---------- Clientes / contratos ---------- */
   function availableTypes(s) {
-    return Object.keys(EVENT_TYPES).filter((k) => EVENT_TYPES[k].minRep <= s.rep);
+    const ch = !s.storyDone && CHAPTERS[s.chapter];
+    return Object.keys(EVENT_TYPES).filter((k) => {
+      const t = EVENT_TYPES[k];
+      if (t.minRep > s.rep) return false;
+      if (!s.storyDone && t.minChapter && s.chapter < t.minChapter) return false;
+      // El evento que pide el capítulo solo llega como oferta de la historia
+      if (ch && ch.target === k) return false;
+      return true;
+    });
   }
 
-  function addContract(s, typeKey, payBoost) {
+  // La rival pelea contratos desde el capítulo 4 (y en modo libre)
+  function rivalActive(s) { return s.storyDone || s.chapter >= 3; }
+
+  function addContract(s, typeKey, payBoost, opts) {
+    opts = opts || {};
     if (s.contracts.length >= 7) return null;
     const types = availableTypes(s);
     if (!typeKey) {
@@ -339,9 +452,42 @@
       diff: t.diff,
       pay: Math.round(randInt(s, t.pay[0], t.pay[1]) * (1 + s.rep / 250) * (payBoost || 1) / 10) * 10,
       daysLeft: randInt(s, 2, 4),
+      rival: false, // true = "disputado": MegaVisión también lo quiere
+      story: !!opts.story, // true = oferta de la historia (la pide el capítulo)
     };
+    if (c.story) c.daysLeft = randInt(s, 4, 5);
+    // Disputado: MegaVisión también lo quiere, así que el cliente exige más (dificultad +1) y paga más
+    if (!c.story && t.diff >= 2 && rivalActive(s) && chance(s, 0.2)) {
+      c.rival = true;
+      c.diff = Math.min(5, c.diff + 1);
+      c.pay = Math.round(c.pay * 1.3 / 10) * 10;
+    }
     s.contracts.push(c);
     return c;
+  }
+
+  /* Oferta especial que pide el capítulo actual (llega cada cierto tiempo) */
+  const STORY_CALLS = {
+    lanzamiento: (c) => `📞 Lucía Mena te recomendó: ${c.client} quiere que cubras su lanzamiento.`,
+    ligapro: (c) => `📞 Don Aurelio te consiguió un partido: ${c.client} quiere su transmisión.`,
+    final: () => '📞 ¡Llegó la oferta para transmitir la Final de campeonato! Revisa tus ofertas.',
+  };
+  function storyOffer(s) {
+    const ch = CHAPTERS[s.chapter];
+    if (s.storyDone || !ch || !ch.target || !ch.offer) return;
+    if (s.day < (s.storyNext || 0)) return;
+    if (EVENT_TYPES[ch.target].minRep > s.rep) return;
+    if (s.contracts.some((c) => c.type === ch.target && c.story)) return;
+    if (s.contracts.length >= 7) {
+      // Hace espacio quitando la oferta normal que vence primero
+      const normal = s.contracts.filter((c) => !c.story).sort((a, b) => a.daysLeft - b.daysLeft)[0];
+      if (!normal) return;
+      s.contracts = s.contracts.filter((c) => c !== normal);
+    }
+    const c = addContract(s, ch.target, 1, { story: true });
+    if (!c) return;
+    s.storyNext = s.day + ch.offer.every;
+    log(s, (STORY_CALLS[ch.target] || (() => '📞 Llegó una oferta especial de la historia.'))(c));
   }
 
   /* Acciones para conseguir clientes */
@@ -487,18 +633,15 @@
     // Nuevas ofertas según la fama
     const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 ? 1 : 0);
     for (let i = 0; i < n; i++) addContract(s);
-    // Si el capítulo pide un evento especial, que aparezca
-    const ch = CHAPTERS[s.chapter];
-    if (ch && ch.target && !s.storyDone && EVENT_TYPES[ch.target].minRep <= s.rep &&
-        !s.contracts.some((c) => c.type === ch.target) && chance(s, 0.5)) {
-      addContract(s, ch.target);
-    }
-    // La rival roba clientes (desde el capítulo 4)
-    if (s.chapter >= 3 && s.contracts.length > 1 && chance(s, 0.15)) {
-      const i = randInt(s, 0, s.contracts.length - 1);
-      const c = s.contracts[i];
-      s.contracts.splice(i, 1);
+    // Si el capítulo pide un evento especial, llega cada cierto tiempo
+    storyOffer(s);
+    // La rival roba clientes (desde el capítulo 4), nunca las ofertas de la historia
+    const stealable = s.contracts.filter((c) => !c.story);
+    if (rivalActive(s) && stealable.length > 1 && chance(s, 0.15)) {
+      const c = pick(s, stealable);
+      s.contracts = s.contracts.filter((x) => x !== c);
       log(s, `😠 MegaVisión le ofreció un precio más bajo a ${c.client} y te quitó el contrato.`);
+      if (chance(s, 0.3)) log(s, pick(s, TAUNTS.stolen));
     }
     // Moral y renuncias
     s.staff.forEach((p) => { if (!p.owner) p.morale = clamp(p.morale + (p.morale < 60 ? 2 : 0), 0, 100); });
@@ -858,7 +1001,14 @@
     const pay = Math.round(c.pay * STARS_PAY[stars]);
     const repRaw = STARS_REP[stars] * (0.5 + c.diff * 0.15);
     // Cuanta más fama tienes, más cuesta seguir subiendo
-    const repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
+    let repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
+    // Contrato disputado con MegaVisión: duelo ganado (4+) o perdido (2 o menos)
+    let duel = null;
+    if (c.rival) {
+      if (stars >= 4) { duel = 'won'; repDelta += 3; }
+      else if (stars <= 2) { duel = 'lost'; repDelta -= 3; }
+      else duel = 'tie';
+    }
     s.money += pay - ev.wages;
     s.rep = clamp(s.rep + repDelta, 0, 100);
     // Desgaste de equipos, experiencia y moral del personal
@@ -878,14 +1028,26 @@
     if (stars === 5) s.stats.fiveStars++;
     s.stats.earned += pay;
     s.stats.best[c.type] = Math.max(s.stats.best[c.type] || 0, stars);
+    s.stats.good = s.stats.good || {};
+    if (stars >= 4) s.stats.good[c.type] = (s.stats.good[c.type] || 0) + 1;
+    s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
+    if (duel === 'won') s.stats.duels.won++;
+    if (duel === 'lost') s.stats.duels.lost++;
+    s.chapterStats = s.chapterStats || { good: {}, duels: 0 };
+    if (stars >= 4) s.chapterStats.good[c.type] = (s.chapterStats.good[c.type] || 0) + 1;
+    if (duel === 'won') s.chapterStats.duels++;
     const result = {
-      title: `${t.icon} ${t.name} — ${c.client}`,
+      title: `${t.icon} ${t.name} · ${c.client}`,
       quality, stars, pay, wages: ev.wages, net: pay - ev.wages, repDelta, ups,
+      rival: !!c.rival, duel, // duel: 'won' | 'lost' | 'tie' | null
       base: ev.base, parts: ev.parts,
       incidents: ev.incidents.map((i) => ({ text: INCIDENTS[i.key].text(view, i.x), result: i.result })),
     };
     log(s, `${'⭐'.repeat(stars)} ${t.name} para ${c.client}: cobraste ${money(pay)}, sueldos ${money(ev.wages)}, fama ${repDelta >= 0 ? '+' : ''}${repDelta}.`);
     ups.forEach((u) => log(s, `📈 ${u}.`));
+    if (duel === 'won') log(s, `⚔️ ¡Duelo ganado contra MegaVisión! (+3 de fama extra) ${pick(s, TAUNTS.duelWin)}`);
+    if (duel === 'lost') log(s, `⚔️ Perdiste el duelo contra MegaVisión (-3 de fama extra). ${pick(s, TAUNTS.duelLose)}`);
+    storyMilestone(s, c.type, stars, duel);
     s.currentEvent = null;
     s.lastResult = result;
     nextDay(s);
@@ -902,8 +1064,33 @@
     log(s, `🏅 ¡${ch.title} completado! ${ch.done}`);
     const done = { title: ch.title, text: ch.done, reward: ch.reward };
     if (s.chapter >= CHAPTERS.length - 1) s.storyDone = true;
-    else s.chapter++;
+    else {
+      s.chapter++;
+      s.chapterStats = { good: {}, duels: 0 };
+      const next = CHAPTERS[s.chapter];
+      s.storyNext = next.offer ? s.day + next.offer.first : 0;
+    }
     return done;
+  }
+
+  /* Mensajes cortos de la historia a mitad de capítulo */
+  function storyMilestone(s, type, stars, duel) {
+    if (s.storyDone) return;
+    const g = good(s, type);
+    if (s.chapter === 2 && type === 'lanzamiento') {
+      if (stars >= 4 && g === 1) log(s, 'Lucía Mena: "¡Excelente trabajo! Uno más así y te recomiendo con todas las marcas."');
+      else if (stars < 4) log(s, 'Lucía Mena: "Estuvo regular. El próximo tiene que salir mejor."');
+    }
+    if (s.chapter === 3 && duel === 'won' && duelsWon(s) === 1) {
+      log(s, 'Don Ramiro: "Primera victoria contra MegaVisión. Sigue así, junta plata y fama, que el estadio te espera."');
+    }
+    if (s.chapter === 4 && type === 'ligapro') {
+      if (stars >= 4 && g === 1) log(s, 'Don Aurelio: "Buen partido. Si el próximo sale igual, la final es tuya."');
+      else if (stars < 4) log(s, 'Don Aurelio: "Así no, joven. La hinchada se quejó en redes."');
+    }
+    if (s.chapter === 5 && type === 'final' && stars < 5) {
+      log(s, 'Don Ramiro: "Casi, mijo. Habrá otra final en unos días. Repara el equipo y descansa al personal."');
+    }
   }
 
   /* ---------- Guardar / cargar ---------- */
@@ -912,6 +1099,25 @@
     try {
       const s = JSON.parse(str);
       if (!s || s.v !== SAVE_VERSION || !Array.isArray(s.staff)) return null;
+      // Rellenar campos nuevos en partidas guardadas antes
+      s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
+      s.stats.best = s.stats.best || {};
+      if (!s.stats.good) {
+        s.stats.good = {};
+        Object.keys(s.stats.best).forEach((k) => { if (s.stats.best[k] >= 4) s.stats.good[k] = 1; });
+      }
+      s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
+      if (!s.chapterStats) {
+        // Partida vieja: lo mejor que se sabe es el mejor resultado de cada tipo
+        s.chapterStats = { good: {}, duels: 0 };
+        const ch = CHAPTERS[s.chapter];
+        if (ch && ch.target && (s.stats.best[ch.target] || 0) >= 4) s.chapterStats.good[ch.target] = 1;
+      }
+      if (typeof s.storyNext !== 'number') {
+        const ch = CHAPTERS[s.chapter];
+        s.storyNext = ch && ch.offer ? s.day + 1 : 0;
+      }
+      (s.contracts || []).forEach((c) => { c.rival = !!c.rival; c.story = !!c.story; });
       return s;
     } catch (e) { return null; }
   }
@@ -930,16 +1136,871 @@
 </script>
 <script>
 /* =========================================================
+   EN VIVO Tycoon — Gráficos (todo dibujado con SVG, sin imágenes)
+   Art.icon(nombre)        → ícono de línea
+   Art.portrait(personaje) → retrato (ramiro, mega, marca, dirigente)
+   Art.hq(estado)          → la sede de tu productora (crece con la historia)
+   Art.scene(evento, imprevisto, cámaras) → escena animada del evento en vivo
+   ========================================================= */
+(function (root) {
+  'use strict';
+
+  /* ---------- Íconos (24x24, trazo) ---------- */
+  const P = {
+    // Equipos
+    cam_basic: '<rect x="3" y="8" width="12" height="9" rx="2"/><path d="M15 11l5-3v9l-5-3"/><circle cx="7" cy="12.5" r="1.6"/>',
+    cam_pro: '<rect x="2.5" y="8" width="13" height="8" rx="1.5"/><path d="M15.5 10h3l3-2v8l-3-2h-3"/><path d="M5 8V6h6v2"/><path d="M6 16v3M12 16v3M4.5 19h9"/>',
+    cam_cine: '<rect x="3" y="7" width="11" height="9" rx="1.5"/><path d="M14 9.5h2.5V8l4.5 1v5l-4.5 1v-1.5H14"/><circle cx="8.5" cy="11.5" r="2.5"/><path d="M5 7V4.5h7V7M8.5 16v4M5 20h7"/>',
+    switch_basic: '<rect x="4" y="5" width="16" height="10" rx="1.5"/><path d="M2 18.5h20l-1.5-2.5h-17z"/><path d="M7 12l2.5-3 2 2 2.5-3 3 4"/>',
+    switch_pro: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><circle cx="6" cy="11" r="1"/><circle cx="9.5" cy="11" r="1"/><circle cx="13" cy="11" r="1"/><path d="M5 14.5h9"/><path d="M18 9.5v5"/><rect x="16.5" y="11" width="3" height="2" rx=".5"/>',
+    audio_basic: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 7v10M12 7v10M16 7v10"/><path d="M6.5 10h3M10.5 14h3M14.5 9h3"/>',
+    audio_pro: '<rect x="2.5" y="3.5" width="19" height="17" rx="2"/><rect x="5" y="6" width="14" height="4" rx="1"/><path d="M6.5 13v5M10 13v5M13.5 13v5M17 13v5"/><path d="M5.5 15h2M9 16.5h2M12.5 14h2M16 15.5h2"/>',
+    mics: '<rect x="9" y="3" width="6" height="10" rx="3"/><path d="M6 11a6 6 0 0012 0M12 17v4M8.5 21h7"/>',
+    encoder: '<rect x="3" y="11" width="18" height="8" rx="1.5"/><path d="M7 15h4"/><circle cx="17" cy="15" r="1"/><path d="M8.5 7.5a5 5 0 017 0M6 5a8.5 8.5 0 0112 0"/>',
+    router4g: '<rect x="3" y="12" width="18" height="7" rx="1.5"/><path d="M7 12l-2-7M17 12l2-7"/><circle cx="7.5" cy="15.5" r=".8"/><circle cx="11" cy="15.5" r=".8"/><path d="M14 15.5h4"/>',
+    ups: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12.5 7l-3 5.5h3.5l-3 5"/>',
+    raincover: '<path d="M3 12a9 9 0 0118 0z"/><path d="M12 12v6.5a2 2 0 01-4 0"/>',
+    cable: '<path d="M4 20c4 0 4-8 8-8s4-6 8-6"/><rect x="17" y="3" width="5" height="6" rx="1" transform="rotate(30 19.5 6)"/><circle cx="4" cy="20" r="1.5"/>',
+    battery: '<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10.5v3"/><path d="M6 10v4M9 10v4"/>',
+    // Roles
+    role_cam: '<rect x="3" y="7" width="12" height="9" rx="2"/><path d="M15 10l6-3v9l-6-3"/><path d="M7 16l-2 5M11 16l2 5"/>',
+    role_dir: '<path d="M3 9h18v11H3z"/><path d="M3 9l2-5 16 0-2 5"/><path d="M7.5 4.2L9.5 9M13 4.2L15 9"/>',
+    role_audio: '<path d="M4 15v-3a8 8 0 0116 0v3"/><rect x="2.5" y="14" width="4.5" height="6.5" rx="1.5"/><rect x="17" y="14" width="4.5" height="6.5" rx="1.5"/>',
+    role_stream: '<circle cx="12" cy="10" r="2"/><path d="M12 12l-3 9M12 12l3 9M10 18h4"/><path d="M8 6.5a5 5 0 000 7M16 6.5a5 5 0 010 7M5.2 4a9 9 0 000 12M18.8 4a9 9 0 010 12"/>',
+    // Tipos de evento
+    misa: '<path d="M12 2v4M10 4h4"/><path d="M7 21V11l5-4 5 4v10"/><path d="M3 21h18"/><path d="M10.5 21v-4a1.5 1.5 0 013 0v4"/>',
+    boda: '<circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="M13 5l2-2 2 2-2 2z"/>',
+    prensa: '<rect x="9.5" y="2.5" width="5" height="8" rx="2.5"/><path d="M12 10.5V14"/><path d="M5 14h14l-1.5 7h-11z"/>',
+    barrial: '<circle cx="12" cy="12" r="9"/><path d="M12 7l3.8 2.8-1.5 4.4H9.7L8.2 9.8z"/><path d="M12 3v4M20.5 9.5l-4.7.3M17 19.5l-2.7-5.3M7 19.5l2.7-5.3M3.5 9.5l4.7.3"/>',
+    graduacion: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/><path d="M21 9.5v5"/>',
+    lanzamiento: '<path d="M12 2c3.5 2.5 5 6 5 10l-2 4H9l-2-4c0-4 1.5-7.5 5-10z"/><circle cx="12" cy="9" r="1.8"/><path d="M9 16l-3 3 1-5M15 16l3 3-1-5M10.5 19.5L12 22l1.5-2.5"/>',
+    concierto: '<path d="M14 3l5 5-7.5 7.5"/><circle cx="7.5" cy="16.5" r="4.5"/><path d="M6 18l3-3"/><path d="M17.5 4.5l2 2"/>',
+    ligapro: '<path d="M2 18c2-5 6-7 10-7s8 2 10 7"/><path d="M2 18h20v3H2z"/><path d="M5 11V4M19 11V4"/><path d="M3.5 4h3M17.5 4h3"/>',
+    final: '<path d="M7 3h10v5a5 5 0 01-10 0z"/><path d="M7 5H4a3 3 0 003 4M17 5h3a3 3 0 01-3 4"/><path d="M12 13v4M8 21h8l-1-4H9z"/>',
+    // Interfaz
+    home: '<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>',
+    clients: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4"/><path d="M8.5 10h7M8.5 14h7M8.5 18h4"/>',
+    people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0121.5 19"/>',
+    box: '<path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5l9 4.5 9-4.5M12 12v9"/>',
+    log: '<path d="M6 3h11a2 2 0 012 2v14a2 2 0 01-2 2H6z"/><path d="M6 3a2 2 0 00-2 2v1h2M9.5 8h6M9.5 12h6M9.5 16h4"/>',
+    money: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v5M18 9.5v5"/>',
+    star: '<path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    wifi_off: '<path d="M2 8.5a15 15 0 0120 0M5.5 12a10 10 0 0113 0M9 15.5a5 5 0 016 0"/><circle cx="12" cy="19" r="1"/><path d="M3 3l18 18"/>',
+    rain: '<path d="M6 14a4 4 0 01.5-8 6 6 0 0111 1.5A3.5 3.5 0 0117 14z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    wrench: '<path d="M14.5 6.5a4 4 0 015.2 5.2l-2.2-2.2-2.3.6-.6 2.3 2.2 2.2a4 4 0 01-5.2-5.2L4 17v3h3l7.6-7.6"/>',
+    sound: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 010 7M19.5 6a8.5 8.5 0 010 12"/>',
+    sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+    vip: '<circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2a7 7 0 0114 0v2"/><path d="M12 13.5l-1 3 1 4 1-4z"/>',
+    megaphone: '<path d="M3 10v4h3l9 5V5L6 10z"/><path d="M6 14l1.5 6h2.5l-1-5.5"/><path d="M18 9.5a3 3 0 010 5"/>',
+    social: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/><path d="M9 9.5l3 2.5 3-2.5M9 13h6"/>',
+    ad: '<rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/><path d="M7 13l2.5-6 2.5 6M7.8 11h3.4M14 7v6h1.5a3 3 0 000-6z"/>',
+    walk: '<circle cx="13" cy="4" r="2"/><path d="M10 21l2-6 3 3v3M8.5 11l2.5-4 3 1 2 3.5M11 7l-1 5"/>',
+    sleep: '<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/><path d="M15 3h4l-4 4h4"/>',
+    refresh: '<path d="M20 11a8 8 0 00-14.5-4.5L3 9"/><path d="M3 4v5h5"/><path d="M4 13a8 8 0 0014.5 4.5L21 15"/><path d="M21 20v-5h-5"/>',
+    play: '<path d="M7 4l13 8-13 8z"/>',
+    rec: '<circle cx="12" cy="12" r="8"/>',
+    check: '<path d="M4 12.5l5 5L20 6.5"/>',
+    close: '<path d="M5 5l14 14M19 5L5 19"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 018 0v3"/>',
+    trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    rival: '<path d="M4 20l7-7M13 11l7-7M4 4l16 16"/><path d="M14 20l6-6M4 10l6-6"/>',
+    tip: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
+    outdoor: '<circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/><path d="M10 19a3.5 3.5 0 01.5-7 5 5 0 019.5 1.5A3 3 0 0119 19z"/>',
+    stream: '<circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8M18.4 5.6a9 9 0 010 12.8"/>',
+  };
+
+  function icon(name, cls, size) {
+    const body = P[name] || P.box;
+    const dim = size ? ` width="${size}" height="${size}"` : '';
+    return `<svg class="ico ${cls || ''}"${dim} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+  }
+
+  /* ---------- Retratos ---------- */
+  // Personajes originales. Cada uno: fondo, ropa, cara, pelo y detalles.
+  function face(skin, extra) {
+    return `<path d="M26 92c0-16 10-25 24-25s24 9 24 25z" fill="var(--pc-cloth)"/>
+      <rect x="44" y="56" width="12" height="12" rx="4" fill="${skin}"/>
+      <ellipse cx="50" cy="42" rx="16" ry="19" fill="${skin}"/>
+      <ellipse cx="34.5" cy="44" rx="3" ry="4.5" fill="${skin}"/><ellipse cx="65.5" cy="44" rx="3" ry="4.5" fill="${skin}"/>
+      ${extra}`;
+  }
+  const PORTRAITS = {
+    ramiro: { bg: '#3b4a5e', cloth: '#7a5a3a', svg: face('#d9a679', `
+      <path d="M34 34c0-12 7-18 16-18s16 6 16 18c-3-6-9-8-16-8s-13 2-16 8z" fill="#cfd5dd"/>
+      <path d="M31 33h38v-3a19 6 0 00-38 0z" fill="#1f2a37"/><path d="M60 31h14v3H60z" fill="#1f2a37"/>
+      <circle cx="43.5" cy="43" r="4.8" fill="none" stroke="#1d1d1d" stroke-width="1.6"/><circle cx="56.5" cy="43" r="4.8" fill="none" stroke="#1d1d1d" stroke-width="1.6"/><path d="M48.3 43h3.4" stroke="#1d1d1d" stroke-width="1.6"/>
+      <circle cx="43.5" cy="43.5" r="1.3" fill="#1d1d1d"/><circle cx="56.5" cy="43.5" r="1.3" fill="#1d1d1d"/>
+      <path d="M41 53c3-3 6-2 9-1 3-1 6-2 9 1-3 2-6 2-9 1-3 1-6 1-9-1z" fill="#cfd5dd"/>
+      <path d="M46 57.5q4 2 8 0" stroke="#8a4a32" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M40 80h20" stroke="#5c4128" stroke-width="2"/><circle cx="50" cy="84" r="2.5" fill="#d9b44a"/>`) },
+    mega: { bg: '#4a1f2b', cloth: '#16181d', svg: face('#e2b48f', `
+      <path d="M33 38c-1-14 8-21 18-21 9 0 16 5 16 15-4-5-10-7-17-6-7 0-12 4-17 12z" fill="#15161a"/>
+      <rect x="37" y="39" width="11" height="7" rx="2.5" fill="#0d0e11"/><rect x="52" y="39" width="11" height="7" rx="2.5" fill="#0d0e11"/><path d="M48 41.5h4" stroke="#0d0e11" stroke-width="2"/>
+      <path d="M44 55q7 3 12-2" stroke="#7a3b2e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <path d="M44 67l6 10 6-10" fill="#f2f2f2"/><path d="M50 69l-2.5 4 2.5 12 2.5-12z" fill="#c62f3a"/>
+      <path d="M36 74l8-7M64 74l-8-7" stroke="#2a2d35" stroke-width="2"/>`) },
+    marca: { bg: '#2c4a45', cloth: '#d8604c', svg: face('#c98a5e', `
+      <path d="M33 44c-3-17 6-27 17-27s20 10 17 27c-2-9-7-14-17-14s-15 5-17 14z" fill="#3a2418"/>
+      <circle cx="50" cy="16" r="7" fill="#3a2418"/>
+      <circle cx="44" cy="44" r="1.8" fill="#1d1d1d"/><circle cx="56" cy="44" r="1.8" fill="#1d1d1d"/>
+      <path d="M40.5 39.5q3.5-2 7 0M52.5 39.5q3.5-2 7 0" stroke="#2a1a12" stroke-width="1.3" fill="none"/>
+      <path d="M45 53q5 4 10 0" stroke="#9c3b3b" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="34" cy="50" r="2" fill="#e8c35a"/><circle cx="66" cy="50" r="2" fill="#e8c35a"/>
+      <path d="M43 67l7 8 7-8" fill="#f4ede4"/>`) },
+    dirigente: { bg: '#1f3557', cloth: '#26303f', svg: face('#b97f55', `
+      <path d="M35 36c0-11 7-17 15-17s15 6 15 17c-1-3-3-5-5-6H40c-2 1-4 3-5 6z" fill="#b97f55"/>
+      <path d="M34 40c0-6 1-9 3-10M66 40c0-6-1-9-3-10" stroke="#4b3426" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="44" cy="44" r="1.8" fill="#1d1d1d"/><circle cx="56" cy="44" r="1.8" fill="#1d1d1d"/>
+      <path d="M40 39h7M53 39h7" stroke="#2b1e16" stroke-width="2" stroke-linecap="round"/>
+      <path d="M40 54c3-4 7-3 10-2 3-1 7-2 10 2-4 1-7 0-10-1-3 1-6 2-10 1z" fill="#2b1e16"/>
+      <path d="M34 72c5 3 10 4 16 4s11-1 16-4l-2-6c-4 3-9 4-14 4s-10-1-14-4z" fill="#d23a3a"/>
+      <path d="M38 69l3 9M44 71l1.5 8M56 71l-1.5 8M62 69l-3 9" stroke="#2457a6" stroke-width="2.2"/>`) },
+  };
+  const PORTRAIT_NAMES = { ramiro: 'Don Ramiro', mega: 'Germán Vélez', marca: 'Lucía Mena', dirigente: 'Don Aurelio' };
+  function portrait(key, size) {
+    const p = PORTRAITS[key] || PORTRAITS.ramiro;
+    const s = size || 64;
+    return `<svg class="portrait" width="${s}" height="${s}" viewBox="0 0 100 100" role="img" aria-label="${PORTRAIT_NAMES[key] || ''}" style="--pc-cloth:${p.cloth}">
+      <rect width="100" height="100" rx="22" fill="${p.bg}"/>
+      <clipPath id="pc-${key}-${s}"><rect width="100" height="100" rx="22"/></clipPath>
+      <g clip-path="url(#pc-${key}-${s})">${p.svg}</g></svg>`;
+  }
+
+  /* ---------- Sede de la productora ---------- */
+  function tripod(x, y, color, scale) {
+    const k = scale || 1;
+    return `<g transform="translate(${x} ${y}) scale(${k})">
+      <path d="M0 0l-9 26M0 0l9 26M0 0v26" stroke="#5b6476" stroke-width="2" stroke-linecap="round"/>
+      <rect x="-10" y="-11" width="18" height="11" rx="2" fill="${color}"/><rect x="8" y="-8" width="6" height="5" rx="1" fill="${color}"/>
+      <circle cx="-4" cy="-5.5" r="2" fill="#0d0f14"/></g>`;
+  }
+
+  function hq(s) {
+    const stage = s.storyDone ? 3 : s.chapter >= 4 ? 3 : s.chapter >= 2 ? 2 : s.chapter >= 1 ? 1 : 0;
+    const cams = s.equip.filter((e) => /^cam_/.test(e.type));
+    const camColor = (t) => (t === 'cam_cine' ? '#e9edf5' : t === 'cam_pro' ? '#9aa6bb' : '#4d5668');
+    const shown = cams.slice(0, 6);
+    let building, label;
+    if (stage === 0) {
+      label = 'Garaje';
+      building = `<rect x="70" y="40" width="220" height="100" fill="#2b2f38"/><path d="M60 42l120-28 120 28z" fill="#3a3f4b"/>
+        <rect x="95" y="62" width="170" height="78" fill="#1a1d24"/>${[0, 1, 2, 3, 4, 5].map((i) => `<path d="M95 ${70 + i * 12}h170" stroke="#2a2e37" stroke-width="2"/>`).join('')}
+        <path d="M180 62v8" stroke="#8b95a8"/><circle cx="180" cy="74" r="4" fill="#ffd27a" class="bulb"/>`;
+    } else if (stage === 1) {
+      label = 'Oficina alquilada';
+      building = `<rect x="60" y="30" width="240" height="110" fill="#2b3240"/><rect x="60" y="24" width="240" height="10" fill="#3a4354"/>
+        <rect x="80" y="50" width="70" height="44" fill="#16202e" stroke="#4a5568"/><path d="M115 50v44M80 72h70" stroke="#4a5568"/>
+        <rect x="210" y="70" width="60" height="70" fill="#1a1d24"/><rect x="208" y="44" width="64" height="14" rx="2" fill="var(--red)"/><text x="240" y="54" font-size="8" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#fff" text-anchor="middle">PRODUCTORA</text>`;
+    } else if (stage === 2) {
+      label = 'Estudio propio';
+      building = `<rect x="40" y="26" width="280" height="114" fill="#283143"/><rect x="40" y="20" width="280" height="10" fill="#384358"/>
+        <rect x="60" y="44" width="120" height="56" fill="#121a26" stroke="#4a5568"/>
+        ${[0, 1, 2].map((i) => `<rect x="${68 + i * 38}" y="52" width="32" height="20" fill="#203048"/><rect x="${70 + i * 38}" y="54" width="28" height="16" fill="${['#2f6fb3', '#b33a3a', '#2f8f5b'][i]}" opacity=".7"/>`).join('')}
+        <path d="M70 84h100" stroke="#3b4659" stroke-width="6"/>
+        <rect x="220" y="40" width="80" height="16" rx="3" fill="var(--red)"/><circle cx="232" cy="48" r="3" fill="#fff" class="blink"/><text x="266" y="52" font-size="9" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#fff" text-anchor="middle">EN VIVO</text>
+        <rect x="225" y="70" width="70" height="70" fill="#1a1d24"/>`;
+    } else {
+      label = s.storyDone ? 'Centro de producción' : 'Centro de producción';
+      building = `<rect x="30" y="18" width="300" height="122" fill="#263045"/><rect x="30" y="12" width="300" height="10" fill="#36425a"/>
+        <path d="M290 12V-10M280 -2l10 -8 10 8" stroke="#8b95a8" stroke-width="2" fill="none"/><circle cx="290" cy="-12" r="3" fill="var(--red)" class="blink"/>
+        ${[0, 1, 2, 3].map((i) => `<rect x="${48 + i * 52}" y="34" width="44" height="30" fill="#15202f" stroke="#41506a"/><rect x="${50 + i * 52}" y="36" width="40" height="26" fill="${['#2f6fb3', '#b33a3a', '#2f8f5b', '#b38a2f'][i]}" opacity=".55"/>`).join('')}
+        <rect x="48" y="74" width="200" height="8" rx="2" fill="#3b4659"/>
+        <rect x="262" y="34" width="56" height="16" rx="3" fill="var(--red)"/><text x="290" y="46" font-size="9" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#fff" text-anchor="middle">EN VIVO</text>
+        <rect x="262" y="70" width="56" height="70" fill="#1a1d24"/>`;
+    }
+    const van = s.rep >= 30 ? `<g transform="translate(250 112)"><rect x="0" y="0" width="70" height="26" rx="4" fill="#e9edf5"/><rect x="48" y="4" width="18" height="10" rx="2" fill="#4da3ff" opacity=".6"/><rect x="0" y="12" width="44" height="5" fill="var(--red)"/><circle cx="14" cy="28" r="5" fill="#111"/><circle cx="56" cy="28" r="5" fill="#111"/><path d="M20 0v-8M14 -12h12" stroke="#8b95a8" stroke-width="2"/></g>` : '';
+    const camRow = shown.map((e, i) => tripod(28 + i * 34, 118, camColor(e.type), 0.8)).join('');
+    return `<svg class="hq" viewBox="0 -20 360 170" role="img" aria-label="Tu sede: ${label}">
+      <defs><linearGradient id="hqsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151b28"/><stop offset="1" stop-color="#0d0f14"/></linearGradient></defs>
+      <rect x="0" y="-20" width="360" height="170" fill="url(#hqsky)"/>
+      ${[[20, -5], [90, 2], [150, -10], [330, 0], [210, -14], [310, -15]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1" fill="#8b95a8"/>`).join('')}
+      ${building}
+      <rect x="0" y="140" width="360" height="10" fill="#1e2430"/>
+      ${camRow}${van}
+      <rect x="8" y="-14" width="${label.length * 6.2 + 16}" height="18" rx="9" fill="#0d0f14cc" stroke="#2a3242"/>
+      <text x="16" y="-1.5" font-size="10.5" font-family="IBM Plex Sans,system-ui,sans-serif" font-weight="600" fill="#e9edf5">${label}</text>
+    </svg>`;
+  }
+
+  /* ---------- Escena del evento en vivo ---------- */
+  const OUTDOOR = ['barrial', 'ligapro', 'final'];
+  function sceneBg(type, outdoor) {
+    if (OUTDOOR.includes(type)) {
+      return `<rect width="360" height="170" fill="#0e1622"/>
+        <path d="M0 95h360v75H0z" fill="#1f6b3a"/>${[0, 1, 2, 3, 4, 5].map((i) => `<path d="M${i * 60} 95h30v75h-30z" fill="#237540"/>`).join('')}
+        <path d="M180 95v75M60 170l30-75M300 170l-30-75" stroke="#e9edf5" stroke-opacity=".5" stroke-width="1.5"/><ellipse cx="180" cy="128" rx="30" ry="9" fill="none" stroke="#e9edf5" stroke-opacity=".5" stroke-width="1.5"/>
+        <path d="M0 95V55l60-12h240l60 12v40z" fill="#262d3a"/>${Array.from({ length: 34 }, (_, i) => `<circle cx="${8 + i * 10.5}" cy="${62 + (i % 3) * 9}" r="3.2" fill="${['#c94a4a', '#4a7ac9', '#d9b44a', '#8b95a8'][i % 4]}" class="crowd" style="animation-delay:${(i % 5) * 0.15}s"/>`).join('')}
+        ${[30, 330].map((x) => `<path d="M${x} 52V12" stroke="#5b6476" stroke-width="3"/><rect x="${x - 14}" y="4" width="28" height="10" rx="2" fill="#f4f1d0"/><path d="M${x - 14} 14l-30 80h88l-30-80z" fill="#fffbe0" opacity=".06"/>`).join('')}`;
+    }
+    const wall = type === 'misa' ? '#2a2633' : type === 'concierto' ? '#16121f' : '#222838';
+    let deco = '';
+    if (type === 'misa') deco = `<path d="M150 20h60v60h-60z" fill="#1c1a24"/><path d="M180 26v40M168 38h24" stroke="#d9b44a" stroke-width="3"/>${[60, 300].map((x) => `<path d="M${x - 14} 70V30a14 14 0 0128 0v40z" fill="#2f4f7a" opacity=".7"/>`).join('')}`;
+    else if (type === 'boda') deco = `<path d="M140 80q40-70 80 0" fill="none" stroke="#e8d7c0" stroke-width="5"/>${[150, 170, 190, 210].map((x, i) => `<circle cx="${x}" cy="${38 - (i === 1 || i === 2 ? 8 : 0)}" r="5" fill="${i % 2 ? '#f2b6c6' : '#fff'}"/>`).join('')}`;
+    else if (type === 'concierto') deco = `${[70, 140, 220, 290].map((x, i) => `<path d="M${x} 0l-30 95h60z" fill="${['#ff3b3b', '#4da3ff', '#ffb020', '#b04dff'][i]}" opacity=".16" class="beam" style="animation-delay:${i * 0.4}s"/>`).join('')}<rect x="60" y="70" width="240" height="14" fill="#2d2440"/>`;
+    else if (type === 'lanzamiento') deco = `<rect x="110" y="18" width="140" height="56" rx="4" fill="#132238" stroke="#4da3ff"/><text x="180" y="52" font-size="18" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#4da3ff" text-anchor="middle">NUEVO</text>`;
+    else if (type === 'graduacion') deco = `<rect x="100" y="22" width="160" height="22" fill="#1f2c4a"/><text x="180" y="38" font-size="11" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#d9b44a" text-anchor="middle">PROMOCIÓN 2026</text>`;
+    else deco = `<rect x="120" y="22" width="120" height="40" fill="#1a2232"/><text x="180" y="47" font-size="12" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#8b95a8" text-anchor="middle">RUEDA DE PRENSA</text>`;
+    return `<rect width="360" height="170" fill="${wall}"/>${deco}
+      <path d="M0 95h360v75H0z" fill="#3a3027"/><path d="M0 95h360" stroke="#4d4136" stroke-width="2"/>
+      ${Array.from({ length: 13 }, (_, i) => `<g class="crowd" style="animation-delay:${(i % 4) * 0.2}s"><circle cx="${20 + i * 27}" cy="128" r="7" fill="${['#c98a5e', '#e2b48f', '#8a5a3a', '#d9a679'][i % 4]}"/><path d="M${10 + i * 27} 150a10 10 0 0120 0z" fill="${['#2f4f7a', '#7a2f3f', '#3f6b4a', '#5a4a7a'][i % 4]}"/></g>`).join('')}
+      <rect x="150" y="84" width="60" height="12" rx="2" fill="#5c4a3a"/>`;
+  }
+
+  const FX = {
+    lluvia: () => `<g class="fx-rain">${Array.from({ length: 40 }, (_, i) => `<path d="M${(i * 37) % 370} ${(i * 23) % 150}l-6 16" stroke="#9ec5ff" stroke-width="1.3" opacity=".7" style="animation-delay:${(i % 10) * -0.07}s"/>`).join('')}</g><rect width="360" height="170" fill="#1a2a44" opacity=".35"/>`,
+    luz: () => '<rect width="360" height="170" fill="#000" fill-opacity=".72" class="fx-dark"/>',
+    cable: () => `<g class="fx-spark" transform="translate(96 132)"><path d="M0 0l8-10 4 6 10-12" stroke="#ffd23a" stroke-width="3" fill="none"/><circle cx="0" cy="0" r="6" fill="#ffd23a" opacity=".5"/></g>`,
+    internet: () => `<g transform="translate(300 18)" class="fx-blink"><rect width="48" height="34" rx="4" fill="#0d0f14e6" stroke="var(--red)"/><g transform="translate(12 5)" color="#ff3b3b">${icon('wifi_off', '', 24)}</g></g>`,
+    acople: () => `<g class="fx-wave">${[0, 1, 2].map((i) => `<circle cx="180" cy="90" r="${20 + i * 22}" fill="none" stroke="#ff3b3b" stroke-width="2" style="animation-delay:${i * 0.25}s"/>`).join('')}</g>`,
+    bateria: () => `<g transform="translate(300 18)" class="fx-blink"><rect width="48" height="30" rx="4" fill="#0d0f14e6" stroke="var(--amber)"/><rect x="9" y="9" width="26" height="12" rx="2" fill="none" stroke="#ffb020" stroke-width="2"/><rect x="11" y="11" width="5" height="8" fill="#ff3b3b"/><path d="M37 13v4" stroke="#ffb020" stroke-width="2"/></g>`,
+    epico: () => `<rect width="360" height="170" fill="#fff" opacity="0" class="fx-flash"/>${Array.from({ length: 26 }, (_, i) => `<rect x="${(i * 53) % 360}" y="-10" width="5" height="9" fill="${['#ff3b3b', '#ffb020', '#4da3ff', '#2ecc71'][i % 4]}" class="fx-confetti" style="animation-delay:${(i % 8) * 0.12}s"/>`).join('')}`,
+    tarde: () => `<g transform="translate(300 18)" class="fx-blink"><rect width="48" height="34" rx="4" fill="#0d0f14e6" stroke="var(--amber)"/><g transform="translate(12 5)" color="#ffb020">${icon('clock', '', 24)}</g></g>`,
+    falla: () => '<rect width="360" height="170" fill="url(#noise)" class="fx-glitch"/>',
+    logo: () => `<g transform="translate(14 14)"><rect width="74" height="22" rx="3" fill="#ffb020"/><text x="37" y="15" font-size="10" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#1a1205" text-anchor="middle">TU LOGO AQUÍ</text></g>`,
+    vip: () => '<ellipse cx="180" cy="120" rx="40" ry="60" fill="#fffbe0" opacity=".12" class="fx-blink"/>',
+  };
+
+  function scene(type, incident, camCount, done) {
+    const n = Math.max(1, Math.min(camCount || 1, 6));
+    const xs = n === 1 ? [300] : Array.from({ length: n }, (_, i) => 40 + i * (280 / (n - 1)));
+    const cams = xs.map((x, i) => `<g class="${incident === 'cable' && i === 0 ? 'cam-off' : ''}">${tripod(x, 132, '#e9edf5', 0.9)}<circle cx="${x - 7}" cy="${119}" r="2.2" fill="var(--red)" class="blink"/></g>`).join('');
+    const fx = !done && FX[incident] ? FX[incident]() : '';
+    return `<svg class="scene" viewBox="0 0 360 170" role="img" aria-label="Escena del evento">
+      <defs><pattern id="noise" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="3" fill="#ffffff10"/><rect y="3" width="3" height="3" fill="#00000030"/></pattern></defs>
+      ${sceneBg(type)}${cams}${fx}
+      <g transform="translate(12 148)"><rect width="62" height="16" rx="3" fill="var(--red)"/><circle cx="10" cy="8" r="3" fill="#fff" class="blink"/><text x="38" y="12" font-size="10" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="800" fill="#fff" text-anchor="middle">EN VIVO</text></g>
+    </svg>`;
+  }
+
+  root.Art = { icon, portrait, hq, scene, PORTRAIT_NAMES };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* EN VIVO Tycoon — efectos de sonido y ambiente.
+   Todo se sintetiza con la Web Audio API (sin archivos, sin librerías, sin red).
+
+   API (window.Sound):
+     Sound.unlock()          crea/reanuda el AudioContext (llamar desde un toque del usuario).
+     Sound.play(name, arg)   reproduce un efecto. 'stars' acepta arg = 1..5.
+     Sound.ambience(kind)    'crowd' | 'room' | null (detener). Una sola a la vez.
+     Sound.setMuted(bool)    silencia / activa (se guarda en localStorage 'envivo_muted').
+     Sound.isMuted()         devuelve true/false.
+     Sound.names             lista de nombres válidos para play().
+
+   Si no hay AudioContext (Node, navegador viejo) o algo falla, todo es no-op:
+   nunca lanza errores. */
+(function (root) {
+  'use strict';
+
+  var MASTER_VOL = 0.35;
+  var STORE_KEY = 'envivo_muted';
+  var FADE = 0.5;
+
+  var ctx = null;          // AudioContext real
+  var chainIn = null;      // entrada del bus maestro
+  var muted = false;
+  var wantAmb = null;      // ambiente pedido por el juego
+  var amb = null;          // { kind, gain, nodes[] } ambiente sonando
+  var lastPlay = {};       // anti-spam por nombre
+
+  // ---------- estado persistido ----------
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      muted = localStorage.getItem(STORE_KEY) === '1';
+    }
+  } catch (e) { muted = false; }
+
+  function saveMuted() {
+    try {
+      if (typeof localStorage !== 'undefined' && localStorage) {
+        localStorage.setItem(STORE_KEY, muted ? '1' : '0');
+      }
+    } catch (e) { /* almacenamiento bloqueado: ignorar */ }
+  }
+
+  function getCtor() {
+    try {
+      if (typeof window === 'undefined') return null;
+      return window.AudioContext || window.webkitAudioContext || null;
+    } catch (e) { return null; }
+  }
+
+  // ---------- utilidades ----------
+  // Pseudoaleatorio con semilla, para que los sonidos sean siempre iguales.
+  function rng(seed) {
+    var s = seed >>> 0 || 1;
+    return function () {
+      s ^= s << 13; s >>>= 0;
+      s ^= s >>> 17;
+      s ^= s << 5; s >>>= 0;
+      return s / 4294967296;
+    };
+  }
+
+  // Bus maestro: ganancia -> compresor suave (evita picos) -> salida.
+  function buildChain(c, dest) {
+    var g = c.createGain();
+    g.gain.value = muted ? 0 : MASTER_VOL;
+    var comp = null;
+    try {
+      comp = c.createDynamicsCompressor();
+      comp.threshold.value = -10;
+      comp.knee.value = 8;
+      comp.ratio.value = 6;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.2;
+    } catch (e) { comp = null; }
+    if (comp) { g.connect(comp); comp.connect(dest || c.destination); }
+    else g.connect(dest || c.destination);
+    return g;
+  }
+
+  function noiseBuffer(c, kind) {
+    var cache = c.__envivoNoise || (c.__envivoNoise = {});
+    if (cache[kind]) return cache[kind];
+    var secs = kind === 'loop' ? 4 : 2;
+    var len = Math.floor(c.sampleRate * secs);
+    var buf = c.createBuffer(1, len, c.sampleRate);
+    var d = buf.getChannelData(0);
+    var r = rng(kind === 'loop' ? 777 : 1234);
+    if (kind === 'loop') {
+      // ruido rosado (Paul Kellet, versión económica): más cálido para el murmullo
+      var b0 = 0, b1 = 0, b2 = 0;
+      for (var i = 0; i < len; i++) {
+        var w = r() * 2 - 1;
+        b0 = 0.99765 * b0 + w * 0.0990460;
+        b1 = 0.96300 * b1 + w * 0.2965164;
+        b2 = 0.57000 * b2 + w * 1.0526913;
+        d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.18;
+      }
+      // fundido de los bordes para que el bucle no haga clic
+      var f = Math.floor(c.sampleRate * 0.05);
+      for (var j = 0; j < f; j++) {
+        var k = j / f;
+        d[j] *= k; d[len - 1 - j] *= k;
+      }
+    } else {
+      for (var n = 0; n < len; n++) d[n] = r() * 2 - 1;
+    }
+    cache[kind] = buf;
+    return buf;
+  }
+
+  // Envolvente: 0 -> vol (attack) -> 0 (hasta dur). Siempre termina en silencio.
+  function env(param, t, vol, attack, dur, curve) {
+    var a = Math.max(0.002, attack || 0.005);
+    var end = t + Math.max(dur, a + 0.01);
+    param.setValueAtTime(0.0001, t);
+    param.linearRampToValueAtTime(vol, t + a);
+    if (curve === 'lin') param.linearRampToValueAtTime(0.0001, end);
+    else param.exponentialRampToValueAtTime(0.0001, end);
+    param.setValueAtTime(0, end + 0.005);
+    return end;
+  }
+
+  // Tono simple. o: {type, attack, to (frecuencia final), lp (filtro), detune, curve, vib, vibRate}
+  function tone(c, out, t, freq, dur, vol, o) {
+    o = o || {};
+    var osc = c.createOscillator();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    if (o.to) {
+      if (o.toLin) osc.frequency.linearRampToValueAtTime(o.to, t + dur);
+      else osc.frequency.exponentialRampToValueAtTime(o.to, t + dur);
+    }
+    if (o.detune) osc.detune.value = o.detune;
+    var g = c.createGain();
+    var node = osc;
+    if (o.lp) {
+      var f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.setValueAtTime(o.lp, t);
+      if (o.lpTo) f.frequency.exponentialRampToValueAtTime(o.lpTo, t + dur);
+      f.Q.value = o.q || 0.7;
+      osc.connect(f); node = f;
+    }
+    if (o.vib) {
+      var lfo = c.createOscillator();
+      var lg = c.createGain();
+      lfo.frequency.value = o.vibRate || 6;
+      lg.gain.value = o.vib;
+      lfo.connect(lg); lg.connect(osc.frequency);
+      lfo.start(t); lfo.stop(t + dur + 0.05);
+    }
+    node.connect(g); g.connect(out);
+    var end = env(g.gain, t, vol, o.attack, dur, o.curve);
+    osc.start(t); osc.stop(end + 0.02);
+    return end;
+  }
+
+  // Ráfaga de ruido filtrado. o: {ft (tipo filtro), f, fTo, q, attack, curve, hp, offset}
+  function noise(c, out, t, dur, vol, o) {
+    o = o || {};
+    var src = c.createBufferSource();
+    src.buffer = noiseBuffer(c, 'white');
+    src.loop = true;
+    var f = c.createBiquadFilter();
+    f.type = o.ft || 'bandpass';
+    f.frequency.setValueAtTime(o.f || 1000, t);
+    if (o.fTo) f.frequency.exponentialRampToValueAtTime(o.fTo, t + dur);
+    f.Q.value = o.q || 0.8;
+    var g = c.createGain();
+    src.connect(f);
+    var last = f;
+    if (o.hp) {
+      var h = c.createBiquadFilter();
+      h.type = 'highpass'; h.frequency.value = o.hp;
+      f.connect(h); last = h;
+    }
+    last.connect(g); g.connect(out);
+    var end = env(g.gain, t, vol, o.attack, dur, o.curve);
+    src.start(t, (o.offset || 0) % 1.5); src.stop(end + 0.02);
+    return end;
+  }
+
+  function hz(semis) { return 440 * Math.pow(2, semis / 12); } // 0 = A4
+  var C5 = hz(3), D5 = hz(5), E5 = hz(7), G5 = hz(10), A5 = hz(12), B5 = hz(14),
+      C6 = hz(15), E6 = hz(19), G6 = hz(22), G4 = hz(-2), E4 = hz(-5), C4 = hz(-9);
+
+  // ---------- catálogo de efectos ----------
+  // Cada uno: function (c, out, t, arg) -> devuelve el tiempo final aproximado.
+  var SFX = {
+    tap: function (c, o, t) {
+      return tone(c, o, t, 880, 0.07, 0.5, { to: 620, attack: 0.003 });
+    },
+
+    buy: function (c, o, t) {
+      // mecanismo de caja: dos clics + "ka-ching"
+      noise(c, o, t, 0.03, 0.35, { f: 3000, q: 1.2, attack: 0.002 });
+      noise(c, o, t + 0.07, 0.03, 0.3, { f: 2200, q: 1.2, attack: 0.002 });
+      tone(c, o, t + 0.12, 2093, 0.5, 0.22, { attack: 0.003 });
+      tone(c, o, t + 0.12, 2637, 0.45, 0.14, { attack: 0.003 });
+      tone(c, o, t + 0.2, 3136, 0.55, 0.12, { attack: 0.003 });
+      return t + 0.8;
+    },
+
+    hire: function (c, o, t) {
+      var ns = [C5, E5, G5, C6];
+      for (var i = 0; i < ns.length; i++) {
+        tone(c, o, t + i * 0.08, ns[i], i === 3 ? 0.5 : 0.22, 0.24, { type: 'triangle', attack: 0.005 });
+      }
+      return t + 0.8;
+    },
+
+    error: function (c, o, t) {
+      tone(c, o, t, 150, 0.13, 0.3, { type: 'square', lp: 700, attack: 0.005 });
+      tone(c, o, t + 0.16, 130, 0.18, 0.3, { type: 'square', lp: 600, attack: 0.005 });
+      return t + 0.4;
+    },
+
+    live: function (c, o, t) {
+      // barrido ascendente + golpe de acorde: "¡AL AIRE!"
+      tone(c, o, t, 180, 0.35, 0.16, { type: 'sawtooth', to: 880, lp: 600, lpTo: 4000, attack: 0.2, curve: 'lin' });
+      noise(c, o, t, 0.35, 0.12, { ft: 'highpass', f: 1500, attack: 0.3, curve: 'lin' });
+      var hit = t + 0.35;
+      noise(c, o, hit, 0.25, 0.28, { f: 2500, q: 0.5, attack: 0.002 });
+      tone(c, o, hit, 110, 0.45, 0.4, { to: 55, attack: 0.003 });
+      var ch = [hz(0), hz(4), hz(7), hz(12)];
+      for (var i = 0; i < ch.length; i++) {
+        tone(c, o, hit, ch[i], 0.7, 0.13, { type: 'sawtooth', lp: 2600, lpTo: 900, attack: 0.008, detune: (i % 2 ? 6 : -6) });
+      }
+      return hit + 0.8;
+    },
+
+    incident: function (c, o, t) {
+      for (var i = 0; i < 3; i++) {
+        tone(c, o, t + i * 0.24, 880, 0.11, 0.2, { type: 'square', lp: 2200, attack: 0.004, curve: 'lin' });
+        tone(c, o, t + i * 0.24 + 0.12, 660, 0.11, 0.2, { type: 'square', lp: 2000, attack: 0.004, curve: 'lin' });
+      }
+      return t + 0.75;
+    },
+
+    good: function (c, o, t) {
+      tone(c, o, t, E5, 0.14, 0.26, { type: 'triangle' });
+      tone(c, o, t + 0.1, A5, 0.35, 0.26, { type: 'triangle' });
+      tone(c, o, t + 0.1, hz(16), 0.35, 0.08, { type: 'sine' });
+      return t + 0.5;
+    },
+
+    bad: function (c, o, t) {
+      tone(c, o, t, G4, 0.2, 0.26, { type: 'triangle', detune: -10 });
+      tone(c, o, t + 0.18, hz(-6), 0.45, 0.26, { type: 'triangle', to: hz(-7), detune: -15 });
+      return t + 0.7;
+    },
+
+    stars: function (c, o, t, n) {
+      n = Math.max(1, Math.min(5, Math.round(+n || 3)));
+      var scale = [C5, E5, G5, C6, E6, G6];
+      var step = 0.11;
+      var end = t;
+      if (n <= 2) {
+        // resultado flojo: dos o tres notas tranquilas, quinta abierta
+        var low = [C5, D5, E5];
+        for (var i = 0; i <= n; i++) end = tone(c, o, t + i * 0.16, low[i], 0.3, 0.2, { type: 'triangle' });
+        var tt = t + (n + 1) * 0.16;
+        tone(c, o, tt, C5, 0.6, 0.12, { type: 'triangle' });
+        end = tone(c, o, tt, G5, 0.6, 0.1, { type: 'triangle' });
+        return end;
+      }
+      for (var k = 0; k <= n; k++) {
+        tone(c, o, t + k * step, scale[k], 0.25, 0.2, { type: 'triangle' });
+        // "estrellita" brillante encima
+        tone(c, o, t + k * step, scale[k] * 2, 0.12, 0.05, { type: 'sine' });
+      }
+      var ct = t + (n + 1) * step;
+      var dur = 0.4 + n * 0.18;
+      var chord = n >= 5 ? [C5, E5, G5, C6, E6] : n === 4 ? [C5, E5, G5, C6] : [C5, E5, G5];
+      for (var j = 0; j < chord.length; j++) {
+        end = tone(c, o, ct, chord[j], dur, 0.11, { type: 'triangle', attack: 0.01, vib: n >= 4 ? 3 : 0, vibRate: 5 });
+      }
+      if (n >= 4) noise(c, o, ct, dur, 0.06, { ft: 'highpass', f: 6000, attack: 0.01 });
+      return end;
+    },
+
+    chapter: function (c, o, t) {
+      // fanfarria de metales (sierra filtrada)
+      var seq = [[G4, 0, 0.12], [G4, 0.14, 0.12], [G4, 0.28, 0.12], [C5, 0.42, 0.5], [E5, 0.9, 0.16], [G5, 1.06, 0.16]];
+      for (var i = 0; i < seq.length; i++) {
+        tone(c, o, t + seq[i][1], seq[i][0], seq[i][2], 0.2, { type: 'sawtooth', lp: 2200, attack: 0.02, curve: 'lin' });
+      }
+      var ct = t + 1.24;
+      var chord = [C4, C5, E5, G5, C6];
+      for (var j = 0; j < chord.length; j++) {
+        tone(c, o, ct, chord[j], 1.3, 0.1, { type: 'sawtooth', lp: 2800, lpTo: 1200, attack: 0.03, detune: (j % 2 ? 5 : -5), vib: 2.5, vibRate: 5 });
+      }
+      noise(c, o, ct - 0.25, 1.4, 0.1, { ft: 'highpass', f: 5000, attack: 0.3 });
+      tone(c, o, ct, 65, 0.6, 0.35, { to: 45 });
+      return ct + 1.4;
+    },
+
+    day: function (c, o, t) {
+      tone(c, o, t, C5, 0.7, 0.14, { attack: 0.08 });
+      tone(c, o, t + 0.18, G5, 0.8, 0.12, { attack: 0.08 });
+      tone(c, o, t + 0.36, E6, 0.9, 0.06, { attack: 0.1 });
+      return t + 1.3;
+    },
+
+    // ---- imprevistos ----
+    cable: function (c, o, t) {
+      tone(c, o, t, 2400, 0.16, 0.16, { type: 'sawtooth', to: 90, lp: 5000 });
+      var r = rng(42);
+      for (var i = 0; i < 7; i++) {
+        var tt = t + 0.02 + r() * 0.35;
+        noise(c, o, tt, 0.02 + r() * 0.03, 0.25 + r() * 0.2, { f: 2500 + r() * 4000, q: 1.5, attack: 0.001 });
+      }
+      tone(c, o, t + 0.05, 120, 0.3, 0.1, { type: 'square', lp: 800, curve: 'lin' });
+      return t + 0.5;
+    },
+
+    internet: function (c, o, t) {
+      var fs = [1200, 2400, 1800, 2400, 1200, 980, 2100, 1500, 600];
+      var d = 0;
+      for (var i = 0; i < fs.length; i++) {
+        var len = i % 3 === 2 ? 0.08 : 0.045;
+        tone(c, o, t + d, fs[i], len, 0.12, { type: 'square', lp: 3500, attack: 0.002, curve: 'lin' });
+        d += len + 0.025;
+      }
+      // "se cae": tono bajando
+      tone(c, o, t + d, 900, 0.3, 0.12, { type: 'square', to: 200, lp: 1500 });
+      return t + d + 0.35;
+    },
+
+    luz: function (c, o, t) {
+      noise(c, o, t, 0.03, 0.35, { f: 1800, q: 1, attack: 0.001 });
+      tone(c, o, t, 220, 0.9, 0.22, { type: 'sawtooth', to: 28, lp: 2200, lpTo: 90, attack: 0.01, curve: 'lin' });
+      tone(c, o, t, 110, 0.9, 0.2, { to: 20, attack: 0.01, curve: 'lin' });
+      noise(c, o, t, 0.8, 0.15, { ft: 'lowpass', f: 3000, fTo: 150, attack: 0.02 });
+      return t + 1.0;
+    },
+
+    lluvia: function (c, o, t) {
+      noise(c, o, t, 2.6, 0.32, { f: 3200, q: 0.4, attack: 0.5, curve: 'lin', hp: 600 });
+      noise(c, o, t, 2.6, 0.18, { ft: 'lowpass', f: 900, attack: 0.6, curve: 'lin', offset: 0.7 });
+      var r = rng(99);
+      for (var i = 0; i < 14; i++) {
+        var tt = t + 0.3 + r() * 1.9;
+        tone(c, o, tt, 2500 + r() * 2500, 0.03, 0.03 + r() * 0.03, { attack: 0.001, to: 1500 });
+      }
+      return t + 2.7;
+    },
+
+    tarde: function (c, o, t) {
+      for (var i = 0; i < 6; i++) {
+        var tt = t + i * 0.28;
+        noise(c, o, tt, 0.025, 0.4, { f: i % 2 ? 2200 : 3200, q: 4, attack: 0.001 });
+        tone(c, o, tt, i % 2 ? 1400 : 1900, 0.03, 0.08, { attack: 0.001 });
+      }
+      return t + 1.7;
+    },
+
+    acople: function (c, o, t) {
+      // pitido de retroalimentación: corto y contenido
+      var osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(2300, t);
+      osc.frequency.linearRampToValueAtTime(2650, t + 0.45);
+      var g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.13, t + 0.42);
+      g.gain.linearRampToValueAtTime(0.0001, t + 0.58);
+      g.gain.setValueAtTime(0, t + 0.6);
+      osc.connect(g); g.connect(o);
+      osc.start(t); osc.stop(t + 0.62);
+      tone(c, o, t + 0.05, 2300 * 1.5, 0.45, 0.025, { attack: 0.35, curve: 'lin' });
+      return t + 0.62;
+    },
+
+    bateria: function (c, o, t) {
+      tone(c, o, t, 880, 0.12, 0.22, { type: 'square', lp: 2000, attack: 0.004, curve: 'lin' });
+      tone(c, o, t + 0.2, 587, 0.2, 0.22, { type: 'square', lp: 1600, attack: 0.004, curve: 'lin' });
+      return t + 0.45;
+    },
+
+    logo: function (c, o, t) {
+      tone(c, o, t, 1568, 0.7, 0.24, { attack: 0.002 });
+      tone(c, o, t, 1568 * 2.76, 0.3, 0.05, { attack: 0.002 });
+      tone(c, o, t + 0.12, 2093, 0.8, 0.16, { attack: 0.002 });
+      return t + 0.95;
+    },
+
+    falla: function (c, o, t) {
+      var r = rng(7);
+      var d = 0;
+      for (var i = 0; i < 12; i++) {
+        var len = 0.015 + r() * 0.04;
+        if (r() < 0.55) noise(c, o, t + d, len, 0.2 + r() * 0.2, { f: 400 + r() * 5000, q: 0.8 + r() * 3, attack: 0.001, curve: 'lin' });
+        else tone(c, o, t + d, 80 + r() * 900, len, 0.12, { type: 'square', lp: 3000, attack: 0.001, curve: 'lin' });
+        d += len + r() * 0.03;
+      }
+      return t + d + 0.05;
+    },
+
+    epico: function (c, o, t) {
+      // ovación del público: ruido que crece y se va
+      noise(c, o, t, 2.4, 0.3, { f: 900, q: 0.6, attack: 0.7 });
+      noise(c, o, t, 2.4, 0.16, { f: 2400, q: 0.7, attack: 0.9, offset: 0.4 });
+      noise(c, o, t, 2.2, 0.12, { ft: 'lowpass', f: 400, attack: 0.6, offset: 0.9 });
+      // silbido de dos tonos
+      var w = t + 0.5;
+      tone(c, o, w, 1900, 0.22, 0.07, { to: 2700, attack: 0.03, curve: 'lin' });
+      tone(c, o, w + 0.28, 2700, 0.4, 0.07, { to: 1800, attack: 0.02, vib: 30, vibRate: 9 });
+      return t + 2.5;
+    },
+
+    vip: function (c, o, t) {
+      for (var i = 0; i < 3; i++) {
+        var tt = t + i * 0.2;
+        noise(c, o, tt, 0.018, 0.4, { ft: 'highpass', f: 2500, attack: 0.001 });
+        noise(c, o, tt + 0.05, 0.035, 0.3, { f: 1500, q: 1.2, attack: 0.001 });
+      }
+      return t + 0.7;
+    },
+  };
+
+  var NAMES = Object.keys(SFX);
+
+  // Dibuja un efecto en cualquier contexto (real u offline). Uso interno y pruebas.
+  function renderInto(c, out, name, arg, t) {
+    var fn = SFX[name];
+    if (!fn) return 0;
+    return fn(c, out, t == null ? c.currentTime + 0.01 : t, arg);
+  }
+
+  // ---------- ambiente ----------
+  function startAmbience(kind) {
+    if (!ctx || !chainIn) return;
+    var c = ctx, t = c.currentTime;
+    var nodes = [];
+    var g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.connect(chainIn);
+    var target = kind === 'crowd' ? 0.55 : 0.22;
+    var src = c.createBufferSource();
+    src.buffer = noiseBuffer(c, 'loop');
+    src.loop = true;
+    nodes.push(src);
+    if (kind === 'crowd') {
+      // murmullo de estadio: dos bandas de voz + leve "oleaje"
+      var b1 = c.createBiquadFilter(); b1.type = 'bandpass'; b1.frequency.value = 450; b1.Q.value = 0.7;
+      var b2 = c.createBiquadFilter(); b2.type = 'bandpass'; b2.frequency.value = 1300; b2.Q.value = 0.9;
+      var g1 = c.createGain(); g1.gain.value = 0.7;
+      var g2 = c.createGain(); g2.gain.value = 0.3;
+      src.connect(b1); b1.connect(g1); g1.connect(g);
+      src.connect(b2); b2.connect(g2); g2.connect(g);
+      var lfo = c.createOscillator(); lfo.frequency.value = 0.13;
+      var lg = c.createGain(); lg.gain.value = 0.25;
+      lfo.connect(lg); lg.connect(g1.gain);
+      var lfo2 = c.createOscillator(); lfo2.frequency.value = 0.31;
+      var lg2 = c.createGain(); lg2.gain.value = 120;
+      lfo2.connect(lg2); lg2.connect(b2.frequency);
+      lfo.start(t); lfo2.start(t);
+      nodes.push(lfo, lfo2);
+    } else {
+      // sala interior: murmullo muy bajo, grave
+      var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420; lp.Q.value = 0.5;
+      var bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 1.2;
+      var gb = c.createGain(); gb.gain.value = 0.25;
+      src.connect(lp); lp.connect(g);
+      src.connect(bp); bp.connect(gb); gb.connect(g);
+      var lfo3 = c.createOscillator(); lfo3.frequency.value = 0.09;
+      var lg3 = c.createGain(); lg3.gain.value = 0.12;
+      lfo3.connect(lg3); lg3.connect(gb.gain);
+      lfo3.start(t);
+      nodes.push(lfo3);
+    }
+    src.start(t);
+    g.gain.exponentialRampToValueAtTime(target, t + FADE);
+    amb = { kind: kind, gain: g, nodes: nodes };
+  }
+
+  function stopAmbience() {
+    if (!amb) return;
+    var a = amb; amb = null;
+    try {
+      var t = ctx.currentTime;
+      a.gain.gain.cancelScheduledValues(t);
+      a.gain.gain.setValueAtTime(Math.max(0.0001, a.gain.gain.value), t);
+      a.gain.gain.exponentialRampToValueAtTime(0.0001, t + FADE);
+      for (var i = 0; i < a.nodes.length; i++) {
+        try { a.nodes[i].stop(t + FADE + 0.05); } catch (e) { /* ya detenido */ }
+      }
+      setTimeout(function () { try { a.gain.disconnect(); } catch (e) { /* nada */ } }, (FADE + 0.2) * 1000);
+    } catch (e) { /* nada */ }
+  }
+
+  function syncAmbience() {
+    try {
+      var desired = muted ? null : wantAmb;
+      if (amb && amb.kind === desired) return;
+      if (amb) stopAmbience();
+      if (desired && ctx) startAmbience(desired);
+    } catch (e) { /* silencioso */ }
+  }
+
+  // ---------- API pública ----------
+  function unlock() {
+    try {
+      if (!ctx) {
+        var Ctor = getCtor();
+        if (!Ctor) return;
+        ctx = new Ctor();
+        chainIn = buildChain(ctx);
+        // truco iOS: reproducir un búfer silencioso dentro del gesto
+        try {
+          var b = ctx.createBuffer(1, 1, 22050);
+          var s = ctx.createBufferSource();
+          s.buffer = b; s.connect(ctx.destination); s.start(0);
+        } catch (e) { /* nada */ }
+        try {
+          if (typeof document !== 'undefined' && document.addEventListener) {
+            document.addEventListener('visibilitychange', function () {
+              try {
+                if (!ctx) return;
+                if (document.hidden) ctx.suspend();
+                else ctx.resume();
+              } catch (e) { /* nada */ }
+            });
+          }
+        } catch (e) { /* nada */ }
+      }
+      if (ctx.state === 'suspended' && ctx.resume) {
+        var p = ctx.resume();
+        if (p && p.catch) p.catch(function () {});
+      }
+      syncAmbience();
+    } catch (e) { ctx = null; chainIn = null; }
+  }
+
+  function play(name, arg) {
+    try {
+      if (muted || !ctx || !chainIn || !SFX[name]) return;
+      if (ctx.state === 'suspended' && ctx.resume) {
+        var p = ctx.resume();
+        if (p && p.catch) p.catch(function () {});
+      }
+      var now = Date.now();
+      if (lastPlay[name] && now - lastPlay[name] < 40) return; // evita amontonar el mismo sonido
+      lastPlay[name] = now;
+      renderInto(ctx, chainIn, name, arg);
+    } catch (e) { /* silencioso */ }
+  }
+
+  function ambience(kind) {
+    try {
+      wantAmb = kind === 'crowd' || kind === 'room' ? kind : null;
+      syncAmbience();
+    } catch (e) { /* silencioso */ }
+  }
+
+  function setMuted(v) {
+    try {
+      muted = !!v;
+      saveMuted();
+      if (ctx && chainIn) {
+        var t = ctx.currentTime;
+        chainIn.gain.cancelScheduledValues(t);
+        chainIn.gain.setValueAtTime(chainIn.gain.value, t);
+        chainIn.gain.linearRampToValueAtTime(muted ? 0 : MASTER_VOL, t + 0.08);
+      }
+      syncAmbience();
+    } catch (e) { /* silencioso */ }
+  }
+
+  function isMuted() { return muted; }
+
+  var Sound = {
+    unlock: unlock,
+    play: play,
+    ambience: ambience,
+    setMuted: setMuted,
+    isMuted: isMuted,
+    names: NAMES.slice(),
+    // Solo para pruebas: dibuja un efecto (con el bus maestro) en un contexto dado,
+    // p. ej. un OfflineAudioContext. Devuelve el tiempo final.
+    _render: function (c, name, arg) {
+      try {
+        var bus = buildChain(c, c.destination);
+        bus.gain.value = MASTER_VOL;
+        return renderInto(c, bus, name, arg, 0.01);
+      } catch (e) { return 0; }
+    },
+  };
+
+  try { if (root) root.Sound = Sound; } catch (e) { /* nada */ }
+  if (typeof module !== 'undefined' && module && module.exports) module.exports = Sound;
+})(typeof window !== 'undefined' ? window : null);
+
+</script>
+<script>
+/* =========================================================
    EN VIVO Tycoon — Pantallas (interfaz)
-   Usa las reglas de js/logic.js (objeto global "Game").
+   Usa las reglas de js/logic.js (Game), los dibujos de js/art.js (Art)
+   y, si existe, los sonidos de js/sound.js (Sound).
    ========================================================= */
 (function () {
   'use strict';
   const G = window.Game;
+  const A = window.Art;
   const SAVE_KEY = 'envivo_tycoon_save_v1';
   const $ = (id) => document.getElementById(id);
   const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const M = G.money;
+  const I = (name, cls) => A.icon(name, cls);
+  // Quita el emoji del inicio de los textos de la lógica (ahora hay dibujos)
+  const noEmoji = (t) => String(t).replace(/^(\p{Extended_Pictographic}|️|‍|\s)+/u, '');
+
+  /* ---------- Sonido (opcional: si js/sound.js no está, no pasa nada) ---------- */
+  const snd = {
+    play(n, x) { try { if (window.Sound) window.Sound.play(n, x); } catch (e) { /* sin sonido */ } },
+    amb(k) { try { if (window.Sound) window.Sound.ambience(k); } catch (e) { /* sin sonido */ } },
+    unlock() { try { if (window.Sound) window.Sound.unlock(); } catch (e) { /* sin sonido */ } },
+    muted() { try { return window.Sound ? window.Sound.isMuted() : true; } catch (e) { return true; } },
+    toggle() { try { if (window.Sound) window.Sound.setMuted(!window.Sound.isMuted()); } catch (e) { /* sin sonido */ } },
+  };
 
   let S = null;            // estado del juego
   let tab = 'inicio';
@@ -961,7 +2022,11 @@
     clearTimeout(toastT);
     toastT = setTimeout(() => { t.style.display = 'none'; }, 2600);
   }
-  function act(res) { if (res && res.msg) toast(res.msg); save(); render(); return res; }
+  function act(res, okSound) {
+    if (res && res.msg) toast(res.msg);
+    if (res) snd.play(res.ok ? (okSound || 'tap') : 'error');
+    save(); render(); return res;
+  }
 
   /* ---------- Ventana ---------- */
   function openModal(html) { $('modal').innerHTML = html; $('overlay').classList.add('on'); $('modal').scrollTop = 0; }
@@ -976,17 +2041,34 @@
 
   /* ---------- Ayudantes visuales ---------- */
   const starsTxt = (n, max) => '★'.repeat(n) + '<span class="muted">' + '★'.repeat((max || 5) - n) + '</span>';
+  function starsBig(n) {
+    const path = 'M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z';
+    return `<div class="starsvg" aria-label="${n} de 5 estrellas">${[1, 2, 3, 4, 5].map((i) =>
+      `<svg viewBox="0 0 24 24" stroke-width="1.6" stroke-linejoin="round"><path class="${i <= n ? 'on' : 'off'}" style="animation-delay:${i * 0.15}s" d="${path}"/></svg>`).join('')}</div>`;
+  }
   function condBar(v) {
     const cls = v < 40 ? 'red' : v < 70 ? 'amber' : '';
     return `<div class="bar ${cls}"><i style="width:${v}%"></i></div>`;
   }
+  const TILE_COLOR = { misa: 'amber', boda: 'amber', prensa: 'blue', barrial: 'green', graduacion: 'blue', lanzamiento: 'red', concierto: 'red', ligapro: 'green', final: 'amber' };
+  const tile = (iconName, color) => `<div class="tile ${color ? 't-' + color : ''}">${I(iconName)}</div>`;
   function reqTags(c) {
-    const t = [`<span class="tag">📹 ${c.cams} cámara${c.cams > 1 ? 's' : ''}</span>`];
-    if (c.cams >= 2) t.push('<span class="tag">🎛️ switcher + director</span>');
-    if (c.audio) t.push('<span class="tag">🎧 audio</span>');
-    if (c.stream) t.push('<span class="tag red">📡 en vivo por internet</span>');
-    if (c.outdoor) t.push('<span class="tag amber">🌦️ aire libre</span>');
+    const t = [];
+    if (c.story) t.push(`<span class="tag amber">${I('star')}Oferta de la historia</span>`);
+    if (c.rival) t.push(`<span class="tag rival">${I('rival')}Disputado con MegaVisión</span>`);
+    t.push(`<span class="tag">${I('cam_basic')}${c.cams} cámara${c.cams > 1 ? 's' : ''}</span>`);
+    if (c.cams >= 2) t.push(`<span class="tag">${I('switch_pro')}switcher + director</span>`);
+    if (c.audio) t.push(`<span class="tag">${I('role_audio')}audio</span>`);
+    if (c.stream) t.push(`<span class="tag red">${I('stream')}en vivo por internet</span>`);
+    if (c.outdoor) t.push(`<span class="tag amber">${I('outdoor')}aire libre</span>`);
     return t.join('');
+  }
+  // Personaje de cada capítulo (si la lógica no lo indica)
+  const CH_CHAR = ['ramiro', 'ramiro', 'marca', 'mega', 'dirigente', 'ramiro'];
+  const charOf = (i) => (G.CHAPTERS[i] && G.CHAPTERS[i].character) || CH_CHAR[i] || 'ramiro';
+  function speaker(key, html) {
+    return `<div class="speaker">${A.portrait(key, 64)}<div class="grow"><div class="who">${esc(A.PORTRAIT_NAMES[key] || '')}</div></div></div>
+      <div class="bubble story">${html}</div>`;
   }
 
   /* ---------- Render general ---------- */
@@ -996,6 +2078,8 @@
     $('hRep').textContent = Math.floor(S.rep);
     $('hDay').textContent = S.day;
     $('badgeC').textContent = S.contracts.length || '';
+    $('muteBtn').innerHTML = I(snd.muted() ? 'close' : 'sound', 'sm');
+    $('muteBtn').setAttribute('aria-label', snd.muted() ? 'Activar sonido' : 'Silenciar');
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
     document.querySelectorAll('main section').forEach((s) => s.classList.toggle('on', s.id === 'tab-' + tab));
     ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, registro: renderRegistro })[tab]();
@@ -1007,27 +2091,31 @@
     const rent = 20 + 4 * (S.staff.length - 1);
     let story;
     if (S.storyDone) {
-      story = `<div class="card"><div class="story-tag">Modo historia</div><h2>🏆 ¡Historia completada!</h2>
+      story = `<div class="card"><div class="story-tag">Modo historia</div><h2>¡Historia completada!</h2>
         <p class="muted">Sigue creciendo en modo libre: más eventos, mejor equipo y más fama.</p></div>`;
     } else {
       story = `<div class="card"><div class="story-tag">Historia</div><h2>${esc(ch.title)}</h2>
-        <p class="small muted">${esc(ch.intro)}</p>
-        <p><b>🎯 Objetivo:</b> ${esc(ch.goal)}</p>
+        <div class="row" style="align-items:flex-start;margin-top:8px">${A.portrait(charOf(S.chapter), 52)}
+          <p class="small muted grow" style="margin:0">${esc(ch.intro)}</p></div>
+        <p><b>Objetivo:</b> ${esc(ch.goal)}</p>
         <p class="small">Progreso: <span class="num">${esc(ch.progress(S))}</span></p>
         <p class="small muted">Premio: <span class="pay" style="font-size:14px">${M(ch.reward)}</span></p></div>`;
     }
-    $('tab-inicio').innerHTML = story + `
-      <div class="card">
-        <div class="row between"><h3>Tu productora</h3><span class="muted small">Día ${S.day}</span></div>
-        <div class="row wrap small" style="margin-top:6px">
-          <span class="tag">👥 ${S.staff.length} personas</span>
-          <span class="tag">📦 ${S.equip.length} equipos</span>
-          <span class="tag">🎬 ${S.stats.events} eventos</span>
-          <span class="tag">⭐ ${S.stats.fiveStars} de 5 estrellas</span>
+    $('tab-inicio').innerHTML = `
+      <div class="card hqcard">${A.hq(S)}
+        <div class="in">
+          <div class="row wrap small">
+            <span class="tag">${I('people')}${S.staff.length} personas</span>
+            <span class="tag">${I('box')}${S.equip.length} equipos</span>
+            <span class="tag">${I('rec')}${S.stats.events} eventos</span>
+            <span class="tag">${I('star')}${S.stats.fiveStars} de 5 estrellas</span>
+          </div>
+          <button class="btn main" data-act="tab" data-tab="clientes">${I('clients')}Ver ofertas de clientes (${S.contracts.length})</button>
+          <button class="btn" data-act="next-day">${I('sleep')}Descansar y pasar al día siguiente <span class="muted small">(gastos ${M(rent)})</span></button>
         </div>
-        <button class="btn main" data-act="tab" data-tab="clientes">📋 Ver ofertas de clientes (${S.contracts.length})</button>
-        <button class="btn" data-act="next-day">😴 Descansar y pasar al día siguiente <span class="muted small">(gastos ${M(rent)})</span></button>
       </div>
+      ${installCard()}
+      ${story}
       <div class="sectitle">Lo último que pasó</div>
       <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>Día ${l.day}</span>${esc(l.text)}</p>`).join('')}</div>
       <div class="sectitle">Ayuda rápida</div>
@@ -1036,20 +2124,31 @@
         4) Cobra, gana fama y compra mejor equipo en <b>Bodega</b>. Cada evento ocupa un día.
         Si tus deudas pasan de $300, quiebras.
       </div>
-      <button class="btn" data-act="new-game" style="margin-bottom:20px">🔄 Empezar partida nueva</button>`;
+      <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}Empezar partida nueva</button>`;
+  }
+
+  // Botón para instalar como app (solo si el navegador lo permite)
+  function installCard() {
+    const P = window.PWA;
+    try {
+      if (!P || P.isStandalone()) return '';
+      if (P.canInstall()) return `<button class="btn" data-act="install">${I('box')}Instalar como app en este celular</button>`;
+      if (P.isIOS()) return `<div class="card small muted">${I('tip', 'sm')} Para instalar el juego: toca <b>Compartir</b> en Safari y luego <b>Agregar a inicio</b>.</div>`;
+    } catch (e) { /* sin instalación */ }
+    return '';
   }
 
   function renderClientes() {
     const cards = S.contracts.map((c) => {
       const t = G.EVENT_TYPES[c.type];
       return `<div class="card">
-        <div class="row"><div class="icon">${t.icon}</div>
+        <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(t.name)}</h3><div class="small muted">${esc(c.client)}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}</div>
         <div class="row between small" style="margin-top:8px">
           <span>Dificultad ${starsTxt(c.diff)}</span>
-          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">⏳ vence en ${c.daysLeft} día${c.daysLeft > 1 ? 's' : ''}</span>
+          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} vence en ${c.daysLeft} día${c.daysLeft > 1 ? 's' : ''}</span>
         </div>
         <button class="btn main" data-act="prep" data-id="${c.id}">Preparar evento</button>
       </div>`;
@@ -1057,9 +2156,9 @@
     $('tab-clientes').innerHTML = `
       <div class="sectitle">Buscar clientes</div>
       <div class="card">
-        <button class="btn" data-act="mkt" data-k="redes" ${S.daily.redes ? 'disabled' : ''}>📱 Publicar en redes <span class="muted small">($40 · 1 oferta · 1 vez al día)</span></button>
-        <button class="btn" data-act="mkt" data-k="anuncio" ${S.daily.anuncio ? 'disabled' : ''}>📰 Pagar anuncio <span class="muted small">($200 · 2 ofertas mejor pagadas)</span></button>
-        <button class="btn" data-act="mkt" data-k="visitar">🚶 Visitar clientes en persona <span class="muted small">(gratis · usa 1 día · 2 ofertas)</span></button>
+        <button class="btn" data-act="mkt" data-k="redes" ${S.daily.redes ? 'disabled' : ''}>${I('social')}Publicar en redes <span class="muted small">($40 · 1 oferta · 1 vez al día)</span></button>
+        <button class="btn" data-act="mkt" data-k="anuncio" ${S.daily.anuncio ? 'disabled' : ''}>${I('ad')}Pagar anuncio <span class="muted small">($200 · 2 ofertas mejor pagadas)</span></button>
+        <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}Visitar clientes en persona <span class="muted small">(gratis · usa 1 día · 2 ofertas)</span></button>
       </div>
       <div class="sectitle">Ofertas disponibles (${S.contracts.length})</div>
       ${cards || '<div class="card muted">No tienes ofertas. Busca clientes con los botones de arriba o pasa al día siguiente.</div>'}`;
@@ -1067,7 +2166,7 @@
 
   function renderPersonal() {
     const staff = S.staff.map((p) => `<div class="card">
-      <div class="row"><div class="icon">${G.ROLES[p.role].icon}</div>
+      <div class="row">${tile('role_' + p.role, p.owner ? 'red' : '')}
         <div class="grow"><h3>${esc(p.name)}</h3><div class="small muted">${G.ROLES[p.role].name} · ${p.events} eventos</div></div>
         <div class="small" style="text-align:right">Habilidad<br>${starsTxt(p.skill)}</div></div>
       ${p.owner ? '<p class="small muted">Eres tú. Cubres una cámara gratis.</p>' : `
@@ -1076,7 +2175,7 @@
         <button class="btn sm" data-act="fire" data-id="${p.id}">Despedir</button></div>`}
     </div>`).join('');
     const cands = S.candidates.map((c) => `<div class="card">
-      <div class="row"><div class="icon">${G.ROLES[c.role].icon}</div>
+      <div class="row">${tile('role_' + c.role)}
         <div class="grow"><h3>${esc(c.name)}</h3><div class="small muted">${G.ROLES[c.role].name}</div></div>
         <div class="small" style="text-align:right">Habilidad<br>${starsTxt(c.skill)}</div></div>
       <div class="row between" style="margin-top:10px"><span class="small">Cobra <b class="num">${M(c.wage)}</b>/evento</span>
@@ -1087,33 +2186,33 @@
       <div class="sectitle">Candidatos</div>
       <p class="small muted">El pago inicial es 2 veces su sueldo. Solo pagas sueldo cuando le llevas a un evento.</p>
       ${cands || '<div class="card muted">No hay candidatos. Publica una vacante.</div>'}
-      <button class="btn" data-act="search-staff" style="margin-bottom:20px">📢 Publicar vacante ($30)</button>`;
+      <button class="btn" data-act="search-staff" style="margin-bottom:20px">${I('megaphone')}Publicar vacante ($30)</button>`;
   }
 
   function renderBodega() {
     const cons = Object.keys(G.CONSUMABLES).map((k) => {
       const it = G.CONSUMABLES[k];
-      return `<div class="pick"><div class="icon">${it.icon}</div>
+      return `<div class="pick">${tile(k)}
         <div class="grow"><b>${it.name}</b> <span class="num">× ${S.stock[k] || 0}</span><div class="small muted">${it.desc}</div></div>
         <button class="btn sm" data-act="buy-cons" data-k="${k}">+1 ${M(it.price)}</button></div>`;
     }).join('');
     const mine = S.equip.map((e) => {
       const it = G.CATALOG[e.type];
       const rc = G.repairCost(e);
-      return `<div class="card"><div class="row"><div class="icon">${it.icon}</div>
+      return `<div class="card"><div class="row">${tile(e.type, e.condition < 40 ? 'red' : '')}
         <div class="grow"><b>${esc(e.nick || it.name)}</b><div class="small muted">Estado ${e.condition}%</div>${condBar(e.condition)}</div></div>
         <div class="row" style="margin-top:10px;justify-content:flex-end;gap:8px">
-          <button class="btn sm" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>🔧 Reparar ${rc > 0 ? M(rc) : ''}</button>
+          <button class="btn sm" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')} Reparar ${rc > 0 ? M(rc) : ''}</button>
           <button class="btn sm" data-act="sell" data-id="${e.id}">Vender ${M(G.sellPrice(e))}</button></div></div>`;
     }).join('');
     const shop = Object.keys(G.CATALOG).map((k) => {
       const it = G.CATALOG[k];
       const locked = it.minRep > S.rep;
       const owned = S.equip.filter((e) => e.type === k).length;
-      return `<div class="card"><div class="row"><div class="icon">${it.icon}</div>
+      return `<div class="card"><div class="row">${tile(k, locked ? '' : 'blue')}
         <div class="grow"><b>${it.name}</b>${owned ? ` <span class="tag">tienes ${owned}</span>` : ''}<div class="small muted">${it.desc}</div></div></div>
         <button class="btn ${locked ? '' : 'green'}" data-act="buy" data-k="${k}" ${locked || S.money < it.price ? 'disabled' : ''}>
-          ${locked ? `🔒 Necesitas ${it.minRep} de fama` : `Comprar ${M(it.price)}`}</button></div>`;
+          ${locked ? `${I('lock')}Necesitas ${it.minRep} de fama` : `Comprar ${M(it.price)}`}</button></div>`;
     }).join('');
     $('tab-bodega').innerHTML = `
       <div class="sectitle">Repuestos (se usan solos en los imprevistos)</div><div class="card">${cons}</div>
@@ -1146,27 +2245,29 @@
     const wages = staff.reduce((a, p) => a + p.wage, 0);
     const est = q.q >= 85 ? 5 : q.q >= 70 ? 4 : q.q >= 55 ? 3 : q.q >= 40 ? 2 : 1;
     const worst = q.parts.filter((p) => p[1] < 0 && !/^Dificultad/.test(p[0])).sort((a, b) => a[1] - b[1])[0];
-    const tip = worst ? `<p class="small" style="color:var(--amber)">💡 Lo que más te resta: ${esc(worst[0])} (${worst[1]}). Consíguelo en Bodega o Personal.</p>` : '';
+    const tip = worst ? `<p class="small" style="color:var(--amber)">${I('tip', 'sm')} Lo que más te resta: ${esc(worst[0])} (${worst[1]}). Consíguelo en Bodega o Personal.</p>` : '';
     const staffHtml = S.staff.map((p) => `<label class="pick ${prep.staff.has(p.id) ? 'sel' : ''}">
-        <input type="checkbox" data-act="tog-staff" data-id="${p.id}" ${prep.staff.has(p.id) ? 'checked' : ''}>
-        <div class="grow"><b>${G.ROLES[p.role].icon} ${esc(p.name)}</b><div class="small muted">${G.ROLES[p.role].name} · ${starsTxt(p.skill)}</div></div>
+        <input type="checkbox" id="st-${p.id}" data-act="tog-staff" data-id="${p.id}" ${prep.staff.has(p.id) ? 'checked' : ''}>
+        ${I('role_' + p.role)}
+        <div class="grow"><b>${esc(p.name)}</b><div class="small muted">${G.ROLES[p.role].name} · ${starsTxt(p.skill)}</div></div>
         <span class="num small">${M(p.wage)}</span></label>`).join('');
     const equipHtml = S.equip.map((e) => {
       const it = G.CATALOG[e.type];
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''}">
-        <input type="checkbox" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
-        <div class="grow"><b>${it.icon} ${esc(e.nick || it.name)}</b>${condBar(e.condition)}</div>
+        <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
+        ${I(e.type)}
+        <div class="grow"><b>${esc(e.nick || it.name)}</b>${condBar(e.condition)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${e.condition}%</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
     openModal(`
-      <div class="row between"><h2>${t.icon} ${esc(t.name)}</h2><button class="btn sm" data-act="close">✕</button></div>
-      <div class="small muted">${esc(c.client)} · paga <span class="pay" style="font-size:15px">${M(c.pay)}</span> (con 3⭐)</div>
+      <div class="row between"><div class="row">${tile(c.type, TILE_COLOR[c.type])}<h2>${esc(t.name)}</h2></div><button class="btn sm" data-act="close" aria-label="Cerrar">${I('close', 'sm')}</button></div>
+      <div class="small muted" style="margin-top:6px">${esc(c.client)} · paga <span class="pay" style="font-size:15px">${M(c.pay)}</span> (con 3 estrellas)</div>
       <div style="margin:6px 0 4px">${reqTags(c)}</div>
-      <button class="btn" data-act="auto">✨ Elegir lo mejor automáticamente</button>
+      <button class="btn" data-act="auto">${I('sparkle')}Elegir lo mejor automáticamente</button>
       <div class="sectitle">¿A quién llevas?</div>${staffHtml}
       <div class="sectitle">¿Qué equipos llevas?</div>${equipHtml}
-      <p class="small muted">Repuestos que llevas: 🔌 ${S.stock.cable} cables · 🪫 ${S.stock.battery} baterías</p>
+      <p class="small muted">Repuestos que llevas: ${S.stock.cable} cables · ${S.stock.battery} baterías</p>
       <details><summary>Ver cómo se calcula la calidad</summary>
         <table>${q.parts.map((p) => `<tr><td>${esc(p[0])}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}</table></details>
       <div class="preview">
@@ -1174,47 +2275,66 @@
         <div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>
         ${tip}
         <div class="small muted" style="margin-top:6px">Sueldos a pagar: <b class="num">${M(wages)}</b> · Los imprevistos pueden subir o bajar la calidad.</div>
-        <button class="btn main" data-act="go-live">🔴 ¡Salir al aire!</button>
+        <button class="btn main" data-act="go-live">${I('rec', 'sm')} ¡Salir al aire!</button>
       </div>`);
     $('modal').scrollTop = pos;
   }
 
   /* ---------- Evento en vivo ---------- */
+  function liveCams() {
+    const ev = S.currentEvent;
+    return ev ? S.equip.filter((e) => ev.equipIds.includes(e.id) && G.CATALOG[e.type].cat === 'cam').length : 1;
+  }
+  function incKey() {
+    const ev = S.currentEvent;
+    return ev && ev.incidents[ev.step] ? ev.incidents[ev.step].key : null;
+  }
+
   function showIncident() {
     const inc = G.currentIncident(S);
     if (!inc) { finish(); return; }
     const c = S.currentEvent.contract;
     const t = G.EVENT_TYPES[c.type];
+    const key = incKey();
+    snd.play('incident');
+    setTimeout(() => snd.play(key), 250);
     openModal(`
-      <div class="row between"><span class="live"><i></i>EN VIVO</span><span class="small muted">Imprevisto ${inc.n} de ${inc.total}</span></div>
-      <div class="small muted" style="margin-top:8px">${t.icon} ${esc(t.name)} · ${esc(c.client)}</div>
-      <div class="incident">${esc(inc.text)}</div>
+      ${A.scene(c.type, key, liveCams(), false)}
+      <div class="row between" style="margin-top:10px"><span class="live"><i></i>EN VIVO</span><span class="small muted">Imprevisto ${inc.n} de ${inc.total}</span></div>
+      <div class="small muted" style="margin-top:8px">${esc(t.name)} · ${esc(c.client)}</div>
+      <div class="incident">${esc(noEmoji(inc.text))}</div>
       ${inc.choices.map((ch) => `<button class="btn choice" data-act="choose" data-i="${ch.i}" ${ch.ok ? '' : 'disabled'}>
-        ${esc(ch.label)}${ch.ok ? '' : `<small>🚫 ${esc(ch.why)}</small>`}</button>`).join('')}`);
+        ${esc(ch.label)}${ch.ok ? '' : `<small>No disponible: ${esc(ch.why)}</small>`}</button>`).join('')}`);
   }
 
   function choose(i) {
+    const key = incKey();
     const r = G.resolveIncident(S, i);
-    if (!r.ok) { toast(r.msg); return; }
+    if (!r.ok) { toast(r.msg); snd.play('error'); return; }
     save();
+    snd.play(r.q >= 0 ? 'good' : 'bad');
     const cls = r.q > 0 ? 'up' : r.q < 0 ? 'down' : '';
     const more = G.currentIncident(S);
+    const c = S.currentEvent.contract;
     openModal(`
-      <span class="live"><i></i>EN VIVO</span>
+      ${A.scene(c.type, r.q > 4 ? 'epico' : key === 'luz' && r.q < -10 ? 'luz' : null, liveCams(), false)}
+      <div style="margin-top:10px"><span class="live"><i></i>EN VIVO</span></div>
       <div class="incident">${esc(r.msg)}</div>
       <p>Calidad: <span class="delta ${cls}">${r.q > 0 ? '+' : ''}${r.q}</span></p>
-      <button class="btn main" data-act="${more ? 'next-inc' : 'finish'}">${more ? 'Continuar ▶' : 'Terminar transmisión ⏹'}</button>`);
+      <button class="btn main" data-act="${more ? 'next-inc' : 'finish'}">${more ? 'Continuar' : 'Terminar transmisión'}</button>`);
   }
 
   function finish() {
     const f = G.finishEvent(S);
     save();
+    snd.amb(null);
     if (!f.ok) { toast(f.msg); closeModal(); render(); return; }
     const r = f.result;
     afterResult = r.chapterDone || null;
+    snd.play('stars', r.stars);
     openModal(`
-      <h2>${esc(r.title)}</h2>
-      <div class="stars">${starsTxt(r.stars)}</div>
+      <h2>${esc(noEmoji(r.title))}</h2>
+      ${starsBig(r.stars)}
       <div class="row between"><span>Calidad final</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       <table style="margin-top:12px">
@@ -1223,18 +2343,22 @@
         <tr><td><b>Ganancia</b></td><td class="${r.net >= 0 ? 'up' : 'down'}"><b>${M(r.net)}</b></td></tr>
         <tr><td>Fama</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
-      ${r.ups.length ? `<p class="small">📈 ${r.ups.map(esc).join(' · ')}</p>` : ''}
+      ${r.duel === 'won' ? `<p class="small up">${I('rival', 'sm')} ¡Le ganaste el duelo a MegaVisión! Fama extra.</p>` : r.duel === 'lost' ? `<p class="small down">${I('rival', 'sm')} MegaVisión te ganó el duelo. Perdiste fama extra.</p>` : ''}
+      ${r.ups.length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map(esc).join(' · ')}</p>` : ''}
       <details><summary>Ver detalle</summary>
         <p class="small"><b>Calidad inicial: ${r.base}</b></p>
-        ${r.incidents.map((i) => `<p class="small">${esc(i.text)}<br><span class="muted">→ ${esc(i.result.msg)} (${i.result.q > 0 ? '+' : ''}${i.result.q})</span></p>`).join('')}
+        ${r.incidents.map((i) => `<p class="small">${esc(noEmoji(i.text))}<br><span class="muted">→ ${esc(i.result.msg)} (${i.result.q > 0 ? '+' : ''}${i.result.q})</span></p>`).join('')}
       </details>
       <p class="small muted">El equipo se desgastó un poco y pasó un día.</p>
       <button class="btn main" data-act="after-result">Continuar</button>`);
   }
 
   function showChapterDone(d) {
-    openModal(`<div class="story-tag">🏅 Capítulo completado</div><h2>${esc(d.title)}</h2>
-      <p class="story">${esc(d.text)}</p><p>Premio: <span class="pay">${M(d.reward)}</span></p>
+    const idx = Math.max(0, G.CHAPTERS.findIndex((c) => c.title === d.title));
+    snd.play('chapter');
+    openModal(`<div class="story-tag">Capítulo completado</div><h2>${esc(d.title)}</h2>
+      ${speaker(charOf(idx), esc(d.text))}
+      <p>Premio: <span class="pay">${M(d.reward)}</span></p>
       <button class="btn main" data-act="close-story">¡Vamos!</button>`);
   }
 
@@ -1244,45 +2368,54 @@
     S.chapterSeen = S.chapter;
     save();
     openModal(`<div class="story-tag">Nuevo capítulo</div><h2>${esc(ch.title)}</h2>
-      <p class="story">${esc(ch.intro)}</p><p><b>🎯 Objetivo:</b> ${esc(ch.goal)}</p>
+      ${speaker(charOf(S.chapter), esc(ch.intro))}
+      <p><b>Objetivo:</b> ${esc(ch.goal)}</p>
       <button class="btn main" data-act="close">Entendido</button>`);
     return true;
   }
 
   function showGameOver() {
-    openModal(`<h2>💸 Quebraste</h2>
-      <p>Las deudas de tu productora pasaron de $300. Llegaste al día ${S.day} con ${S.stats.events} eventos cubiertos.</p>
-      <p class="muted small">Consejo: no compres equipo caro muy pronto y lleva repuestos.</p>
+    openModal(`<h2>Quebraste</h2>
+      ${speaker('ramiro', `Las deudas pasaron de $300. Llegaste al día ${S.day} con ${S.stats.events} eventos cubiertos. No te rindas: no compres equipo caro muy pronto y lleva repuestos.`)}
       <button class="btn main" data-act="restart">Empezar de nuevo</button>`);
   }
 
   /* ---------- Clics ---------- */
   document.addEventListener('click', (e) => {
+    snd.unlock();
     const nav = e.target.closest('nav button');
-    if (nav) { tab = nav.dataset.tab; render(); window.scrollTo(0, 0); return; }
+    if (nav) { tab = nav.dataset.tab; snd.play('tap'); render(); window.scrollTo(0, 0); return; }
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     const a = el.dataset.act;
     const id = el.dataset.id ? Number(el.dataset.id) : null;
     switch (a) {
-      case 'tab': tab = el.dataset.tab; render(); window.scrollTo(0, 0); break;
+      case 'mute': snd.toggle(); render(); break;
+      case 'install':
+        try { window.PWA.install().then((r) => { if (r === 'accepted') toast('¡Listo! El juego quedó instalado.'); render(); }); } catch (err) { toast('Este navegador no permite instalar.'); }
+        break;
+      case 'tab': tab = el.dataset.tab; snd.play('tap'); render(); window.scrollTo(0, 0); break;
       case 'close': closeModal(); render(); break;
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
-      case 'next-day': G.nextDay(S); save(); render(); toast(`Día ${S.day}`); if (!showChapterIntro()) render(); break;
-      case 'mkt': act(G.marketing(S, el.dataset.k)); break;
-      case 'hire': act(G.hire(S, id)); showChapterIntro(); break;
+      case 'next-day': G.nextDay(S); save(); snd.play('day'); render(); toast(`Día ${S.day}`); showChapterIntro(); break;
+      case 'mkt': act(G.marketing(S, el.dataset.k), 'logo'); break;
+      case 'hire': act(G.hire(S, id), 'hire'); showChapterIntro(); break;
       case 'fire': { const p = S.staff.find((x) => x.id === id); if (p) ask(`¿Despedir a ${esc(p.name)}?`, 'Sí, despedir', () => act(G.fire(S, id))); break; }
       case 'search-staff': act(G.searchStaff(S)); break;
-      case 'buy': act(G.buy(S, el.dataset.k)); showChapterIntro(); break;
-      case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1)); break;
-      case 'repair': act(G.repair(S, id)); break;
-      case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(`¿Vender ${esc(G.CATALOG[it.type].name)} por ${M(G.sellPrice(it))}?`, 'Sí, vender', () => act(G.sell(S, id))); break; }
-      case 'prep': openPrep(id); break;
-      case 'auto': { const s = G.suggestLoadout(S, prep.id); prep.staff = new Set(s.staffIds); prep.equip = new Set(s.equipIds); renderPrep(); break; }
+      case 'buy': act(G.buy(S, el.dataset.k), 'buy'); showChapterIntro(); break;
+      case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
+      case 'repair': act(G.repair(S, id), 'buy'); break;
+      case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(`¿Vender ${esc(G.CATALOG[it.type].name)} por ${M(G.sellPrice(it))}?`, 'Sí, vender', () => act(G.sell(S, id), 'buy')); break; }
+      case 'prep': snd.play('tap'); openPrep(id); break;
+      case 'auto': { const s = G.suggestLoadout(S, prep.id); prep.staff = new Set(s.staffIds); prep.equip = new Set(s.equipIds); snd.play('tap'); renderPrep(); break; }
       case 'go-live': {
         const r = G.startEvent(S, prep.id, [...prep.staff], [...prep.equip]);
-        if (!r.ok) { toast(r.msg); break; }
-        save(); render(); showIncident(); break;
+        if (!r.ok) { toast(r.msg); snd.play('error'); break; }
+        save(); render();
+        snd.play('live');
+        snd.amb(['barrial', 'ligapro', 'final', 'concierto'].includes(S.currentEvent.contract.type) ? 'crowd' : 'room');
+        showIncident();
+        break;
       }
       case 'choose': choose(Number(el.dataset.i)); break;
       case 'next-inc': showIncident(); break;
@@ -1306,6 +2439,9 @@
   });
 
   /* ---------- Inicio ---------- */
+  // Íconos fijos de la barra de abajo y la cabecera
+  document.querySelectorAll('[data-ico]').forEach((el) => { el.insertAdjacentHTML('afterbegin', I(el.dataset.ico)); });
+  try { if (window.PWA) window.PWA.onChange(() => { if (tab === 'inicio') render(); }); } catch (e) { /* sin instalación */ }
   S = load() || G.newGame();
   save();
   render();
