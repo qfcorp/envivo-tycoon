@@ -84,7 +84,7 @@
     },
     // Personal: sueldo = base del nivel × peso del rol + (habilidad - 1) × perSkill + azar
     wage: { perSkill: 5, random: 8, raisePerLevel: 10, hireFeeDays: 2,
-            perDiff: 0.1 },      // en eventos grandes el personal cobra más: +10% por punto de dificultad sobre 1
+            perDiff: 0.18 },     // en eventos grandes el personal cobra más: +18% por punto de dificultad sobre 1 (jornadas largas, viáticos)
     skillUp: [0, 4, 7, 11, 16],  // eventos para pasar del nivel 1 al 2, del 2 al 3, etc.
     // Ascensos de nivel: eventos trabajados y habilidad mínima
     promote: { semi_senior: { events: 15, skill: 2 }, senior: { events: 45, skill: 3 }, internacional: { intl: 3, skill: 4 }, wageShare: 0.35 },
@@ -137,7 +137,7 @@
     // Clientes
     // Pago: precio × factor de fama × (1 + perDiff × (dificultad - 1)). Factor de fama: repMin con 0 de fama, 1 con repFull
     // (la fama inicial) y después 1 + (fama - repFull) / repBonus
-    pay: { repMin: 0.85, repFull: 5, repBonus: 180, perDiff: 0 },
+    pay: { repMin: 0.85, repFull: 5, repBonus: 300, perDiff: 0 },
     // Confianza de los clientes: si tus últimos eventos salen casi todos con 1 estrella, pagan menos y llaman menos
     trust: { last: 6, minEvents: 10, badAvg: 1.6, payMul: 0.5 },
     latePay: { chance: 0.25, minDiff: 2, share: 0.5, days: 3 },
@@ -491,8 +491,8 @@
     if (s.contracts.length >= BALANCE.maxContracts) return null;
     const types = availableTypes(s);
     if (!typeKey) {
-      // Más probabilidad de los eventos más grandes que ya desbloqueaste
-      const weights = types.map((k, i) => (1 + i * 0.6) * (EVENT_TYPES[k].peso || 1));
+      // Un poco más de probabilidad de los eventos más grandes que ya desbloqueaste (las finales y LigaPrima son raras: ver peso)
+      const weights = types.map((k, i) => (1 + i * 0.4) * (EVENT_TYPES[k].peso || 1));
       const total = weights.reduce((a, b) => a + b, 0);
       let r = rnd(s) * total;
       typeKey = types[types.length - 1];

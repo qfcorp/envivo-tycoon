@@ -23967,12 +23967,12 @@
       crewReal: plantilla('director 1/1, productor 1/1, camarografo 3/6, operador_ptz 0/2, cablero 1/3, sonidista 1/2, operador_repeticion 0/1, operador_graficos 0/1, shader 0/1, tecnico_transmision 1/1, piloto_dron 0/1, coordinador_piso 1/1, runner 0/1'),
       positions: [['foh', 'tribuna'], ['abierta', 'fija'], ['foso', 'hombro'], ['jib', 'grua'], ['roboticas', 'robotica'], ['riel', 'riel'], ['steadicam', 'hombro'], ['dron', 'aerea']] },
     // minChapter: el cliente solo aparece desde ese capítulo (o en modo libre)
-    ligapro: { icon: '🏟️', cams: [4, 4], audio: true, stream: 1, outdoor: 1, diff: 4, pay: [2950, 5900], minRep: 40, minChapter: 4, deporte: true, entrevistas: true,
+    ligapro: { icon: '🏟️', cams: [4, 4], audio: true, stream: 1, outdoor: 1, diff: 4, pay: [2200, 4200], peso: 0.8, minRep: 40, minChapter: 4, deporte: true, entrevistas: true,
       clients: ['Club Atlético del Valle', 'Deportivo Cumbayá FC', 'Sporting Pichincha'],
       crew: plantilla('director 1/1, productor 1/1, camarografo 3/4, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 0/1, shader 0/1, tecnico_transmision 1/1'),
       crewReal: plantilla('director 1/1, productor 1/2, camarografo 4/7, operador_ptz 0/2, cablero 2/4, sonidista 1/2, microfonista 0/1, operador_repeticion 1/2, operador_graficos 1/1, shader 1/1, tecnico_transmision 1/1, piloto_dron 0/1, coordinador_piso 1/1, runner 1/2'),
       positions: [FUT.principal, FUT.cerrada, FUT.ai, FUT.ad, FUT.cancha, FUT.contra, FUT.lenta, FUT.bi, FUT.bd, FUT.steadi] },
-    final: { icon: '🏆', cams: [5, 6], audio: true, stream: 1, outdoor: 1, diff: 5, pay: [5900, 12500], minRep: 65, minChapter: 5, deporte: true, entrevistas: true,
+    final: { icon: '🏆', cams: [5, 6], audio: true, stream: 1, outdoor: 1, diff: 5, pay: [4000, 7500], peso: 0.5, minRep: 65, minChapter: 5, deporte: true, entrevistas: true,
       clients: ['Liga Nacional de Fútbol', 'Federación del Torneo'],
       crew: plantilla('director 1/1, productor 1/1, camarografo 3/5, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 1/1, shader 0/1, tecnico_transmision 1/1'),
       crewReal: plantilla('director 1/1, productor 1/2, camarografo 6/12, operador_ptz 1/3, cablero 3/6, sonidista 1/2, microfonista 1/1, operador_repeticion 2/3, operador_graficos 1/2, shader 1/2, tecnico_transmision 1/2, piloto_dron 0/1, coordinador_piso 1/2, runner 1/3'),
@@ -24120,7 +24120,7 @@
     },
     // Personal: sueldo = base del nivel × peso del rol + (habilidad - 1) × perSkill + azar
     wage: { perSkill: 5, random: 8, raisePerLevel: 10, hireFeeDays: 2,
-            perDiff: 0.1 },      // en eventos grandes el personal cobra más: +10% por punto de dificultad sobre 1
+            perDiff: 0.18 },     // en eventos grandes el personal cobra más: +18% por punto de dificultad sobre 1 (jornadas largas, viáticos)
     skillUp: [0, 4, 7, 11, 16],  // eventos para pasar del nivel 1 al 2, del 2 al 3, etc.
     // Ascensos de nivel: eventos trabajados y habilidad mínima
     promote: { semi_senior: { events: 15, skill: 2 }, senior: { events: 45, skill: 3 }, internacional: { intl: 3, skill: 4 }, wageShare: 0.35 },
@@ -24173,7 +24173,7 @@
     // Clientes
     // Pago: precio × factor de fama × (1 + perDiff × (dificultad - 1)). Factor de fama: repMin con 0 de fama, 1 con repFull
     // (la fama inicial) y después 1 + (fama - repFull) / repBonus
-    pay: { repMin: 0.85, repFull: 5, repBonus: 180, perDiff: 0 },
+    pay: { repMin: 0.85, repFull: 5, repBonus: 300, perDiff: 0 },
     // Confianza de los clientes: si tus últimos eventos salen casi todos con 1 estrella, pagan menos y llaman menos
     trust: { last: 6, minEvents: 10, badAvg: 1.6, payMul: 0.5 },
     latePay: { chance: 0.25, minDiff: 2, share: 0.5, days: 3 },
@@ -24527,8 +24527,8 @@
     if (s.contracts.length >= BALANCE.maxContracts) return null;
     const types = availableTypes(s);
     if (!typeKey) {
-      // Más probabilidad de los eventos más grandes que ya desbloqueaste
-      const weights = types.map((k, i) => (1 + i * 0.6) * (EVENT_TYPES[k].peso || 1));
+      // Un poco más de probabilidad de los eventos más grandes que ya desbloqueaste (las finales y LigaPrima son raras: ver peso)
+      const weights = types.map((k, i) => (1 + i * 0.4) * (EVENT_TYPES[k].peso || 1));
       const total = weights.reduce((a, b) => a + b, 0);
       let r = rnd(s) * total;
       typeKey = types[types.length - 1];

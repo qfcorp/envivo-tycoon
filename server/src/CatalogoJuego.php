@@ -897,8 +897,8 @@ final class CatalogoJuego
     'diff' => 4,
     'pay' => 
     array (
-      0 => 2950,
-      1 => 5900,
+      0 => 2200,
+      1 => 4200,
     ),
     'fama' => 40,
     'clientes' => 
@@ -922,8 +922,8 @@ final class CatalogoJuego
     'diff' => 5,
     'pay' => 
     array (
-      0 => 5900,
-      1 => 12500,
+      0 => 4000,
+      1 => 7500,
     ),
     'fama' => 65,
     'clientes' => 
