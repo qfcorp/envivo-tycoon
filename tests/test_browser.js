@@ -127,7 +127,9 @@ const { chromium } = require('playwright');
 
   // QA: la ventana "Capítulo completado" siempre aparece, también al contratar (y sigue ahí si se recarga)
   {
-    const p2 = await ctx.newPage();
+    // En un navegador aparte: dos pestañas del juego comparten el guardado y la otra podía guardar encima (falla al azar)
+    const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    const p2 = await ctx2.newPage();
     p2.on('pageerror', (e) => errors.push('pageerror (capítulo): ' + e.message));
     await p2.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
     await p2.goto(url, { waitUntil: 'domcontentloaded' });
@@ -140,7 +142,7 @@ const { chromium } = require('playwright');
       G.refreshCandidates(s);
       return G.serialize(s);
     });
-    await p2.addInitScript((x) => { if (!sessionStorage.getItem('cap')) { localStorage.setItem('envivo_tycoon_save_v1', x); sessionStorage.setItem('cap', '1'); } }, st);
+    await p2.addInitScript((x) => { if (!localStorage.getItem('__prueba_cap')) { localStorage.setItem('envivo_tycoon_save_v1', x); localStorage.setItem('__prueba_cap', '1'); } }, st);   // marca en localStorage: sessionStorage a veces se pierde al recargar file://
     await p2.reload({ waitUntil: 'load' });
     await p2.waitForFunction(() => window.__game && window.__game.state && window.__game.state.chapter === 1);
     await p2.waitForTimeout(500);
@@ -160,7 +162,7 @@ const { chromium } = require('playwright');
     const quedan = await p2.evaluate(() => (window.__game.state.capCompletados || []).length);
     if (quedan) fail('el capítulo visto sigue pendiente');
     await shot('13_capitulo');
-    await p2.close();
+    await p2.close(); await ctx2.close();
   }
 
   console.log(`Eventos jugados en el celular simulado: ${played}`);
