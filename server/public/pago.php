@@ -78,6 +78,7 @@ echo Http::inicioHtml('Pagar ' . $p['nombre']);
       <label>Correo<input id="plux-email" type="email" maxlength="120" autocomplete="email" value="<?= $e($jug['email']) ?>"></label>
       <label class="ancho">Celular<input id="plux-telefono" type="tel" maxlength="16" autocomplete="tel" placeholder="0991234567"></label>
     </div>
+<?= class_exists(\EnVivo\Facturacion::class) ? \EnVivo\Facturacion::htmlPago($c, $jug) : '' /* datos para la factura SRI (INTEGRAR_FACTURACION.md) */ ?>
     <label class="casilla"><input type="checkbox" id="plux-terminos"> <span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener">términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
     <button type="button" class="boton grande" id="plux-pagar">🔒 Pagar <?= $e($total) ?></button>
   </div>
@@ -98,5 +99,6 @@ echo Http::inicioHtml('Pagar ' . $p['nombre']);
 </main>
 <script src="/pago-assets/vendor/crypto-js.min.js"></script>
 <script src="/pago-assets/vendor/jsencrypt.min.js"></script>
-<script src="/pago-assets/pago.js?v=1"></script>
+<script src="/pago-assets/factura.js?v=1"></script>
+<script src="/pago-assets/pago.js?v=2"></script>
 </body></html>

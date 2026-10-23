@@ -30,6 +30,9 @@
     if (!/^\S+@\S+\.\S+$/.test($('plux-email').value.trim())) { msg('Escribe un correo válido.', 'error'); return null; }
     if ($('plux-telefono').value.replace(/\D/g, '').length < 7) { msg('Escribe tu número de celular.', 'error'); return null; }
     if (!$('plux-terminos').checked) { msg('Para pagar debes aceptar los términos y condiciones.', 'error'); return null; }
+    // Datos para la factura SRI (assets/factura.js): false = falta algo (ya mostró el mensaje)
+    var factura = window.EnVivoFactura ? window.EnVivoFactura.leer(msg) : null;
+    if (factura === false) return null;
     var k = claveAlAzar(), rsa = new JSEncrypt();
     rsa.setPublicKey(caja.dataset.llave);
     var kc = rsa.encrypt(k);
@@ -38,7 +41,8 @@
       card: { number: aes(num, k), expirationYear: aes(anio, k), expirationMonth: aes(mes, k), cvv: aes(cvv, k) },
       buyer: { documentNumber: $('plux-cedula').value.trim(), firstName: $('plux-nombres').value.trim(), lastName: $('plux-apellidos').value.trim(),
                phone: $('plux-telefono').value.trim(), email: $('plux-email').value.trim() },
-      simetricKeyCifrada: kc
+      simetricKeyCifrada: kc,
+      factura: factura
     };
     $('plux-cvv').value = '';   // el CVV no se queda en la pantalla
     num = cvv = null;
@@ -50,6 +54,7 @@
     ocupado = true; botones(false);
     msg('Procesando el pago, no cierres esta ventana…', 'info');
     var body = { o: caja.dataset.o, card: estado.card, buyer: estado.buyer, simetricKeyCifrada: estado.simetricKeyCifrada };
+    if (estado.factura) body.factura = estado.factura;
     if (extra) body.paramsOtp = extra;
     fetch('/api/plux/pago', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' }, body: JSON.stringify(body), credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
