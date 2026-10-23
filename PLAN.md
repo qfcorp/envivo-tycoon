@@ -101,14 +101,14 @@ Nota: el bot es "razonable" pero no muy fino. Un bot que solo acepta duelos con 
 - [x] Sede que crece: garaje → oficina → estudio → centro de producción (con cámaras y unidad móvil)
 - [x] Escena animada del evento en vivo con efectos por imprevisto (lluvia, apagón, chispa, gol, acople...)
 - [x] 22 efectos de sonido hechos por código + ambiente de público, con botón para silenciar
-- [ ] Música de fondo
-- [ ] Más imprevistos y más tipos de evento
+- [x] Música de fondo (7 temas, botón propio)
+- [x] Más imprevistos y más tipos de evento (16 eventos)
 - [ ] Productora rival con historia propia
 
-### Fase 3 — App en Google Play (pendiente)
+### Fase 3 — App en Google Play (lista para generar y subir)
 - [x] Paso previo: app instalable desde el navegador (ícono, modo sin internet, botón Instalar)
-- [ ] Empaquetar como app Android
-- [ ] Ícono, capturas, ficha en Play Console
+- [x] Empaquetar como app Android (TWA con pagos de Google: `android/`, guía `docs/ANDROID_GOOGLE_PLAY.md`); falta generarla en qfone y subirla
+- [x] Ícono, capturas y fichas en 10 idiomas (`assets/promo/`, `docs/play_store/`); falta llenar Play Console
 
 ### Fase 4 — Venta con dinero real y servidor (en curso)
 Decisiones (23 oct 2026): VPS de OVH, dirección **juego.tukanec.com** (luego un dominio propio), cobro con **Pago Plux**
@@ -125,22 +125,22 @@ Decisiones (23 oct 2026): VPS de OVH, dirección **juego.tukanec.com** (luego un
 - [ ] Certificación de Plux para juego.tukanec.com antes de cobrar de verdad (hasta entonces: sandbox)
 - [ ] Completar RUC/correo/dirección en las páginas legales (sin WhatsApp: soporte solo por correo y en el juego) y revisión de abogado (también de los nombres de marcas)
 
-### Fase 5 — Mercado entre jugadores (en curso)
+### Fase 5 — Mercado entre jugadores (listo)
 Reglas: `server/MERCADO.md`. Comisión 5% (se quema), solo quien compró créditos, máx. 10 publicaciones, vencen a los 7 días,
 equipos con número de serie, los créditos nunca se convierten en dinero real.
 - [x] En el juego: inventario del servidor sincronizado con la bodega (`js/premium.js`, `tests/test_premium.js`)
-- [ ] Servidor: inventario, publicar / comprar / retirar, panel del mercado (ayudante trabajando)
-- [ ] Pantalla del mercado en el juego
+- [x] Servidor: inventario, publicar / comprar / retirar, ganancias retenidas 7 días, moderación en el Centro de Control
+- [x] Pantalla del mercado en el juego
 
-### Fase 6 — Comunidad y eventos en línea (diseño listo)
+### Fase 6 — Comunidad y eventos en línea (primera parte lista)
 Diseño completo: documento "Eventos en línea entre productoras" (Claude Docs). Contrato técnico: `server/SOCIAL.md`.
-- [ ] Servidores (reinos), asociaciones de hasta 20 productoras, chat de servidor / asociación / coalición con moderación (ayudante trabajando en el servidor)
-- [ ] Liga Semanal y Desafío Técnico del Día
-- [ ] Mega Festival y Duelo de Productoras (el servidor repite cada jugada para evitar trampas)
+- [x] Servidores (reinos), asociaciones, chat de servidor y de asociación con moderación, reportes y bloqueo
+- [x] Liga Semanal y Desafío Técnico del Día
+- [x] Mega Festival y Duelo de Productoras (el servidor repite cada jugada con `server/validador/`)
 - [ ] Productor del Año, Switcher en Vivo (minijuego) y Pase de Temporada
 - [ ] Gran Licitación en coalición (tiempo real), Copas internacionales servidor contra servidor, Desafío de Cadenas Internacionales
 
-### Fase 7 — Realismo (lógica lista, falta la pantalla)
+### Fase 7 — Realismo (listo)
 Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y textos: `js/datos.js`. Reglas: `js/logic.js`.
 - [x] Catálogo de equipos reales con marcas cambiadas: 90 equipos en 19 categorías (de handycam a cámara de sistema con lente box 122x, PTZ, cámara lenta, drones, grúa, steadicam, switchers hasta la unidad móvil, repeticiones, gráficos, audio, boom y diademas de comentarista, intercom, bonding, video inalámbrico, fibra, energía, lluvia, maletas, vehículos y alquileres por evento). Requisitos reales: lentes, fibra, adaptador y soporte pesado para el lente box, shader, piloto de dron, operadores.
 - [x] Personal por evento (mínimo / ideal por rol, 14 roles) con semáforo, ahorro en sueldos y riesgo al ir con menos gente (más imprevistos de ese rol, más graves y menos calidad); con la plantilla completa igual puede salir algo mal
@@ -148,8 +148,8 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - [x] Plan de cámaras por evento (tribuna principal con lente box, cerrada, detrás de cada arco, al hombro, contraplano, súper lenta, dron y arañacam en la final; ring con 4 lados y cenital...) con ajuste de cada cámara a su posición
 - [x] Eventos nuevos: boxeo, lucha libre, funeral (sin dron, errores más caros), lanzamiento de autos, IRL con influencers; contratos internacionales (6 tipos, con requisitos, viaje y caída de fama)
 - [x] Todos los textos en `js/datos.js` con claves y {parámetros} (listos para los 10 idiomas)
-- [ ] Pantalla: preparar evento con semáforo por rol y plan de cámaras dibujado, tienda por categorías, contratos internacionales (la lógica ya expone `crewPlan`, `cameraPlan`, `CATEGORIAS`, `shopByCategory`, `requisitosInternacional`, `takeAvisos`, `venue`)
-- [ ] Gráficos semirrealistas y rápidos (ayudante trabajando)
+- [x] Pantalla: preparar evento con semáforo por rol y plan de cámaras dibujado, tienda por categorías, contratos internacionales (la lógica ya expone `crewPlan`, `cameraPlan`, `CATEGORIAS`, `shopByCategory`, `requisitosInternacional`, `takeAvisos`, `venue`)
+- [x] Gráficos semirrealistas y rápidos; íconos de los 14 puestos y eventos nuevos
 
 ## 📝 Bitácora
 
@@ -162,3 +162,13 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-23: servidor de venta terminado (cuentas, nube, créditos, VIP, Plux en sandbox, panel, instalador) y probado de punta a punta desde el juego. Diseño de eventos en línea, chat, copas entre servidores y cadenas internacionales. Plan de realismo (personal por evento, equipos reales). Demo previsto para las ~09:00.
 - 2026-10-23 (madrugada): mercado y chat (pantallas), soporte solo por correo y dentro del juego, música (7 temas), validador anti-trampas en el servidor (repite cada evento con la misma lógica; 3660 comprobaciones, 100% de resultados falsos detectados) y módulo visual del plan de personal y cámaras por recinto (17 tipos de lugar). Falta conectarlos a la pantalla principal cuando termine la traducción a 10 idiomas.
 - 2026-10-23: realismo en la lógica: catálogo de 90 equipos con marcas parodia (vMax, Blackmagia ATOM, LigaPrima...), 14 roles con plantilla mínima e ideal por evento, niveles Junior a Internacional, plan de cámaras, 5 eventos nuevos y contratos internacionales. Capítulo 4 ahora pide ganar $6.000 en el capítulo (antes juntar $12.000); locales más suaves ($20 / $60 / $120 / $200); un evento grande con 1-2⭐ casi no se cobra; las opciones seguras de los imprevistos cuestan algo. Bot con personal y equipos realistas (400 partidas, 3 semillas): capítulos en días 4 / 21 / 53 / 77 / 108 / 165-176, 6,8% a 8,3% quiebras, 65% a 67,5% termina la historia, pierde el 29,5% a 31% de los duelos, 3,5⭐ promedio en los capítulos 3 a 6. Guardado v3 (las v1 y v2 cargan bien).
+- 2026-10-23 (04:00): todo conectado en la pantalla v6: tienda por categorías, plan de cuadrilla y cámaras, resumen del día, pestaña En línea (Liga, Festival, Duelos, Desafío, vincular Discord), juego completo en 10 idiomas con carga solo del idioma en uso, arreglos de rendimiento y de QA. Servidor v2 con Centro de Control (`/control/`), Discord, Google Play, borrar cuenta, arreglos de la auditoría de seguridad, límites de nginx, respaldos y alertas por Telegram. Pruebas del servidor: más de 1.300 en verde.
+
+## ⏭️ Pendiente (después del demo)
+- [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
+- [ ] Dimitry: crear el correo de soporte y completar RUC/correo/dirección en las páginas legales; revisión de abogado (también nombres parodia)
+- [ ] Dimitry: certificación de Plux para el dominio; Discord (`docs/DISCORD.md` y `docs/DISCORD_BOT.md`); Google Play (`docs/ANDROID_GOOGLE_PLAY.md`)
+- [ ] Unificar el trato en francés y ruso (menús con "vous/вы", historia con "tu/ты")
+- [ ] Copas internacionales servidor contra servidor, Gran Licitación en coalición, cadenas internacionales, Pase de Temporada
+- [ ] Borrar la rama de respaldo `wip-dificultad` cuando todo esté en main
+
