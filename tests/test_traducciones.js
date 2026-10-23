@@ -85,7 +85,7 @@ console.log('errores.json');
     ok(json._codigos && typeof json._codigos === 'object', 'errores.json: falta "_codigos" (de dónde sale cada código)');
     if (json._codigos) {
       for (const k of claves) ok(k in json._codigos, `errores.json: "${k}" no está documentado en _codigos`);
-      for (const k of Object.keys(json._codigos)) ok(claves.includes(k), `errores.json: _codigos.${k} no tiene texto`);
+      for (const k of Object.keys(json._codigos)) ok(k.startsWith('_') || claves.includes(k), `errores.json: _codigos.${k} no tiene texto`);
     }
     // Todos los códigos fijos que usa el servidor hoy:
     //   'codigo' => 'x' (Fallo / respuestas de pago) · Http::error(..., 'x') (4.º argumento) · Http::CODIGOS (por estado HTTP)
@@ -107,7 +107,9 @@ console.log('errores.json');
     const pendientes = new Set();
     const dirNuevos = path.join(ROOT, 'docs/traducciones/errores_nuevos');
     if (fs.existsSync(dirNuevos)) for (const f of fs.readdirSync(dirNuevos)) if (f.endsWith('.json')) { try { Object.keys(JSON.parse(leer('docs/traducciones/errores_nuevos/' + f)).es || {}).forEach((k) => pendientes.add(k)); } catch (e) { ok(false, 'errores_nuevos/' + f + ' no es JSON válido'); } }
-    for (const c of usados) ok(claves.includes(c) || pendientes.has(c), `errores.json: falta el código del servidor "${c}"`);
+    // Códigos que solo ve el Centro de Control (en español): _codigos._solo_panel (palabras sueltas)
+    const soloPanel = new Set(String((json._codigos || {})._solo_panel || '').match(/[a-z_]+/g) || []);
+    for (const c of usados) ok(claves.includes(c) || pendientes.has(c) || soloPanel.has(c) || (/^falta_/.test(c) && claves.includes('falta_dato')), `errores.json: falta el código del servidor "${c}"`);
     // Prefijos dinámicos: falta_<campo> y google_<estado>
     for (const p of prefijos) {
       if (p === 'falta_') ok(claves.includes('falta_dato'), 'errores.json: falta "falta_dato" para el prefijo falta_<campo>');

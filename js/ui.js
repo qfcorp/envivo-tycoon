@@ -1440,9 +1440,8 @@
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
         ${discordBtn('sm')}${unirseDiscordBtn('sm')}
         ${window.Visitas ? window.Visitas.ajusteCuenta() : ''}
-        <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
         ${window.Buzon && window.Buzon.botonCanjear ? window.Buzon.botonCanjear() : ''}
-        <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button></div>`;
+        <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
     // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta

@@ -16,7 +16,7 @@ mide cada texto y falla si alguno se pasa de los límites o si esta tabla no coi
 
 | Campo | Límite | Dónde está |
 |---|---|---|
-| Nombre de la app | 30 caracteres | `## Nombre de la app` → siempre **EN VIVO Tycoon** (14) |
+| Nombre de la app | 30 caracteres | `## Nombre de la app` → **EN VIVO Tycoon: Productora TV** traducido (máx. 29) |
 | Descripción breve | 80 caracteres | `## Descripción breve` |
 | Descripción completa | 4.000 caracteres | `## Descripción completa` |
 | Novedades de la versión | 500 caracteres | `## Novedades (versión 1.0)` (se pega al crear la versión en Producción) |
@@ -47,16 +47,16 @@ que volver a generarla antes de subirla (el juego ya usa la marca inventada; ver
 
 | Idioma | Nombre (≤30) | Breve (≤80) | Completa (≤4000) | Novedades (≤500) | Estado |
 |---|---|---|---|---|---|
-| es | 14 | 75 | 2699 | 301 | ✅ |
-| en | 14 | 73 | 2538 | 293 | ✅ |
-| pt-BR | 14 | 74 | 2643 | 296 | ✅ |
-| fr | 14 | 75 | 2915 | 312 | ✅ |
-| de | 14 | 74 | 2826 | 288 | ✅ |
-| it | 14 | 77 | 2747 | 310 | ✅ |
-| ru | 14 | 74 | 2665 | 292 | ✅ |
-| tr | 14 | 76 | 2639 | 298 | ✅ |
-| id | 14 | 73 | 2726 | 292 | ✅ |
-| zh-CN | 14 | 27 | 880 | 117 | ✅ |
+| es | 29 | 75 | 2699 | 301 | ✅ |
+| en | 27 | 73 | 2538 | 293 | ✅ |
+| pt-BR | 28 | 74 | 2643 | 296 | ✅ |
+| fr | 29 | 75 | 2915 | 312 | ✅ |
+| de | 29 | 74 | 2826 | 288 | ✅ |
+| it | 29 | 77 | 2747 | 310 | ✅ |
+| ru | 25 | 74 | 2665 | 292 | ✅ |
+| tr | 28 | 76 | 2639 | 298 | ✅ |
+| id | 27 | 73 | 2726 | 292 | ✅ |
+| zh-CN | 22 | 27 | 880 | 117 | ✅ |
 
 Si se edita una ficha, correr `node tests/test_traducciones.js`: imprime las medidas nuevas para copiar a esta tabla.
 

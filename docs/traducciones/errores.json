@@ -338,7 +338,16 @@
     "push_endpoint_invalido": "existe · Push.php · 400 · el endpoint no es de un servicio de push conocido (FCM, Mozilla, Windows, Apple)",
     "push_llaves_invalidas": "existe · Push.php · 400 · p256dh no es un punto P-256 o auth no tiene 16 bytes",
     "push_categoria_invalida": "existe · Push.php · 400 · categoría desconocida o valor que no es true/false",
-    "push_no_suscrito": "existe · Push.php · 404 · ese aparato no tiene las notificaciones activadas"
+    "push_no_suscrito": "existe · Push.php · 404 · ese aparato no tiene las notificaciones activadas",
+    "mensaje_con_regalo": "existe · Buzon.php (borrar) · 409",
+    "mensaje_vencido": "existe · Buzon.php (reclamar) · 410",
+    "sin_regalo": "existe · Buzon.php (reclamar) · 409",
+    "codigo_ya_usado": "existe · Buzon.php (canjear) · 409",
+    "codigo_agotado": "existe · Buzon.php (canjear) · 409",
+    "codigo_pronto": "existe · Buzon.php (canjear) · 409 · {fecha} = dd/mm/aaaa (extra.fecha)",
+    "codigo_lote_usado": "existe · Buzon.php (canjear) · 409",
+    "_solo_panel": "Solo los ve el Centro de Control (en español, no hace falta traducirlos): adjunto_invalido 400, titulo_vacio 400, jugador_no_existe 404, filtro_invalido 400, vence_invalido 400, envio_no_existe 404, envio_retirado 409, codigo_repetido 409, codigo_formato 400, usos_invalidos 400, fecha_invalida 400, etiqueta_invalida 400, cantidad_invalida 400. falta_codigo y falta_id usan el prefijo falta_<campo> -> falta_dato. limite_intentos 429 y cuenta_* ya existen. También del panel: buzon_codigo_activar, buzon_codigo_desactivar (acciones), web y juego (origen del canje).",
+    "edad_servidor": "existe · EdadServidor.php (api.php revisarRuta y Copas::registrarEquipo / iniciarIntento) · 403 · extra: desbloqueo (duelos|festival|copa), dia (día del servidor en que se abre), faltan_dias, abre (ISO). El texto en español del servidor ya dice 'Se abre el día 7 del servidor (en 3 días).'; js/edad_servidor.js arma la versión traducida con cuenta regresiva."
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -678,7 +687,15 @@
     "push_endpoint_invalido": "Este navegador usa un servicio de notificaciones que no podemos usar.",
     "push_llaves_invalidas": "No se pudieron activar las notificaciones. Intenta otra vez.",
     "push_categoria_invalida": "Esa opción de notificaciones no existe.",
-    "push_no_suscrito": "Las notificaciones no están activas en este aparato."
+    "push_no_suscrito": "Las notificaciones no están activas en este aparato.",
+    "mensaje_con_regalo": "Primero reclama el regalo de este mensaje.",
+    "mensaje_vencido": "Este regalo ya venció.",
+    "sin_regalo": "Este mensaje no tiene regalos.",
+    "codigo_ya_usado": "Ya canjeaste este código en tu cuenta.",
+    "codigo_agotado": "Este código ya se usó todas las veces posibles.",
+    "codigo_pronto": "Este código todavía no se puede usar. Se activa el {fecha}.",
+    "codigo_lote_usado": "Ya canjeaste otro código de esta misma campaña: es uno por cuenta.",
+    "edad_servidor": "Todavía no se abre en tu servidor: llega el día {dia} del servidor."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1018,7 +1035,15 @@
     "push_endpoint_invalido": "This browser uses a notification service we can't use.",
     "push_llaves_invalidas": "Couldn't turn on notifications. Try again.",
     "push_categoria_invalida": "That notification option doesn't exist.",
-    "push_no_suscrito": "Notifications aren't on for this device."
+    "push_no_suscrito": "Notifications aren't on for this device.",
+    "mensaje_con_regalo": "Claim the gift in this message first.",
+    "mensaje_vencido": "This gift has expired.",
+    "sin_regalo": "This message has no gifts.",
+    "codigo_ya_usado": "You already redeemed this code on your account.",
+    "codigo_agotado": "This code has been used up.",
+    "codigo_pronto": "This code can't be used yet. It starts on {fecha}.",
+    "codigo_lote_usado": "You already redeemed another code from this campaign: one per account.",
+    "edad_servidor": "Not open on your server yet: it arrives on server day {dia}."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1358,7 +1383,15 @@
     "push_endpoint_invalido": "Este navegador usa um serviço de notificações que não podemos usar.",
     "push_llaves_invalidas": "Não foi possível ativar as notificações. Tente de novo.",
     "push_categoria_invalida": "Essa opção de notificações não existe.",
-    "push_no_suscrito": "As notificações não estão ativas neste aparelho."
+    "push_no_suscrito": "As notificações não estão ativas neste aparelho.",
+    "mensaje_con_regalo": "Primeiro resgate o presente desta mensagem.",
+    "mensaje_vencido": "Este presente já venceu.",
+    "sin_regalo": "Esta mensagem não tem presentes.",
+    "codigo_ya_usado": "Você já resgatou este código na sua conta.",
+    "codigo_agotado": "Este código já foi usado todas as vezes possíveis.",
+    "codigo_pronto": "Este código ainda não pode ser usado. Ele começa em {fecha}.",
+    "codigo_lote_usado": "Você já resgatou outro código desta campanha: é um por conta.",
+    "edad_servidor": "Ainda não abriu no seu servidor: chega no dia {dia} do servidor."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1698,7 +1731,15 @@
     "push_endpoint_invalido": "Ce navigateur utilise un service de notifications que nous ne pouvons pas utiliser.",
     "push_llaves_invalidas": "Impossible d'activer les notifications. Réessaie.",
     "push_categoria_invalida": "Cette option de notifications n'existe pas.",
-    "push_no_suscrito": "Les notifications ne sont pas activées sur cet appareil."
+    "push_no_suscrito": "Les notifications ne sont pas activées sur cet appareil.",
+    "mensaje_con_regalo": "Récupère d'abord le cadeau de ce message.",
+    "mensaje_vencido": "Ce cadeau a expiré.",
+    "sin_regalo": "Ce message n'a pas de cadeau.",
+    "codigo_ya_usado": "Tu as déjà utilisé ce code sur ton compte.",
+    "codigo_agotado": "Ce code a été utilisé le nombre maximal de fois.",
+    "codigo_pronto": "Ce code ne peut pas encore être utilisé. Il s'active le {fecha}.",
+    "codigo_lote_usado": "Tu as déjà utilisé un autre code de cette campagne : un par compte.",
+    "edad_servidor": "Pas encore ouvert sur ton serveur : ça arrive le jour {dia} du serveur."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2038,7 +2079,15 @@
     "push_endpoint_invalido": "Dieser Browser nutzt einen Benachrichtigungsdienst, den wir nicht verwenden können.",
     "push_llaves_invalidas": "Benachrichtigungen konnten nicht aktiviert werden. Versuch es noch einmal.",
     "push_categoria_invalida": "Diese Benachrichtigungsoption gibt es nicht.",
-    "push_no_suscrito": "Benachrichtigungen sind auf diesem Gerät nicht aktiv."
+    "push_no_suscrito": "Benachrichtigungen sind auf diesem Gerät nicht aktiv.",
+    "mensaje_con_regalo": "Hol zuerst das Geschenk dieser Nachricht ab.",
+    "mensaje_vencido": "Dieses Geschenk ist abgelaufen.",
+    "sin_regalo": "Diese Nachricht hat keine Geschenke.",
+    "codigo_ya_usado": "Du hast diesen Code schon mit deinem Konto eingelöst.",
+    "codigo_agotado": "Dieser Code ist aufgebraucht.",
+    "codigo_pronto": "Dieser Code kann noch nicht benutzt werden. Er gilt ab {fecha}.",
+    "codigo_lote_usado": "Du hast schon einen anderen Code dieser Aktion eingelöst: einer pro Konto.",
+    "edad_servidor": "Auf deinem Server noch nicht offen: kommt an Server-Tag {dia}."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2378,7 +2427,15 @@
     "push_endpoint_invalido": "Questo browser usa un servizio di notifiche che non possiamo usare.",
     "push_llaves_invalidas": "Impossibile attivare le notifiche. Riprova.",
     "push_categoria_invalida": "Questa opzione di notifica non esiste.",
-    "push_no_suscrito": "Le notifiche non sono attive su questo dispositivo."
+    "push_no_suscrito": "Le notifiche non sono attive su questo dispositivo.",
+    "mensaje_con_regalo": "Prima riscatta il regalo di questo messaggio.",
+    "mensaje_vencido": "Questo regalo è scaduto.",
+    "sin_regalo": "Questo messaggio non ha regali.",
+    "codigo_ya_usado": "Hai già riscattato questo codice con il tuo account.",
+    "codigo_agotado": "Questo codice è esaurito.",
+    "codigo_pronto": "Questo codice non si può ancora usare. Si attiva il {fecha}.",
+    "codigo_lote_usado": "Hai già riscattato un altro codice di questa campagna: uno per account.",
+    "edad_servidor": "Non è ancora aperto sul tuo server: arriva il giorno {dia} del server."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -2718,7 +2775,15 @@
     "push_endpoint_invalido": "Этот браузер использует службу уведомлений, которую мы не поддерживаем.",
     "push_llaves_invalidas": "Не удалось включить уведомления. Попробуй ещё раз.",
     "push_categoria_invalida": "Такой настройки уведомлений нет.",
-    "push_no_suscrito": "На этом устройстве уведомления не включены."
+    "push_no_suscrito": "На этом устройстве уведомления не включены.",
+    "mensaje_con_regalo": "Сначала забери подарок из этого сообщения.",
+    "mensaje_vencido": "Срок подарка истёк.",
+    "sin_regalo": "В этом сообщении нет подарков.",
+    "codigo_ya_usado": "Ты уже активировал этот код на своём аккаунте.",
+    "codigo_agotado": "Этот код больше нельзя использовать.",
+    "codigo_pronto": "Этот код пока нельзя использовать. Он начнёт действовать {fecha}.",
+    "codigo_lote_usado": "Ты уже активировал другой код этой акции: один на аккаунт.",
+    "edad_servidor": "На твоём сервере ещё не открыто: появится на {dia}-й день сервера."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3058,7 +3123,15 @@
     "push_endpoint_invalido": "Bu tarayıcı kullanamadığımız bir bildirim hizmeti kullanıyor.",
     "push_llaves_invalidas": "Bildirimler açılamadı. Tekrar dene.",
     "push_categoria_invalida": "Böyle bir bildirim seçeneği yok.",
-    "push_no_suscrito": "Bu cihazda bildirimler açık değil."
+    "push_no_suscrito": "Bu cihazda bildirimler açık değil.",
+    "mensaje_con_regalo": "Önce bu mesajdaki hediyeyi al.",
+    "mensaje_vencido": "Bu hediyenin süresi doldu.",
+    "sin_regalo": "Bu mesajda hediye yok.",
+    "codigo_ya_usado": "Bu kodu hesabında zaten kullandın.",
+    "codigo_agotado": "Bu kodun kullanım hakkı bitti.",
+    "codigo_pronto": "Bu kod henüz kullanılamaz. {fecha} tarihinde başlar.",
+    "codigo_lote_usado": "Bu kampanyadan başka bir kod zaten kullandın: hesap başına bir tane.",
+    "edad_servidor": "Sunucunda henüz açılmadı: sunucunun {dia}. gününde geliyor."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -3398,7 +3471,15 @@
     "push_endpoint_invalido": "Browser ini memakai layanan notifikasi yang tidak bisa kami gunakan.",
     "push_llaves_invalidas": "Tidak bisa mengaktifkan notifikasi. Coba lagi.",
     "push_categoria_invalida": "Opsi notifikasi itu tidak ada.",
-    "push_no_suscrito": "Notifikasi tidak aktif di perangkat ini."
+    "push_no_suscrito": "Notifikasi tidak aktif di perangkat ini.",
+    "mensaje_con_regalo": "Ambil dulu hadiah di pesan ini.",
+    "mensaje_vencido": "Hadiah ini sudah kedaluwarsa.",
+    "sin_regalo": "Pesan ini tidak punya hadiah.",
+    "codigo_ya_usado": "Kamu sudah menukar kode ini di akunmu.",
+    "codigo_agotado": "Kode ini sudah habis dipakai.",
+    "codigo_pronto": "Kode ini belum bisa dipakai. Mulai berlaku {fecha}.",
+    "codigo_lote_usado": "Kamu sudah menukar kode lain dari kampanye ini: satu per akun.",
+    "edad_servidor": "Belum terbuka di servermu: hadir pada hari ke-{dia} server."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -3738,6 +3819,14 @@
     "push_endpoint_invalido": "此浏览器使用的通知服务我们无法支持。",
     "push_llaves_invalidas": "无法开启通知，请重试。",
     "push_categoria_invalida": "该通知选项不存在。",
-    "push_no_suscrito": "此设备未开启通知。"
+    "push_no_suscrito": "此设备未开启通知。",
+    "mensaje_con_regalo": "请先领取这封邮件里的礼物。",
+    "mensaje_vencido": "这个礼物已过期。",
+    "sin_regalo": "这封邮件没有礼物。",
+    "codigo_ya_usado": "你的账号已经兑换过这个码。",
+    "codigo_agotado": "这个兑换码的次数已用完。",
+    "codigo_pronto": "这个兑换码还不能使用，将于 {fecha} 开始生效。",
+    "codigo_lote_usado": "你已兑换过这次活动的其他兑换码：每个账号限一次。",
+    "edad_servidor": "你的服务器尚未开放：将于服务器第{dia}天开放。"
   }
 }

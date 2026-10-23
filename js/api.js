@@ -28,6 +28,11 @@
         const t = root.I18N.T('error.' + j.codigo, j);
         if (!/\{\w+\}/.test(t)) return t;   // faltan datos para algún marcador: mejor el texto del servidor
       }
+      // falta_<campo> (falta_id, falta_periodo...): texto genérico "Falta {campo}" en el idioma del jugador
+      if (j.codigo && /^falta_/.test(j.codigo) && root.I18N && root.I18N.T.has('error.falta_dato')) {
+        const t = root.I18N.T('error.falta_dato', Object.assign({ campo: j.codigo.slice(6) }, j));
+        if (!/\{\w+\}/.test(t)) return t;
+      }
     } catch (e) { /* español */ }
     return j.error ? TL(j.error) : T('err.no_completo');
   }
