@@ -329,7 +329,7 @@ En la columna **Paths** deben aparecer `/etc/envivo` y `/var/backups/envivo`. Si
 | https://juego.tukanec.com | El juego carga. Arriba, candado (HTTPS). |
 | https://juego.tukanec.com/control/ | La entrada pide usuario, clave **y código de 6 dígitos**. |
 | https://juego.tukanec.com/admin.php | Te lleva solo a `/control/`. |
-| https://juego.tukanec.com/terminos.html | Los términos (todavía con `[DIRECCIÓN]` en amarillo: normal hasta completarla). |
+| https://juego.tukanec.com/terminos.html | Los términos (con RUC, domicilio en Quito y correo de soporte). |
 | En el juego: **Tienda** → **Crear cuenta** → comprar **700 créditos** con una **tarjeta de pruebas de Plux** | La compra sale aprobada, los créditos llegan, y la tienda avisa que está en **modo de pruebas**. En `/control/` → **Compras** aparece la venta. |
 | En el juego: pestaña **En línea** (ya con cuenta) | Salen Liga Semanal, Mega Festival, Duelo de Productoras, Desafío del Día y Copa de Servidores. La Liga pide unirse a una asociación (antes de las productoras de muestra no hay ninguna). |
 

@@ -139,13 +139,12 @@ console.log('legal/');
     // Versión oficial en español: datos reales del dueño; el único dato pendiente es [DIRECCIÓN] (marcado con <mark class="falta">).
     const pes = `server/public/${doc}.html`;
     for (const mk of ['[RUC]', '[CORREO DE SOPORTE]', '[FECHA]']) ok(!es.includes(mk), `${pes}: todavía tiene el marcador ${mk}`);
-    ok((es.match(/<mark class="falta">[^<]*<\/mark>/g) || []).every((m) => m.includes('[DIRECCIÓN]')),
-      `${pes}: <mark class="falta"> solo se usa para [DIRECCIÓN]`);
+    ok(!/<mark class="falta">/.test(es) && !es.includes('[DIRECCIÓN]'), `${pes}: no quedan datos pendientes (<mark class="falta">)`);
     ok(es.includes('soporte@tukanec.com'), `${pes}: falta el correo de soporte`);
     ok(es.includes('Última actualización: 23 de octubre de 2026'), `${pes}: falta la fecha de última actualización`);
     ok(!/whats\s*app/i.test(es), `${pes}: menciona WhatsApp`);
     if (doc !== 'borrar-cuenta') {
-      ok(es.includes('<mark class="falta">[DIRECCIÓN]</mark>'), `${pes}: falta el marcador visible [DIRECCIÓN]`);
+      ok(es.includes('170511'), `${pes}: falta el domicilio (Quito 170511)`);
       ok(es.includes('1793135099001'), `${pes}: falta el RUC`);
     }
     for (const code of IDIOMAS.filter((c) => c !== 'es')) {
@@ -162,7 +161,7 @@ console.log('legal/');
       for (const mk of ['[RUC]', '[CORREO DE SOPORTE]', '[FECHA]', '{FECHA}']) ok(!t.includes(mk), `${p}: todavía tiene el marcador ${mk}`);
       ok(t.includes('soporte@tukanec.com'), `${p}: falta el correo de soporte`);
       if (doc !== 'borrar-cuenta') {
-        ok(t.includes('<mark class="falta">[DIRECCIÓN]</mark>'), `${p}: falta el marcador visible [DIRECCIÓN]`);
+        ok(t.includes('170511') && !t.includes('[DIRECCIÓN]'), `${p}: falta el domicilio (Quito 170511)`);
         ok(t.includes('1793135099001'), `${p}: falta el RUC`);
       }
       ok(t.includes('href="mailto:soporte@tukanec.com') , `${p}: falta el enlace mailto al soporte`);

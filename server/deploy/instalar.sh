@@ -286,7 +286,7 @@ else echo "5) Centro de Control /control/: SIN clave (borra $CONF y corre otra v
 if grep -qE '^PLUX_CLAVE_SECRETA=.+' "$CONF"; then echo "6) Plux: credenciales puestas (ambiente: $(grep -E '^PLUX_AMBIENTE=' "$CONF" | cut -d= -f2))"
 else echo "6) Plux: SIN credenciales (la tienda muestra 'pago no disponible' hasta ponerlas)"; fi
 [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ] && echo "7) HTTPS: si" || echo "7) HTTPS: todavia no"
-[ "$VALIDADOR" = "si" ] && echo "8) Validador de partidas: activo" || echo "8) Validador de partidas: NO activo (mira el paso 8 de arriba; el juego usa Node directo, mas lento)"
+echo " d) Terminos y privacidad ya tienen RUC, domicilio (Quito 170511) y correo: que un abogado los revise (docs/LEGAL_REVISION.md)."
 [ -n "$POOL_SOCK" ] && echo "9) PHP del juego: grupo propio envivo ($POOL_SOCK)" || echo "9) PHP del juego: compartido con los otros sitios (mira el paso 8b de arriba)"
 echo "================================="
 echo
