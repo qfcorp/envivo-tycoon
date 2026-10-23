@@ -103,7 +103,7 @@ function estadoCerrado() {
     const json = (o, s) => r.fulfill({ status: s || 200, contentType: 'application/json', body: JSON.stringify(o) });
     if (u.pathname === '/') return r.fulfill({ status: 200, contentType: 'text/html', body: `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${estilos}</head>
       <body><main class="gut" style="padding-top:12px"><div id="fest"></div></main>
-      <script src="/js/logic.js"></script><script src="/js/art.js"></script><script src="/js/premium.js"></script><script src="/server/validador/intento.js"></script><script src="/js/festival.js"></script></body></html>` });
+      ${fs.existsSync(path.join(RAIZ, 'js', 'datos.js')) ? '<script src="/js/datos.js"></script>' : ''}<script src="/js/logic.js"></script><script src="/js/art.js"></script><script src="/js/premium.js"></script><script src="/server/validador/intento.js"></script><script src="/js/festival.js"></script></body></html>` });
     if (/^\/(js\/[a-z]+\.js|server\/validador\/intento\.js)$/.test(u.pathname)) return r.fulfill({ status: 200, contentType: 'text/javascript', body: leerJs(u.pathname.slice(1)) });
     const body = r.request().postData() ? JSON.parse(r.request().postData()) : null;
     pedidos.push({ m, ruta: u.pathname, body, cab: r.request().headers() });

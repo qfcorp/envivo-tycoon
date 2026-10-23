@@ -70,3 +70,30 @@ Antes del lanzamiento, revisar la lista con un abogado.
 2. Pantalla de preparar con plantilla por rol y plan de cámaras dibujado.
 3. Eventos nuevos y contratos internacionales.
 4. Rebalancear con el jugador automático para mantener las metas de dificultad actuales.
+
+## 7. Nombres parodia que usa el juego (nunca marcas, ligas ni canales reales)
+Las claves internas no cambian (por ejemplo el evento `ligapro` o el switcher `switch_pro`), así las partidas guardadas siguen cargando.
+Solo cambia lo que ve el jugador. La prueba `node tests/test_logic.js` revisa que ningún texto del juego tenga nombres reales.
+
+| En la vida real (solo referencia interna) | En el juego |
+|---|---|
+| Liga profesional de fútbol de Ecuador | **LigaPrima** ("Partido de LigaPrima") |
+| Software de producción tipo vMix | **vMax** (Laptop con vMax Básico, Estación vMax Pro) |
+| Switchers hardware tipo ATEM | **Blackmagia ATOM** (ATOM Mini Pro, ATOM 2 M/E Constelación 4K...) |
+| Marcas de cámaras y lentes | **Zony**, **Kanon**, **Panasonika**, **JVK**, **Blackmagia**, **Fujinox**, **GoPra**, **DGI**, **Marchall**, **Fantomas** |
+| Soportes | **Manfrotti**, **Vinter**, **Steadikam**, **Proeme** |
+| Switchers grandes, repeticiones y gráficos | **Rosco** (Carbonita, XPresión), **Glass Valley** (Kayena), **EVX**, **TriKaster**, **KasparCG**, **Vizart** |
+| Audio, micrófonos e intercom | **Behringa**, **Mydas**, **Yamaka**, **Kalrek**, **Shur**, **Sennhauser**, **Roade**, **ClearKom**, **Hollyband** |
+| Transmisión | **LiveYou**, **Kilovista**, **Terradek**, **NetGir** |
+| Energía, maletas y vehículos | **APZ**, **Jonda**, **Kummins**, **Pelikano**, **Sprinto** |
+| Canales y confederaciones extranjeras | Canal Pampa Deportes, TeleCopa Sur, Señal Norte Deportes, StreamRing USA, Puños de Oro TV, Confederación Continental de Fútbol |
+
+## 8. Qué quedó implementado (lógica)
+- `js/datos.js`: catálogo (90 equipos en 19 categorías), 14 roles, 4 niveles, 16 eventos con plantilla de personal (la del juego,
+  que cabe en 12 personas, y la real de la investigación como referencia), posiciones de cámara por evento, 6 tipos de contrato
+  internacional y TODOS los textos en español con {parámetros} (para traducir a los 10 idiomas).
+- `js/logic.js`: `crewPlan` (semáforo por rol), `cameraPlan` (mejor cámara por posición con lentes, fibra y soportes),
+  falta de personal (más imprevistos de ese rol, más graves y menos calidad), niveles de experiencia con ascensos,
+  contratos internacionales con requisitos, viaje y caída de fama, eventos nuevos, avisos del día y rango de calidad esperado.
+- Plantillas del juego comprimidas: en la vida real una final usa más de 40 personas; en el juego, como máximo 12
+  (tú cubres una cámara y, si no llevas productor, haces de productor).

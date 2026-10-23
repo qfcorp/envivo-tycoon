@@ -54,10 +54,10 @@ transmitir finales en estadios.
 | Cap. | Personaje | Objetivo | Día (antes) | Día (ahora) |
 |---|---|---|---|---|
 | 1 · El garaje | Don Ramiro | 3 eventos | 4 | 4 |
-| 2 · Armando el equipo | Don Ramiro | 2 cámaras, 2 contratados, 12 de fama | 32 | ~50 |
+| 2 · Armando el equipo | Don Ramiro | 2 cámaras, 3 contratados, 15 de fama | 32 | ~50 |
 | 3 · El gran lanzamiento | Lucía Mena (marca) | 2 lanzamientos de marca con 4⭐+ | 45 | ~70 |
-| 4 · La rival | Germán Vélez (MegaVisión) | 3 duelos ganados + 40 de fama + $12.000 | 60 | ~125 |
-| 5 · Al estadio | Don Aurelio (dirigente) | Switcher ATEM + 2 partidos de LigaPro con 4⭐+ | 79 | ~160 |
+| 4 · La rival | Germán Vélez (MegaVisión) | 3 duelos ganados + 40 de fama + ganar $6.000 en el capítulo | 60 | ~125 |
+| 5 · Al estadio | Don Aurelio (dirigente) | Switcher de producción (calidad 4+) + 2 partidos de LigaPrima con 4⭐+ | 79 | ~160 |
 | 6 · La final | Don Ramiro | Final de campeonato con 5⭐ (65 de fama) | ~103 | ~210 |
 
 Reglas nuevas:
@@ -140,13 +140,15 @@ Diseño completo: documento "Eventos en línea entre productoras" (Claude Docs).
 - [ ] Productor del Año, Switcher en Vivo (minijuego) y Pase de Temporada
 - [ ] Gran Licitación en coalición (tiempo real), Copas internacionales servidor contra servidor, Desafío de Cadenas Internacionales
 
-### Fase 7 — Realismo (en curso)
-Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md` (en curso).
-- [ ] Catálogo de equipos reales con marcas cambiadas (de handycam a cámara de sistema con lente box 100x, PTZ, drones, repeticiones, intercom, bonding, OB van)
-- [ ] Personal por evento (mínimo / ideal por rol: cablero, boom, repeticiones, gráficos, shader, piloto de dron...) con riesgo al ir con menos gente
-- [ ] Niveles de experiencia del personal (Junior, Semi-senior, Senior, Internacional)
-- [ ] Plan de cámaras dibujado por evento (cámaras detrás de los arcos, tribuna principal, etc.)
-- [ ] Eventos nuevos: boxeo, lucha libre, funeral, lanzamiento de autos, IRL con influencers; contratos internacionales
+### Fase 7 — Realismo (lógica lista, falta la pantalla)
+Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y textos: `js/datos.js`. Reglas: `js/logic.js`.
+- [x] Catálogo de equipos reales con marcas cambiadas: 90 equipos en 19 categorías (de handycam a cámara de sistema con lente box 122x, PTZ, cámara lenta, drones, grúa, steadicam, switchers hasta la unidad móvil, repeticiones, gráficos, audio, boom y diademas de comentarista, intercom, bonding, video inalámbrico, fibra, energía, lluvia, maletas, vehículos y alquileres por evento). Requisitos reales: lentes, fibra, adaptador y soporte pesado para el lente box, shader, piloto de dron, operadores.
+- [x] Personal por evento (mínimo / ideal por rol, 14 roles) con semáforo, ahorro en sueldos y riesgo al ir con menos gente (más imprevistos de ese rol, más graves y menos calidad); con la plantilla completa igual puede salir algo mal
+- [x] Niveles de experiencia del personal (Junior, Semi-senior, Senior, Internacional) con ascensos, eventos nacionales e internacionales
+- [x] Plan de cámaras por evento (tribuna principal con lente box, cerrada, detrás de cada arco, al hombro, contraplano, súper lenta, dron y arañacam en la final; ring con 4 lados y cenital...) con ajuste de cada cámara a su posición
+- [x] Eventos nuevos: boxeo, lucha libre, funeral (sin dron, errores más caros), lanzamiento de autos, IRL con influencers; contratos internacionales (6 tipos, con requisitos, viaje y caída de fama)
+- [x] Todos los textos en `js/datos.js` con claves y {parámetros} (listos para los 10 idiomas)
+- [ ] Pantalla: preparar evento con semáforo por rol y plan de cámaras dibujado, tienda por categorías, contratos internacionales (la lógica ya expone `crewPlan`, `cameraPlan`, `CATEGORIAS`, `shopByCategory`, `requisitosInternacional`, `takeAvisos`, `venue`)
 - [ ] Gráficos semirrealistas y rápidos (ayudante trabajando)
 
 ## 📝 Bitácora
@@ -159,3 +161,4 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md` (en curso).
 - 2026-10-23: juego más difícil (para que luego tenga sentido comprar mejor equipo). MegaVisión con calidad propia en los duelos, más imprevistos y algunos que cuestan plata, gastos que crecen con la empresa, sueldos más altos, pagos atrasados, cancelaciones y pérdida de fama sin trabajar. Los 3 primeros eventos siguen suaves. Bot: capítulos en días 4 / 50 / 70 / 126 / 160 / 212, 8% quiebras, 79,5% termina la historia, pierde el 61% de los duelos, 3,5⭐ promedio en los capítulos 3 a 6. Números en `BALANCE` (js/logic.js). Guardado v2 (las partidas v1 cargan bien).
 - 2026-10-23: servidor de venta terminado (cuentas, nube, créditos, VIP, Plux en sandbox, panel, instalador) y probado de punta a punta desde el juego. Diseño de eventos en línea, chat, copas entre servidores y cadenas internacionales. Plan de realismo (personal por evento, equipos reales). Demo previsto para las ~09:00.
 - 2026-10-23 (madrugada): mercado y chat (pantallas), soporte solo por correo y dentro del juego, música (7 temas), validador anti-trampas en el servidor (repite cada evento con la misma lógica; 3660 comprobaciones, 100% de resultados falsos detectados) y módulo visual del plan de personal y cámaras por recinto (17 tipos de lugar). Falta conectarlos a la pantalla principal cuando termine la traducción a 10 idiomas.
+- 2026-10-23: realismo en la lógica: catálogo de 90 equipos con marcas parodia (vMax, Blackmagia ATOM, LigaPrima...), 14 roles con plantilla mínima e ideal por evento, niveles Junior a Internacional, plan de cámaras, 5 eventos nuevos y contratos internacionales. Capítulo 4 ahora pide ganar $6.000 en el capítulo (antes juntar $12.000); locales más suaves ($20 / $60 / $120 / $200); un evento grande con 1-2⭐ casi no se cobra; las opciones seguras de los imprevistos cuestan algo. Bot con personal y equipos realistas (400 partidas, 3 semillas): capítulos en días 4 / 21 / 53 / 77 / 108 / 165-176, 6,8% a 8,3% quiebras, 65% a 67,5% termina la historia, pierde el 29,5% a 31% de los duelos, 3,5⭐ promedio en los capítulos 3 a 6. Guardado v3 (las v1 y v2 cargan bien).

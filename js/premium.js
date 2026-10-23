@@ -10,15 +10,31 @@
   'use strict';
   const G = root.Game || (typeof require !== 'undefined' ? require('./logic.js') : null);
 
+  // Las claves (dron4k, grua, unidad_movil, generador, vip_*) no cambian: el servidor las usa.
+  // Nombres y datos siguen el catálogo realista (docs/EQUIPOS_REALES.md, marcas parodia).
   const EXCLUSIVOS = {
-    dron4k:       { name: 'Dron 4K',                        icon: 'dron',         cat: 'cam',      price: 0, q: 4, minRep: 0, premium: true, repairBase: 2200, desc: 'Tomas aéreas espectaculares. Cuenta como cámara de calidad 4.' },
-    grua:         { name: 'Cámara en grúa telescópica',     icon: 'grua',         cat: 'cam',      price: 0, q: 4, minRep: 0, premium: true, repairBase: 2600, desc: 'Barridos de cine sobre el público. Cámara de calidad 4.' },
-    unidad_movil: { name: 'Unidad móvil de transmisión',    icon: 'unidad_movil', cat: 'switcher', price: 0, q: 3, minRep: 0, premium: true, repairBase: 3500, desc: 'Un estudio completo sobre ruedas. Switcher de calidad 3.' },
-    generador:    { name: 'Generador diésel',               icon: 'generador',    cat: 'power',    price: 0, q: 1, minRep: 0, premium: true, repairBase: 900,  desc: 'Si se va la luz, tú sigues al aire.' },
+    dron4k:       { name: 'DGI Inspira 3X Cine (dron) Exclusivo', icon: 'dron', cat: 'cam', subtipo: 'dron_cine', q: 5, price: 0, minRep: 0, rareza: 'exclusivo', durabilidad: 2,
+                    requiere: ['piloto_dron'], eventos: ['lanzamiento_autos', 'concierto', 'final', 'boda'], premium: true, repairBase: 2200,
+                    desc: 'Dron de cine con cámara 4K de lentes cambiables. Tomas aéreas de calidad 5. Necesita piloto de dron.' },
+    grua:         { name: 'Grúa telescópica de 12 m con cabeza remota', icon: 'grua', cat: 'cam', subtipo: 'grua', q: 4, price: 0, minRep: 0, rareza: 'exclusivo', durabilidad: 4,
+                    eventos: ['concierto', 'lanzamiento_autos', 'lanzamiento', 'graduacion', 'final'], premium: true, repairBase: 2600,
+                    desc: 'Barridos de cine sobre el público. Cámara de calidad 4 para las posiciones de grúa o jib.' },
+    unidad_movil: { name: 'Sprinto OB equipada (4 a 6 cámaras)', icon: 'unidad_movil', cat: 'vehicle', subtipo: 'ob_chica', q: 4, price: 0, minRep: 0, rareza: 'exclusivo', durabilidad: 4,
+                    eventos: ['ligapro', 'concierto', 'final'], premium: true, repairBase: 3500,
+                    desc: 'Unidad móvil con switcher, audio e intercom adentro. Cuenta como switcher de calidad 4.' },
+    generador:    { name: 'Kummins 22 kVA diésel insonorizado', icon: 'generador', cat: 'power', subtipo: 'generador_diesel', q: 4, price: 0, minRep: 0, rareza: 'exclusivo', durabilidad: 5,
+                    eventos: ['ligapro', 'concierto', 'final', 'lanzamiento_autos'], premium: true, repairBase: 900,
+                    desc: 'Generador silencioso para estadios y conciertos: si se va la luz, tú sigues al aire.' },
     // Solo VIP: se canjean con VIP activo y funcionan solo mientras el VIP esté activo
-    vip_cam8k:     { name: 'Cámara de cine 8K Edición VIP', icon: 'cam_cine',     cat: 'cam',      price: 0, q: 5, minRep: 0, premium: true, vip: true, repairBase: 4000, desc: 'La mejor imagen del juego. Cámara de calidad 5.' },
-    vip_switcher:  { name: 'Switcher de estudio VIP',       icon: 'switch_pro',   cat: 'switcher', price: 0, q: 4, minRep: 0, premium: true, vip: true, repairBase: 4200, desc: 'Repeticiones y gráficos de televisión. Switcher de calidad 4.' },
-    vip_satelital: { name: 'Enlace satelital VIP',          icon: 'stream',       cat: 'internet', price: 0, q: 3, minRep: 0, premium: true, vip: true, repairBase: 2500, desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
+    vip_cam8k:     { name: 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', icon: 'cam_cine', cat: 'cam', subtipo: 'sistema_4k', q: 6, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
+                     requiere: ['lente_b4', 'cable_fibra_smpte', 'shader'], incluyeLente: true, incluyeFibra: true, eventos: ['final', 'ligapro'], premium: true, vip: true, repairBase: 4000,
+                     desc: 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.' },
+    vip_switcher:  { name: 'Rosco Carbonita Ultra Edición VIP', icon: 'switch_pro', cat: 'switcher', subtipo: 'sdi_me', q: 5, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
+                     eventos: ['ligapro', 'final', 'concierto'], premium: true, vip: true, repairBase: 4200,
+                     desc: 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.' },
+    vip_satelital: { name: 'Enlace satelital portátil (flyaway) Edición VIP', icon: 'stream', cat: 'internet', subtipo: 'satelite', q: 5, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
+                     eventos: ['final', 'internacional_host', 'internacional_unilateral'], premium: true, vip: true, repairBase: 2500,
+                     desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
   };
   const DURABLES = ['item', 'personal'];   // se vuelven a entregar si empiezas partida nueva
   const VIP_DESCUENTO = 0.3;
@@ -38,7 +54,11 @@
   const esPremium = (type) => !!(G.CATALOG[type] && G.CATALOG[type].premium);
 
   /* ---------- Catálogo y reglas protegidas ---------- */
-  Object.keys(EXCLUSIVOS).forEach((k) => { G.CATALOG[k] = EXCLUSIVOS[k]; });
+  Object.keys(EXCLUSIVOS).forEach((k) => {
+    // Los textos viven en js/datos.js (item.<clave>.nombre / .desc) para poder traducirlos
+    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); }
+    G.CATALOG[k] = Object.assign({ key: k }, EXCLUSIVOS[k]);
+  });
 
   function costoReparar(e) {
     const it = G.CATALOG[e.type];
@@ -122,7 +142,6 @@
   const nombreSerie = (e) => `${(G.CATALOG[e.type] || { name: e.type }).name}${e.serie ? ' #' + String(e.serie).padStart(4, '0') : ''}`;
 
   /* ---------- Entregas del servidor ---------- */
-  const NOMBRE_ROL = { cam: 'Camarógrafo', dir: 'Director / vMix', audio: 'Sonidista', stream: 'Técnico de streaming' };
   const ESTRELLAS = ['Andrés "El Pulso" Vera', 'Majo Cifuentes', 'Rafa Tamayo', 'Doménica Arias', 'Javier "Zoom" Haro'];
 
   function aplicarUna(s, en) {
@@ -142,11 +161,14 @@
       }
       case 'personal': {
         if (!G.ROLES[en.item]) return null;
+        const role = G.normRole ? G.normRole(en.item) : en.item; // 'cam' / 'stream' del servidor → roles nuevos
         const skill = Math.min(5, Math.max(1, n));
+        const tier = skill >= 4 ? 'senior' : skill >= 3 ? 'semi_senior' : 'junior';
         const usados = s.staff.map((p) => p.name);
         const name = ESTRELLAS.find((x) => !usados.includes(x)) || `Profesional ${nuevoId(s)}`;
-        s.staff.push({ id: nuevoId(s), name, role: en.item, skill, wage: 25 + skill * 18, morale: 100, events: 0, premium: true });
-        return `Se unió a tu equipo: ${name} (${NOMBRE_ROL[en.item]}, habilidad ${skill}).`;
+        s.staff.push({ id: nuevoId(s), name, role, tier, skill, wage: 25 + skill * 18, morale: 100, events: 0,
+          eventos_nacionales: 0, eventos_internacionales: 0, premium: true });
+        return `Se unió a tu equipo: ${name} (${G.ROLES[role].name}, habilidad ${skill}).`;
       }
       case 'dinero': {
         s.money += n;

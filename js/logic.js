@@ -1,13 +1,62 @@
 /* =========================================================
    EN VIVO Tycoon — Lógica del juego
-   Este archivo NO toca la pantalla. Solo reglas y datos.
+   Este archivo NO toca la pantalla. Solo reglas.
+   Los DATOS (catálogo, roles, eventos, posiciones de cámara, contratos internacionales)
+   y TODOS los textos en español viven en js/datos.js (se carga antes que este archivo).
    Se puede probar con Node:  node tests/test_logic.js
+
+   ---------------------------------------------------------
+   API PARA LA PANTALLA (además de lo que ya existía)
+   ---------------------------------------------------------
+   Textos / idiomas
+     Game.TEXTOS                       textos en español (clave → plantilla con {parámetros})
+     Game.tx(clave, params)            → texto ya armado (usa el traductor si hay uno)
+     Game.setTraductor(fn)             fn(clave, params) → texto o null; vuelve a armar nombres
+                                       de ROLES, CATALOG, EVENT_TYPES, CATEGORIAS y CHAPTERS.
+     Cada entrada del registro (s.log) guarda { day, text, k, p }: k = clave, p = parámetros.
+     Los imprevistos y resultados devuelven también k / p para traducir después.
+
+   Datos
+     Game.CATEGORIAS   [{ key, nombre, icon }] en el orden de la tienda
+     Game.shopByCategory(s) → [{ key, nombre, items: [{ key, ...CATALOG[key], locked, owned }] }]
+     Game.CATALOG[k]   { name, desc, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
+                         requiere: [...], acepta: [...], alquiler (bool, se usa en un evento y se va), eventos: [...] }
+     Game.ROLES[k]     { key, name, desc, siFalta, icon, wageMul, orden }  (14 roles; las claves viejas
+                         cam / dir / audio / stream siguen funcionando como alias ocultos)
+     Game.TIERS[k]     { key, name, mul, base, bonus, skill: [min, max] }  junior, semi_senior, senior, internacional
+     Game.EVENT_TYPES[k] { name, icon, cams, diff, pay, minRep, crew: { rol: [min, ideal] }, crewReal, positions,
+                           deporte, sensible, sinDron, soloInternacional, ... }
+     Game.INTL_KINDS   tipos de contrato internacional
+
+   Plan del evento
+     Game.crewPlan(s, contract, staffIds, equipIds?) →
+       { roles: [{ key, nombre, desc, si_falta, min, ideal, asignados (número), personas: [{id,name,skill,tier}],
+                   estado: 'falta'|'justo'|'completo', riesgo (0..1), dobleRol (bool), sueldo }],
+         wages, idealWages, savings, falta, justo, completo }
+     Game.cameraPlan(s, contract, equipIds, staffIds?) →
+       { positions: [{ key, nombre, ideal, perfil, opcional, asignado (clave de CATALOG o null), equipId, equipo (nombre),
+                       lente (clave o null), q, fit, ajuste (0..1), operado }],
+         cubiertas, total, ajusteMedio (0..1), bloqueados: [{ equipId, tipo, motivo, texto }], usados: [ids] }
+     Game.requisitosInternacional(s, contract, staffIds, equipIds) → [{ key, texto, ok, obligatorio }]
+     startEvent guarda ev.crewPlan y ev.cameraPlan; finishEvent().result trae crewPlan, cameraPlan y type.
+
+   Personal
+     persona: { id, name, role, skill, tier, wage, morale, events, eventos_nacionales, eventos_internacionales, owner? }
+     Game.searchStaff(s, rol?)  publica una vacante (si das un rol, llegan 2 candidatos de ese rol)
+
+   Contratos internacionales (c.internacional === true)
+     { pais, mult, travelDays, travelCost, repRisk, kind, requisitos: [{ key, texto, ok, obligatorio }] }
+     Si falta un requisito obligatorio (personal con experiencia internacional), startEvent no deja salir.
    ========================================================= */
 (function (root) {
   'use strict';
 
-  // v2: cobros pendientes, duelos con calidad de la rival, desgaste de fama. Las partidas v1 se siguen cargando.
-  const SAVE_VERSION = 2;
+  const D = (typeof module !== 'undefined' && module.exports && typeof require === 'function') ? require('./datos.js') : root.Datos;
+  if (!D) throw new Error('Falta js/datos.js: cárgalo antes que js/logic.js');
+
+  // v3: catálogo realista, 14 roles, niveles de experiencia, plan de personal y de cámaras, contratos internacionales.
+  // Las partidas v1 y v2 se siguen cargando (los roles viejos se convierten).
+  const SAVE_VERSION = 3;
 
   /* =========================================================
      BALANCE: todos los números de la economía en un solo lugar.
@@ -19,41 +68,69 @@
     bankruptAt: -300,            // si el dinero baja de esto, quiebras
     tutorialEvents: 3,           // los 3 primeros eventos son suaves (1 imprevisto, sin sorpresas)
     maxContracts: 7,
+    maxStaff: 12,                // personas en la productora (contándote a ti)
+    maxEquip: 40,                // equipos en la bodega
+    candidates: 5,
     // Gastos fijos de cada día (ver dailyCost)
     daily: {
-      // Local según el tamaño (personas + equipos): garaje, oficina, estudio, centro de producción
-      // [tamaño mínimo, costo por día, nombre]. Tamaño = personas + equipos.
-      rent: [[0, 20, 'Garaje'], [13, 60, 'Oficina'], [16, 160, 'Estudio'], [19, 310, 'Centro de producción']],
-      perStaff: 2,               // por cada persona contratada (sin contarte a ti)
-      equipShare: 0.003,         // seguro y bodega: 0,3% del valor de tus equipos cada día
+      // Local según el tamaño (personas + equipos, sin contar alquileres): [tamaño mínimo, costo por día, clave del nombre]
+      rent: [[0, 20, 'sede.garaje'], [15, 60, 'sede.oficina'], [23, 120, 'sede.estudio'], [31, 200, 'sede.centro']],
+      perStaff: 5,               // por cada persona contratada (sin contarte a ti)
+      equipShare: 0.002,         // seguro y bodega: 0,2% del valor de tus equipos cada día
       payrollShare: 0.03,        // parte del sueldo de cada persona que se paga aunque no haya evento
     },
-    // Personal
-    wage: { base: 15, perSkill: 15, random: 10, raisePerLevel: 15, hireFeeDays: 2,
+    // Personal: sueldo = base del nivel × peso del rol + (habilidad - 1) × perSkill + azar
+    wage: { perSkill: 5, random: 8, raisePerLevel: 10, hireFeeDays: 2,
             perDiff: 0.15 },     // en eventos grandes el personal cobra más: +15% por punto de dificultad sobre 1
     skillUp: [0, 4, 7, 11, 16],  // eventos para pasar del nivel 1 al 2, del 2 al 3, etc.
+    // Ascensos de nivel: eventos trabajados y habilidad mínima
+    promote: { semi_senior: { events: 15, skill: 2 }, senior: { events: 45, skill: 3 }, internacional: { intl: 3, skill: 4 }, wageShare: 0.35 },
+    // Candidatos: probabilidad de cada nivel según la fama
+    hiring: { semiBase: 0.15, semiPerRep: 1 / 120, seniorFrom: 18, seniorPerRep: 1 / 110, intlFrom: 45, intlBase: 0.04, intlPerRep: 1 / 600 },
     // Ánimo del equipo: los eventos grandes cansan (por punto de dificultad sobre 2); descansar un día lo recupera
     morale: { fatigue: 3, rest: 6, neutral: 60, perPoint: 8, min: -5, max: 3 },
     raise: { chance: 0.025, minStaff: 3, minDay: 25, pct: 0.1 }, // el equipo pide aumento
     // Equipos
-    wear: { min: 3, perDiffMin: 0, max: 6, perDiffMax: 2.5 }, // desgaste por evento según dificultad
-    repairFactor: 0.45, sellFactor: 0.4,
+    wear: { min: 2, perDiffMin: 0, max: 5, perDiffMax: 1.5 }, // desgaste por evento según dificultad
+    wearByDurability: [1, 1.5, 1.25, 1, 0.85, 0.7],            // durabilidad 1..5 del equipo
+    repairFactor: 0.3, sellFactor: 0.4, rentalRefund: 0.8,
     worn: 40,                    // con menos de esto, el equipo puede fallar en vivo
     // Calidad del evento
     stars: [85, 70, 55, 40],     // calidad mínima para 5, 4, 3 y 2 estrellas
     starsPay: [0, 0.4, 0.7, 1.0, 1.1, 1.25],
+    starsPayBig: [0, 0.2, 0.5, 1.0, 1.1, 1.25], // dificultad 3 o más: un evento grande mal hecho casi no se cobra
+    bigFrom: 3,
     starsRep: [0, -5, -0.5, 2, 4, 6],
-    diffPenalty: [0, 4, 8, 34, 50, 50], // puntos que resta la dificultad 1..5 del evento
-    skillPts: { dir: 3, audio: 2, stream: 2, team: 3 }, // cuánto vale cada nivel de habilidad
-    expectPerRep: 0.18,          // cuanto más famoso eres, más te exige el cliente: -(fama * esto) puntos
+    diffPenalty: [0, 4, 8, 32, 42, 44], // puntos que resta la dificultad 1..5 del evento
+    quality: {
+      base: 25, cover: 25,       // plan de cámaras: hasta 25 puntos si cada posición tiene la cámara ideal y operador
+      camPerQ: 3,              // calidad de las cámaras (calidad efectiva 1-6 × esto)
+      extraPos: 2, extraMax: 2,  // tomas extra (dron, súper lenta...) cubiertas
+      dirSkill: 3, swPerQ: 1.1, noSwitcher: [6, 3],
+      audioBase: 4, audioSkill: 2, consPerQ: 1.1, consOnly: 3, noConsole: [6, 3], micBase: 1, micPerQ: 1,
+      streamBase: 6, streamSkill: 2, encoderBonus: 2, streamOnly: 3, noStream: [8, 4],
+      replayBase: 1, replayPerQ: 0.7, gfxBase: 1, gfxPerQ: 0.6, missingSpecial: [2, 1], gearNoOp: 2,
+      shader: 3, shaderPerCam: 1, shaderOk: 1, // cámaras de sistema sin shader: -(shader + cámaras × shaderPerCam)
+      intercom: 2,
+      intlReq: 5,                // cada requisito (no obligatorio) de un contrato internacional que no cumples
+    },
+    skillPts: { dir: 3, audio: 2, stream: 2, team: 3 },
+    // Falta de personal (plantilla mínima / ideal por rol)
+    crew: { falta: 3, faltaDiff: 1, faltaCap: 2, justo: 1, justoMinDiff: 3 },
+    // Riesgo de los imprevistos de cada rol: completo = base; entre mínimo e ideal = justo; bajo el mínimo = falta
+    risk: { base: 0.08, justo: 0.2, falta: 0.45, perSkill: 0.06, perTier: 0.08, minFactor: 0.45,
+            sevFalta: 1.5, sevJusto: 1.15, extraIncident: 1 },
+    sensible: 1.6,               // en eventos sensibles (funeral) los errores pesan más
+    expectPerRep: 0.16,          // cuanto más famoso eres, más te exige el cliente: -(fama * (esto + expectSmall * (5 - dificultad))) puntos
+    expectSmall: 0.05,           // a una productora famosa no le perdonan nada en un evento chico
     // Las ofertas de la historia vienen con apoyo del personaje (escenario, fibra, luz del estadio...)
-    storySupport: { lanzamiento: 6, ligapro: 9, final: 24 },
+    storySupport: { lanzamiento: 2, ligapro: 3, final: 2 },
     luck: [-2, 2],               // "suerte del día": entre -(a + b * dif) y +(a + b * dif) puntos (más en eventos grandes)
     // Imprevistos
     incidents: { byDiff: [1, 1, 1, 2, 3, 3], extraChance: 0.35, max: 5, severityPerDiff: 0.15,
-                 skillBase: 0.3, skillPer: 0.12 }, // imprevistos de habilidad: éxito = base + nivel * per
+                 skillBase: 0.3, skillPer: 0.12 }, // imprevistos de habilidad: éxito = base + (nivel + bono del nivel) * per
     // Clientes
-    payRepBonus: 250,            // pago * (1 + fama / payRepBonus)
+    payRepBonus: 180,            // pago * (1 + fama / payRepBonus)
     latePay: { chance: 0.25, minDiff: 2, share: 0.5, days: 3 },
     cancelChance: 0.05,          // un cliente cancela una oferta pendiente
     // Fama
@@ -64,12 +141,15 @@
       contestedChance: 0.2, payBoost: 1.3, diffBoost: 1,
       stealChance: 0.15,
       // calidad de MegaVisión = base + capítulo * perChapter + dificultad * perDiff + azar (entre spread)
-      quality: { base: 36, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95 },
+      quality: { base: 38, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95 },
       winRep: 3, loseRep: 4,
     },
+    // Contratos internacionales: llegan cada cierto tiempo desde el capítulo 4
+    chapter4Earn: 6000,          // capítulo 4: ganancia neta de eventos durante el capítulo
+    intl: { fromChapter: 3, first: [10, 20], every: [18, 30], daysLeft: 5, latePayDays: 10 },
   };
 
-  /* ---------- Números aleatorios (con semilla, para poder probar) ---------- */
+  /* ---------- Números aleatorios (con semilla, para poder probar y repetir en el servidor) ---------- */
   function rnd(s) {
     s.seed = (s.seed + 0x6D2B79F5) | 0;
     let t = s.seed;
@@ -82,62 +162,65 @@
   const chance = (s, p) => rnd(s) < p;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const money = (n) => '$' + Math.round(n).toLocaleString('es-EC');
+  const r2 = (v) => Math.round(v * 100) / 100;
 
-  /* ---------- Datos ---------- */
-  const ROLES = {
-    cam: { name: 'Camarógrafo', icon: '🎥' },
-    dir: { name: 'Director / vMix', icon: '🎬' },
-    audio: { name: 'Sonidista', icon: '🎧' },
-    stream: { name: 'Técnico de streaming', icon: '📡' },
-  };
+  /* ---------- Textos ---------- */
+  const TEXTOS = D.TEXTOS;
+  let traductor = null;
+  function tx(key, p) {
+    let t = null;
+    if (traductor) { try { t = traductor(key, p); } catch (e) { t = null; } }
+    if (typeof t !== 'string') t = Object.prototype.hasOwnProperty.call(TEXTOS, key) ? TEXTOS[key] : key;
+    return p ? t.replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined && p[k] !== null ? String(p[k]) : m)) : t;
+  }
 
-  const CATALOG = {
-    cam_basic:    { name: 'Cámara básica',              icon: '📹', cat: 'cam',      price: 600,  q: 1, minRep: 0,  desc: 'Camcorder sencilla. Sirve para empezar.' },
-    cam_pro:      { name: 'Cámara profesional',         icon: '🎥', cat: 'cam',      price: 1800, q: 2, minRep: 10, desc: 'Mejor imagen y zoom. Los clientes lo notan.' },
-    cam_cine:     { name: 'Cámara broadcast 4K',        icon: '🎞️', cat: 'cam',      price: 4500, q: 3, minRep: 35, desc: 'Calidad de televisión. Para eventos grandes.' },
-    switch_basic: { name: 'Laptop con vMix',            icon: '💻', cat: 'switcher', price: 900,  q: 1, minRep: 0,  desc: 'Mezcla varias cámaras y transmite.' },
-    switch_pro:   { name: 'Switcher ATEM + PC potente', icon: '🎛️', cat: 'switcher', price: 3200, q: 2, minRep: 30, desc: 'Repeticiones, gráficos y muchas cámaras.' },
-    audio_basic:  { name: 'Consola de audio 8 canales', icon: '🎚️', cat: 'audio',    price: 400,  q: 1, minRep: 0,  desc: 'Para micrófonos y música.' },
-    audio_pro:    { name: 'Consola digital 18 canales', icon: '🎛️', cat: 'audio',    price: 1400, q: 2, minRep: 20, desc: 'Sonido limpio en eventos grandes.' },
-    mics:         { name: 'Micrófonos inalámbricos',    icon: '🎤', cat: 'mics',     price: 350,  q: 1, minRep: 0,  desc: 'Mejoran el sonido en eventos con audio.' },
-    encoder:      { name: 'Encoder SRT portátil',       icon: '📶', cat: 'encoder',  price: 700,  q: 1, minRep: 0,  desc: 'Envía la señal por internet de forma estable.' },
-    router4g:     { name: 'Router 4G de respaldo',      icon: '🛜', cat: 'internet', price: 500,  q: 1, minRep: 0,  desc: 'Salva la transmisión si se cae el internet.' },
-    ups:          { name: 'UPS / batería de respaldo',  icon: '🔋', cat: 'power',    price: 450,  q: 1, minRep: 0,  desc: 'Salva el evento si se va la luz.' },
-    raincover:    { name: 'Cobertores de lluvia',       icon: '☂️', cat: 'rain',     price: 150,  q: 1, minRep: 0,  desc: 'Protege las cámaras en eventos al aire libre.' },
-  };
+  /* ---------- Datos (se arman desde js/datos.js) ---------- */
+  const ROLE_ALIAS = D.ROLE_ALIAS; // claves viejas → nuevas
+  const normRole = (r) => (ROLE_ALIAS[r] || r);
+  const ROLES = {};
+  D.ROLES_DATA.forEach((r, i) => { ROLES[r.key] = Object.assign({ key: r.key, orden: i }, r); });
+  // Alias ocultos (no salen en Object.keys) para que las claves viejas sigan funcionando
+  Object.keys(ROLE_ALIAS).forEach((old) => Object.defineProperty(ROLES, old, { value: ROLES[ROLE_ALIAS[old]], enumerable: false, configurable: true }));
+  const ROLE_KEYS = D.ROLES_DATA.map((r) => r.key);
 
-  const CONSUMABLES = {
-    cable:   { name: 'Cable de repuesto', icon: '🔌', price: 40, desc: 'Si se rompe un cable, lo cambias al instante.' },
-    battery: { name: 'Batería extra',     icon: '🪫', price: 60, desc: 'Si una cámara se queda sin batería.' },
-  };
+  const TIERS = {};
+  D.TIERS_DATA.forEach((t, i) => { TIERS[t.key] = Object.assign({ orden: i }, t); });
+  const TIER_KEYS = D.TIERS_DATA.map((t) => t.key);
+  const tierOf = (p) => TIERS[p && p.tier] || TIERS.junior;
+  const tierBonus = (p) => tierOf(p).bonus;
 
-  const EVENT_TYPES = {
-    misa:        { name: 'Misa / ceremonia',        icon: '⛪', cams: [1, 1], audio: true,  stream: 0.3, outdoor: 0,   diff: 1, pay: [150, 280],    minRep: 0,
-                   clients: ['Parroquia San José', 'Iglesia El Buen Pastor', 'Parroquia La Merced'] },
-    boda:        { name: 'Boda',                     icon: '💍', cams: [1, 2], audio: true,  stream: 0.2, outdoor: 0.4, diff: 1, pay: [250, 480],    minRep: 0,
-                   clients: ['Familia Andrade', 'Carla y Andrés', 'Familia Paredes', 'Familia Cevallos'] },
-    prensa:      { name: 'Rueda de prensa',          icon: '🎙️', cams: [1, 2], audio: true,  stream: 1,   outdoor: 0,   diff: 1, pay: [200, 380],    minRep: 0,
-                   clients: ['Municipio', 'Prefectura', 'Club Deportivo Los Andes'] },
-    barrial:     { name: 'Partido de liga barrial',  icon: '⚽', cams: [2, 2], audio: false, stream: 1,   outdoor: 1,   diff: 2, pay: [300, 600],    minRep: 3,
-                   clients: ['Liga Barrial La Floresta', 'Liga Parroquial Conocoto', 'Liga Barrial El Inca'] },
-    graduacion:  { name: 'Graduación de colegio',    icon: '🎓', cams: [2, 2], audio: true,  stream: 0.6, outdoor: 0.2, diff: 2, pay: [350, 650],    minRep: 5,
-                   clients: ['Colegio Nacional Mejía', 'Unidad Educativa Santa Ana', 'Colegio San Gabriel'] },
-    lanzamiento: { name: 'Lanzamiento de marca',     icon: '🚀', cams: [2, 3], audio: true,  stream: 1,   outdoor: 0.2, diff: 3, pay: [900, 1600],   minRep: 12,
-                   clients: ['Cervecería Montaña', 'Bebidas Volcán', 'Motos Kawa-Andes', 'Celulares Nébula'] },
-    concierto:   { name: 'Concierto',                icon: '🎸', cams: [3, 4], audio: true,  stream: 1,   outdoor: 0.6, diff: 4, pay: [1600, 3000],  minRep: 28,
-                   clients: ['Festival Sur Sonoro', 'Productora Tarima Viva', 'Coliseo Rumiñahui'] },
-    // minChapter: el cliente solo aparece desde ese capítulo (o en modo libre)
-    ligapro:     { name: 'Partido de LigaPro',       icon: '🏟️', cams: [4, 4], audio: true,  stream: 1,   outdoor: 1,   diff: 4, pay: [2600, 4500],  minRep: 40, minChapter: 4,
-                   clients: ['Club Atlético del Valle', 'Deportivo Cumbayá FC', 'Sporting Pichincha'] },
-    final:       { name: 'Final de campeonato',      icon: '🏆', cams: [5, 6], audio: true,  stream: 1,   outdoor: 1,   diff: 5, pay: [6000, 10000], minRep: 65, minChapter: 5,
-                   clients: ['Liga Nacional de Fútbol', 'Federación del Torneo'] },
-  };
+  const CATALOG = {};
+  Object.keys(D.CATALOGO).forEach((k) => { CATALOG[k] = Object.assign({ key: k }, D.CATALOGO[k]); });
+  const CATEGORIAS = D.CATEGORIAS.map((c) => ({ key: c.key, icon: c.icon }));
+  const CONSUMABLES = {};
+  Object.keys(D.CONSUMIBLES).forEach((k) => { CONSUMABLES[k] = Object.assign({ key: k }, D.CONSUMIBLES[k]); });
+  const EVENT_TYPES = {};
+  Object.keys(D.EVENTOS).forEach((k) => { EVENT_TYPES[k] = Object.assign({ key: k }, D.EVENTOS[k]); });
+  const INTL_KINDS = D.INTERNACIONALES;
+  const CLASE = D.CLASE_CAMARA;
+  const FIT = D.AJUSTE;
 
-  const FIRST_NAMES = ['Kevin', 'Andrea', 'Luis', 'María José', 'Bryan', 'Gaby', 'Carlos', 'Daniela', 'Jonathan', 'Paola',
-    'Stalin', 'Mishell', 'Fernando', 'Karla', 'Diego', 'Tania', 'Wilson', 'Jessica', 'Alex', 'Vane'];
-  const LAST_NAMES = ['Guamán', 'Chiluisa', 'Pazmiño', 'Andrade', 'Toapanta', 'Morales', 'Cedeño', 'Quishpe',
-    'Zambrano', 'Villacís', 'Tenorio', 'Ortiz', 'Lema', 'Salazar'];
+  function aplicarTextos() {
+    ROLE_KEYS.forEach((k) => {
+      const r = ROLES[k];
+      r.name = tx('rol.' + k + '.nombre'); r.desc = tx('rol.' + k + '.desc'); r.siFalta = tx('rol.' + k + '.falta');
+    });
+    TIER_KEYS.forEach((k) => { TIERS[k].name = tx('nivel.' + k); });
+    Object.keys(CATALOG).forEach((k) => {
+      if (!Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.nombre')) return; // los de premium.js traen su propio nombre
+      CATALOG[k].name = tx('item.' + k + '.nombre'); CATALOG[k].desc = tx('item.' + k + '.desc');
+    });
+    CATEGORIAS.forEach((c) => { c.nombre = tx('cat.' + c.key); c.name = c.nombre; });
+    Object.keys(CONSUMABLES).forEach((k) => { CONSUMABLES[k].name = tx('cons.' + k + '.nombre'); CONSUMABLES[k].desc = tx('cons.' + k + '.desc'); });
+    Object.keys(EVENT_TYPES).forEach((k) => { EVENT_TYPES[k].name = tx('ev.' + k); });
+    CHAPTERS.forEach((ch, i) => {
+      ['title', 'intro', 'goal', 'done'].forEach((f) => { ch[f] = tx('cap.' + i + '.' + f); });
+    });
+  }
+  function setTraductor(fn) { traductor = typeof fn === 'function' ? fn : null; aplicarTextos(); }
 
+  const FIRST_NAMES = D.NOMBRES;
+  const LAST_NAMES = D.APELLIDOS;
   const STARS_PAY = BALANCE.starsPay;
   const STARS_REP = BALANCE.starsRep;
 
@@ -147,128 +230,112 @@
   //   'marca' = Lucía Mena (gerente de marketing) · 'dirigente' = Don Aurelio (dirigente de club)
   // target: tipo de evento que pide el capítulo. offer: cada cuántos días llega una oferta
   //   "de la historia" de ese tipo (first = días hasta la primera, every = días entre ofertas).
-  // Lo que cuenta para el capítulo actual (se reinicia al empezar cada capítulo)
+  // Los textos están en datos.js (claves cap.N.title / intro / goal / done / prog).
   const good = (s, type) => (s.chapterStats && s.chapterStats.good[type]) || 0;
   const duelsWon = (s) => (s.chapterStats && s.chapterStats.duels) || 0;
-  const hasType = (s, type) => s.equip.some((e) => e.type === type);
+  const earnedCh = (s) => (s.chapterStats && s.chapterStats.earned) || 0; // ganancia neta de eventos en el capítulo
+  // Capítulo 5: un switcher de producción de calidad 4 o más (el ATOM 2 M/E o mejor, o una unidad móvil)
+  const hasProSwitcher = (s) => s.equip.some((e) => CATALOG[e.type] && ((CATALOG[e.type].cat === 'switcher' && CATALOG[e.type].q >= 4) || (CATALOG[e.type].cat === 'vehicle' && /^ob/.test(CATALOG[e.type].subtipo))));
   const CHAPTERS = [
     {
-      title: 'Capítulo 1 · El garaje',
       character: 'ramiro',
-      intro: 'Don Ramiro, tu antiguo jefe en el canal, se jubiló y te regaló su vieja cámara: "Con esto empecé yo. Ahora te toca a ti." Tienes un garaje, una cámara y muchas ganas.',
-      goal: 'Completa 3 eventos',
       check: (s) => s.stats.events >= 3,
-      progress: (s) => `${Math.min(s.stats.events, 3)}/3 eventos`,
+      progress: (s) => tx('cap.0.prog', { n: Math.min(s.stats.events, 3) }),
       reward: 400,
-      done: '"¡Así se empieza!", te escribe Don Ramiro, y te manda $400 para que sigas creciendo.',
     },
     {
-      title: 'Capítulo 2 · Armando el equipo',
       character: 'ramiro',
-      intro: 'Don Ramiro te visita en el garaje: "Solo no vas a llegar lejos, mijo. Necesitas gente de confianza y más equipo para cubrir eventos con varias cámaras."',
-      goal: 'Ten 2 cámaras, 2 personas contratadas y 12 de fama',
-      check: (s) => countCat(s, 'cam') >= 2 && s.staff.length >= 3 && s.rep >= 12,
-      progress: (s) => `Cámaras ${Math.min(countCat(s, 'cam'), 2)}/2 · Personal ${Math.min(s.staff.length - 1, 2)}/2 · Fama ${Math.min(Math.floor(s.rep), 12)}/12`,
+      check: (s) => countCat(s, 'cam') >= 2 && s.staff.length >= 4 && s.rep >= 15,
+      progress: (s) => tx('cap.1.prog', { cams: Math.min(countCat(s, 'cam'), 2), staff: Math.min(s.staff.length - 1, 3), fama: Math.min(Math.floor(s.rep), 15) }),
       reward: 800,
-      done: 'Tu productora ya parece una empresa de verdad. Don Ramiro te recomienda con una marca grande: +$800 de adelanto.',
     },
     {
-      title: 'Capítulo 3 · El gran lanzamiento',
       character: 'marca',
-      intro: 'Lucía Mena, gerente de marketing, te llama: "Tenemos varios lanzamientos este año, con prensa e influencers. Si me haces quedar bien dos veces, te recomiendo con todas las marcas."',
-      goal: 'Cubre 2 "Lanzamientos de marca" con 4 estrellas o más',
       target: 'lanzamiento',
       offer: { first: 3, every: 6 },
       check: (s) => good(s, 'lanzamiento') >= 2,
-      progress: (s) => `Lanzamientos con 4⭐ o más: ${Math.min(good(s, 'lanzamiento'), 2)}/2`,
+      progress: (s) => tx('cap.2.prog', { n: Math.min(good(s, 'lanzamiento'), 2) }),
       reward: 1500,
-      done: 'Lucía Mena quedó encantada: "Los videos se hicieron virales." Te manda un bono de $1.500.',
     },
     {
-      title: 'Capítulo 4 · La rival',
       character: 'mega',
-      intro: 'Germán Vélez, dueño de MegaVisión, se enteró de ti: "Esta ciudad tiene una sola productora grande, y es la mía." Ahora pelea contigo algunos contratos. Los verás marcados como DISPUTADOS, con la calidad que promete MegaVisión: para ganarlo tienes que superarla.',
-      goal: 'Gana 3 duelos contra MegaVisión (tu calidad final debe superar la de ellos), llega a 40 de fama y junta $12.000',
-      check: (s) => duelsWon(s) >= 3 && s.rep >= 40 && s.money >= 12000,
-      progress: (s) => `Duelos ${Math.min(duelsWon(s), 3)}/3 · Fama ${Math.min(Math.floor(s.rep), 40)}/40 · Dinero ${money(Math.min(s.money, 12000))}/$12.000`,
+      check: (s) => duelsWon(s) >= 3 && s.rep >= 40 && earnedCh(s) >= BALANCE.chapter4Earn,
+      progress: (s) => tx('cap.3.prog', { duelos: Math.min(duelsWon(s), 3), fama: Math.min(Math.floor(s.rep), 40), dinero: money(clamp(earnedCh(s), 0, BALANCE.chapter4Earn)), meta: money(BALANCE.chapter4Earn) }),
       reward: 2000,
-      done: 'A MegaVisión se le cayó la transmisión en pleno partido de LigaPro. Don Aurelio, dirigente del club, te llama a ti. +$2.000 para prepararte.',
     },
     {
-      title: 'Capítulo 5 · Al estadio',
       character: 'dirigente',
-      intro: 'Don Aurelio te recibe en el estadio: "Aquí no se perdona nada. Cuatro cámaras, repeticiones y miles mirando. Necesito un switcher de verdad y dos partidos impecables."',
-      goal: 'Compra un "Switcher ATEM" y transmite 2 "Partidos de LigaPro" con 4 estrellas o más',
       target: 'ligapro',
-      offer: { first: 8, every: 10 },
-      check: (s) => hasType(s, 'switch_pro') && good(s, 'ligapro') >= 2,
-      progress: (s) => `Switcher ATEM ${hasType(s, 'switch_pro') ? '✅' : '❌'} · Partidos con 4⭐ o más ${Math.min(good(s, 'ligapro'), 2)}/2`,
+      offer: { first: 8, every: 12 },
+      check: (s) => hasProSwitcher(s) && good(s, 'ligapro') >= 2,
+      progress: (s) => tx('cap.4.prog', { sw: hasProSwitcher(s) ? '✅' : '❌', n: Math.min(good(s, 'ligapro'), 2) }),
       reward: 3000,
-      done: 'Don Aurelio quedó feliz: "Ustedes son los nuestros." Te ofrecen transmitir la gran final: +$3.000 de adelanto.',
     },
     {
-      title: 'Capítulo 6 · La final',
       character: 'ramiro',
-      intro: 'La final del campeonato se juega en unas tres semanas. Todo el país estará mirando y MegaVisión hará lo imposible por verte fallar. Don Ramiro estará en primera fila. Prepara a tu mejor equipo.',
-      goal: 'Transmite una "Final de campeonato" con 5 estrellas (necesitas 65 de fama)',
       target: 'final',
-      offer: { first: 18, every: 10 },
+      offer: { first: 18, every: 12 },
       check: (s) => (s.stats.best.final || 0) >= 5,
       progress: (s) => {
         const best = s.stats.best.final || 0;
         const offered = s.contracts.some((c) => c.type === 'final');
         const left = Math.max(0, (s.storyNext || 0) - s.day);
-        const when = offered ? 'la oferta ya llegó' : s.rep < EVENT_TYPES.final.minRep ? `fama ${Math.floor(s.rep)}/${EVENT_TYPES.final.minRep}`
-          : left > 0 ? `la final se juega en ${left} día${left > 1 ? 's' : ''}` : 'la oferta llega pronto';
-        return `Mejor resultado ${best}⭐ de 5⭐ · ${when}`;
+        const when = offered ? tx('cap.5.llego') : s.rep < EVENT_TYPES.final.minRep ? tx('cap.5.fama', { fama: Math.floor(s.rep), min: EVENT_TYPES.final.minRep })
+          : left > 0 ? tx(left > 1 ? 'cap.5.dias' : 'cap.5.dia', { n: left }) : tx('cap.5.pronto');
+        return tx('cap.5.prog', { best, when });
       },
       reward: 5000,
-      done: '¡Transmisión perfecta! Don Ramiro te abraza: "Ya no eres mi alumno, eres el mejor." Ganaste el modo historia. Puedes seguir jugando libre.',
     },
   ];
 
-  /* Frases cortas que aparecen en el registro cuando pasan cosas */
-  const TAUNTS = {
-    duelWin: [
-      'Germán Vélez (MegaVisión): "Fue suerte. La próxima no te va a pasar."',
-      'Germán Vélez (MegaVisión): "Disfruta mientras puedas, garajero."',
-      'Don Ramiro: "¡Le ganaste en su propia cancha! Así se hace."',
-    ],
-    duelLose: [
-      'Germán Vélez (MegaVisión): "¿Viste? El cliente ya me está llamando a mí."',
-      'Germán Vélez (MegaVisión): "Esto es para grandes. Vuelve a tus misas."',
-      'Germán Vélez (MegaVisión): "Bonito intento. Mi gente lo hizo mejor."',
-    ],
-    stolen: [
-      'Germán Vélez (MegaVisión): "Nada personal, solo negocios."',
-    ],
-  };
-
   /* ---------- Ayudantes ---------- */
-  function countCat(s, cat) { return s.equip.filter((e) => CATALOG[e.type].cat === cat).length; }
+  function countCat(s, cat) { return s.equip.filter((e) => CATALOG[e.type] && CATALOG[e.type].cat === cat).length; }
   function nextId(s) { s.idc = (s.idc || 0) + 1; return s.idc; }
-  function log(s, text) {
-    s.log.unshift({ day: s.day, text });
+  function log(s, key, p) {
+    s.log.unshift({ day: s.day, text: tx(key, p), k: key, p: p || null });
     if (s.log.length > 80) s.log.length = 80;
   }
+  /* Avisos: cosas importantes que pasaron (para mostrar un resumen del día). También van al registro. */
+  function aviso(s, tipo, key, p) {
+    log(s, key, p);
+    if (!Array.isArray(s.avisos)) s.avisos = [];
+    s.avisos.push({ day: s.day, tipo, k: key, p: p || null, text: s.log[0].text });
+    if (s.avisos.length > 40) s.avisos.splice(0, s.avisos.length - 40);
+  }
+  /* Devuelve los avisos pendientes y los borra */
+  function takeAvisos(s) { const a = Array.isArray(s.avisos) ? s.avisos : []; s.avisos = []; return a; }
+  /* Capítulos completados que la pantalla todavía no mostró (por evento, compra o contratación) */
+  function takeChapterDone(s) { const a = Array.isArray(s.capCompletados) ? s.capCompletados : []; s.capCompletados = []; return a; }
   function staffName(s) { return pick(s, FIRST_NAMES) + ' ' + pick(s, LAST_NAMES); }
-  function repairCost(e) { return Math.round(CATALOG[e.type].price * BALANCE.repairFactor * (100 - e.condition) / 100); }
-  function sellPrice(e) { return Math.round(CATALOG[e.type].price * BALANCE.sellFactor * e.condition / 100); }
+  function itemOf(e) { return CATALOG[e.type] || CATALOG.cam_basic; }
+  function repairCost(e) { const it = itemOf(e); return it.alquiler ? 0 : Math.round(it.price * BALANCE.repairFactor * (100 - e.condition) / 100); }
+  function sellPrice(e) {
+    const it = itemOf(e);
+    if (it.alquiler) return Math.round(it.price * BALANCE.rentalRefund);
+    return Math.round(it.price * BALANCE.sellFactor * e.condition / 100);
+  }
+  const owned = (s) => s.equip.filter((e) => !itemOf(e).alquiler);
 
   /* Gastos fijos de cada día: local, personal (aunque no haya evento) y equipos.
-     Cuanto más grande la productora, más cuesta mantenerla. */
+     Cuanto más grande la productora, más cuesta mantenerla. Los alquileres por evento no cuentan. */
   function dailyCost(s) {
     const d = BALANCE.daily;
     const hired = s.staff.filter((p) => !p.owner);
     const payroll = hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare;
-    const equipValue = s.equip.reduce((a, e) => a + CATALOG[e.type].price, 0);
+    const equipValue = owned(s).reduce((a, e) => a + itemOf(e).price, 0);
     return Math.round(rentFor(s) + d.perStaff * hired.length + equipValue * d.equipShare + payroll);
   }
   function rentTier(s) {
-    const size = s.staff.length + s.equip.length;
+    const size = s.staff.length + owned(s).length;
     return BALANCE.daily.rent.reduce((r, t) => (size >= t[0] ? t : r), BALANCE.daily.rent[0]);
   }
   function rentFor(s) { return rentTier(s)[1]; }
+  /* El local de la productora: un solo nombre para toda la pantalla (dibujo y gastos) */
+  function venue(s) {
+    const t = rentTier(s);
+    return { key: t[2], name: tx(t[2]), rent: t[1], size: s.staff.length + owned(s).length, nivel: BALANCE.daily.rent.indexOf(t) };
+  }
+  function venueName(s) { return venue(s).name; }
   /* Detalle de los gastos diarios (para mostrar en pantalla) */
   function dailyCostBreakdown(s) {
     const d = BALANCE.daily;
@@ -276,13 +343,13 @@
     const tier = rentTier(s);
     const all = d.rent;
     const next = all[all.indexOf(tier) + 1] || null;
-    const size = s.staff.length + s.equip.length;
+    const size = s.staff.length + owned(s).length;
     const out = {
-      place: tier[2], rent: tier[1], size,
-      nextPlace: next ? next[2] : null, nextAt: next ? next[0] : null, nextRent: next ? next[1] : null,
+      place: tx(tier[2]), placeKey: tier[2], rent: tier[1], size,
+      nextPlace: next ? tx(next[2]) : null, nextAt: next ? next[0] : null, nextRent: next ? next[1] : null,
       staff: d.perStaff * hired.length,
       payroll: Math.round(hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare),
-      equip: Math.round(s.equip.reduce((a, e) => a + CATALOG[e.type].price, 0) * d.equipShare),
+      equip: Math.round(owned(s).reduce((a, e) => a + itemOf(e).price, 0) * d.equipShare),
     };
     out.total = dailyCost(s);
     return out;
@@ -290,6 +357,12 @@
   /* Sueldo de una persona en un evento (cobra más en eventos grandes) */
   function eventWage(p, diff) {
     return Math.round(p.wage * (1 + BALANCE.wage.perDiff * Math.max(0, diff - 1)));
+  }
+  /* Sueldo base de alguien nuevo según rol, nivel y habilidad */
+  function baseWage(role, tier, skill) {
+    const r = ROLES[normRole(role)] || ROLES.camarografo;
+    const t = TIERS[tier] || TIERS.junior;
+    return Math.round(t.base * r.wageMul + (skill - 1) * BALANCE.wage.perSkill);
   }
 
   /* Calidad que promete MegaVisión en un contrato disputado (sube con el capítulo y la dificultad) */
@@ -321,19 +394,23 @@
       currentEvent: null,
       lastResult: null,
       daily: { redes: 0, anuncio: 0 },
-      stats: { events: 0, fiveStars: 0, earned: 0, best: {}, good: {}, duels: { won: 0, lost: 0 } },
+      stats: { events: 0, fiveStars: 0, earned: 0, best: {}, good: {}, duels: { won: 0, lost: 0 }, intl: 0 },
       storyNext: 0, // día en que llega la próxima oferta de la historia (si el capítulo tiene target)
       chapterStats: { good: {}, duels: 0 }, // avance dentro del capítulo actual
       pending: [], // cobros que llegan después: { day, amount, client }
+      avisos: [], // cosas importantes que pasaron (Game.takeAvisos)
+      capCompletados: [], // capítulos completados que falta mostrar (Game.takeChapterDone)
       lastWorkDay: 1, // último día con evento (para el desgaste de fama)
+      intlNext: 0, // día de la próxima oferta internacional (0 = todavía no se programa)
       log: [],
     };
-    s.staff.push({ id: nextId(s), name: 'Tú (dueño)', role: 'cam', skill: 2, wage: 0, morale: 100, events: 0, owner: true });
-    s.equip.push({ id: nextId(s), type: 'cam_basic', condition: 75, nick: 'Cámara de Don Ramiro' });
+    s.staff.push({ id: nextId(s), name: tx('persona.duenio'), role: 'camarografo', tier: 'semi_senior', skill: 2, wage: 0, morale: 100, events: 0,
+      eventos_nacionales: 0, eventos_internacionales: 0, owner: true });
+    s.equip.push({ id: nextId(s), type: 'cam_basic', condition: 75, nick: tx('equipo.camara_ramiro') });
     // Las 3 primeras ofertas son fáciles: sin transmisión por internet
     ['misa', 'boda', 'misa'].forEach((k) => { const c = addContract(s, k); c.stream = false; c.outdoor = false; c.cams = 1; c.daysLeft = 4; });
     refreshCandidates(s);
-    log(s, 'Abriste tu productora en el garaje. ¡Mucha suerte!');
+    log(s, 'log.inicio');
     return s;
   }
 
@@ -342,6 +419,7 @@
     const ch = !s.storyDone && CHAPTERS[s.chapter];
     return Object.keys(EVENT_TYPES).filter((k) => {
       const t = EVENT_TYPES[k];
+      if (t.soloInternacional) return false;
       if (t.minRep > s.rep) return false;
       if (!s.storyDone && t.minChapter && s.chapter < t.minChapter) return false;
       // El evento que pide el capítulo solo llega como oferta de la historia
@@ -359,7 +437,7 @@
     const types = availableTypes(s);
     if (!typeKey) {
       // Más probabilidad de los eventos más grandes que ya desbloqueaste
-      const weights = types.map((k, i) => 1 + i * 0.6);
+      const weights = types.map((k, i) => (1 + i * 0.6) * (EVENT_TYPES[k].peso || 1));
       const total = weights.reduce((a, b) => a + b, 0);
       let r = rnd(s) * total;
       typeKey = types[types.length - 1];
@@ -383,7 +461,7 @@
     if (c.story) c.daysLeft = randInt(s, 4, 5);
     // Disputado: MegaVisión también lo quiere, así que el cliente exige más (dificultad +1) y paga más
     const R = BALANCE.rival;
-    if (!c.story && t.diff >= 2 && rivalActive(s) && chance(s, R.contestedChance)) {
+    if (!c.story && !opts.noRival && t.diff >= 2 && rivalActive(s) && chance(s, R.contestedChance)) {
       c.rival = true;
       c.diff = Math.min(5, c.diff + R.diffBoost);
       c.pay = Math.round(c.pay * R.payBoost / 10) * 10;
@@ -394,11 +472,6 @@
   }
 
   /* Oferta especial que pide el capítulo actual (llega cada cierto tiempo) */
-  const STORY_CALLS = {
-    lanzamiento: (c) => `📞 Lucía Mena te recomendó: ${c.client} quiere que cubras su lanzamiento.`,
-    ligapro: (c) => `📞 Don Aurelio te consiguió un partido: ${c.client} quiere su transmisión.`,
-    final: () => '📞 ¡Llegó la oferta para transmitir la Final de campeonato! Revisa tus ofertas.',
-  };
   function storyOffer(s) {
     const ch = CHAPTERS[s.chapter];
     if (s.storyDone || !ch || !ch.target || !ch.offer) return;
@@ -407,147 +480,290 @@
     if (s.contracts.some((c) => c.type === ch.target && c.story)) return;
     if (s.contracts.length >= BALANCE.maxContracts) {
       // Hace espacio quitando la oferta normal que vence primero
-      const normal = s.contracts.filter((c) => !c.story).sort((a, b) => a.daysLeft - b.daysLeft)[0];
+      const normal = s.contracts.filter((c) => !c.story && !c.internacional).sort((a, b) => a.daysLeft - b.daysLeft)[0];
       if (!normal) return;
       s.contracts = s.contracts.filter((c) => c !== normal);
     }
     const c = addContract(s, ch.target, 1, { story: true });
     if (!c) return;
     s.storyNext = s.day + ch.offer.every;
-    log(s, (STORY_CALLS[ch.target] || (() => '📞 Llegó una oferta especial de la historia.'))(c));
+    log(s, 'historia.llamada.' + ch.target, { cliente: c.client });
   }
+
+  /* ---------- Contratos internacionales ---------- */
+  function intlEligible(s) {
+    const ch = s.storyDone ? CHAPTERS.length : s.chapter;
+    return Object.keys(INTL_KINDS).filter((k) => {
+      const K = INTL_KINDS[k];
+      if (K.storyDone && !s.storyDone) return false;
+      return ch >= K.fromChapter && s.rep >= K.minRep;
+    });
+  }
+  function addIntlContract(s, kindKey) {
+    if (s.contracts.length >= BALANCE.maxContracts) return null;
+    const keys = kindKey ? [kindKey] : intlEligible(s);
+    if (!keys.length) return null;
+    if (!kindKey) {
+      const ws = keys.map((k) => INTL_KINDS[k].peso);
+      let r = rnd(s) * ws.reduce((a, b) => a + b, 0);
+      kindKey = keys[keys.length - 1];
+      for (let i = 0; i < keys.length; i++) { r -= ws[i]; if (r <= 0) { kindKey = keys[i]; break; } }
+    }
+    const K = INTL_KINDS[kindKey];
+    const t = EVENT_TYPES[K.type];
+    const ref = EVENT_TYPES[K.ref];
+    const opt = pick(s, K.clientes);
+    const c = {
+      id: nextId(s),
+      type: K.type,
+      client: opt[0],
+      pais: opt[1],
+      cams: randInt(s, t.cams[0], t.cams[1]),
+      audio: t.audio,
+      stream: true,
+      outdoor: chance(s, t.outdoor),
+      diff: Math.min(5, t.diff + (K.diffBoost || 0)),
+      pay: Math.round(randInt(s, ref.pay[0], ref.pay[1]) * K.mult * (1 + s.rep / BALANCE.payRepBonus) / 10) * 10,
+      daysLeft: BALANCE.intl.daysLeft,
+      rival: false,
+      story: false,
+      internacional: true,
+      kind: kindKey,
+      mult: K.mult,
+      travelDays: K.travelDays,
+      repRisk: K.repRisk,
+      payLaterShare: K.payLater || 0,
+    };
+    c.travelCost = Math.round(c.pay * K.travelShare / 10) * 10;
+    c.requisitos = requisitosInternacional(s, c, s.staff.map((p) => p.id), s.equip.map((e) => e.id));
+    s.contracts.push(c);
+    aviso(s, 'internacional', 'log.intl_oferta', { cliente: c.client, pais: c.pais, monto: money(c.pay) });
+    return c;
+  }
+  function intlTick(s) {
+    const I = BALANCE.intl;
+    const ch = s.storyDone ? CHAPTERS.length : s.chapter;
+    if (ch < I.fromChapter) return;
+    if (!s.intlNext) { s.intlNext = s.day + randInt(s, I.first[0], I.first[1]); return; }
+    if (s.day < s.intlNext) return;
+    if (s.contracts.some((c) => c.internacional)) return;
+    const c = addIntlContract(s);
+    if (c) s.intlNext = s.day + randInt(s, I.every[0], I.every[1]);
+  }
+
+  /* Requisitos de un contrato internacional con ese personal y esos equipos */
+  function requisitosInternacional(s, c, staffIds, equipIds) {
+    const K = c && INTL_KINDS[c.kind];
+    if (!K) return [];
+    const staff = s.staff.filter((p) => (staffIds || []).includes(p.id));
+    const equip = s.equip.filter((e) => (equipIds || []).includes(e.id));
+    const ctx = { s, c, staff, equip };
+    return K.requisitos.map((key) => {
+      const R = REQUISITOS[key];
+      const p = R.params ? R.params(K) : null;
+      return { key, texto: tx('req.' + key, p), ok: !!R.ok(ctx, K), obligatorio: !!R.obligatorio };
+    });
+  }
+  const isIntlExp = (p) => p.tier === 'internacional' || (p.eventos_internacionales || 0) > 0;
+  const eqOf = (ctx, f) => ctx.equip.filter((e) => CATALOG[e.type] && f(CATALOG[e.type], e));
+  const REQUISITOS = {
+    dir_intl: { obligatorio: true, ok: (x) => x.staff.some((p) => normRole(p.role) === 'director' && isIntlExp(p)) },
+    equipo_intl: { obligatorio: true, params: (K) => ({ n: K.intlExtra }),
+      ok: (x, K) => x.staff.filter((p) => normRole(p.role) !== 'director' && isIntlExp(p)).length >= K.intlExtra },
+    senior3: { ok: (x) => x.staff.filter((p) => tierOf(p).orden >= 2).length >= 3 },
+    hombro4k: { ok: (x) => eqOf(x, (it) => it.cat === 'cam' && it.q >= 4).length >= 2 },
+    cams4k: { ok: (x) => eqOf(x, (it) => it.cat === 'cam' && it.q >= 4).length >= 3 },
+    cams3: { ok: (x) => eqOf(x, (it) => it.cat === 'cam' && it.q >= 3).length >= 3 },
+    sistema3: { ok: (x) => eqOf(x, (it) => it.cat === 'cam' && CLASE[it.subtipo] === 'sistema').length >= 3 },
+    box2: { ok: (x) => eqOf(x, (it) => it.cat === 'lens' && it.subtipo === 'lente_box').length >= 2 },
+    replay5: { ok: (x) => eqOf(x, (it) => it.cat === 'replay' && it.q >= 5).length >= 1 },
+    ob: { ok: (x) => eqOf(x, (it) => (it.cat === 'vehicle' && /^ob/.test(it.subtipo)) || it.subtipo === 'ob_alquiler').length >= 1 },
+    generador: { ok: (x) => eqOf(x, (it) => it.subtipo === 'generador_diesel').length >= 1 },
+    enlace: { ok: (x) => eqOf(x, (it) => (it.cat === 'encoder' && it.q >= 5) || it.subtipo === 'satelite').length >= 1 },
+    satelite: { ok: (x) => eqOf(x, (it) => it.subtipo === 'satelite').length >= 1 },
+    diadema: { ok: (x) => eqOf(x, (it) => it.subtipo === 'diadema_comentarista').length >= 1 },
+    grua: { ok: (x) => eqOf(x, (it) => it.subtipo === 'grua' || it.subtipo === 'jib').length >= 1 },
+    ptz: { ok: (x) => eqOf(x, (it) => CLASE[it.subtipo] === 'ptz').length >= 1 },
+    encoder2: { ok: (x) => eqOf(x, (it) => it.cat === 'encoder').length >= 2 },
+    graficos: { ok: (x) => eqOf(x, (it) => it.cat === 'graphics').length >= 1 && x.staff.some((p) => normRole(p.role) === 'operador_graficos') },
+    intercom: { ok: (x) => eqOf(x, (it) => it.cat === 'intercom' || (it.cat === 'vehicle' && /^ob/.test(it.subtipo))).length >= 1 },
+    maletas: { ok: (x) => eqOf(x, (it) => it.cat === 'case').length >= 1 },
+    bonding: { ok: (x) => eqOf(x, (it) => it.cat === 'encoder' && /bonding/.test(it.subtipo)).length >= 1 },
+    iso: { ok: (x) => eqOf(x, (it) => it.cat === 'switcher' && it.q >= 2).length >= 1 },
+  };
 
   /* Acciones para conseguir clientes */
   function marketing(s, kind) {
-    if (s.currentEvent || s.gameOver) return { ok: false, msg: 'Ahora no se puede.' };
+    if (s.currentEvent || s.gameOver) return { ok: false, msg: tx('msg.ahora_no') };
     if (kind === 'redes') {
-      if (s.daily.redes >= 1) return { ok: false, msg: 'Ya publicaste hoy. Intenta mañana.' };
-      if (s.money < 40) return { ok: false, msg: 'No tienes $40.' };
-      if (s.contracts.length >= BALANCE.maxContracts) return { ok: false, msg: 'Ya tienes demasiadas ofertas pendientes.' };
+      if (s.daily.redes >= 1) return { ok: false, msg: tx('msg.redes_hoy') };
+      if (s.money < 40) return { ok: false, msg: tx('msg.no_tienes', { monto: money(40) }) };
+      if (s.contracts.length >= BALANCE.maxContracts) return { ok: false, msg: tx('msg.muchas_ofertas') };
       s.money -= 40; s.daily.redes++;
       const c = addContract(s);
-      log(s, `Publicaste en redes (-$40). Te escribió ${c.client}.`);
-      return { ok: true, msg: `Publicaste en redes. Nueva oferta de ${c.client}.` };
+      log(s, 'log.redes', { cliente: c.client });
+      return { ok: true, msg: tx('msg.redes', { cliente: c.client }) };
     }
     if (kind === 'anuncio') {
-      if (s.daily.anuncio >= 1) return { ok: false, msg: 'Ya pagaste un anuncio hoy.' };
-      if (s.money < 200) return { ok: false, msg: 'No tienes $200.' };
-      if (s.contracts.length >= 6) return { ok: false, msg: 'Ya tienes demasiadas ofertas pendientes.' };
+      if (s.daily.anuncio >= 1) return { ok: false, msg: tx('msg.anuncio_hoy') };
+      if (s.money < 200) return { ok: false, msg: tx('msg.no_tienes', { monto: money(200) }) };
+      if (s.contracts.length >= 6) return { ok: false, msg: tx('msg.muchas_ofertas') };
       s.money -= 200; s.daily.anuncio++;
       addContract(s, null, 1.15); addContract(s, null, 1.15);
-      log(s, 'Pagaste un anuncio (-$200). Llegaron 2 ofertas mejor pagadas.');
-      return { ok: true, msg: 'Llegaron 2 ofertas mejor pagadas.' };
+      log(s, 'log.anuncio');
+      return { ok: true, msg: tx('msg.anuncio') };
     }
     if (kind === 'visitar') {
-      if (s.contracts.length >= 6) return { ok: false, msg: 'Ya tienes demasiadas ofertas pendientes.' };
-      log(s, 'Pasaste el día visitando clientes en persona.');
+      if (s.contracts.length >= 6) return { ok: false, msg: tx('msg.muchas_ofertas') };
+      log(s, 'log.visitar');
       nextDay(s);
       addContract(s); addContract(s);
-      return { ok: true, msg: 'Visitaste clientes todo el día. Conseguiste 2 ofertas.' };
+      return { ok: true, msg: tx('msg.visitar') };
     }
-    return { ok: false, msg: 'Acción desconocida.' };
+    return { ok: false, msg: tx('msg.desconocida') };
   }
 
   /* ---------- Personal ---------- */
-  function refreshCandidates(s) {
+  function rollTier(s) {
+    const H = BALANCE.hiring;
+    const rep = s.rep;
+    const pIntl = rep >= H.intlFrom ? H.intlBase + (rep - H.intlFrom) * H.intlPerRep : 0;
+    const pSenior = rep >= H.seniorFrom ? (rep - H.seniorFrom) * H.seniorPerRep : 0;
+    const pSemi = H.semiBase + rep * H.semiPerRep;
+    const r = rnd(s);
+    if (r < pIntl) return 'internacional';
+    if (r < pIntl + pSenior) return 'senior';
+    if (r < pIntl + pSenior + pSemi) return 'semi_senior';
+    return 'junior';
+  }
+  function makeCandidate(s, role) {
+    const tier = rollTier(s);
+    const T = TIERS[tier];
+    const skill = randInt(s, T.skill[0], T.skill[1]);
+    return {
+      id: nextId(s),
+      name: staffName(s),
+      role,
+      tier,
+      skill,
+      wage: baseWage(role, tier, skill) + randInt(s, 0, BALANCE.wage.random),
+      morale: 80,
+      events: 0,
+      eventos_nacionales: 0,
+      eventos_internacionales: tier === 'internacional' ? randInt(s, 3, 12) : 0,
+    };
+  }
+  // Los roles especializados aparecen cuando la productora ya tiene algo de fama
+  function candidateRoles(s) {
+    return D.ROLES_DATA.filter((r) => s.rep >= (r.fama || 0)).map((r) => [r.key, r.peso || 1]);
+  }
+  function refreshCandidates(s, wantRole) {
     s.candidates = [];
-    const roles = Object.keys(ROLES);
-    for (let i = 0; i < 4; i++) {
-      const maxSkill = clamp(1 + Math.floor(s.rep / 18), 1, 5);
-      const skill = randInt(s, 1, maxSkill);
-      s.candidates.push({
-        id: nextId(s),
-        name: staffName(s),
-        role: i < roles.length ? roles[(i + s.day) % roles.length] : pick(s, roles),
-        skill,
-        wage: BALANCE.wage.base + skill * BALANCE.wage.perSkill + randInt(s, 0, BALANCE.wage.random),
-        morale: 80,
-        events: 0,
-      });
+    const pool = candidateRoles(s);
+    const tot = pool.reduce((a, b) => a + b[1], 0);
+    for (let i = 0; i < BALANCE.candidates; i++) {
+      let role;
+      if (wantRole && i < 2) role = wantRole;
+      else if (i === 0) role = 'camarografo';
+      else {
+        let r = rnd(s) * tot;
+        role = pool[pool.length - 1][0];
+        for (const [k, w] of pool) { r -= w; if (r <= 0) { role = k; break; } }
+      }
+      s.candidates.push(makeCandidate(s, role));
     }
   }
 
   function hire(s, candId) {
     const i = s.candidates.findIndex((c) => c.id === candId);
-    if (i < 0) return { ok: false, msg: 'Esa persona ya no está disponible.' };
+    if (i < 0) return { ok: false, msg: tx('msg.ya_no_esta') };
     const c = s.candidates[i];
     const fee = c.wage * BALANCE.wage.hireFeeDays;
-    if (s.staff.length >= 12) return { ok: false, msg: 'Tu oficina está llena (máximo 12 personas).' };
-    if (s.money < fee) return { ok: false, msg: `Necesitas ${money(fee)} para contratarle.` };
+    if (s.staff.length >= BALANCE.maxStaff) return { ok: false, msg: tx('msg.oficina_llena', { n: BALANCE.maxStaff }) };
+    if (s.money < fee) return { ok: false, msg: tx('msg.necesitas_contratar', { monto: money(fee) }) };
     s.money -= fee;
     s.candidates.splice(i, 1);
     s.staff.push(c);
-    log(s, `Contrataste a ${c.name} (${ROLES[c.role].name}). Pago inicial ${money(fee)}.`);
-    checkChapter(s);
-    return { ok: true, msg: `${c.name} se unió al equipo.` };
+    log(s, 'log.contrataste', { nombre: c.name, rol: ROLES[c.role].name, nivel: TIERS[c.tier].name, monto: money(fee) });
+    const chapterDone = checkChapter(s);
+    return { ok: true, msg: tx('msg.se_unio', { nombre: c.name }), chapterDone };
   }
 
   function fire(s, staffId) {
     const i = s.staff.findIndex((p) => p.id === staffId);
-    if (i < 0 || s.staff[i].owner) return { ok: false, msg: 'No se puede.' };
+    if (i < 0 || s.staff[i].owner) return { ok: false, msg: tx('msg.no_se_puede') };
     const p = s.staff[i];
     s.staff.splice(i, 1);
-    log(s, `Despediste a ${p.name}.`);
-    return { ok: true, msg: `${p.name} ya no trabaja contigo.` };
+    log(s, 'log.despediste', { nombre: p.name });
+    return { ok: true, msg: tx('msg.despediste', { nombre: p.name }) };
   }
 
-  function searchStaff(s) {
-    if (s.money < 30) return { ok: false, msg: 'Necesitas $30 para publicar la vacante.' };
+  function searchStaff(s, role) {
+    if (s.money < 30) return { ok: false, msg: tx('msg.vacante_plata') };
     s.money -= 30;
-    refreshCandidates(s);
-    return { ok: true, msg: 'Llegaron nuevos candidatos.' };
+    refreshCandidates(s, role && ROLES[normRole(role)] ? normRole(role) : null);
+    return { ok: true, msg: tx('msg.candidatos') };
   }
 
   /* ---------- Tienda / bodega ---------- */
+  function shopByCategory(s) {
+    return CATEGORIAS.map((c) => ({
+      key: c.key, nombre: c.nombre, icon: c.icon,
+      items: Object.keys(CATALOG).filter((k) => CATALOG[k].cat === c.key && !CATALOG[k].premium)
+        .sort((a, b) => CATALOG[a].price - CATALOG[b].price)
+        .map((k) => Object.assign({}, CATALOG[k], { key: k, locked: CATALOG[k].minRep > s.rep, owned: s.equip.filter((e) => e.type === k).length })),
+    })).filter((c) => c.items.length);
+  }
   function buy(s, type) {
     const it = CATALOG[type];
-    if (!it) return { ok: false, msg: 'No existe.' };
-    if (it.minRep > s.rep) return { ok: false, msg: `Necesitas ${it.minRep} de fama para que te lo vendan.` };
-    if (s.money < it.price) return { ok: false, msg: `Te falta dinero (${money(it.price)}).` };
-    if (s.equip.length >= 30) return { ok: false, msg: 'Tu bodega está llena.' };
+    if (!it) return { ok: false, msg: tx('msg.no_existe') };
+    if (it.minRep > s.rep) return { ok: false, msg: tx('msg.fama_para_comprar', { n: it.minRep }) };
+    if (s.money < it.price) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(it.price) }) };
+    if (s.equip.length >= BALANCE.maxEquip) return { ok: false, msg: tx('msg.bodega_llena') };
     s.money -= it.price;
     s.equip.push({ id: nextId(s), type, condition: 100 });
-    log(s, `Compraste: ${it.name} (${money(it.price)}).`);
-    checkChapter(s);
-    return { ok: true, msg: `Compraste ${it.name}.` };
+    log(s, it.alquiler ? 'log.alquilaste' : 'log.compraste', { item: it.name, monto: money(it.price) });
+    const chapterDone = checkChapter(s);
+    return { ok: true, msg: tx(it.alquiler ? 'msg.alquilaste' : 'msg.compraste', { item: it.name }), chapterDone };
   }
 
   function buyConsumable(s, key, qty) {
     const it = CONSUMABLES[key];
     qty = qty || 1;
-    if (!it) return { ok: false, msg: 'No existe.' };
-    if (s.money < it.price * qty) return { ok: false, msg: 'Te falta dinero.' };
+    if (!it) return { ok: false, msg: tx('msg.no_existe') };
+    if (s.money < it.price * qty) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(it.price * qty) }) };
     s.money -= it.price * qty;
     s.stock[key] = (s.stock[key] || 0) + qty;
-    return { ok: true, msg: `Compraste ${qty} × ${it.name}.` };
+    return { ok: true, msg: tx('msg.compraste_n', { n: qty, item: it.name }) };
   }
 
   function repair(s, equipId) {
     const e = s.equip.find((x) => x.id === equipId);
-    if (!e) return { ok: false, msg: 'No existe.' };
+    if (!e) return { ok: false, msg: tx('msg.no_existe') };
     const cost = repairCost(e);
-    if (cost <= 0) return { ok: false, msg: 'Está como nuevo.' };
-    if (s.money < cost) return { ok: false, msg: `Reparar cuesta ${money(cost)}.` };
+    if (cost <= 0) return { ok: false, msg: tx('msg.como_nuevo') };
+    if (s.money < cost) return { ok: false, msg: tx('msg.reparar_cuesta', { monto: money(cost) }) };
     s.money -= cost;
     e.condition = 100;
-    log(s, `Reparaste ${CATALOG[e.type].name} (${money(cost)}).`);
-    return { ok: true, msg: 'Quedó como nuevo.' };
+    log(s, 'log.reparaste', { item: itemOf(e).name, monto: money(cost) });
+    return { ok: true, msg: tx('msg.quedo_nuevo') };
   }
 
   function sell(s, equipId) {
     const i = s.equip.findIndex((x) => x.id === equipId);
-    if (i < 0) return { ok: false, msg: 'No existe.' };
+    if (i < 0) return { ok: false, msg: tx('msg.no_existe') };
     const e = s.equip[i];
     const p = sellPrice(e);
     s.money += p;
     s.equip.splice(i, 1);
-    log(s, `Vendiste ${CATALOG[e.type].name} por ${money(p)}.`);
-    return { ok: true, msg: `Vendido por ${money(p)}.` };
+    log(s, itemOf(e).alquiler ? 'log.cancelaste_alquiler' : 'log.vendiste', { item: itemOf(e).name, monto: money(p) });
+    return { ok: true, msg: tx('msg.vendido', { monto: money(p) }) };
   }
 
   /* ---------- Pasar el día ---------- */
-  function nextDay(s) {
+  function nextDay(s, opts) {
     if (s.gameOver) return;
+    opts = opts || {};
     s.day++;
     s.daily = { redes: 0, anuncio: 0 };
     s.money -= dailyCost(s);
@@ -555,47 +771,56 @@
     s.pending = s.pending || [];
     const due = s.pending.filter((p) => p.day <= s.day);
     if (due.length) {
-      due.forEach((p) => { s.money += p.amount; log(s, `💵 ${p.client} te pagó lo que faltaba: ${money(p.amount)}.`); });
+      due.forEach((p) => { s.money += p.amount; aviso(s, 'pago', 'log.pago_pendiente', { cliente: p.client, monto: money(p.amount) }); });
       s.pending = s.pending.filter((p) => p.day > s.day);
     }
     // Fama: si pasas días sin trabajar, la gente se olvida de ti
     const idle = s.day - (s.lastWorkDay || s.day);
     if (idle > 0 && idle % BALANCE.fameDecay.every === 0 && s.rep > 0 && !inTutorial(s)) {
       s.rep = clamp(s.rep - 1, 0, 100);
-      log(s, `📉 Llevas ${idle} días sin eventos y la gente se está olvidando de ti (fama -1).`);
+      aviso(s, 'fama', 'log.olvido', { n: idle });
     }
     // Ofertas que vencen
     s.contracts.forEach((c) => { c.daysLeft--; });
     const expired = s.contracts.filter((c) => c.daysLeft <= 0);
-    if (expired.length) log(s, `Se vencieron ${expired.length} oferta(s) que no tomaste.`);
+    if (expired.length) aviso(s, 'vencidas', 'log.vencieron', { n: expired.length });
     s.contracts = s.contracts.filter((c) => c.daysLeft > 0);
-    // Nuevas ofertas según la fama
-    const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 ? 1 : 0);
-    for (let i = 0; i < n; i++) addContract(s);
-    // A veces un cliente cancela (nunca las ofertas de la historia)
-    const cancelable = s.contracts.filter((c) => !c.story);
-    if (!inTutorial(s) && cancelable.length && chance(s, BALANCE.cancelChance)) {
-      const c = pick(s, cancelable);
-      s.contracts = s.contracts.filter((x) => x !== c);
-      log(s, `❌ ${c.client} canceló su evento. Se quedaron sin presupuesto.`);
+    if (!opts.travel) {
+      // Nuevas ofertas según la fama
+      const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 ? 1 : 0);
+      for (let i = 0; i < n; i++) addContract(s);
+      // A veces un cliente cancela (nunca las ofertas de la historia ni las internacionales)
+      const cancelable = s.contracts.filter((c) => !c.story && !c.internacional);
+      if (!inTutorial(s) && cancelable.length && chance(s, BALANCE.cancelChance)) {
+        const c = pick(s, cancelable);
+        s.contracts = s.contracts.filter((x) => x !== c);
+        aviso(s, 'cancelacion', 'log.cancelo', { cliente: c.client });
+      }
+      // Si el capítulo pide un evento especial, llega cada cierto tiempo
+      storyOffer(s);
+      // De vez en cuando, un contrato internacional
+      intlTick(s);
+      // La rival roba clientes (desde el capítulo 4), nunca las ofertas de la historia ni las internacionales
+      const stealable = s.contracts.filter((c) => !c.story && !c.internacional);
+      if (rivalActive(s) && stealable.length > 1 && chance(s, BALANCE.rival.stealChance)) {
+        const c = pick(s, stealable);
+        s.contracts = s.contracts.filter((x) => x !== c);
+        aviso(s, 'rival', 'log.robo_rival', { cliente: c.client });
+        if (chance(s, 0.3)) log(s, pick(s, D.TAUNTS.stolen));
+      }
     }
-    // Si el capítulo pide un evento especial, llega cada cierto tiempo
-    storyOffer(s);
-    // La rival roba clientes (desde el capítulo 4), nunca las ofertas de la historia
-    const stealable = s.contracts.filter((c) => !c.story);
-    if (rivalActive(s) && stealable.length > 1 && chance(s, BALANCE.rival.stealChance)) {
-      const c = pick(s, stealable);
-      s.contracts = s.contracts.filter((x) => x !== c);
-      log(s, `😠 MegaVisión le ofreció un precio más bajo a ${c.client} y te quitó el contrato.`);
-      if (chance(s, 0.3)) log(s, pick(s, TAUNTS.stolen));
-    }
+    // Requisitos internacionales al día (con todo tu personal y tus equipos)
+    s.contracts.forEach((c) => { if (c.internacional) c.requisitos = requisitosInternacional(s, c, s.staff.map((p) => p.id), s.equip.map((e) => e.id)); });
     // Moral y renuncias: descansar un día (sin evento) recupera el ánimo
-    const rested = s.lastWorkDay !== s.day;
+    const rested = s.lastWorkDay !== s.day && !opts.travel;
     s.staff.forEach((p) => { if (!p.owner) p.morale = clamp(p.morale + (p.morale < 60 ? 2 : 0) + (rested ? BALANCE.morale.rest : 0), 0, 100); });
+    s.staff.forEach((p) => {
+      if (!p.owner && p.morale < 30 && (p.avisoMoral || -99) < s.day - 3) { p.avisoMoral = s.day; aviso(s, 'animo', 'log.animo_bajo', { nombre: p.name, n: p.morale }); }
+    });
     const quitter = s.staff.find((p) => !p.owner && p.morale < 20 && chance(s, 0.4));
     if (quitter) {
       s.staff = s.staff.filter((p) => p !== quitter);
-      log(s, `💔 ${quitter.name} renunció porque estaba desmotivado/a.`);
+      aviso(s, 'renuncia', 'log.renuncio', { nombre: quitter.name });
     }
     // El personal pide aumento: si no se lo das, se desmotiva
     const R = BALANCE.raise;
@@ -605,385 +830,908 @@
       const more = Math.max(5, Math.round(p.wage * R.pct));
       if (p.morale >= 50) {
         p.wage += more;
-        log(s, `🤝 ${p.name} pidió un aumento y aceptaste: ahora cobra ${money(p.wage)} por evento.`);
+        aviso(s, 'sueldo', 'log.aumento', { nombre: p.name, monto: money(p.wage) });
       } else {
         hired.forEach((x) => { x.morale = clamp(x.morale - 12, 0, 100); });
         p.wage += more;
-        log(s, `✊ El equipo está molesto y ${p.name} encabezó un reclamo. Le subiste el sueldo (${money(p.wage)}) y la moral de todos bajó.`);
+        aviso(s, 'sueldo', 'log.reclamo', { nombre: p.name, monto: money(p.wage) });
       }
     }
     if (s.day % 3 === 1) refreshCandidates(s);
     if (s.money < BALANCE.bankruptAt) {
       s.gameOver = true;
-      log(s, `💸 Quebraste: las deudas superaron los ${money(-BALANCE.bankruptAt)}.`);
+      aviso(s, 'quiebra', 'log.quiebra', { monto: money(-BALANCE.bankruptAt) });
     }
   }
 
-  const STORY_SUPPORT_TEXT = {
-    lanzamiento: 'Apoyo de Lucía Mena (la marca pone luces y escenario)',
-    ligapro: 'Apoyo de Don Aurelio (el estadio pone fibra y luz)',
-    final: 'Apoyo del estadio y de la federación',
-  };
+  /* =========================================================
+     PLAN DEL EVENTO: personal por rol y plan de cámaras
+     ========================================================= */
+  const staffOf = (s, ids) => s.staff.filter((p) => (ids || []).includes(p.id));
+  const equipOf = (s, ids) => s.equip.filter((e) => (ids || []).includes(e.id) && CATALOG[e.type]);
+  const roleCount = (staff, role) => staff.filter((p) => normRole(p.role) === role).length;
+  const bestOf = (staff, role) => staff.filter((p) => normRole(p.role) === role)
+    .sort((a, b) => (b.skill + tierBonus(b)) - (a.skill + tierBonus(a)))[0] || null;
+  const isCamLike = (it) => (it.cat === 'cam' || it.cat === 'service') && !!CLASE[it.subtipo];
+  const isSystem = (it) => CLASE[it.subtipo] === 'sistema' || it.subtipo === 'super_lenta';
+  const isOB = (it) => (it.cat === 'vehicle' && /^ob/.test(it.subtipo)) || it.subtipo === 'ob_alquiler';
+  const hasReplayGear = (equip) => equip.some((e) => itemOf(e).cat === 'replay') || equip.some((e) => itemOf(e).cat === 'switcher' && itemOf(e).subtipo === 'software' && itemOf(e).q >= 3);
+  const hasGfxGear = (equip) => equip.some((e) => itemOf(e).cat === 'graphics') || equip.some((e) => itemOf(e).cat === 'switcher' && itemOf(e).q >= 3);
+
+  /* Plantilla de personal del contrato: { rol: [min, ideal] } (depende de lo que pide y de lo que llevas) */
+  function crewReq(c, equip) {
+    const t = EVENT_TYPES[c.type] || EVENT_TYPES.misa;
+    const req = {};
+    Object.keys(t.crew).forEach((r) => { req[r] = t.crew[r].slice(); });
+    const set = (r, min, ideal) => { req[r] = [min, Math.max(min, ideal)]; };
+    const cap = (r, n) => { if (req[r]) set(r, Math.min(req[r][0], n), Math.min(req[r][1], n)); };
+    cap('camarografo', Math.max(1, c.cams));
+    if (c.cams < 2) cap('director', 0);
+    if (!c.audio) { cap('sonidista', 0); cap('microfonista', 0); }
+    if (!c.stream) cap('tecnico_transmision', 0);
+    equip = equip || [];
+    const n = (f) => equip.filter((e) => f(itemOf(e))).length;
+    const ptz = n((it) => CLASE[it.subtipo] === 'ptz');
+    const sys = n((it) => isSystem(it));
+    const drones = n((it) => CLASE[it.subtipo] === 'dron');
+    const shot = n((it) => (it.requiere || []).includes('microfonista'));
+    // Lo que llevas pide su operador (sube el ideal: sin él rinde menos o sale el imprevisto de ese rol)
+    const raise = (r, m) => { const cur = req[r] || [0, 0]; set(r, cur[0], Math.max(cur[1], m)); };
+    if (ptz) raise('operador_ptz', Math.ceil(ptz / 4));
+    if (sys) raise('shader', 1);
+    if (drones) raise('piloto_dron', 1);
+    if (shot) raise('microfonista', 1);
+    if (equip.some((e) => itemOf(e).cat === 'replay')) raise('operador_repeticion', 1);
+    if (equip.some((e) => itemOf(e).cat === 'graphics')) raise('operador_graficos', 1);
+    return req;
+  }
+
+  /* Riesgo (0..1) de los imprevistos de un rol según cuánta gente llevas y su experiencia */
+  function roleRisk(estado, best) {
+    const K = BALANCE.risk;
+    const base = estado === 'falta' ? K.falta : estado === 'justo' ? K.justo : K.base;
+    if (!best) return base;
+    const f = clamp(1 - K.perSkill * (best.skill - 1) - K.perTier * tierOf(best).bonus, K.minFactor, 1);
+    return r2(base * f);
+  }
+
+  function refWage(role, diff) {
+    return Math.round(baseWage(role, 'junior', 2) * (1 + BALANCE.wage.perDiff * Math.max(0, diff - 1)));
+  }
+
+  function crewPlan(s, c, staffIds, equipIds) {
+    if (!c) return { roles: [], wages: 0, idealWages: 0, savings: 0, falta: 0, justo: 0, completo: 0 };
+    return crewPlanOf(c, staffOf(s, staffIds), equipIds ? equipOf(s, equipIds) : []);
+  }
+  function crewPlanOf(c, staff, equip) {
+    const req = crewReq(c, equip);
+    const diff = c.diff || 1;
+    const roles = [];
+    let idealWages = 0;
+    const wages = staff.reduce((a, p) => a + eventWage(p, diff), 0);
+    ROLE_KEYS.forEach((key) => {
+      const rq = req[key] || [0, 0];
+      const people = staff.filter((p) => normRole(p.role) === key);
+      let a = people.length;
+      let dobleRol = false;
+      // El dueño hace de productor cuando no llevas uno (doble rol)
+      if (key === 'productor' && !a && rq[1] > 0 && staff.some((p) => p.owner)) { a = 1; dobleRol = true; }
+      if (!rq[1] && !a) return;
+      const estado = a < rq[0] ? 'falta' : a < rq[1] ? 'justo' : 'completo';
+      const best = people.sort((x, y) => (y.skill + tierBonus(y)) - (x.skill + tierBonus(x)))[0] || null;
+      const sueldo = people.reduce((acc, p) => acc + eventWage(p, diff), 0);
+      idealWages += Math.max(0, rq[1] - a) * refWage(key, diff);
+      roles.push({
+        key, nombre: ROLES[key].name, desc: ROLES[key].desc, si_falta: ROLES[key].siFalta,
+        min: rq[0], ideal: rq[1], asignados: a,
+        personas: people.map((p) => ({ id: p.id, name: p.name, skill: p.skill, tier: p.tier || 'junior', owner: !!p.owner })),
+        estado, riesgo: roleRisk(estado, best || (dobleRol ? staff.find((p) => p.owner) : null)), dobleRol, sueldo,
+      });
+    });
+    idealWages += wages;
+    const cnt = (e) => roles.filter((r) => r.estado === e && (r.ideal > 0 || r.min > 0)).length;
+    return { roles, wages, idealWages, savings: Math.max(0, idealWages - wages), falta: cnt('falta'), justo: cnt('justo'), completo: cnt('completo') };
+  }
+
+  /* Posiciones de cámara del contrato: las primeras `cams` son obligatorias; hasta 2 más son tomas extra */
+  function positionsFor(c) {
+    const t = EVENT_TYPES[c.type] || EVENT_TYPES.misa;
+    const list = t.positions.slice();
+    const out = [];
+    const N = Math.max(1, c.cams || 1);
+    for (let i = 0; i < N + BALANCE.quality.extraMax; i++) {
+      let p = list[i];
+      if (!p && i >= N) break;
+      if (!p) p = ['extra_' + (i + 1), 'fija'];
+      if (t.sinDron && p[1] === 'aerea') continue;
+      const nk = 'pos.' + c.type + '.' + p[0];
+      const has = Object.prototype.hasOwnProperty.call(TEXTOS, nk);
+      out.push({ key: p[0], perfil: p[1], opcional: i >= N,
+        nombre: has ? tx(nk) : tx('pos.extra', { n: i + 1 }), ideal: has ? tx(nk + '.ideal') : tx('pos.extra.ideal') });
+    }
+    return out;
+  }
+
+  /* Prepara las cámaras usables con sus lentes y accesorios */
+  function readyCams(equip, staff) {
+    const pool = (f) => equip.filter((e) => f(itemOf(e))).sort((a, b) => (itemOf(b).q * 100 + b.condition) - (itemOf(a).q * 100 + a.condition));
+    const lenses = pool((it) => it.cat === 'lens' && it.subtipo !== 'adaptador_lente_box');
+    let adapters = pool((it) => it.subtipo === 'adaptador_lente_box').length;
+    let heavy = pool((it) => it.subtipo === 'soporte_pesado').length;
+    let fiberCap = pool((it) => it.subtipo === 'cable_fibra_smpte').length * 2; // un cable híbrido atiende 2 cámaras
+    let pilots = roleCount(staff, 'piloto_dron');
+    const hasReplay = equip.some((e) => itemOf(e).cat === 'replay');
+    const hasRepOp = roleCount(staff, 'operador_repeticion') > 0;
+    const hasGen = equip.some((e) => itemOf(e).subtipo === 'generador_diesel');
+    const usedLens = new Set();
+    const ready = [], blocked = [];
+    const takeLens = (f) => { const L = lenses.find((l) => !usedLens.has(l.id) && f(itemOf(l))); if (L) usedLens.add(L.id); return L || null; };
+    pool((it) => isCamLike(it)).forEach((e) => {
+      const it = itemOf(e);
+      const rq = it.requiere || [];
+      let clase = CLASE[it.subtipo];
+      let lens = null, box = false, motivo = null;
+      if (it.incluyeLente) {
+        box = isSystem(it); // trae su propio lente (edición VIP)
+      } else if (rq.includes('lente_b4')) {
+        if (isSystem(it) && adapters > 0 && heavy > 0) {
+          lens = takeLens((L) => L.subtipo === 'lente_box' && (!(L.requiere || []).includes('cam_sistema_4k') || it.subtipo === 'sistema_4k' || it.subtipo === 'super_lenta'));
+          if (lens) { box = true; adapters--; heavy--; }
+        }
+        if (!lens) lens = takeLens((L) => L.subtipo === 'lente_eng');
+        if (!lens) motivo = 'sin_lente';
+      } else if (rq.includes('lente_cine')) {
+        lens = takeLens((L) => L.subtipo === 'lente_cine'); if (!lens) motivo = 'sin_lente';
+      } else if (rq.includes('lente_mft')) {
+        lens = takeLens((L) => L.subtipo === 'lente_mft'); if (!lens) motivo = 'sin_lente';
+      }
+      if (!motivo && rq.includes('cable_fibra_smpte') && !it.incluyeFibra) { if (fiberCap > 0) fiberCap--; else motivo = 'sin_fibra'; }
+      if (!motivo && rq.includes('piloto_dron')) { if (pilots > 0) pilots--; else motivo = 'sin_piloto'; }
+      if (!motivo && rq.includes('generador') && !hasGen) motivo = 'sin_generador';
+      if (!motivo && rq.includes('operador_repeticion') && !hasRepOp) motivo = 'sin_operador_repeticion';
+      if (!motivo && rq.includes('servidor_repeticion') && !hasReplay) clase = 'sistema'; // sin servidor la súper lenta es una cámara de sistema normal
+      if (motivo) {
+        if (lens) usedLens.delete(lens.id);
+        blocked.push({ equipId: e.id, tipo: e.type, motivo, texto: tx('bloq.' + motivo, { item: it.name }) });
+        return;
+      }
+      const effQ = lens ? Math.min(it.q, itemOf(lens).q + 1) : it.q;
+      ready.push({ e, it, clase, lens, box, effQ, cond: 0.5 + e.condition / 200,
+        needs: it.alquiler || clase === 'pov' || (clase === 'accion') ? null : clase === 'ptz' ? 'operador_ptz' : clase === 'dron' ? 'piloto_dron' : 'camarografo' });
+    });
+    const usados = [];
+    ready.forEach((r) => { usados.push(r.e.id); if (r.lens) usados.push(r.lens.id); });
+    return { ready, blocked, usedLens };
+  }
+
+  function fitOf(perfil, r) {
+    const row = FIT[perfil] || FIT.fija;
+    let f = row[r.clase] !== undefined ? row[r.clase] : 0.3;
+    if (r.box && (perfil === 'tribuna' || perfil === 'cerrada' || perfil === 'lenta')) f = 1;
+    return f;
+  }
+
+  function cameraPlan(s, c, equipIds, staffIds) {
+    if (!c) return { positions: [], cubiertas: 0, total: 0, ajusteMedio: 0, bloqueados: [], usados: [] };
+    const equip = equipOf(s, equipIds);
+    const staff = staffIds ? staffOf(s, staffIds) : s.staff.slice();
+    return planCams(c, equip, staff);
+  }
+
+  function planCams(c, equip, staff) {
+    const pos = positionsFor(c);
+    const { ready, blocked } = readyCams(equip, staff);
+    const left = ready.slice();
+    const usados = [];
+    const assigned = pos.map((p) => {
+      let best = null, bs = -1;
+      left.forEach((r) => {
+        const f = fitOf(p.perfil, r);
+        const sc = f * (2 + r.effQ) * r.cond;
+        if (sc > bs) { bs = sc; best = r; }
+      });
+      if (best && p.opcional && fitOf(p.perfil, best) < 0.5) best = null;
+      if (best) left.splice(left.indexOf(best), 1);
+      return { p, r: best };
+    });
+    // Accesorios: trípodes, gimbal, steadicam, jib y dolly mejoran el ajuste de su posición
+    const sup = (f) => equip.filter((e) => f(itemOf(e))).length;
+    const S = { tripode: sup((it) => /^tripode/.test(it.subtipo)), gimbal: sup((it) => it.subtipo === 'gimbal'), steadicam: sup((it) => it.subtipo === 'steadicam'),
+      jib: sup((it) => it.subtipo === 'jib'), dolly: sup((it) => it.subtipo === 'dolly') };
+    // Operadores
+    let camOps = roleCount(staff, 'camarografo');
+    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
+    let sysCams = 0;
+    const out = assigned.map(({ p, r }) => {
+      const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional,
+        asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, ajuste: 0, operado: false };
+      if (!r) return o;
+      let fit = fitOf(p.perfil, r);
+      const supOk = !['ptz', 'pov', 'dron', 'grua', 'aerea_cables', 'riel'].includes(r.clase);
+      if (supOk && ['fija', 'tribuna', 'cerrada'].includes(p.perfil) && !r.box && S.tripode > 0) { S.tripode--; fit = Math.min(1, fit + 0.1); }
+      else if (supOk && ['gimbal', 'movil'].includes(p.perfil) && S.gimbal > 0) { S.gimbal--; fit = Math.min(1, fit + 0.15); }
+      else if (supOk && p.perfil === 'hombro' && S.steadicam > 0) { S.steadicam--; fit = Math.min(1, fit + 0.15); }
+      else if (supOk && p.perfil === 'grua' && S.jib > 0) { S.jib--; fit = Math.max(fit, 0.85); }
+      else if (supOk && p.perfil === 'riel' && S.dolly > 0) { S.dolly--; fit = Math.max(fit, 0.85); }
+      let operado = true;
+      if (r.needs === 'camarografo') { if (camOps > 0) camOps--; else operado = false; }
+      else if (r.needs === 'operador_ptz') { if (ptzCap > 0) ptzCap--; else operado = false; }
+      if (isSystem(r.it)) sysCams++;
+      usados.push(r.e.id); if (r.lens) usados.push(r.lens.id);
+      return Object.assign(o, { asignado: r.e.type, equipId: r.e.id, equipo: r.e.nick || r.it.name, lente: r.lens ? r.lens.type : null,
+        q: r.effQ, cond: r.cond, fit: r2(fit), ajuste: r2(fit * (operado ? 1 : 0.5)), operado, box: r.box });
+    });
+    const req = out.filter((p) => !p.opcional);
+    const cubiertas = req.filter((p) => p.asignado).length;
+    return {
+      positions: out, cubiertas, total: req.length,
+      ajusteMedio: req.length ? r2(req.reduce((a, p) => a + p.ajuste, 0) / req.length) : 0,
+      bloqueados: blocked, usados, sistema: sysCams, sinOperador: req.filter((p) => p.asignado && !p.operado).length,
+    };
+  }
 
   /* ---------- Calidad base del evento ---------- */
+  const STORY_SUPPORT_KEY = { lanzamiento: 'parte.apoyo.lanzamiento', ligapro: 'parte.apoyo.ligapro', final: 'parte.apoyo.final' };
   function computeQuality(s, contract, staff, equip) {
+    const Q = BALANCE.quality;
     const parts = [];
-    let q = 25;
-    parts.push(['Base', 25]);
-    const cams = equip.filter((e) => CATALOG[e.type].cat === 'cam');
-    const camOps = staff.filter((p) => p.role === 'cam');
-    const operated = Math.min(cams.length, camOps.length) + 0.5 * Math.max(0, cams.length - camOps.length);
-    const cover = Math.round(25 * Math.min(1, operated / contract.cams));
-    parts.push([`Cámaras cubiertas (${cams.length}/${contract.cams}, ${camOps.length} con operador)`, cover]);
-    q += cover;
-    if (cams.length > camOps.length) parts.push(['Cámaras fijas sin operador (valen la mitad)', 0]);
+    const add = (key, pts, p) => { parts.push([tx(key, p), pts, key]); return pts; };
+    let q = add('parte.base', Q.base);
+    staff = staff.filter((p) => p);
+    equip = equip.filter((e) => CATALOG[e.type]);
+    const diff = contract.diff || 1;
+    const t = EVENT_TYPES[contract.type] || EVENT_TYPES.misa;
+    // Plan de cámaras
+    const plan = planCams(contract, equip, staff);
+    const req = plan.positions.filter((p) => !p.opcional);
+    const N = Math.max(1, req.length);
+    const cover = Math.round(Q.cover * req.reduce((a, p) => a + p.ajuste, 0) / N);
+    q += add('parte.camaras', cover, { a: plan.cubiertas, n: N, p: Math.round(plan.ajusteMedio * 100) });
+    if (plan.sinOperador) parts.push([tx('parte.sin_operador', { n: plan.sinOperador }), 0, 'parte.sin_operador']);
+    plan.bloqueados.slice(0, 3).forEach((b) => parts.push([b.texto, 0, 'bloq.' + b.motivo]));
+    const asg = req.filter((p) => p.asignado);
+    const camQ = asg.length ? asg.reduce((a, p) => a + p.q * p.cond, 0) / asg.length : 0;
+    q += add('parte.calidad_camaras', Math.round(camQ * Q.camPerQ));
+    const extras = plan.positions.filter((p) => p.opcional && p.asignado && p.ajuste >= 0.5).length;
+    if (extras) q += add('parte.extras', Math.min(Q.extraMax, extras) * Q.extraPos, { n: extras });
 
-    const camQ = cams.length ? cams.reduce((a, e) => a + CATALOG[e.type].q * (0.5 + e.condition / 200), 0) / cams.length : 0;
-    const camPts = Math.round(camQ * 4);
-    parts.push(['Calidad de las cámaras', camPts]); q += camPts;
-
-    const has = (cat) => equip.some((e) => CATALOG[e.type].cat === cat);
-    const best = (role) => staff.filter((p) => p.role === role).reduce((m, p) => Math.max(m, p.skill), 0);
-
+    const maxQ = (f) => equip.filter((e) => f(itemOf(e))).reduce((m, e) => Math.max(m, itemOf(e).q), 0);
+    const ob = maxQ((it) => isOB(it));
     if (contract.cams >= 2) {
-      const d = best('dir');
-      const sw = equip.filter((e) => CATALOG[e.type].cat === 'switcher').reduce((m, e) => Math.max(m, CATALOG[e.type].q), 0);
-      let pts;
-      if (d && sw) pts = d * BALANCE.skillPts.dir + sw * 2;
-      else if (sw) pts = 0;
-      else pts = -(6 + contract.diff * 3);
-      parts.push([d && sw ? 'Director con switcher' : sw ? 'Switcher sin director' : 'Sin switcher para mezclar cámaras', pts]);
-      q += pts;
+      const d = bestOf(staff, 'director');
+      const sw = Math.max(maxQ((it) => it.cat === 'switcher'), ob);
+      let pts, key;
+      if (d && sw) { pts = Math.round((d.skill + tierBonus(d)) * Q.dirSkill + sw * Q.swPerQ); key = 'parte.director_switcher'; }
+      else if (sw) { pts = 0; key = 'parte.switcher_sin_director'; }
+      else { pts = -(Q.noSwitcher[0] + diff * Q.noSwitcher[1]); key = 'parte.sin_switcher'; }
+      q += add(key, pts);
     }
     if (contract.audio) {
-      const a = best('audio');
-      const cons = equip.filter((e) => CATALOG[e.type].cat === 'audio').reduce((m, e) => Math.max(m, CATALOG[e.type].q), 0);
-      let pts;
-      if (cons && a) pts = 4 + a * BALANCE.skillPts.audio + cons * 2;
-      else if (cons) pts = 3;
-      else pts = -(6 + contract.diff * 3);
-      if (has('mics')) pts += 3;
-      parts.push([cons ? (a ? 'Sonidista con consola' : 'Consola sin sonidista') : 'Sin consola de audio', Math.round(pts)]);
-      q += pts;
+      const a = bestOf(staff, 'sonidista');
+      const cons = Math.max(maxQ((it) => it.cat === 'audio'), ob ? ob - 1 : 0);
+      let pts, key;
+      if (cons && a) { pts = Q.audioBase + (a.skill + tierBonus(a)) * Q.audioSkill + cons * Q.consPerQ; key = 'parte.sonidista_consola'; }
+      else if (cons) { pts = Q.consOnly; key = 'parte.consola_sin_sonidista'; }
+      else { pts = -(Q.noConsole[0] + diff * Q.noConsole[1]); key = 'parte.sin_consola'; }
+      const mic = maxQ((it) => it.cat === 'mics');
+      if (mic) pts += Q.micBase + mic * Q.micPerQ;
+      q += add(key, Math.round(pts));
     }
     if (contract.stream) {
-      const t = best('stream');
-      const canSend = has('encoder') || has('switcher');
-      let pts;
-      if (canSend && t) pts = 6 + t * BALANCE.skillPts.stream + (has('encoder') ? 2 : 0);
-      else if (canSend) pts = 3;
-      else pts = -(8 + contract.diff * 4);
-      parts.push([canSend ? (t ? 'Técnico de streaming con equipo' : 'Equipo de streaming sin técnico') : 'Sin equipo para transmitir', Math.round(pts)]);
-      q += pts;
+      const tt = bestOf(staff, 'tecnico_transmision');
+      const enc = equip.some((e) => itemOf(e).cat === 'encoder' || itemOf(e).subtipo === 'satelite');
+      const canSend = enc || equip.some((e) => itemOf(e).cat === 'switcher') || ob > 0;
+      let pts, key;
+      if (canSend && tt) { pts = Q.streamBase + (tt.skill + tierBonus(tt)) * Q.streamSkill + (enc ? Q.encoderBonus : 0); key = 'parte.tecnico_equipo'; }
+      else if (canSend) { pts = Q.streamOnly; key = 'parte.equipo_sin_tecnico'; }
+      else { pts = -(Q.noStream[0] + diff * Q.noStream[1]); key = 'parte.sin_equipo_transmision'; }
+      q += add(key, Math.round(pts));
+    }
+    // Repeticiones y gráficos (lo piden los deportes y los eventos con marcador)
+    const rq = crewReq(contract, equip);
+    const special = (role, has, gearQ, kOk, kNoOp, kNone, base, perQ) => {
+      const need = (rq[role] || [0, 0]);
+      const op = bestOf(staff, role);
+      if (!need[1] && !has) return;
+      if (has && op) q += add(kOk, Math.round(base + Math.max(1, gearQ) * perQ + tierBonus(op)));
+      else if (has && !op) q += add(kNoOp, -Q.gearNoOp);
+      else if (need[0] >= 1) q += add(kNone, -(Q.missingSpecial[0] + diff * Q.missingSpecial[1]));
+    };
+    special('operador_repeticion', hasReplayGear(equip), maxQ((it) => it.cat === 'replay'), 'parte.repeticiones', 'parte.repeticiones_sin_operador', 'parte.sin_repeticiones', Q.replayBase, Q.replayPerQ);
+    special('operador_graficos', hasGfxGear(equip), maxQ((it) => it.cat === 'graphics'), 'parte.graficos', 'parte.graficos_sin_operador', 'parte.sin_graficos', Q.gfxBase, Q.gfxPerQ);
+    // Cámaras de sistema: sin shader se ven con colores distintos
+    if (plan.sistema) {
+      if (bestOf(staff, 'shader')) q += add('parte.shader', Q.shaderOk);
+      else q += add('parte.sin_shader', -(Q.shader + plan.sistema * Q.shaderPerCam), { n: plan.sistema });
+    }
+    // Intercom en eventos grandes
+    if (diff >= 4 && contract.cams >= 3) {
+      const ic = equip.some((e) => itemOf(e).cat === 'intercom') || ob > 0;
+      q += add(ic ? 'parte.intercom' : 'parte.sin_intercom', ic ? Q.intercom : -Q.intercom);
+    }
+    // Falta de personal (roles que no se cuentan arriba)
+    const C = BALANCE.crew;
+    const counted = ['camarografo', 'director', 'sonidista', 'tecnico_transmision', 'operador_repeticion', 'operador_graficos', 'shader', 'operador_ptz', 'piloto_dron'];
+    ROLE_KEYS.forEach((role) => {
+      if (counted.includes(role)) return;
+      const need = rq[role];
+      if (!need || !need[1]) return;
+      let a = roleCount(staff, role);
+      if (role === 'productor' && !a && staff.some((p) => p.owner)) a = 1; // el dueño hace de productor
+      if (a < need[0]) {
+        const miss = Math.min(C.faltaCap, need[0] - a);
+        q += add('parte.falta_rol', -Math.round(miss * (C.falta + diff * C.faltaDiff)), { rol: ROLES[role].name, a, min: need[0] });
+      } else if (a < need[1] && diff >= C.justoMinDiff) {
+        q += add('parte.justo_rol', -C.justo, { rol: ROLES[role].name, a, ideal: need[1] });
+      }
+    });
+    // Contrato internacional: lo que no cumples (sin contar lo obligatorio) resta
+    if (contract.internacional && INTL_KINDS[contract.kind]) {
+      const ctx = { c: contract, staff, equip };
+      INTL_KINDS[contract.kind].requisitos.forEach((k) => {
+        const R = REQUISITOS[k];
+        if (!R.obligatorio && !R.ok(ctx, INTL_KINDS[contract.kind])) q += add('parte.req_intl', -Q.intlReq, { req: tx('req.' + k, R.params ? R.params(INTL_KINDS[contract.kind]) : null) });
+      });
     }
     const avgSkill = staff.length ? staff.reduce((a, p) => a + p.skill, 0) / staff.length : 0;
-    const sk = Math.round(avgSkill * BALANCE.skillPts.team);
-    parts.push(['Experiencia del equipo', sk]); q += sk;
+    q += add('parte.experiencia', Math.round(avgSkill * BALANCE.skillPts.team));
     // Ánimo: un equipo cansado o molesto trabaja peor (el dueño no cuenta)
     const hiredStaff = staff.filter((p) => !p.owner);
     if (hiredStaff.length) {
       const M = BALANCE.morale;
       const avgMorale = hiredStaff.reduce((a, p) => a + p.morale, 0) / hiredStaff.length;
       const mp = clamp(Math.round((avgMorale - M.neutral) / M.perPoint), M.min, M.max);
-      if (mp) { parts.push([mp < 0 ? 'Equipo cansado o desmotivado' : 'Equipo con buen ánimo', mp]); q += mp; }
+      if (mp) q += add(mp < 0 ? 'parte.cansado' : 'parte.animo', mp);
     }
-    const dp = -BALANCE.diffPenalty[clamp(contract.diff, 1, 5)];
-    parts.push([`Dificultad del evento (${contract.diff})`, dp]); q += dp;
+    q += add('parte.dificultad', -BALANCE.diffPenalty[clamp(diff, 1, 5)], { n: diff });
     const sup = contract.story ? (BALANCE.storySupport[contract.type] || 0) : 0;
-    if (sup) { parts.push([STORY_SUPPORT_TEXT[contract.type] || 'Apoyo especial del cliente', sup]); q += sup; }
-    const ex = -Math.round((s.rep || 0) * BALANCE.expectPerRep);
-    if (ex) { parts.push(['Lo que esperan de una productora con tu fama', ex]); q += ex; }
-    return { q: clamp(Math.round(q), 0, 100), parts };
+    if (sup) q += add(STORY_SUPPORT_KEY[contract.type] || 'parte.apoyo', sup);
+    const ex = -Math.round((s.rep || 0) * (BALANCE.expectPerRep + BALANCE.expectSmall * (5 - clamp(diff, 1, 5))));
+    if (ex) q += add('parte.fama', ex);
+    if (t.sensible) parts.push([tx('parte.sensible'), 0, 'parte.sensible']);
+    const qq = clamp(Math.round(q), 0, 100);
+    return { q: qq, parts, cameraPlan: plan, rango: qualityRange(s, contract, qq, equip, staff) };
   }
 
-  /* Elegir automáticamente lo mejor para un evento */
+  /* Rango esperado de la calidad final: la base más lo que suelen restar los imprevistos y la suerte.
+     { min, max, esperado, imprevistos } (imprevistos = cuántos se esperan) */
+  function qualityRange(s, c, q, equip, staff) {
+    const BI = BALANCE.incidents, K = BALANCE.risk;
+    const diff = clamp(c.diff || 1, 1, 5);
+    if (inTutorial(s)) return { min: clamp(q - 12, 0, 100), max: clamp(q + 5, 0, 100), esperado: clamp(q - 3, 0, 100), imprevistos: 1 };
+    const crew = crewPlanOf(c, staff, equip);
+    const falta = crew.roles.filter((r) => r.estado === 'falta' && r.min > 0).length;
+    const worn = equip.some((e) => e.condition < BALANCE.worn) ? 1 : 0;
+    const n = Math.min(BI.max, BI.byDiff[diff] + worn + BI.extraChance + (falta ? K.extraIncident : 0));
+    let sev = 1 + BI.severityPerDiff * (diff - 1);
+    if ((EVENT_TYPES[c.type] || {}).sensible) sev *= BALANCE.sensible;
+    const riskAvg = crew.roles.length ? crew.roles.reduce((a, r) => a + r.riesgo, 0) / crew.roles.length : K.base;
+    const per = -(2.2 + 10 * riskAvg) * sev; // lo que suele restar cada imprevisto (medido con el bot)
+    const L = Math.max(0, Math.round(BALANCE.luck[0] + BALANCE.luck[1] * diff));
+    return {
+      min: clamp(Math.round(q + n * -12 * sev - L), 0, 100),
+      max: clamp(Math.round(q + Math.min(2, n) * 5 + L), 0, 100),
+      esperado: clamp(Math.round(q + n * per), 0, 100),
+      imprevistos: Math.round(n * 10) / 10,
+    };
+  }
+
+  /* Elegir automáticamente lo mejor para un evento: la plantilla ideal y lo que pide el plan de cámaras */
   function suggestLoadout(s, contractId) {
     const c = s.contracts.find((x) => x.id === contractId);
     if (!c) return { staffIds: [], equipIds: [] };
-    const sortedStaff = (role) => s.staff.filter((p) => p.role === role).sort((a, b) => b.skill - a.skill);
+    // Sin operador de robóticas, las PTZ se quedan en la bodega (salvo que no haya otra cámara)
+    const hasR = (r) => s.staff.some((p) => normRole(p.role) === r);
+    const skip = (it) => CLASE[it.subtipo] === 'ptz' && !hasR('operador_ptz');
+    let avail = s.equip.filter((e) => CATALOG[e.type]);
+    const camsOk = avail.filter((e) => isCamLike(itemOf(e)) && !skip(itemOf(e)));
+    if (camsOk.length) avail = avail.filter((e) => !isCamLike(itemOf(e)) || !skip(itemOf(e)));
+    // Equipos: primero las cámaras (con lentes, fibra y soportes), luego el resto
+    const req0 = crewReq(c, []);
+    const staffAll = s.staff.slice();
+    const plan = planCams(c, avail, staffAll);
+    const equipIds = plan.usados.slice();
+    const byCat = (f) => avail.filter((e) => !equipIds.includes(e.id) && f(itemOf(e)))
+      .sort((a, b) => (itemOf(b).q * 100 + b.condition) - (itemOf(a).q * 100 + a.condition));
+    const take = (f, n) => byCat(f).slice(0, n || 1).forEach((e) => equipIds.push(e.id));
+    const usedEq = () => avail.filter((e) => equipIds.includes(e.id));
+    // Accesorios de las cámaras usadas
+    const cams = usedEq().filter((e) => isCamLike(itemOf(e)));
+    const sys = cams.filter((e) => isSystem(itemOf(e)) && !itemOf(e).incluyeFibra).length;
+    if (sys) take((it) => it.subtipo === 'cable_fibra_smpte', Math.ceil(sys / 2));
+    const boxes = plan.positions.filter((p) => p.box && p.lente).length;
+    if (boxes) { take((it) => it.subtipo === 'adaptador_lente_box', boxes); take((it) => it.subtipo === 'soporte_pesado', boxes); }
+    const perf = (k) => plan.positions.filter((p) => p.asignado && p.perfil === k).length;
+    take((it) => /^tripode/.test(it.subtipo), perf('fija') + perf('tribuna') + perf('cerrada'));
+    take((it) => it.subtipo === 'gimbal', perf('gimbal') + perf('movil'));
+    take((it) => it.subtipo === 'steadicam', perf('hombro'));
+    take((it) => it.subtipo === 'jib', perf('grua'));
+    take((it) => it.subtipo === 'dolly', perf('riel'));
+    if (c.cams >= 2 || c.stream) take((it) => it.cat === 'switcher');
+    if (c.diff >= 3) take((it) => isOB(it));
+    if (c.audio) { take((it) => it.cat === 'audio'); take((it) => it.cat === 'mics' && !(it.requiere || []).length); }
+    if (c.audio && (req0.microfonista || [0, 0])[1] > 0 && s.staff.some((p) => normRole(p.role) === 'microfonista')) take((it) => it.cat === 'mics' && (it.requiere || []).includes('microfonista'));
+    if (c.stream) { take((it) => it.cat === 'encoder'); take((it) => it.cat === 'internet'); }
+    if (c.stream && c.diff >= 4) take((it) => it.subtipo === 'satelite');
+    const has = (r) => s.staff.some((p) => normRole(p.role) === r);
+    if ((req0.operador_repeticion || [0, 0])[1] > 0 && has('operador_repeticion')) take((it) => it.cat === 'replay');
+    if ((req0.operador_graficos || [0, 0])[1] > 0 && has('operador_graficos')) take((it) => it.cat === 'graphics');
+    if (c.diff >= 3 && c.cams >= 3) take((it) => it.cat === 'intercom');
+    if (c.diff >= 3 && cams.length >= 3) take((it) => it.subtipo === 'multiviewer');
+    if (sys && has('shader')) take((it) => it.subtipo === 'referencia');
+    if (perf('hombro') && c.diff >= 3) take((it) => it.cat === 'wireless');
+    take((it) => it.cat === 'power' && (c.outdoor ? it.subtipo !== 'ups' : true));
+    if (c.outdoor) take((it) => it.cat === 'rain');
+    if (c.internacional && c.travelDays) take((it) => it.cat === 'case');
+    if (c.internacional) {
+      const K = INTL_KINDS[c.kind];
+      if (K && K.requisitos.includes('encoder2')) take((it) => it.cat === 'encoder');
+      if (K && K.requisitos.includes('diadema')) take((it) => it.subtipo === 'diadema_comentarista');
+    }
+    // Personal: la plantilla ideal con lo que llevas (los mejores de cada rol)
+    const req = crewReq(c, usedEq());
     const staffIds = [];
-    sortedStaff('cam').slice(0, c.cams).forEach((p) => staffIds.push(p.id));
-    if (c.cams >= 2) sortedStaff('dir').slice(0, 1).forEach((p) => staffIds.push(p.id));
-    if (c.audio) sortedStaff('audio').slice(0, 1).forEach((p) => staffIds.push(p.id));
-    if (c.stream) sortedStaff('stream').slice(0, 1).forEach((p) => staffIds.push(p.id));
-    const byCat = (cat) => s.equip.filter((e) => CATALOG[e.type].cat === cat)
-      .sort((a, b) => (CATALOG[b.type].q * 100 + b.condition) - (CATALOG[a.type].q * 100 + a.condition));
-    const equipIds = [];
-    byCat('cam').slice(0, c.cams).forEach((e) => equipIds.push(e.id));
-    if (c.cams >= 2 || c.stream) byCat('switcher').slice(0, 1).forEach((e) => equipIds.push(e.id));
-    if (c.audio) { byCat('audio').slice(0, 1).forEach((e) => equipIds.push(e.id)); byCat('mics').slice(0, 1).forEach((e) => equipIds.push(e.id)); }
-    if (c.stream) { byCat('encoder').slice(0, 1).forEach((e) => equipIds.push(e.id)); byCat('internet').slice(0, 1).forEach((e) => equipIds.push(e.id)); }
-    byCat('power').slice(0, 1).forEach((e) => equipIds.push(e.id));
-    if (c.outdoor) byCat('rain').slice(0, 1).forEach((e) => equipIds.push(e.id));
+    const owner = s.staff.find((p) => p.owner);
+    if (owner) staffIds.push(owner.id);
+    ROLE_KEYS.forEach((role) => {
+      const need = (req[role] || [0, 0])[1];
+      if (!need) return;
+      const already = staffIds.filter((id) => normRole(s.staff.find((p) => p.id === id).role) === role).length;
+      s.staff.filter((p) => !p.owner && normRole(p.role) === role)
+        .sort((a, b) => (b.skill + tierBonus(b)) - (a.skill + tierBonus(a)))
+        .slice(0, Math.max(0, need - already)).forEach((p) => staffIds.push(p.id));
+    });
     return { staffIds, equipIds };
   }
 
-  /* ---------- Imprevistos ---------- */
-  // Cada imprevisto: cuándo puede pasar, qué texto muestra y qué opciones hay.
-  // "need" devuelve null si la opción se puede usar, o el motivo si no.
-  const camsOf = (ev) => ev.equip.filter((e) => CATALOG[e.type].cat === 'cam');
-  const hasCat = (ev, cat) => ev.equip.some((e) => CATALOG[e.type].cat === cat);
-  const bestRole = (ev, role) => ev.staff.filter((p) => p.role === role).sort((a, b) => b.skill - a.skill)[0];
+  /* =========================================================
+     IMPREVISTOS
+     Cada imprevisto: rol (de quién depende), cuándo puede pasar, peso y opciones.
+     Los textos están en datos.js: inc.<clave>.t (y variantes), inc.<clave>.o<n> (opciones), inc.<clave>.r.<x> (resultados).
+     "need" devuelve null si la opción se puede usar, o [clave, params] con el motivo.
+     ========================================================= */
+  const camsOf = (ev) => ev.equip.filter((e) => isCamLike(itemOf(e)));
+  const hasCat = (ev, cat) => ev.equip.some((e) => itemOf(e).cat === cat);
+  const hasSub = (ev, f) => ev.equip.some((e) => f(itemOf(e)));
+  const bestRole = (ev, role) => bestOf(ev.staff, normRole(role));
+  const R = (q, k, p) => ({ q, k, p: p || null, msg: tx(k, p) });
+  const NEED = (k, p) => [k, p || null];
+  const isSport = (ev) => !!(EVENT_TYPES[ev.contract.type] || {}).deporte;
+  const isFutbol = (ev) => ['barrial', 'ligapro', 'final', 'internacional_host'].includes(ev.contract.type);
+  const isRing = (ev) => ['boxeo', 'lucha_libre'].includes(ev.contract.type);
+  const isFuneral = (ev) => !!(EVENT_TYPES[ev.contract.type] || {}).sensible;
+  const isIRL = (ev) => ev.contract.type === 'irl';
+  const tplHas = (ev, role) => ((crewReq(ev.contract, ev.equip)[role] || [0, 0])[1] > 0);
+  const canReplay = (s, ev) => (bestRole(ev, 'operador_repeticion') && hasReplayGear(ev.equip)) || (bestRole(ev, 'director') && hasSub(ev, (it) => it.cat === 'switcher' && it.q >= 3));
 
   const INCIDENTS = {
     cable: {
+      rol: 'cablero',
       weight: (s, ev) => 3 + camsOf(ev).length * 0.5,
-      when: (s, ev) => camsOf(ev).length > 0,
+      when: (s, ev) => camsOf(ev).length > 0 && !isIRL(ev),
       setup: (s, ev) => ({ cam: randInt(s, 1, camsOf(ev).length) }),
-      text: (ev, x) => `🔌 ¡Se rompió el cable de la Cámara ${x.cam}! Esa cámara se quedó sin señal.`,
+      text: (ev, x) => ['inc.cable.t', { cam: x.cam }],
       choices: [
-        { label: 'Cambiarlo por un cable de repuesto', need: (s) => (s.stock.cable > 0 ? null : 'No tienes cables de repuesto'),
-          run: (s) => { s.stock.cable--; return { q: -1, msg: 'Cambiaste el cable en 30 segundos. Casi nadie lo notó.' }; } },
-        { label: 'Mandar a alguien a comprar uno ($60)', need: (s) => (s.money >= 60 ? null : 'No tienes $60'),
-          run: (s) => { s.money -= 60; return { q: -8, msg: 'Tardaron 20 minutos en volver. Se perdió parte del evento.' }; } },
-        { label: 'Seguir sin esa cámara', run: () => ({ q: -12, msg: 'El resto del evento se vio con menos ángulos. El cliente lo notó.' }) },
+        { need: (s) => (s.stock.cable > 0 ? null : NEED('need.cable')), run: (s) => { s.stock.cable--; return R(-1, 'inc.cable.r0'); } },
+        { need: (s) => (s.money >= 60 ? null : NEED('need.dinero', { monto: money(60) })), run: (s) => { s.money -= 60; return R(-8, 'inc.cable.r1'); } },
+        { run: () => R(-12, 'inc.cable.r2') },
+      ],
+    },
+    cable_pisado: {
+      rol: 'cablero',
+      weight: (s, ev) => 2 + camsOf(ev).length * 0.4,
+      when: (s, ev) => camsOf(ev).length >= 2 && ev.contract.diff >= 2,
+      setup: (s, ev) => ({ cam: randInt(s, 1, camsOf(ev).length) }),
+      text: (ev, x) => ['inc.cable_pisado.t', { cam: x.cam }],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'cablero') ? null : NEED('need.rol', { rol: ROLES.cablero.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'cablero'), (p) => R(-1, 'inc.cable_pisado.r0', { nombre: p.name }), (p) => R(-6, 'inc.cable_pisado.r1', { nombre: p.name })) },
+        { need: (s) => (s.stock.cable > 0 ? null : NEED('need.cable')), run: (s) => { s.stock.cable--; return R(-4, 'inc.cable_pisado.r2'); } },
+        { run: () => R(-11, 'inc.cable_pisado.r3') },
       ],
     },
     internet: {
+      rol: 'tecnico_transmision',
       weight: () => 4,
-      when: (s, ev) => ev.contract.stream,
-      text: () => '📡 ¡Se cayó el internet del lugar en plena transmisión!',
+      when: (s, ev) => ev.contract.stream && !isIRL(ev),
+      text: () => ['inc.internet.t'],
       choices: [
-        { label: 'Pasar al router 4G de respaldo', need: (s, ev) => (hasCat(ev, 'internet') ? null : 'No trajiste router 4G'),
-          run: () => ({ q: -2, msg: 'La transmisión siguió con un pequeño corte de 5 segundos. ¡Bien preparado!' }) },
-        { label: 'Compartir datos del celular', run: (s) => (chance(s, 0.5)
-          ? { q: -5, msg: 'Funcionó, aunque la imagen se pixeló un rato.' }
-          : { q: -15, msg: 'La señal del celular no aguantó. La transmisión se cortó varias veces.' }) },
-        { label: 'Grabar y subir el video después', run: () => ({ q: -18, msg: 'El cliente quería en vivo. Quedó molesto.' }) },
+        { need: (s, ev) => (hasCat(ev, 'internet') || hasSub(ev, (it) => /bonding/.test(it.subtipo)) ? null : NEED('need.internet')),
+          run: (s) => { s.money -= 30; return R(-2, 'inc.internet.r0', { monto: money(30) }); } },
+        { run: (s) => { const r = rnd(s); return r < 0.2 ? R(0, 'inc.internet.r4') : r < 0.5 ? R(-5, 'inc.internet.r1') : R(-15, 'inc.internet.r2'); } },
+        { run: () => R(-18, 'inc.internet.r3') },
+      ],
+    },
+    cobertura: { // IRL: en la calle la señal del celular va y viene
+      rol: 'tecnico_transmision',
+      weight: () => 7,
+      when: (s, ev) => isIRL(ev),
+      text: () => ['inc.cobertura.t'],
+      choices: [
+        { need: (s, ev) => (hasSub(ev, (it) => /bonding/.test(it.subtipo)) ? null : NEED('need.bonding')), run: () => R(-1, 'inc.cobertura.r0') },
+        { need: (s, ev) => (hasCat(ev, 'internet') ? null : NEED('need.internet')), run: (s) => (chance(s, 0.6) ? R(-4, 'inc.cobertura.r1') : R(-9, 'inc.cobertura.r2')) },
+        { run: () => R(-12, 'inc.cobertura.r3') },
+      ],
+    },
+    senal_irl: {
+      rol: 'tecnico_transmision',
+      weight: () => 5,
+      when: (s, ev) => isIRL(ev),
+      text: () => ['inc.senal_irl.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'tecnico_transmision') ? null : NEED('need.rol', { rol: ROLES.tecnico_transmision.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'tecnico_transmision'), (p) => R(1, 'inc.senal_irl.r0', { nombre: p.name }), (p) => R(-7, 'inc.senal_irl.r1', { nombre: p.name })) },
+        { run: () => R(-8, 'inc.senal_irl.r2') },
       ],
     },
     luz: {
+      rol: 'runner',
       weight: () => 2,
-      when: () => true,
-      text: () => '⚡ ¡Se fue la luz en el lugar!',
+      when: (s, ev) => !isIRL(ev),
+      text: () => ['inc.luz.t'],
       choices: [
-        { label: 'Usar la UPS de respaldo', need: (s, ev) => (hasCat(ev, 'power') ? null : 'No trajiste UPS'),
-          run: () => ({ q: -1, msg: 'Tus equipos ni se apagaron. El cliente quedó impresionado.' }) },
-        { label: 'Alquilar un generador ($150)', need: (s) => (s.money >= 150 ? null : 'No tienes $150'),
-          run: (s) => { s.money -= 150; return { q: -5, msg: 'En 15 minutos estabas otra vez al aire.' }; } },
-        { label: 'Esperar que regrese la luz', run: (s) => (chance(s, 0.4)
-          ? { q: -6, msg: 'Volvió rápido. Tuviste suerte.' }
-          : { q: -16, msg: 'Pasó media hora sin luz. Se perdió una parte importante.' }) },
+        { need: (s, ev) => (hasCat(ev, 'power') ? null : NEED('need.power')), run: (s, ev) => {
+          const u = ev.equip.find((e) => itemOf(e).cat === 'power'); const real = u && s.equip.find((e) => e.id === u.id);
+          if (real) real.condition = clamp(real.condition - 15, 1, 100);
+          return R(-1, 'inc.luz.r0'); } },
+        { need: (s) => (s.money >= 150 ? null : NEED('need.dinero', { monto: money(150) })), run: (s) => { s.money -= 150; return R(-5, 'inc.luz.r1'); } },
+        { run: (s) => { const r = rnd(s); return r < 0.15 ? R(1, 'inc.luz.r4') : r < 0.4 ? R(-6, 'inc.luz.r2') : R(-16, 'inc.luz.r3'); } },
       ],
     },
     lluvia: {
       weight: () => 5,
       when: (s, ev) => ev.contract.outdoor,
-      text: () => '🌧️ ¡Empezó a llover fuerte y las cámaras están al aire libre!',
+      text: () => ['inc.lluvia.t'],
       choices: [
-        { label: 'Poner los cobertores de lluvia', need: (s, ev) => (hasCat(ev, 'rain') ? null : 'No trajiste cobertores'),
-          run: () => ({ q: -2, msg: 'Las cámaras siguieron grabando sin problema.' }) },
-        { label: 'Cubrirlas con fundas de plástico', run: (s, ev) => {
-          if (chance(s, 0.4)) {
-            const c = pick(s, camsOf(ev));
+        { need: (s, ev) => (hasCat(ev, 'rain') ? null : NEED('need.rain')), run: (s, ev) => {
+          const u = ev.equip.find((e) => itemOf(e).cat === 'rain'); const real = u && s.equip.find((e) => e.id === u.id);
+          if (real) real.condition = clamp(real.condition - 20, 1, 100);
+          return R(-2, 'inc.lluvia.r0'); } },
+        { run: (s, ev) => {
+          const cs = camsOf(ev);
+          if (cs.length && chance(s, 0.4)) {
+            const c = pick(s, cs);
             c.condition = clamp(c.condition - 30, 5, 100);
-            return { q: -8, msg: `Entró agua a una cámara (${CATALOG[c.type].name}). Quedó dañada.` };
+            return R(-8, 'inc.lluvia.r1', { item: itemOf(c).name });
           }
-          return { q: -5, msg: 'Las fundas aguantaron, aunque la imagen salió con gotas.' };
+          return R(-5, 'inc.lluvia.r2');
         } },
-        { label: 'Mover las cámaras bajo techo', run: () => ({ q: -12, msg: 'Desde el techo no se veía bien la acción.' }) },
+        { run: () => R(-12, 'inc.lluvia.r3') },
       ],
     },
     tarde: {
+      rol: 'camarografo',
       weight: () => 2.5,
-      when: (s, ev) => ev.staff.some((p) => p.role === 'cam' && !p.owner),
-      setup: (s, ev) => ({ who: pick(s, ev.staff.filter((p) => p.role === 'cam' && !p.owner)).id }),
-      text: (ev, x) => `⏰ ${(ev.staff.find((p) => p.id === x.who) || { name: 'Tu camarógrafo' }).name} llegó tarde y el evento ya empieza.`,
+      when: (s, ev) => ev.staff.some((p) => normRole(p.role) === 'camarografo' && !p.owner),
+      setup: (s, ev) => ({ who: pick(s, ev.staff.filter((p) => normRole(p.role) === 'camarografo' && !p.owner)).id }),
+      text: (ev, x) => ['inc.tarde.t', { nombre: (ev.staff.find((p) => p.id === x.who) || { name: tx('persona.tu_camarografo') }).name }],
       choices: [
-        { label: 'Empezar con una cámara menos', run: () => ({ q: -6, msg: 'Los primeros minutos se cubrieron con menos ángulos.' }) },
-        { label: 'Pedir al cliente esperar 10 minutos', run: (s) => (chance(s, 0.5)
-          ? { q: -2, msg: 'El cliente aceptó de buena gana.' }
-          : { q: -8, msg: 'El cliente se molestó por el retraso.' }) },
-        { label: 'Tú cubres su cámara y le llamas la atención', run: (s, ev, x) => {
+        { run: () => R(-6, 'inc.tarde.r0') },
+        { run: (s) => { const r = rnd(s); return r < 0.15 ? R(2, 'inc.tarde.r4') : r < 0.5 ? R(-2, 'inc.tarde.r1') : R(-8, 'inc.tarde.r2'); } },
+        { run: (s, ev, x) => {
           const p = s.staff.find((y) => y.id === x.who);
           if (p) p.morale = clamp(p.morale - 15, 0, 100);
-          return { q: -3, msg: 'Salvaste el inicio, pero tu camarógrafo quedó resentido (moral -15).' };
+          return R(-3, 'inc.tarde.r3');
         } },
       ],
     },
     acople: {
+      rol: 'sonidista',
       weight: () => 3,
       when: (s, ev) => ev.contract.audio,
-      text: () => '🔊 ¡Un acople! Un pitido fuerte sale por los parlantes y la transmisión.',
+      text: () => ['inc.acople.t'],
       choices: [
-        { label: 'Que el sonidista lo arregle', need: (s, ev) => (bestRole(ev, 'audio') ? null : 'No trajiste sonidista'),
-          run: (s, ev) => { const p = bestRole(ev, 'audio'); return { q: Math.round(-8 + p.skill * 1.8), msg: `${p.name} ajustó la ecualización en segundos.` }; } },
-        { label: 'Bajar todo el volumen', run: () => ({ q: -6, msg: 'Se quitó el pitido, pero el audio quedó muy bajo.' }) },
-        { label: 'Ignorarlo y seguir', run: () => ({ q: -14, msg: 'El pitido volvió varias veces. Se quejaron en los comentarios.' }) },
+        { need: (s, ev) => (bestRole(ev, 'sonidista') ? null : NEED('need.rol', { rol: ROLES.sonidista.name })),
+          run: (s, ev) => { const p = bestRole(ev, 'sonidista'); return R(Math.round(-8 + (p.skill + tierBonus(p)) * 1.8), 'inc.acople.r0', { nombre: p.name }); } },
+        { run: () => R(-6, 'inc.acople.r1') },
+        { run: () => R(-14, 'inc.acople.r2') },
+      ],
+    },
+    entrevista: {
+      rol: 'microfonista',
+      weight: () => 2.5,
+      when: (s, ev) => ev.contract.audio && !!(EVENT_TYPES[ev.contract.type] || {}).entrevistas,
+      text: () => ['inc.entrevista.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'microfonista') ? null : NEED('need.rol', { rol: ROLES.microfonista.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'microfonista'), (p) => R(3, 'inc.entrevista.r0', { nombre: p.name }), (p) => R(-4, 'inc.entrevista.r1', { nombre: p.name })) },
+        { need: (s, ev) => (hasCat(ev, 'mics') ? null : NEED('need.mics')), run: () => R(-4, 'inc.entrevista.r2') },
+        { run: () => R(-10, 'inc.entrevista.r3') },
       ],
     },
     bateria: {
+      rol: 'cablero',
       weight: () => 2.5,
       when: (s, ev) => camsOf(ev).length > 0,
-      text: () => '🪫 Una cámara se quedó sin batería en el mejor momento.',
+      text: () => ['inc.bateria.t'],
       choices: [
-        { label: 'Poner una batería extra', need: (s) => (s.stock.battery > 0 ? null : 'No tienes baterías extra'),
-          run: (s) => { s.stock.battery--; return { q: -1, msg: 'Cambio rápido. ¡Nadie se dio cuenta!' }; } },
-        { label: 'Conectarla con una extensión', run: () => ({ q: -5, msg: 'Funcionó, pero la cámara quedó sin poder moverse.' }) },
-        { label: 'Seguir sin esa cámara', run: () => ({ q: -10, msg: 'Se perdieron tomas importantes.' }) },
+        { need: (s) => (s.stock.battery > 0 ? null : NEED('need.battery')), run: (s) => { s.stock.battery--; return R(-1, 'inc.bateria.r0'); } },
+        { run: () => R(-5, 'inc.bateria.r1') },
+        { run: () => R(-10, 'inc.bateria.r2') },
       ],
     },
     logo: {
+      rol: 'operador_graficos',
       weight: () => 2,
-      when: (s, ev) => ev.contract.diff >= 2,
-      text: () => '📣 El cliente pide a última hora poner su logo en pantalla y pasar un video publicitario.',
+      when: (s, ev) => ev.contract.diff >= 2 && !isFuneral(ev),
+      text: () => ['inc.logo.t'],
       choices: [
-        { label: 'Que el director lo haga en vMix', need: (s, ev) => (bestRole(ev, 'dir') && hasCat(ev, 'switcher') ? null : 'Necesitas director y switcher'),
-          run: (s, ev) => { const p = bestRole(ev, 'dir'); return p.skill >= 3
-            ? { q: 6, msg: `${p.name} lo montó en 2 minutos. ¡El cliente feliz!` }
-            : { q: -2, msg: `${p.name} lo hizo, pero el logo quedó mal ubicado.` }; } },
-        { label: 'Decir amablemente que no se puede', run: () => ({ q: -4, msg: 'El cliente entendió, pero no le gustó.' }) },
-        { label: 'Improvisar como se pueda', run: (s) => (chance(s, 0.4)
-          ? { q: 3, msg: 'Salió mejor de lo esperado.' }
-          : { q: -8, msg: 'El video se vio sin audio. Momento incómodo.' }) },
+        { need: (s, ev) => (bestRole(ev, 'operador_graficos') && hasGfxGear(ev.equip) ? null : NEED('need.graficos')),
+          run: (s, ev) => { const p = bestRole(ev, 'operador_graficos'); return p.skill + tierBonus(p) >= 2.5 ? R(6, 'inc.logo.r0', { nombre: p.name }) : R(-2, 'inc.logo.r1', { nombre: p.name }); } },
+        { need: (s, ev) => (bestRole(ev, 'director') && hasCat(ev, 'switcher') ? null : NEED('need.director_switcher')),
+          run: (s, ev) => { const p = bestRole(ev, 'director'); return p.skill >= 3 ? R(4, 'inc.logo.r2', { nombre: p.name }) : R(-3, 'inc.logo.r3', { nombre: p.name }); } },
+        { run: (s) => (chance(s, 0.4) ? R(3, 'inc.logo.r5') : R(-8, 'inc.logo.r6')) },
+      ],
+    },
+    marcador: {
+      rol: 'operador_graficos',
+      weight: () => 2.5,
+      when: (s, ev) => isSport(ev) && ev.contract.diff >= 2,
+      text: (ev) => [isRing(ev) ? 'inc.marcador.t.ring' : 'inc.marcador.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'operador_graficos') && hasGfxGear(ev.equip) ? null : NEED('need.graficos')),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_graficos'), (p) => R(1, 'inc.marcador.r0', { nombre: p.name }), (p) => R(-5, 'inc.marcador.r1', { nombre: p.name })) },
+        { run: () => R(-9, 'inc.marcador.r2') },
       ],
     },
     falla: {
-      weight: (s, ev) => 6,
+      weight: () => 6,
       when: (s, ev) => ev.equip.some((e) => e.condition < BALANCE.worn),
       setup: (s, ev) => ({ eq: pick(s, ev.equip.filter((e) => e.condition < BALANCE.worn)).id }),
-      text: (ev, x) => `🛠️ ¡${CATALOG[(ev.equip.find((e) => e.id === x.eq) || { type: 'cam_basic' }).type].name} empezó a fallar! Está muy gastada.`,
+      text: (ev, x) => ['inc.falla.t', { item: itemOf(ev.equip.find((e) => e.id === x.eq) || { type: 'cam_basic' }).name }],
       choices: [
-        { label: 'Reiniciarla y cruzar los dedos', run: (s) => (chance(s, 0.5)
-          ? { q: -2, msg: 'Volvió a funcionar. Uf.' }
-          : { q: -14, msg: 'No volvió a prender. Perdiste ese equipo para el resto del evento.' }) },
-        { label: 'Darle unos golpecitos', run: (s, ev, x) => {
+        { run: (s) => (chance(s, 0.5) ? R(-2, 'inc.falla.r0') : R(-14, 'inc.falla.r1')) },
+        { run: (s, ev, x) => {
           const e = s.equip.find((y) => y.id === x.eq);
           if (e) e.condition = clamp(e.condition - 10, 1, 100);
-          return chance(s, 0.3) ? { q: -3, msg: '¡Funcionó! Pero quedó más dañada.' } : { q: -12, msg: 'Empeoró. Lección: hay que reparar el equipo.' };
+          return chance(s, 0.3) ? R(-3, 'inc.falla.r2') : R(-12, 'inc.falla.r3');
         } },
-        { label: 'Apagarla y seguir sin ella', run: () => ({ q: -9, msg: 'Seguiste con lo que quedaba.' }) },
+        { run: () => R(-9, 'inc.falla.r4') },
       ],
     },
     epico: {
+      rol: 'operador_repeticion',
       weight: () => 2.5,
-      when: () => true,
-      text: (ev) => (['barrial', 'ligapro', 'final'].includes(ev.contract.type)
-        ? '⚽ ¡GOLAZO de media cancha! Es el momento más épico del partido.'
-        : '✨ ¡Momento épico! Todos lloran de emoción y tus cámaras lo captaron.'),
+      when: (s, ev) => !isFuneral(ev),
+      text: (ev) => [isFutbol(ev) ? 'inc.epico.t.futbol' : isRing(ev) ? 'inc.epico.t.ring' : ev.contract.type === 'concierto' ? 'inc.epico.t.concierto'
+        : ev.contract.type === 'boda' ? 'inc.epico.t.boda' : isIRL(ev) ? 'inc.epico.t.irl' : 'inc.epico.t'],
       choices: [
-        { label: 'Repetición en cámara lenta', need: (s, ev) => (bestRole(ev, 'dir') && hasCat(ev, 'switcher') ? null : 'Necesitas director y switcher'),
-          run: () => ({ q: 9, msg: '¡La repetición se volvió viral en redes!' }) },
-        { label: 'Hacer zoom al rostro de la gente', need: (s, ev) => (camsOf(ev).length >= 2 ? null : 'Necesitas 2 cámaras o más'),
-          run: () => ({ q: 5, msg: 'Toma emotiva. El cliente la va a usar en sus redes.' }) },
-        { label: 'Seguir normal', run: () => ({ q: 2, msg: 'Quedó bien grabado.' }) },
+        { need: (s, ev) => (canReplay(s, ev) ? null : NEED('need.repeticion')), run: () => R(9, 'inc.epico.r0') },
+        { need: (s, ev) => (camsOf(ev).length >= 2 ? null : NEED('need.dos_camaras')), run: () => R(5, 'inc.epico.r1') },
+        { run: () => R(2, 'inc.epico.r2') },
+      ],
+    },
+    sin_repeticion: {
+      rol: 'operador_repeticion',
+      weight: () => 3,
+      when: (s, ev) => isSport(ev) && ev.contract.diff >= 2,
+      text: (ev) => [isRing(ev) ? 'inc.sin_repeticion.t.ring' : 'inc.sin_repeticion.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'operador_repeticion') && hasReplayGear(ev.equip) ? null : NEED('need.operador_repeticion')),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_repeticion'), (p) => R(4, 'inc.sin_repeticion.r0', { nombre: p.name }), (p) => R(-3, 'inc.sin_repeticion.r1', { nombre: p.name })) },
+        { need: (s, ev) => (bestRole(ev, 'director') && hasCat(ev, 'switcher') ? null : NEED('need.director_switcher')), run: () => R(-4, 'inc.sin_repeticion.r2') },
+        { run: () => R(-10, 'inc.sin_repeticion.r3') },
+      ],
+    },
+    colores: {
+      rol: 'shader',
+      weight: (s, ev) => 1.5 + ev.equip.filter((e) => isSystem(itemOf(e))).length,
+      when: (s, ev) => camsOf(ev).length >= 2 && ev.contract.diff >= 2,
+      text: () => ['inc.colores.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'shader') ? null : NEED('need.rol', { rol: ROLES.shader.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'shader'), (p) => R(1, 'inc.colores.r0', { nombre: p.name }), (p) => R(-4, 'inc.colores.r1', { nombre: p.name })) },
+        { need: (s, ev) => (bestRole(ev, 'director') ? null : NEED('need.rol', { rol: ROLES.director.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'director'), (p) => R(-3, 'inc.colores.r2', { nombre: p.name }), (p) => R(-8, 'inc.colores.r3', { nombre: p.name })) },
+        { run: () => R(-10, 'inc.colores.r4') },
+      ],
+    },
+    ptz_fija: {
+      rol: 'operador_ptz',
+      weight: () => 3,
+      when: (s, ev) => ev.equip.some((e) => CLASE[itemOf(e).subtipo] === 'ptz'),
+      text: () => ['inc.ptz_fija.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'operador_ptz') ? null : NEED('need.rol', { rol: ROLES.operador_ptz.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_ptz'), (p) => R(1, 'inc.ptz_fija.r0', { nombre: p.name }), (p) => R(-5, 'inc.ptz_fija.r1', { nombre: p.name })) },
+        { run: () => R(-7, 'inc.ptz_fija.r2') },
+      ],
+    },
+    dron: {
+      rol: 'piloto_dron',
+      weight: () => 3,
+      when: (s, ev) => ev.equip.some((e) => CLASE[itemOf(e).subtipo] === 'dron') && !!bestRole(ev, 'piloto_dron'),
+      text: () => ['inc.dron.t'],
+      choices: [
+        { run: (s, ev) => skillCheck(s, bestRole(ev, 'piloto_dron'), (p) => R(4, 'inc.dron.r0', { nombre: p.name }), (p) => {
+          const d = ev.equip.find((e) => CLASE[itemOf(e).subtipo] === 'dron');
+          const real = d && s.equip.find((e) => e.id === d.id);
+          if (real) real.condition = clamp(real.condition - 35, 1, 100);
+          return R(-9, 'inc.dron.r1', { nombre: p.name });
+        }) },
+        { run: () => R(-2, 'inc.dron.r2') },
+      ],
+    },
+    entrada: {
+      rol: 'coordinador_piso',
+      weight: () => 2.5,
+      when: (s, ev) => !!(EVENT_TYPES[ev.contract.type] || {}).escenario,
+      text: () => ['inc.entrada.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'coordinador_piso') ? null : NEED('need.rol', { rol: ROLES.coordinador_piso.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'coordinador_piso'), (p) => R(2, 'inc.entrada.r0', { nombre: p.name }), (p) => R(-5, 'inc.entrada.r1', { nombre: p.name })) },
+        { run: () => R(-8, 'inc.entrada.r2') },
+      ],
+    },
+    pieza: {
+      rol: 'runner',
+      weight: () => 2,
+      when: (s, ev) => ev.contract.diff >= 2,
+      text: () => ['inc.pieza.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'runner') ? null : NEED('need.rol', { rol: ROLES.runner.name })), run: (s, ev) => R(-1, 'inc.pieza.r0', { nombre: bestRole(ev, 'runner').name }) },
+        { need: (s) => (s.money >= 40 ? null : NEED('need.dinero', { monto: money(40) })), run: (s) => { s.money -= 40; return R(-5, 'inc.pieza.r1'); } },
+        { run: () => R(-8, 'inc.pieza.r2') },
       ],
     },
     // Imprevistos que cuestan plata: el monto crece con el tamaño del evento
     permiso: {
+      rol: 'productor',
       weight: () => 2,
       when: (s, ev) => ev.contract.diff >= 2,
       setup: (s, ev) => ({ cost: Math.max(50, Math.round(ev.contract.pay * 0.1 / 10) * 10) }),
-      text: (ev, x) => `📋 El administrador del local dice que falta un permiso para el cableado y te cobra ${money(x.cost)}.`,
+      text: (ev, x) => ['inc.permiso.t', { monto: money(x.cost) }],
       choices: [
-        { label: 'Pagar el permiso', need: (s, ev, x) => (s.money >= x.cost ? null : `No tienes ${money(x.cost)}`),
-          run: (s, ev, x) => { s.money -= x.cost; return { q: 0, msg: `Pagaste ${money(x.cost)} y siguieron trabajando tranquilos.` }; } },
-        { label: 'Negociar con el administrador', run: (s, ev, x) => {
-          if (chance(s, 0.45)) return { q: -2, msg: 'Lo convenciste de dejarlo para otro día.' };
+        { need: (s, ev, x) => (s.money >= x.cost ? null : NEED('need.dinero', { monto: money(x.cost) })),
+          run: (s, ev, x) => { s.money -= x.cost; return R(0, 'inc.permiso.r0', { monto: money(x.cost) }); } },
+        { run: (s, ev, x) => {
+          const pr = ev.staff.find((p) => normRole(p.role) === 'productor');
+          if (chance(s, 0.45 + (pr ? 0.08 * (pr.skill + tierBonus(pr)) : 0))) return R(-2, 'inc.permiso.r1');
           const half = Math.round(x.cost / 2);
           s.money -= half;
-          return { q: -6, msg: `Tardó media hora la discusión y igual pagaste ${money(half)}.` };
+          return R(-6, 'inc.permiso.r2', { monto: money(half) });
         } },
-        { label: 'Quitar el cableado y usar menos equipos', run: () => ({ q: -12, msg: 'Desarmaste parte del montaje. La transmisión perdió calidad.' }) },
+        { run: () => R(-12, 'inc.permiso.r3') },
       ],
     },
     transporte: {
+      rol: 'productor',
       weight: (s, ev) => 1 + ev.contract.diff * 0.4,
       when: (s, ev) => ev.contract.diff >= 3,
       setup: (s, ev) => ({ cost: Math.max(80, Math.round(ev.contract.pay * 0.08 / 10) * 10) }),
-      text: () => '🚐 El carro con los equipos se quedó varado en el tráfico y falta poco para empezar.',
+      text: () => ['inc.transporte.t'],
       choices: [
-        { label: 'Pagar un flete urgente', need: (s, ev, x) => (s.money >= x.cost ? null : `No tienes ${money(x.cost)}`),
-          run: (s, ev, x) => { s.money -= x.cost; return { q: -2, msg: `El flete llegó a tiempo (${money(x.cost)}).` }; } },
-        { label: 'Esperar y montar a la carrera', run: (s) => (chance(s, 0.35)
-          ? { q: -4, msg: 'Llegaron justito. Montaron todo en tiempo récord.' }
-          : { q: -14, msg: 'Empezaste tarde y sin probar nada. Se notó en la transmisión.' }) },
+        { need: (s, ev, x) => (s.money >= x.cost ? null : NEED('need.dinero', { monto: money(x.cost) })),
+          run: (s, ev, x) => { s.money -= x.cost; return R(-2, 'inc.transporte.r0', { monto: money(x.cost) }); } },
+        { run: (s) => (chance(s, 0.35) ? R(-4, 'inc.transporte.r1') : R(-14, 'inc.transporte.r2')) },
       ],
     },
     robo: {
       weight: () => 1.2,
-      when: (s, ev) => ev.contract.diff >= 3 && ev.equip.some((e) => ['mics', 'encoder', 'internet'].includes(CATALOG[e.type].cat)),
-      setup: (s, ev) => ({ eq: pick(s, ev.equip.filter((e) => ['mics', 'encoder', 'internet'].includes(CATALOG[e.type].cat))).id }),
-      text: (ev, x) => `🕵️ Entre tanta gente, alguien se llevó tu ${CATALOG[(ev.equip.find((e) => e.id === x.eq) || { type: 'mics' }).type].name}.`,
+      when: (s, ev) => ev.contract.diff >= 3 && ev.equip.some((e) => ['mics', 'encoder', 'internet', 'wireless'].includes(itemOf(e).cat)),
+      setup: (s, ev) => ({ eq: pick(s, ev.equip.filter((e) => ['mics', 'encoder', 'internet', 'wireless'].includes(itemOf(e).cat))).id }),
+      text: (ev, x) => ['inc.robo.t', { item: itemOf(ev.equip.find((e) => e.id === x.eq) || { type: 'mics' }).name }],
       choices: [
-        { label: 'Avisar a seguridad y seguir', run: (s, ev, x) => {
-          if (chance(s, 0.5)) return { q: -3, msg: 'Seguridad lo encontró en la puerta. ¡Lo recuperaste!' };
+        { run: (s, ev, x) => {
+          if (chance(s, 0.5)) return R(-3, 'inc.robo.r0');
           s.equip = s.equip.filter((e) => e.id !== x.eq);
-          return { q: -6, msg: 'No apareció. Lo perdiste para siempre.' };
+          return R(-6, 'inc.robo.r1');
         } },
-        { label: 'Dejar a alguien cuidando los equipos', run: () => ({ q: -9, msg: 'No te robaron más, pero trabajaste con una persona menos.' }) },
+        { run: () => R(-9, 'inc.robo.r2') },
       ],
     },
     // Imprevistos de habilidad: salir bien depende del nivel de tu gente
     senal: {
+      rol: 'tecnico_transmision',
       weight: () => 2.5,
       when: (s, ev) => ev.contract.stream && ev.contract.diff >= 3,
-      text: () => '📶 La plataforma avisa que tu transmisión se está trabando para muchos espectadores.',
+      text: () => ['inc.senal.t'],
       choices: [
-        { label: 'Que el técnico de streaming lo arregle', need: (s, ev) => (bestRole(ev, 'stream') ? null : 'No trajiste técnico de streaming'),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'stream'),
-            (p) => ({ q: 2, msg: `${p.name} bajó la tasa de bits a tiempo. Casi nadie lo notó.` }),
-            (p) => ({ q: -10, msg: `${p.name} probó varias cosas, pero la imagen se congeló varios minutos.` })) },
-        { label: 'Reiniciar la transmisión', run: () => ({ q: -9, msg: 'Volviste al aire, pero perdiste espectadores en el corte.' }) },
+        { need: (s, ev) => (bestRole(ev, 'tecnico_transmision') ? null : NEED('need.rol', { rol: ROLES.tecnico_transmision.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'tecnico_transmision'), (p) => R(2, 'inc.senal.r0', { nombre: p.name }), (p) => R(-10, 'inc.senal.r1', { nombre: p.name })) },
+        { run: () => R(-9, 'inc.senal.r2') },
       ],
     },
     guion: {
+      rol: 'productor',
       weight: () => 2.5,
       when: (s, ev) => ev.contract.diff >= 3,
-      text: () => '📝 El cliente cambió el orden del programa a último momento y nadie avisó a tu equipo.',
+      text: () => ['inc.guion.t'],
       choices: [
-        { label: 'Que el director reorganice todo', need: (s, ev) => (bestRole(ev, 'dir') ? null : 'No trajiste director'),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'dir'),
-            (p) => ({ q: 3, msg: `${p.name} reorganizó las cámaras al vuelo. ¡Ni se notó!` }),
-            (p) => ({ q: -9, msg: `${p.name} se enredó con los cambios y se perdieron varias entradas.` })) },
-        { label: 'Seguir el guion original', run: () => ({ q: -8, msg: 'Las cámaras apuntaban al lugar equivocado varias veces.' }) },
+        { need: (s, ev) => (bestRole(ev, 'productor') ? null : NEED('need.rol', { rol: ROLES.productor.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'productor'), (p) => R(3, 'inc.guion.r0', { nombre: p.name }), (p) => R(-7, 'inc.guion.r1', { nombre: p.name })) },
+        { need: (s, ev) => (bestRole(ev, 'director') ? null : NEED('need.rol', { rol: ROLES.director.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'director'), (p) => R(2, 'inc.guion.r2', { nombre: p.name }), (p) => R(-9, 'inc.guion.r3', { nombre: p.name })) },
+        { run: () => R(-8, 'inc.guion.r4') },
       ],
     },
     multitud: {
+      rol: 'camarografo',
       weight: () => 2,
       when: (s, ev) => ev.contract.diff >= 3 && camsOf(ev).length >= 2,
-      text: () => '👥 La gente se paró frente a tu cámara principal y tapa todo.',
+      text: () => ['inc.multitud.t'],
       choices: [
-        { label: 'Que tu mejor camarógrafo busque otro ángulo', need: (s, ev) => (bestRole(ev, 'cam') ? null : 'No hay camarógrafo'),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'cam'),
-            (p) => ({ q: 2, msg: `${p.name} se subió a una silla y consiguió una toma mejor.` }),
-            (p) => ({ q: -9, msg: `${p.name} no encontró buen ángulo. Media transmisión se vio tapada.` })) },
-        { label: 'Pedir a seguridad que despeje', run: (s) => (chance(s, 0.4)
-          ? { q: -3, msg: 'Seguridad despejó rápido.' }
-          : { q: -10, msg: 'Seguridad tardó muchísimo.' }) },
+        { need: (s, ev) => (bestRole(ev, 'camarografo') ? null : NEED('need.rol', { rol: ROLES.camarografo.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'camarografo'), (p) => R(2, 'inc.multitud.r0', { nombre: p.name }), (p) => R(-9, 'inc.multitud.r1', { nombre: p.name })) },
+        { run: (s) => { const r = rnd(s); return r < 0.15 ? R(2, 'inc.multitud.r4') : r < 0.4 ? R(-3, 'inc.multitud.r2') : R(-10, 'inc.multitud.r3'); } },
       ],
     },
     vip: {
+      rol: 'coordinador_piso',
       weight: () => 2,
-      when: (s, ev) => ev.contract.diff >= 2,
-      text: () => '🕴️ Llegó un invitado muy importante y el cliente quiere una toma especial.',
+      when: (s, ev) => ev.contract.diff >= 2 && !isIRL(ev),
+      text: () => ['inc.vip.t'],
       choices: [
-        { label: 'Mandar a tu mejor camarógrafo', run: (s, ev) => {
-          const p = bestRole(ev, 'cam');
-          if (!p) return { q: -4, msg: 'No había quién.' };
-          return { q: (p.skill - 2) * 3, msg: p.skill >= 3 ? `${p.name} consiguió una toma perfecta.` : `${p.name} hizo lo que pudo; la toma quedó regular.` };
+        { run: (s, ev) => {
+          const p = bestRole(ev, 'camarografo');
+          if (!p) return R(-4, 'inc.vip.r0');
+          const lv = p.skill + tierBonus(p);
+          return R(Math.round((lv - 2) * 3), lv >= 3 ? 'inc.vip.r1' : 'inc.vip.r2', { nombre: p.name });
         } },
-        { label: 'Usar una cámara fija', run: () => ({ q: -2, msg: 'Toma aceptable, pero sin emoción.' }) },
+        { run: () => R(-2, 'inc.vip.r3') },
+      ],
+    },
+    ring: { // lucha libre y boxeo: la pelea se va fuera del ring
+      rol: 'cablero',
+      weight: () => 3,
+      when: (s, ev) => isRing(ev),
+      text: () => ['inc.ring.t'],
+      choices: [
+        { need: (s, ev) => (bestRole(ev, 'cablero') ? null : NEED('need.rol', { rol: ROLES.cablero.name })),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'cablero'), (p) => R(4, 'inc.ring.r0', { nombre: p.name }), (p) => R(-4, 'inc.ring.r1', { nombre: p.name })) },
+        { run: () => R(-7, 'inc.ring.r2') },
+      ],
+    },
+    // Funeral: todo con calma y respeto. Los errores pesan más.
+    funeral_familia: {
+      rol: 'productor',
+      weight: () => 4,
+      when: (s, ev) => isFuneral(ev),
+      text: () => ['inc.funeral_familia.t'],
+      choices: [
+        { run: () => R(3, 'inc.funeral_familia.r0') },
+        { run: () => R(-10, 'inc.funeral_familia.r1') },
+      ],
+    },
+    funeral_emotivo: {
+      rol: 'camarografo',
+      weight: () => 3,
+      when: (s, ev) => isFuneral(ev),
+      text: () => ['inc.funeral_emotivo.t'],
+      choices: [
+        { run: () => R(4, 'inc.funeral_emotivo.r0') },
+        { run: () => R(-9, 'inc.funeral_emotivo.r1') },
+        { run: () => R(1, 'inc.funeral_emotivo.r2') },
       ],
     },
   };
+  // Etiquetas de las opciones (inc.<clave>.o<n>)
+  Object.keys(INCIDENTS).forEach((k) => INCIDENTS[k].choices.forEach((c, i) => { c.k = 'inc.' + k + '.o' + i; Object.defineProperty(c, 'label', { get: () => tx(c.k), enumerable: true }); }));
 
-  /* Prueba de habilidad: cuanto más nivel tiene la persona, más probable que salga bien */
+  /* Prueba de habilidad: cuanto más nivel y experiencia tiene la persona, más probable que salga bien */
   function skillCheck(s, p, ok, bad) {
     const I = BALANCE.incidents;
-    return chance(s, I.skillBase + I.skillPer * p.skill) ? ok(p) : bad(p);
+    return chance(s, I.skillBase + I.skillPer * (p.skill + tierBonus(p))) ? ok(p) : bad(p);
   }
 
   /* ---------- Evento en vivo ---------- */
   function startEvent(s, contractId, staffIds, equipIds) {
-    if (s.currentEvent) return { ok: false, msg: 'Ya hay un evento en curso.' };
-    if (s.gameOver) return { ok: false, msg: 'Juego terminado.' };
+    if (s.currentEvent) return { ok: false, msg: tx('msg.evento_en_curso') };
+    if (s.gameOver) return { ok: false, msg: tx('msg.juego_terminado') };
     const contract = s.contracts.find((c) => c.id === contractId);
-    if (!contract) return { ok: false, msg: 'Esa oferta ya no existe.' };
+    if (!contract) return { ok: false, msg: tx('msg.oferta_no_existe') };
+    staffIds = staffIds || []; equipIds = equipIds || [];
     const staff = s.staff.filter((p) => staffIds.includes(p.id));
-    const equip = s.equip.filter((e) => equipIds.includes(e.id));
-    if (!staff.length) return { ok: false, msg: 'Lleva al menos una persona.' };
-    if (!equip.some((e) => CATALOG[e.type].cat === 'cam')) return { ok: false, msg: 'Lleva al menos una cámara.' };
+    const equip = s.equip.filter((e) => equipIds.includes(e.id) && CATALOG[e.type]);
+    if (!staff.length) return { ok: false, msg: tx('msg.lleva_persona') };
+    if (!equip.some((e) => itemOf(e).cat === 'cam')) return { ok: false, msg: tx('msg.lleva_camara') };
+    staff.forEach((p) => { p.role = normRole(p.role); if (!p.tier) p.tier = 'junior'; });
+    if (contract.internacional) {
+      const reqs = requisitosInternacional(s, contract, staffIds, equipIds);
+      const falta = reqs.find((r) => r.obligatorio && !r.ok);
+      if (falta) return { ok: false, msg: tx('msg.intl_falta', { req: falta.texto }) };
+      if (s.money < (contract.travelCost || 0)) return { ok: false, msg: tx('msg.intl_viaje', { monto: money(contract.travelCost) }) };
+    }
     const wages = staff.reduce((a, p) => a + eventWage(p, contract.diff), 0);
     const base = computeQuality(s, contract, staff, equip);
     const tutorial = inTutorial(s);
@@ -991,9 +1739,10 @@
     if (!tutorial && BALANCE.luck) {
       const L = Math.max(0, Math.round(BALANCE.luck[0] + BALANCE.luck[1] * contract.diff));
       const luck = randInt(s, -L, L);
-      base.parts.push(['Cómo estuvo el día (suerte)', luck]);
+      base.parts.push([tx('parte.suerte'), luck, 'parte.suerte']);
       base.q = clamp(base.q + luck, 0, 100);
     }
+    const crew = crewPlan(s, contract, staffIds, equipIds);
     const ev = {
       contract: Object.assign({}, contract),
       staffIds: staff.map((p) => p.id),
@@ -1005,18 +1754,36 @@
       incidents: [],
       step: 0,
       tutorial,
+      crewPlan: crew,
+      cameraPlan: base.cameraPlan,
     };
+    if (contract.internacional && contract.travelCost) {
+      s.money -= contract.travelCost;
+      ev.travelCost = contract.travelCost;
+      log(s, 'log.intl_viaje', { monto: money(contract.travelCost), pais: contract.pais });
+    }
     // Elegir imprevistos
     const view = { contract: ev.contract, staff, equip };
     const worn = equip.filter((e) => e.condition < BALANCE.worn).length;
     const BI = BALANCE.incidents;
+    const faltan = crew.roles.filter((r) => r.estado === 'falta' && r.min > 0).length;
     const nInc = tutorial ? 1
-      : clamp(BI.byDiff[contract.diff] + (worn ? 1 : 0) + (chance(s, BI.extraChance) ? 1 : 0), 1, BI.max);
+      : clamp(BI.byDiff[contract.diff] + (worn ? 1 : 0) + (chance(s, BI.extraChance) ? 1 : 0) + (faltan ? BALANCE.risk.extraIncident : 0), 1, BI.max);
     // En los primeros eventos no hay imprevistos que cuestan plata
     const gentle = ['permiso', 'transporte', 'robo'];
     const pool = Object.keys(INCIDENTS).filter((k) => INCIDENTS[k].when(s, view) && !(tutorial && gentle.includes(k)));
+    const roleW = (k) => {
+      const rol = INCIDENTS[k].rol;
+      const r = rol && crew.roles.find((x) => x.key === rol);
+      return r && !tutorial ? r.riesgo / BALANCE.risk.base : 1;
+    };
+    // Duelos y desafío diario: el servidor manda la lista de imprevistos ya sorteada (los dos lados tienen los mismos)
+    if (Array.isArray(contract.imprevistos)) {
+      contract.imprevistos.filter((k, i, a) => INCIDENTS[k] && pool.includes(k) && a.indexOf(k) === i)
+        .forEach((key) => { const def = INCIDENTS[key]; ev.incidents.push({ key, x: def.setup ? def.setup(s, view) : {}, done: false, result: null }); });
+    } else {
     for (let i = 0; i < nInc && pool.length; i++) {
-      const ws = pool.map((k) => INCIDENTS[k].weight(s, view));
+      const ws = pool.map((k) => INCIDENTS[k].weight(s, view) * roleW(k));
       const tot = ws.reduce((a, b) => a + b, 0);
       let r = rnd(s) * tot, idx = pool.length - 1;
       for (let j = 0; j < pool.length; j++) { r -= ws[j]; if (r <= 0) { idx = j; break; } }
@@ -1024,9 +1791,10 @@
       const def = INCIDENTS[key];
       ev.incidents.push({ key, x: def.setup ? def.setup(s, view) : {}, done: false, result: null });
     }
+    }
     s.contracts = s.contracts.filter((c) => c.id !== contractId);
     s.currentEvent = ev;
-    return { ok: true, msg: 'Evento iniciado.' };
+    return { ok: true, msg: tx('msg.evento_iniciado') };
   }
 
   function evView(s) {
@@ -1034,9 +1802,10 @@
     return {
       contract: ev.contract,
       staff: s.staff.filter((p) => ev.staffIds.includes(p.id)),
-      equip: s.equip.filter((e) => ev.equipIds.includes(e.id)),
+      equip: s.equip.filter((e) => ev.equipIds.includes(e.id) && CATALOG[e.type]),
     };
   }
+  const textOf = (def, view, x) => { const t = def.text(view, x); return { text: tx(t[0], t[1]), k: t[0], p: t[1] || null }; };
 
   function currentIncident(s) {
     const ev = s.currentEvent;
@@ -1044,50 +1813,88 @@
     const inc = ev.incidents[ev.step];
     const def = INCIDENTS[inc.key];
     const view = evView(s);
+    const t = textOf(def, view, inc.x);
+    const r = def.rol && ev.crewPlan && ev.crewPlan.roles.find((x) => x.key === def.rol);
     return {
       n: ev.step + 1,
       total: ev.incidents.length,
-      text: def.text(view, inc.x),
+      key: inc.key,
+      rol: def.rol || null,
+      estadoRol: r ? r.estado : null, // 'falta' | 'justo' | 'completo' | null
+      text: t.text, k: t.k, p: t.p,
       choices: def.choices.map((c, i) => {
-        const why = c.need ? c.need(s, view, inc.x) : null;
-        return { i, label: c.label, ok: !why, why };
+        const w = c.need ? c.need(s, view, inc.x) : null;
+        return { i, label: tx(c.k), k: c.k, ok: !w, why: w ? tx(w[0], w[1]) : null, whyK: w ? w[0] : null, whyP: w ? w[1] : null };
       }),
     };
   }
 
   function resolveIncident(s, choiceIndex) {
     const ev = s.currentEvent;
-    if (!ev || ev.step >= ev.incidents.length) return { ok: false, msg: 'No hay imprevisto.' };
+    if (!ev || ev.step >= ev.incidents.length) return { ok: false, msg: tx('msg.no_imprevisto') };
     const inc = ev.incidents[ev.step];
     const def = INCIDENTS[inc.key];
     const ch = def.choices[choiceIndex];
-    if (!ch) return { ok: false, msg: 'Opción inválida.' };
+    if (!ch) return { ok: false, msg: tx('msg.opcion_invalida') };
     const view = evView(s);
-    const why = ch.need ? ch.need(s, view, inc.x) : null;
-    if (why) return { ok: false, msg: why };
+    const w = ch.need ? ch.need(s, view, inc.x) : null;
+    if (w) return { ok: false, msg: tx(w[0], w[1]) };
     const r = ch.run(s, view, inc.x);
-    // En eventos grandes los errores pesan más (salvo en los primeros eventos)
-    if (r.q < 0 && !ev.tutorial) r.q = Math.round(r.q * (1 + BALANCE.incidents.severityPerDiff * (ev.contract.diff - 1)));
+    if (r.q < 0 && !ev.tutorial) {
+      // En eventos grandes los errores pesan más (salvo en los primeros eventos)
+      let mult = 1 + BALANCE.incidents.severityPerDiff * (ev.contract.diff - 1);
+      // Si fuiste con menos gente de la que pide el rol, el daño es mayor
+      const rr = def.rol && ev.crewPlan && ev.crewPlan.roles.find((x) => x.key === def.rol);
+      if (rr && rr.estado === 'falta') mult *= BALANCE.risk.sevFalta;
+      else if (rr && rr.estado === 'justo') mult *= BALANCE.risk.sevJusto;
+      // Eventos sensibles (funeral): el cliente perdona menos
+      if ((EVENT_TYPES[ev.contract.type] || {}).sensible) mult *= BALANCE.sensible;
+      r.q = Math.round(r.q * mult);
+    }
     inc.done = true;
     inc.result = r;
     ev.deltas.push(r.q);
     ev.step++;
-    return { ok: true, q: r.q, msg: r.msg };
+    return { ok: true, q: r.q, msg: r.msg, k: r.k, p: r.p };
+  }
+
+  /* Experiencia y ascensos de nivel después de un evento */
+  function gainExperience(s, p, intl, ups) {
+    if (intl) p.eventos_internacionales = (p.eventos_internacionales || 0) + 1;
+    else p.eventos_nacionales = (p.eventos_nacionales || 0) + 1;
+    const P = BALANCE.promote;
+    const tot = (p.eventos_nacionales || 0) + (p.eventos_internacionales || 0);
+    const cur = p.tier || 'junior';
+    let next = null;
+    if (cur === 'junior' && tot >= P.semi_senior.events && p.skill >= P.semi_senior.skill) next = 'semi_senior';
+    else if (cur === 'semi_senior' && tot >= P.senior.events && p.skill >= P.senior.skill) next = 'senior';
+    else if (cur === 'senior' && (p.eventos_internacionales || 0) >= P.internacional.intl && p.skill >= P.internacional.skill) next = 'internacional';
+    if (!next) return;
+    p.tier = next;
+    if (!p.owner) {
+      const r = ROLES[normRole(p.role)] || ROLES.camarografo;
+      p.wage += Math.round((TIERS[next].base - TIERS[cur].base) * r.wageMul * P.wageShare);
+      ups.push(tx('up.nivel', { nombre: p.name, nivel: TIERS[next].name, monto: money(p.wage) }));
+    } else ups.push(tx('up.nivel_duenio', { nombre: p.name, nivel: TIERS[next].name }));
   }
 
   function finishEvent(s) {
     const ev = s.currentEvent;
-    if (!ev) return { ok: false, msg: 'No hay evento.' };
-    if (ev.step < ev.incidents.length) return { ok: false, msg: 'Faltan imprevistos por resolver.' };
+    const avisos0 = Array.isArray(s.avisos) ? s.avisos.length : 0;
+    if (!ev) return { ok: false, msg: tx('msg.no_evento') };
+    if (ev.step < ev.incidents.length) return { ok: false, msg: tx('msg.faltan_imprevistos') };
     const c = ev.contract;
     const t = EVENT_TYPES[c.type];
     const quality = clamp(ev.base + ev.deltas.reduce((a, b) => a + b, 0), 0, 100);
     const B = BALANCE.stars;
     const stars = quality >= B[0] ? 5 : quality >= B[1] ? 4 : quality >= B[2] ? 3 : quality >= B[3] ? 2 : 1;
-    const pay = Math.round(c.pay * STARS_PAY[stars]);
+    const pay = Math.round(c.pay * (c.diff >= BALANCE.bigFrom ? BALANCE.starsPayBig : STARS_PAY)[stars]);
     const repRaw = STARS_REP[stars] * (0.5 + c.diff * 0.15);
     // Cuanta más fama tienes, más cuesta seguir subiendo
     let repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
+    // Contrato internacional que sale mal: la caída de fama es grande
+    let intlFail = false;
+    if (c.internacional && stars <= 2) { repDelta -= (c.repRisk || 10); intlFail = true; }
     // Contrato disputado: ganas el duelo solo si tu calidad final supera la de MegaVisión
     let duel = null, rivalQuality = null;
     if (c.rival) {
@@ -1097,20 +1904,30 @@
     }
     // Algunos clientes pagan la mitad ahora y el resto unos días después
     const LP = BALANCE.latePay;
-    let payNow = pay, payLater = 0;
-    if (!ev.tutorial && !c.story && c.diff >= LP.minDiff && pay > 0 && chance(s, LP.chance)) {
+    let payNow = pay, payLater = 0, laterDays = 0;
+    if (c.internacional && c.payLaterShare && pay > 0) {
+      payLater = Math.round(pay * c.payLaterShare); payNow = pay - payLater; laterDays = BALANCE.intl.latePayDays;
+    } else if (!ev.tutorial && !c.story && !c.internacional && c.diff >= LP.minDiff && pay > 0 && chance(s, LP.chance)) {
       payLater = Math.round(pay * (1 - LP.share));
       payNow = pay - payLater;
-      s.pending = s.pending || [];
-      s.pending.push({ day: s.day + LP.days, amount: payLater, client: c.client });
+      laterDays = LP.days;
     }
+    if (payLater) { s.pending = s.pending || []; s.pending.push({ day: s.day + laterDays, amount: payLater, client: c.client }); }
     s.money += payNow - ev.wages;
     s.rep = clamp(s.rep + repDelta, 0, 100);
     s.lastWorkDay = s.day + 1; // el evento ocupa el día
-    // Desgaste de equipos (más en eventos grandes), experiencia y moral del personal
+    // Desgaste de equipos (más en eventos grandes y en equipos frágiles), experiencia y moral del personal
     const view = evView(s);
     const W = BALANCE.wear;
-    view.equip.forEach((e) => { e.condition = clamp(e.condition - randInt(s, W.min + c.diff * W.perDiffMin, W.max + c.diff * W.perDiffMax), 1, 100); });
+    view.equip.forEach((e) => {
+      const it = itemOf(e);
+      if (it.alquiler) return;
+      const k = BALANCE.wearByDurability[clamp(it.durabilidad || 3, 1, 5)];
+      e.condition = clamp(Math.round(e.condition - randInt(s, W.min + c.diff * W.perDiffMin, W.max + c.diff * W.perDiffMax) * k), 1, 100);
+    });
+    // Los alquileres por evento se devuelven
+    const rented = view.equip.filter((e) => itemOf(e).alquiler);
+    if (rented.length) s.equip = s.equip.filter((e) => !rented.includes(e));
     const ups = [];
     view.staff.forEach((p) => {
       p.events++;
@@ -1121,8 +1938,9 @@
         p.skill++;
         p.xp = 0;
         if (!p.owner) p.wage += BALANCE.wage.raisePerLevel;
-        ups.push(p.owner ? `${p.name} subió a habilidad ${p.skill}` : `${p.name} subió a habilidad ${p.skill} y ahora cobra ${money(p.wage)}`);
+        ups.push(p.owner ? tx('up.habilidad_duenio', { nombre: p.name, n: p.skill }) : tx('up.habilidad', { nombre: p.name, n: p.skill, monto: money(p.wage) }));
       }
+      gainExperience(s, p, !!c.internacional, ups);
     });
     s.stats.events++;
     if (stars === 5) s.stats.fiveStars++;
@@ -1133,29 +1951,40 @@
     s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
     if (duel === 'won') s.stats.duels.won++;
     if (duel === 'lost') s.stats.duels.lost++;
+    if (c.internacional) s.stats.intl = (s.stats.intl || 0) + 1;
     s.chapterStats = s.chapterStats || { good: {}, duels: 0 };
     if (stars >= 4) s.chapterStats.good[c.type] = (s.chapterStats.good[c.type] || 0) + 1;
     if (duel === 'won') s.chapterStats.duels++;
+    s.chapterStats.earned = (s.chapterStats.earned || 0) + pay - ev.wages - (ev.travelCost || 0);
+    const title = tx('res.titulo', { icon: t.icon, evento: t.name, cliente: c.client });
     const result = {
-      title: `${t.icon} ${t.name} · ${c.client}`,
-      quality, stars, pay, wages: ev.wages, net: pay - ev.wages, repDelta, ups,
+      title, type: c.type,
+      quality, stars, pay, wages: ev.wages, net: pay - ev.wages - (ev.travelCost || 0), repDelta, ups,
       rival: !!c.rival, duel, // duel: 'won' | 'lost' | null
       rivalQuality, // calidad de MegaVisión en un contrato disputado (o null)
-      payNow, payLater, payLaterDays: payLater ? LP.days : 0, // cobro en dos partes
+      payNow, payLater, payLaterDays: laterDays, // cobro en dos partes
       dailyCost: dailyCost(s),
       base: ev.base, parts: ev.parts,
-      incidents: ev.incidents.map((i) => ({ text: INCIDENTS[i.key].text(view, i.x), result: i.result })),
+      incidents: ev.incidents.map((i) => { const tt = textOf(INCIDENTS[i.key], view, i.x); return { key: i.key, text: tt.text, k: tt.k, p: tt.p, result: i.result }; }),
+      crewPlan: ev.crewPlan || null, cameraPlan: ev.cameraPlan || null,
+      internacional: !!c.internacional, travelCost: ev.travelCost || 0, travelDays: c.internacional ? (c.travelDays || 0) : 0, intlFail,
     };
-    log(s, `${'⭐'.repeat(stars)} ${t.name} para ${c.client}: cobraste ${money(payNow)}${payLater ? ` (y ${money(payLater)} en ${LP.days} días)` : ''}, sueldos ${money(ev.wages)}, fama ${repDelta >= 0 ? '+' : ''}${repDelta}.`);
-    if (payLater) log(s, `🧾 ${c.client} pagó la mitad y dice que el resto llega en ${LP.days} días.`);
-    ups.forEach((u) => log(s, `📈 ${u}.`));
-    if (duel === 'won') log(s, `⚔️ ¡Duelo ganado contra MegaVisión! Tu calidad ${quality} contra ${rivalQuality} de ellos (+${BALANCE.rival.winRep} de fama extra). ${pick(s, TAUNTS.duelWin)}`);
-    if (duel === 'lost') log(s, `⚔️ MegaVisión ganó el duelo: su calidad ${rivalQuality} contra tu ${quality} (-${BALANCE.rival.loseRep} de fama extra). ${pick(s, TAUNTS.duelLose)}`);
+    log(s, 'log.resultado', { estrellas: '⭐'.repeat(stars), evento: t.name, cliente: c.client, monto: money(payNow),
+      despues: payLater ? tx('log.resultado_despues', { monto: money(payLater), n: laterDays }) : '', sueldos: money(ev.wages), fama: (repDelta >= 0 ? '+' : '') + repDelta });
+    if (payLater) log(s, 'log.pago_mitad', { cliente: c.client, n: laterDays });
+    ups.forEach((u) => log(s, 'log.subio', { texto: u }));
+    if (intlFail) log(s, 'log.intl_fallo', { cliente: c.client, n: c.repRisk || 10 });
+    else if (c.internacional) log(s, 'log.intl_ok', { cliente: c.client, pais: c.pais });
+    if (duel === 'won') log(s, 'log.duelo_ganado', { q: quality, rq: rivalQuality, n: BALANCE.rival.winRep, frase: tx(pick(s, D.TAUNTS.duelWin)) });
+    if (duel === 'lost') log(s, 'log.duelo_perdido', { q: quality, rq: rivalQuality, n: BALANCE.rival.loseRep, frase: tx(pick(s, D.TAUNTS.duelLose)) });
     storyMilestone(s, c.type, stars, duel);
     s.currentEvent = null;
     s.lastResult = result;
     nextDay(s);
+    // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
+    for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: c.pais || '' }); nextDay(s, { travel: true }); }
     result.chapterDone = checkChapter(s);
+    result.avisos = (s.avisos || []).slice(Math.min(avisos0, (s.avisos || []).length));
     return { ok: true, result };
   }
 
@@ -1165,8 +1994,10 @@
     const ch = CHAPTERS[s.chapter];
     if (!ch || !ch.check(s)) return null;
     s.money += ch.reward;
-    log(s, `🏅 ¡${ch.title} completado! ${ch.done}`);
-    const done = { title: ch.title, text: ch.done, reward: ch.reward };
+    aviso(s, 'capitulo', 'log.capitulo', { titulo: tx('cap.' + s.chapter + '.title'), texto: tx('cap.' + s.chapter + '.done') });
+    const done = { chapter: s.chapter, title: ch.title, text: ch.done, reward: ch.reward, day: s.day };
+    if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
+    s.capCompletados.push(done);
     if (s.chapter >= CHAPTERS.length - 1) s.storyDone = true;
     else {
       s.chapter++;
@@ -1182,27 +2013,30 @@
     if (s.storyDone) return;
     const g = good(s, type);
     if (s.chapter === 2 && type === 'lanzamiento') {
-      if (stars >= 4 && g === 1) log(s, 'Lucía Mena: "¡Excelente trabajo! Uno más así y te recomiendo con todas las marcas."');
-      else if (stars < 4) log(s, 'Lucía Mena: "Estuvo regular. El próximo tiene que salir mejor."');
+      if (stars >= 4 && g === 1) log(s, 'historia.lucia_bien');
+      else if (stars < 4) log(s, 'historia.lucia_regular');
     }
-    if (s.chapter === 3 && duel === 'won' && duelsWon(s) === 1) {
-      log(s, 'Don Ramiro: "Primera victoria contra MegaVisión. Sigue así, junta plata y fama, que el estadio te espera."');
-    }
+    if (s.chapter === 3 && duel === 'won' && duelsWon(s) === 1) log(s, 'historia.ramiro_duelo');
     if (s.chapter === 4 && type === 'ligapro') {
-      if (stars >= 4 && g === 1) log(s, 'Don Aurelio: "Buen partido. Si el próximo sale igual, la final es tuya."');
-      else if (stars < 4) log(s, 'Don Aurelio: "Así no, joven. La hinchada se quejó en redes."');
+      if (stars >= 4 && g === 1) log(s, 'historia.aurelio_bien');
+      else if (stars < 4) log(s, 'historia.aurelio_mal');
     }
-    if (s.chapter === 5 && type === 'final' && stars < 5) {
-      log(s, 'Don Ramiro: "Casi, mijo. Habrá otra final en unos días. Repara el equipo y descansa al personal."');
-    }
+    if (s.chapter === 5 && type === 'final' && stars < 5) log(s, 'historia.ramiro_final');
   }
 
   /* ---------- Guardar / cargar ---------- */
+  function migrateStaff(p) {
+    p.role = normRole(p.role);
+    if (!ROLES[p.role]) p.role = 'camarografo';
+    if (!p.tier) p.tier = p.owner ? 'semi_senior' : p.skill >= 4 ? 'senior' : p.skill >= 3 ? 'semi_senior' : 'junior';
+    if (typeof p.eventos_nacionales !== 'number') p.eventos_nacionales = p.events || 0;
+    if (typeof p.eventos_internacionales !== 'number') p.eventos_internacionales = 0;
+  }
   function serialize(s) { return JSON.stringify(s); }
   function deserialize(str) {
     try {
       const s = JSON.parse(str);
-      if (!s || !(s.v === 1 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
+      if (!s || !(s.v === 1 || s.v === 2 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
       // Rellenar campos nuevos en partidas guardadas antes
       s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
       s.stats.best = s.stats.best || {};
@@ -1211,6 +2045,7 @@
         Object.keys(s.stats.best).forEach((k) => { if (s.stats.best[k] >= 4) s.stats.good[k] = 1; });
       }
       s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
+      if (typeof s.stats.intl !== 'number') s.stats.intl = 0;
       if (!s.chapterStats) {
         // Partida vieja: lo mejor que se sabe es el mejor resultado de cada tipo
         s.chapterStats = { good: {}, duels: 0 };
@@ -1230,17 +2065,37 @@
       }
       if (!Array.isArray(s.pending)) s.pending = [];
       if (typeof s.lastWorkDay !== 'number') s.lastWorkDay = s.day;
+      // v3: roles nuevos, niveles de experiencia, equipos que ya no existen
+      s.staff.forEach(migrateStaff);
+      (s.candidates || []).forEach(migrateStaff);
+      s.equip = (s.equip || []).filter((e) => e && typeof e.type === 'string');
+      s.equip.forEach((e) => { if (D.ITEM_ALIAS[e.type]) e.type = D.ITEM_ALIAS[e.type]; });
+      if (typeof s.intlNext !== 'number') s.intlNext = 0;
+      if (!Array.isArray(s.avisos)) s.avisos = [];
+      if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
+      if (s.currentEvent && !s.currentEvent.crewPlan) {
+        s.currentEvent.crewPlan = crewPlan(s, s.currentEvent.contract, s.currentEvent.staffIds, s.currentEvent.equipIds);
+        s.currentEvent.cameraPlan = cameraPlan(s, s.currentEvent.contract, s.currentEvent.equipIds, s.currentEvent.staffIds);
+      }
+      if (s.currentEvent) s.currentEvent.incidents = s.currentEvent.incidents.filter((i) => INCIDENTS[i.key]);
+      s.log = (s.log || []).filter((l) => l && typeof l.text === 'string');
       s.v = SAVE_VERSION;
       return s;
     } catch (e) { return null; }
   }
 
+  aplicarTextos();
+
   const API = {
-    ROLES, CATALOG, CONSUMABLES, EVENT_TYPES, CHAPTERS, INCIDENTS,
-    newGame, addContract, marketing, refreshCandidates, hire, fire, searchStaff,
-    buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay,
+    ROLES, CATALOG, CONSUMABLES, EVENT_TYPES, CHAPTERS, INCIDENTS, CATEGORIAS, TIERS, INTL_KINDS, TEXTOS,
+    ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
+    newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
+    buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
     computeQuality, suggestLoadout, startEvent, currentIncident, resolveIncident, finishEvent,
-    checkChapter, countCat, serialize, deserialize, money,
+    crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
+    canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
+    checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
+    takeAvisos, takeChapterDone, venue, venueName, qualityRange,
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

@@ -14,7 +14,7 @@ ok(!G.buy(s, 'dron4k').ok, 'Un exclusivo no se compra con dinero del juego');
 ok(!G.buy(s, 'vip_cam8k').ok, 'Un equipo VIP no se compra con dinero del juego');
 
 const sync = P.sincronizarInventario(s, [{ id: 1, item: 'dron4k', serie: 7 }, { id: 2, item: 'vip_cam8k', serie: 1 }]);
-ok(sync.agregados.length === 2 && sync.agregados[0] === 'Dron 4K #0007', 'El inventario del servidor entra a la bodega con su número de serie');
+ok(sync.agregados.length === 2 && sync.agregados[0] === G.CATALOG.dron4k.name + ' #0007', 'El inventario del servidor entra a la bodega con su número de serie');
 const dron = s.equip.find((e) => e.srvId === 1);
 const cam8k = s.equip.find((e) => e.srvId === 2);
 ok(!G.sell(s, dron.id).ok && G.sellPrice(dron) === 0, 'Los exclusivos no se venden al desarmadero');
