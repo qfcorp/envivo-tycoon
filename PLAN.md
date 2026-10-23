@@ -122,7 +122,7 @@ Decisiones (23 oct 2026): VPS de OVH, dirección **juego.tukanec.com** (luego un
 - [x] Equipos exclusivos (Dron 4K, grúa, unidad móvil, generador) y equipos solo VIP (guardados si se vence el VIP)
 - [x] Pruebas: `bash server/tests/correr.sh` (230 + 32) y `bash tests/tienda_e2e.sh` (compra de punta a punta desde el juego)
 - [ ] Publicar en el VPS (lo hace Dimitry con `docs/DESPLIEGUE.md`) y agregar `/var/lib/envivo` y `/etc/envivo` al respaldo restic
-- [x] Plux en producción desde el inicio (misma integración certificada de TuPass; decisión de Dimitry 2026-10-23)
+- [ ] **Pendiente para salir en vivo:** poner las claves de PRODUCCIÓN de Plux (Paso 4 de `docs/PASOS_DEMO_VPS.md`). El demo arranca SIN Plux (decisión de Dimitry 2026-10-23: que nadie pague por error). Sin claves el servidor rechaza todo pago (`plux_no_disponible`). Para demos: créditos a mano desde el Centro de Control.
 - [ ] Completar RUC/correo/dirección en las páginas legales (sin WhatsApp: soporte solo por correo y en el juego) y revisión de abogado (también de los nombres de marcas)
 
 ### Fase 5 — Mercado entre jugadores (listo)
@@ -179,3 +179,4 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-23 (09:00): parte pagada para competencia con techo de ventaja 20–25 % (medido: Copa 23 %, Duelos 19,5 %): VIP 1–10 por compras acumuladas, regalos para toda la asociación, Mecenas, ofertas por logros, pase de temporada (gratis + $4.99 / $9.99), sede oficial en el servidor con aceleradores y ayudas, personal estrella (créditos o fichas gratis), Pase de Copa. Tienda nueva con precios reales por canal. Ensayo de instalación completo `tests/ensayo_vps.sh` 55/55. Servidor `correr.sh` 75/0.
 - 2026-10-23: Paso 1 del demo hecho: en Cloudflare quedó `juego.tukanec.com` → A `149.56.111.193` (Solo DNS, nube gris). Comprobado: la dirección ya responde con esa IP. Siguiente: Paso 2 (instalar en el VPS, `docs/PASOS_DEMO_VPS.md`).
 - 2026-10-23 (10:00): Paso 2 hecho en el VPS (RESULTADO todo bien: API 200, código protegido 404, HTTPS sí, validador activo). Decisión de Dimitry: **Plux directo en PRODUCCIÓN** (misma integración certificada de TuPass; comparado línea por línea: mismas direcciones y pasos). `instalar.sh` y `config.env.ejemplo` ahora dejan `PLUX_AMBIENTE=produccion`; guías actualizadas; prueba real con la Oferta de bienvenida ($0,99). Ensayo del VPS 58/58.
+- 2026-10-23 (10:02): el demo arranca SIN claves de Plux (se salta el Paso 4; queda pendiente para salir en vivo). En el VPS `PLUX_AMBIENTE` quedó en sandbox y vacío: al poner las claves, cambiar también a `produccion`.
