@@ -60,7 +60,7 @@ Dos partes: primero una **partida nueva** (los días 1 a 15, lo que mejor se sie
 
 ### Partida preparada del capítulo 4 (`?demo=cap4`)
 
-- **Desde el celular, lo más fácil:** abre **EN VIVO Tycoon Demo** → https://claude.ai/artifact/RVBzdXCEN26juFswBwp9SN . La primera vez arranca sola en el capítulo 4 (día 52, $6.509, fama 60); después guarda tu avance como cualquier partida.
+- **Desde el celular, lo más fácil:** abre **EN VIVO Tycoon Demo** → https://claude.ai/artifact/RVBzdXCEN26juFswBwp9SN . La primera vez arranca sola en el capítulo 4 (día 52, $6.509, fama 60) **en plena temporada de Navidad** (fecha simulada 20 de diciembre: encendido del árbol en Plaza Tiempos y Pase del Niño); después guarda tu avance como cualquier partida.
 
 - Se abre agregando `?demo=cap4` a la dirección del juego, por ejemplo `https://juego.tukanec.com/?demo=cap4`
   o `index.html?demo=cap4` / `dist/envivo-tycoon.html?demo=cap4` en la computadora.
@@ -106,3 +106,8 @@ certifique el dominio. En la app de Google Play se cobra con Google.
 - **Todavía no existen:** Productor del Año, Switcher en Vivo (minijuego), Pase de Temporada, Copas internacionales
   servidor contra servidor, Gran Licitación en coalición, cadenas internacionales y la historia propia de la productora rival.
 - **Orden de la casa:** borrar la rama de respaldo `wip-dificultad` de GitHub cuando todo esté en `main`.
+
+### Fechas especiales en el demo
+- En el juego normal, hoy (23 de octubre) Inicio dice **"Próximo evento especial: Halloween, ¡mañana!"**.
+- Para mostrar otra temporada agrega `?fecha=AAAA-MM-DD` a la dirección del juego en tu servidor, por ejemplo `https://juego.tukanec.com/?fecha=2026-12-31` (Fin de año: Réveillon en Playa Copacabaña).
+

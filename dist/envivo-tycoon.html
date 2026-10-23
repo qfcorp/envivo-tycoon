@@ -32280,7 +32280,7 @@
   }
   // Fecha del celular (o ?fecha=AAAA-MM-DD para demos): la usan las temporadas. Se guarda en la partida (s.temporada.fecha)
   // y la lógica solo mira esa fecha guardada, nunca el reloj.
-  const fechaPedida = (() => { try { const m = /[?&]fecha=(\d{4}-\d{2}-\d{2})\b/.exec(location.search); return m ? m[1] : null; } catch (e) { return null; } })();
+  const fechaPedida = (() => { try { if (typeof window.__ENVIVO_FECHA === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(window.__ENVIVO_FECHA)) return window.__ENVIVO_FECHA; const m = /[?&]fecha=(\d{4}-\d{2}-\d{2})\b/.exec(location.search); return m ? m[1] : null; } catch (e) { return null; } })();
   function fechaHoy() {
     if (fechaPedida) return fechaPedida;
     const d = new Date();

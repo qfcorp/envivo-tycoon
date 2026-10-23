@@ -35,5 +35,5 @@ const art = html.replace(/<!doctype html>\s*/i, '').replace(/<html[^>]*>\s*/i, '
 fs.writeFileSync(path.join(root, 'dist', 'artifact.html'), art);
 console.log('✅ dist/artifact.html creado');
 // Copia para el demo: arranca una sola vez con la partida preparada del capítulo 4 (ver docs/DEMO.md)
-fs.writeFileSync(path.join(root, 'dist', 'artifact_demo.html'), "<script>window.__ENVIVO_DEMO='cap4';</script>\n" + art.replace('<title>EN VIVO Tycoon</title>', '<title>EN VIVO Tycoon Demo</title>'));
+fs.writeFileSync(path.join(root, 'dist', 'artifact_demo.html'), "<script>window.__ENVIVO_DEMO='cap4';window.__ENVIVO_FECHA='2026-12-20';</script>\n" + art.replace('<title>EN VIVO Tycoon</title>', '<title>EN VIVO Tycoon Demo</title>'));
 console.log('✅ dist/artifact_demo.html creado');
