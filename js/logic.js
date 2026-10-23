@@ -6,7 +6,68 @@
 (function (root) {
   'use strict';
 
-  const SAVE_VERSION = 1;
+  // v2: cobros pendientes, duelos con calidad de la rival, desgaste de fama. Las partidas v1 se siguen cargando.
+  const SAVE_VERSION = 2;
+
+  /* =========================================================
+     BALANCE: todos los números de la economía en un solo lugar.
+     Para ajustar la dificultad, cambia estos valores y corre
+     node tests/test_logic.js para ver cómo queda el ritmo.
+     ========================================================= */
+  const BALANCE = {
+    start: { money: 1500, rep: 5 },
+    bankruptAt: -300,            // si el dinero baja de esto, quiebras
+    tutorialEvents: 3,           // los 3 primeros eventos son suaves (1 imprevisto, sin sorpresas)
+    maxContracts: 7,
+    // Gastos fijos de cada día (ver dailyCost)
+    daily: {
+      // Local según el tamaño (personas + equipos): garaje, oficina, estudio, centro de producción
+      // [tamaño mínimo, costo por día, nombre]. Tamaño = personas + equipos.
+      rent: [[0, 20, 'Garaje'], [13, 60, 'Oficina'], [16, 160, 'Estudio'], [19, 310, 'Centro de producción']],
+      perStaff: 2,               // por cada persona contratada (sin contarte a ti)
+      equipShare: 0.003,         // seguro y bodega: 0,3% del valor de tus equipos cada día
+      payrollShare: 0.03,        // parte del sueldo de cada persona que se paga aunque no haya evento
+    },
+    // Personal
+    wage: { base: 15, perSkill: 15, random: 10, raisePerLevel: 15, hireFeeDays: 2,
+            perDiff: 0.15 },     // en eventos grandes el personal cobra más: +15% por punto de dificultad sobre 1
+    skillUp: [0, 4, 7, 11, 16],  // eventos para pasar del nivel 1 al 2, del 2 al 3, etc.
+    // Ánimo del equipo: los eventos grandes cansan (por punto de dificultad sobre 2); descansar un día lo recupera
+    morale: { fatigue: 3, rest: 6, neutral: 60, perPoint: 8, min: -5, max: 3 },
+    raise: { chance: 0.025, minStaff: 3, minDay: 25, pct: 0.1 }, // el equipo pide aumento
+    // Equipos
+    wear: { min: 3, perDiffMin: 0, max: 6, perDiffMax: 2.5 }, // desgaste por evento según dificultad
+    repairFactor: 0.45, sellFactor: 0.4,
+    worn: 40,                    // con menos de esto, el equipo puede fallar en vivo
+    // Calidad del evento
+    stars: [85, 70, 55, 40],     // calidad mínima para 5, 4, 3 y 2 estrellas
+    starsPay: [0, 0.4, 0.7, 1.0, 1.1, 1.25],
+    starsRep: [0, -5, -0.5, 2, 4, 6],
+    diffPenalty: [0, 4, 8, 34, 50, 50], // puntos que resta la dificultad 1..5 del evento
+    skillPts: { dir: 3, audio: 2, stream: 2, team: 3 }, // cuánto vale cada nivel de habilidad
+    expectPerRep: 0.18,          // cuanto más famoso eres, más te exige el cliente: -(fama * esto) puntos
+    // Las ofertas de la historia vienen con apoyo del personaje (escenario, fibra, luz del estadio...)
+    storySupport: { lanzamiento: 6, ligapro: 9, final: 24 },
+    luck: [-2, 2],               // "suerte del día": entre -(a + b * dif) y +(a + b * dif) puntos (más en eventos grandes)
+    // Imprevistos
+    incidents: { byDiff: [1, 1, 1, 2, 3, 3], extraChance: 0.35, max: 5, severityPerDiff: 0.15,
+                 skillBase: 0.3, skillPer: 0.12 }, // imprevistos de habilidad: éxito = base + nivel * per
+    // Clientes
+    payRepBonus: 250,            // pago * (1 + fama / payRepBonus)
+    latePay: { chance: 0.25, minDiff: 2, share: 0.5, days: 3 },
+    cancelChance: 0.05,          // un cliente cancela una oferta pendiente
+    // Fama
+    fameDecay: { every: 3 },     // -1 de fama cada 3 días sin trabajar
+    // MegaVisión
+    rival: {
+      fromChapter: 3,            // capítulo 4 (se cuenta desde 0)
+      contestedChance: 0.2, payBoost: 1.3, diffBoost: 1,
+      stealChance: 0.15,
+      // calidad de MegaVisión = base + capítulo * perChapter + dificultad * perDiff + azar (entre spread)
+      quality: { base: 36, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95 },
+      winRep: 3, loseRep: 4,
+    },
+  };
 
   /* ---------- Números aleatorios (con semilla, para poder probar) ---------- */
   function rnd(s) {
@@ -77,8 +138,8 @@
   const LAST_NAMES = ['Guamán', 'Chiluisa', 'Pazmiño', 'Andrade', 'Toapanta', 'Morales', 'Cedeño', 'Quishpe',
     'Zambrano', 'Villacís', 'Tenorio', 'Ortiz', 'Lema', 'Salazar'];
 
-  const STARS_PAY = [0, 0.4, 0.7, 1.0, 1.1, 1.25];
-  const STARS_REP = [0, -5, -0.5, 2, 4, 6];
+  const STARS_PAY = BALANCE.starsPay;
+  const STARS_REP = BALANCE.starsRep;
 
   /* ---------- Historia (capítulos) ---------- */
   // character: quién habla en el capítulo (la pantalla dibuja su retrato)
@@ -126,8 +187,8 @@
     {
       title: 'Capítulo 4 · La rival',
       character: 'mega',
-      intro: 'Germán Vélez, dueño de MegaVisión, se enteró de ti: "Esta ciudad tiene una sola productora grande, y es la mía." Ahora pelea contigo algunos contratos. Los verás marcados como DISPUTADOS.',
-      goal: 'Gana 3 duelos (contratos disputados con 4⭐ o más), llega a 40 de fama y junta $12.000',
+      intro: 'Germán Vélez, dueño de MegaVisión, se enteró de ti: "Esta ciudad tiene una sola productora grande, y es la mía." Ahora pelea contigo algunos contratos. Los verás marcados como DISPUTADOS, con la calidad que promete MegaVisión: para ganarlo tienes que superarla.',
+      goal: 'Gana 3 duelos contra MegaVisión (tu calidad final debe superar la de ellos), llega a 40 de fama y junta $12.000',
       check: (s) => duelsWon(s) >= 3 && s.rep >= 40 && s.money >= 12000,
       progress: (s) => `Duelos ${Math.min(duelsWon(s), 3)}/3 · Fama ${Math.min(Math.floor(s.rep), 40)}/40 · Dinero ${money(Math.min(s.money, 12000))}/$12.000`,
       reward: 2000,
@@ -176,6 +237,7 @@
     duelLose: [
       'Germán Vélez (MegaVisión): "¿Viste? El cliente ya me está llamando a mí."',
       'Germán Vélez (MegaVisión): "Esto es para grandes. Vuelve a tus misas."',
+      'Germán Vélez (MegaVisión): "Bonito intento. Mi gente lo hizo mejor."',
     ],
     stolen: [
       'Germán Vélez (MegaVisión): "Nada personal, solo negocios."',
@@ -190,8 +252,53 @@
     if (s.log.length > 80) s.log.length = 80;
   }
   function staffName(s) { return pick(s, FIRST_NAMES) + ' ' + pick(s, LAST_NAMES); }
-  function repairCost(e) { return Math.round(CATALOG[e.type].price * 0.4 * (100 - e.condition) / 100); }
-  function sellPrice(e) { return Math.round(CATALOG[e.type].price * 0.4 * e.condition / 100); }
+  function repairCost(e) { return Math.round(CATALOG[e.type].price * BALANCE.repairFactor * (100 - e.condition) / 100); }
+  function sellPrice(e) { return Math.round(CATALOG[e.type].price * BALANCE.sellFactor * e.condition / 100); }
+
+  /* Gastos fijos de cada día: local, personal (aunque no haya evento) y equipos.
+     Cuanto más grande la productora, más cuesta mantenerla. */
+  function dailyCost(s) {
+    const d = BALANCE.daily;
+    const hired = s.staff.filter((p) => !p.owner);
+    const payroll = hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare;
+    const equipValue = s.equip.reduce((a, e) => a + CATALOG[e.type].price, 0);
+    return Math.round(rentFor(s) + d.perStaff * hired.length + equipValue * d.equipShare + payroll);
+  }
+  function rentTier(s) {
+    const size = s.staff.length + s.equip.length;
+    return BALANCE.daily.rent.reduce((r, t) => (size >= t[0] ? t : r), BALANCE.daily.rent[0]);
+  }
+  function rentFor(s) { return rentTier(s)[1]; }
+  /* Detalle de los gastos diarios (para mostrar en pantalla) */
+  function dailyCostBreakdown(s) {
+    const d = BALANCE.daily;
+    const hired = s.staff.filter((p) => !p.owner);
+    const tier = rentTier(s);
+    const all = d.rent;
+    const next = all[all.indexOf(tier) + 1] || null;
+    const size = s.staff.length + s.equip.length;
+    const out = {
+      place: tier[2], rent: tier[1], size,
+      nextPlace: next ? next[2] : null, nextAt: next ? next[0] : null, nextRent: next ? next[1] : null,
+      staff: d.perStaff * hired.length,
+      payroll: Math.round(hired.reduce((a, p) => a + p.wage, 0) * d.payrollShare),
+      equip: Math.round(s.equip.reduce((a, e) => a + CATALOG[e.type].price, 0) * d.equipShare),
+    };
+    out.total = dailyCost(s);
+    return out;
+  }
+  /* Sueldo de una persona en un evento (cobra más en eventos grandes) */
+  function eventWage(p, diff) {
+    return Math.round(p.wage * (1 + BALANCE.wage.perDiff * Math.max(0, diff - 1)));
+  }
+
+  /* Calidad que promete MegaVisión en un contrato disputado (sube con el capítulo y la dificultad) */
+  function rivalQualityFor(s, c) {
+    const r = BALANCE.rival.quality;
+    const ch = s.storyDone ? CHAPTERS.length - 1 : s.chapter;
+    return clamp(Math.round(r.base + r.perChapter * ch + r.perDiff * c.diff + randInt(s, r.spread[0], r.spread[1])), r.min, r.max);
+  }
+  function inTutorial(s) { return s.stats.events < BALANCE.tutorialEvents; }
 
   /* ---------- Juego nuevo ---------- */
   function newGame(seed) {
@@ -200,8 +307,8 @@
       seed: (seed === undefined ? Date.now() : seed) | 0,
       idc: 0,
       day: 1,
-      money: 1500,
-      rep: 5,
+      money: BALANCE.start.money,
+      rep: BALANCE.start.rep,
       chapter: 0,
       chapterSeen: -1,
       storyDone: false,
@@ -217,6 +324,8 @@
       stats: { events: 0, fiveStars: 0, earned: 0, best: {}, good: {}, duels: { won: 0, lost: 0 } },
       storyNext: 0, // día en que llega la próxima oferta de la historia (si el capítulo tiene target)
       chapterStats: { good: {}, duels: 0 }, // avance dentro del capítulo actual
+      pending: [], // cobros que llegan después: { day, amount, client }
+      lastWorkDay: 1, // último día con evento (para el desgaste de fama)
       log: [],
     };
     s.staff.push({ id: nextId(s), name: 'Tú (dueño)', role: 'cam', skill: 2, wage: 0, morale: 100, events: 0, owner: true });
@@ -242,11 +351,11 @@
   }
 
   // La rival pelea contratos desde el capítulo 4 (y en modo libre)
-  function rivalActive(s) { return s.storyDone || s.chapter >= 3; }
+  function rivalActive(s) { return s.storyDone || s.chapter >= BALANCE.rival.fromChapter; }
 
   function addContract(s, typeKey, payBoost, opts) {
     opts = opts || {};
-    if (s.contracts.length >= 7) return null;
+    if (s.contracts.length >= BALANCE.maxContracts) return null;
     const types = availableTypes(s);
     if (!typeKey) {
       // Más probabilidad de los eventos más grandes que ya desbloqueaste
@@ -266,17 +375,19 @@
       stream: chance(s, t.stream),
       outdoor: chance(s, t.outdoor),
       diff: t.diff,
-      pay: Math.round(randInt(s, t.pay[0], t.pay[1]) * (1 + s.rep / 250) * (payBoost || 1) / 10) * 10,
+      pay: Math.round(randInt(s, t.pay[0], t.pay[1]) * (1 + s.rep / BALANCE.payRepBonus) * (payBoost || 1) / 10) * 10,
       daysLeft: randInt(s, 2, 4),
       rival: false, // true = "disputado": MegaVisión también lo quiere
       story: !!opts.story, // true = oferta de la historia (la pide el capítulo)
     };
     if (c.story) c.daysLeft = randInt(s, 4, 5);
     // Disputado: MegaVisión también lo quiere, así que el cliente exige más (dificultad +1) y paga más
-    if (!c.story && t.diff >= 2 && rivalActive(s) && chance(s, 0.2)) {
+    const R = BALANCE.rival;
+    if (!c.story && t.diff >= 2 && rivalActive(s) && chance(s, R.contestedChance)) {
       c.rival = true;
-      c.diff = Math.min(5, c.diff + 1);
-      c.pay = Math.round(c.pay * 1.3 / 10) * 10;
+      c.diff = Math.min(5, c.diff + R.diffBoost);
+      c.pay = Math.round(c.pay * R.payBoost / 10) * 10;
+      c.rivalQuality = rivalQualityFor(s, c); // la calidad que tienes que superar
     }
     s.contracts.push(c);
     return c;
@@ -294,7 +405,7 @@
     if (s.day < (s.storyNext || 0)) return;
     if (EVENT_TYPES[ch.target].minRep > s.rep) return;
     if (s.contracts.some((c) => c.type === ch.target && c.story)) return;
-    if (s.contracts.length >= 7) {
+    if (s.contracts.length >= BALANCE.maxContracts) {
       // Hace espacio quitando la oferta normal que vence primero
       const normal = s.contracts.filter((c) => !c.story).sort((a, b) => a.daysLeft - b.daysLeft)[0];
       if (!normal) return;
@@ -312,7 +423,7 @@
     if (kind === 'redes') {
       if (s.daily.redes >= 1) return { ok: false, msg: 'Ya publicaste hoy. Intenta mañana.' };
       if (s.money < 40) return { ok: false, msg: 'No tienes $40.' };
-      if (s.contracts.length >= 7) return { ok: false, msg: 'Ya tienes demasiadas ofertas pendientes.' };
+      if (s.contracts.length >= BALANCE.maxContracts) return { ok: false, msg: 'Ya tienes demasiadas ofertas pendientes.' };
       s.money -= 40; s.daily.redes++;
       const c = addContract(s);
       log(s, `Publicaste en redes (-$40). Te escribió ${c.client}.`);
@@ -349,7 +460,7 @@
         name: staffName(s),
         role: i < roles.length ? roles[(i + s.day) % roles.length] : pick(s, roles),
         skill,
-        wage: 15 + skill * 15 + randInt(s, 0, 10),
+        wage: BALANCE.wage.base + skill * BALANCE.wage.perSkill + randInt(s, 0, BALANCE.wage.random),
         morale: 80,
         events: 0,
       });
@@ -360,7 +471,7 @@
     const i = s.candidates.findIndex((c) => c.id === candId);
     if (i < 0) return { ok: false, msg: 'Esa persona ya no está disponible.' };
     const c = s.candidates[i];
-    const fee = c.wage * 2;
+    const fee = c.wage * BALANCE.wage.hireFeeDays;
     if (s.staff.length >= 12) return { ok: false, msg: 'Tu oficina está llena (máximo 12 personas).' };
     if (s.money < fee) return { ok: false, msg: `Necesitas ${money(fee)} para contratarle.` };
     s.money -= fee;
@@ -439,8 +550,20 @@
     if (s.gameOver) return;
     s.day++;
     s.daily = { redes: 0, anuncio: 0 };
-    const rent = 20 + 4 * (s.staff.length - 1);
-    s.money -= rent;
+    s.money -= dailyCost(s);
+    // Cobros pendientes que llegan hoy
+    s.pending = s.pending || [];
+    const due = s.pending.filter((p) => p.day <= s.day);
+    if (due.length) {
+      due.forEach((p) => { s.money += p.amount; log(s, `💵 ${p.client} te pagó lo que faltaba: ${money(p.amount)}.`); });
+      s.pending = s.pending.filter((p) => p.day > s.day);
+    }
+    // Fama: si pasas días sin trabajar, la gente se olvida de ti
+    const idle = s.day - (s.lastWorkDay || s.day);
+    if (idle > 0 && idle % BALANCE.fameDecay.every === 0 && s.rep > 0 && !inTutorial(s)) {
+      s.rep = clamp(s.rep - 1, 0, 100);
+      log(s, `📉 Llevas ${idle} días sin eventos y la gente se está olvidando de ti (fama -1).`);
+    }
     // Ofertas que vencen
     s.contracts.forEach((c) => { c.daysLeft--; });
     const expired = s.contracts.filter((c) => c.daysLeft <= 0);
@@ -449,29 +572,58 @@
     // Nuevas ofertas según la fama
     const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 ? 1 : 0);
     for (let i = 0; i < n; i++) addContract(s);
+    // A veces un cliente cancela (nunca las ofertas de la historia)
+    const cancelable = s.contracts.filter((c) => !c.story);
+    if (!inTutorial(s) && cancelable.length && chance(s, BALANCE.cancelChance)) {
+      const c = pick(s, cancelable);
+      s.contracts = s.contracts.filter((x) => x !== c);
+      log(s, `❌ ${c.client} canceló su evento. Se quedaron sin presupuesto.`);
+    }
     // Si el capítulo pide un evento especial, llega cada cierto tiempo
     storyOffer(s);
     // La rival roba clientes (desde el capítulo 4), nunca las ofertas de la historia
     const stealable = s.contracts.filter((c) => !c.story);
-    if (rivalActive(s) && stealable.length > 1 && chance(s, 0.15)) {
+    if (rivalActive(s) && stealable.length > 1 && chance(s, BALANCE.rival.stealChance)) {
       const c = pick(s, stealable);
       s.contracts = s.contracts.filter((x) => x !== c);
       log(s, `😠 MegaVisión le ofreció un precio más bajo a ${c.client} y te quitó el contrato.`);
       if (chance(s, 0.3)) log(s, pick(s, TAUNTS.stolen));
     }
-    // Moral y renuncias
-    s.staff.forEach((p) => { if (!p.owner) p.morale = clamp(p.morale + (p.morale < 60 ? 2 : 0), 0, 100); });
+    // Moral y renuncias: descansar un día (sin evento) recupera el ánimo
+    const rested = s.lastWorkDay !== s.day;
+    s.staff.forEach((p) => { if (!p.owner) p.morale = clamp(p.morale + (p.morale < 60 ? 2 : 0) + (rested ? BALANCE.morale.rest : 0), 0, 100); });
     const quitter = s.staff.find((p) => !p.owner && p.morale < 20 && chance(s, 0.4));
     if (quitter) {
       s.staff = s.staff.filter((p) => p !== quitter);
       log(s, `💔 ${quitter.name} renunció porque estaba desmotivado/a.`);
     }
+    // El personal pide aumento: si no se lo das, se desmotiva
+    const R = BALANCE.raise;
+    const hired = s.staff.filter((p) => !p.owner);
+    if (hired.length >= R.minStaff && s.day >= R.minDay && chance(s, R.chance)) {
+      const p = pick(s, hired);
+      const more = Math.max(5, Math.round(p.wage * R.pct));
+      if (p.morale >= 50) {
+        p.wage += more;
+        log(s, `🤝 ${p.name} pidió un aumento y aceptaste: ahora cobra ${money(p.wage)} por evento.`);
+      } else {
+        hired.forEach((x) => { x.morale = clamp(x.morale - 12, 0, 100); });
+        p.wage += more;
+        log(s, `✊ El equipo está molesto y ${p.name} encabezó un reclamo. Le subiste el sueldo (${money(p.wage)}) y la moral de todos bajó.`);
+      }
+    }
     if (s.day % 3 === 1) refreshCandidates(s);
-    if (s.money < -300) {
+    if (s.money < BALANCE.bankruptAt) {
       s.gameOver = true;
-      log(s, '💸 Quebraste: las deudas superaron los $300.');
+      log(s, `💸 Quebraste: las deudas superaron los ${money(-BALANCE.bankruptAt)}.`);
     }
   }
+
+  const STORY_SUPPORT_TEXT = {
+    lanzamiento: 'Apoyo de Lucía Mena (la marca pone luces y escenario)',
+    ligapro: 'Apoyo de Don Aurelio (el estadio pone fibra y luz)',
+    final: 'Apoyo del estadio y de la federación',
+  };
 
   /* ---------- Calidad base del evento ---------- */
   function computeQuality(s, contract, staff, equip) {
@@ -497,7 +649,7 @@
       const d = best('dir');
       const sw = equip.filter((e) => CATALOG[e.type].cat === 'switcher').reduce((m, e) => Math.max(m, CATALOG[e.type].q), 0);
       let pts;
-      if (d && sw) pts = d * 2 + sw * 2;
+      if (d && sw) pts = d * BALANCE.skillPts.dir + sw * 2;
       else if (sw) pts = 0;
       else pts = -(6 + contract.diff * 3);
       parts.push([d && sw ? 'Director con switcher' : sw ? 'Switcher sin director' : 'Sin switcher para mezclar cámaras', pts]);
@@ -507,7 +659,7 @@
       const a = best('audio');
       const cons = equip.filter((e) => CATALOG[e.type].cat === 'audio').reduce((m, e) => Math.max(m, CATALOG[e.type].q), 0);
       let pts;
-      if (cons && a) pts = 4 + a * 1.5 + cons * 2;
+      if (cons && a) pts = 4 + a * BALANCE.skillPts.audio + cons * 2;
       else if (cons) pts = 3;
       else pts = -(6 + contract.diff * 3);
       if (has('mics')) pts += 3;
@@ -518,17 +670,29 @@
       const t = best('stream');
       const canSend = has('encoder') || has('switcher');
       let pts;
-      if (canSend && t) pts = 6 + t * 1.5 + (has('encoder') ? 2 : 0);
+      if (canSend && t) pts = 6 + t * BALANCE.skillPts.stream + (has('encoder') ? 2 : 0);
       else if (canSend) pts = 3;
       else pts = -(8 + contract.diff * 4);
       parts.push([canSend ? (t ? 'Técnico de streaming con equipo' : 'Equipo de streaming sin técnico') : 'Sin equipo para transmitir', Math.round(pts)]);
       q += pts;
     }
     const avgSkill = staff.length ? staff.reduce((a, p) => a + p.skill, 0) / staff.length : 0;
-    const sk = Math.round(avgSkill * 2);
+    const sk = Math.round(avgSkill * BALANCE.skillPts.team);
     parts.push(['Experiencia del equipo', sk]); q += sk;
-    const dp = -(contract.diff * 4 + Math.max(0, contract.diff - 3) * 4);
+    // Ánimo: un equipo cansado o molesto trabaja peor (el dueño no cuenta)
+    const hiredStaff = staff.filter((p) => !p.owner);
+    if (hiredStaff.length) {
+      const M = BALANCE.morale;
+      const avgMorale = hiredStaff.reduce((a, p) => a + p.morale, 0) / hiredStaff.length;
+      const mp = clamp(Math.round((avgMorale - M.neutral) / M.perPoint), M.min, M.max);
+      if (mp) { parts.push([mp < 0 ? 'Equipo cansado o desmotivado' : 'Equipo con buen ánimo', mp]); q += mp; }
+    }
+    const dp = -BALANCE.diffPenalty[clamp(contract.diff, 1, 5)];
     parts.push([`Dificultad del evento (${contract.diff})`, dp]); q += dp;
+    const sup = contract.story ? (BALANCE.storySupport[contract.type] || 0) : 0;
+    if (sup) { parts.push([STORY_SUPPORT_TEXT[contract.type] || 'Apoyo especial del cliente', sup]); q += sup; }
+    const ex = -Math.round((s.rep || 0) * BALANCE.expectPerRep);
+    if (ex) { parts.push(['Lo que esperan de una productora con tu fama', ex]); q += ex; }
     return { q: clamp(Math.round(q), 0, 100), parts };
   }
 
@@ -676,8 +840,8 @@
     },
     falla: {
       weight: (s, ev) => 6,
-      when: (s, ev) => ev.equip.some((e) => e.condition < 40),
-      setup: (s, ev) => ({ eq: pick(s, ev.equip.filter((e) => e.condition < 40)).id }),
+      when: (s, ev) => ev.equip.some((e) => e.condition < BALANCE.worn),
+      setup: (s, ev) => ({ eq: pick(s, ev.equip.filter((e) => e.condition < BALANCE.worn)).id }),
       text: (ev, x) => `🛠️ ¡${CATALOG[(ev.equip.find((e) => e.id === x.eq) || { type: 'cam_basic' }).type].name} empezó a fallar! Está muy gastada.`,
       choices: [
         { label: 'Reiniciarla y cruzar los dedos', run: (s) => (chance(s, 0.5)
@@ -705,6 +869,90 @@
         { label: 'Seguir normal', run: () => ({ q: 2, msg: 'Quedó bien grabado.' }) },
       ],
     },
+    // Imprevistos que cuestan plata: el monto crece con el tamaño del evento
+    permiso: {
+      weight: () => 2,
+      when: (s, ev) => ev.contract.diff >= 2,
+      setup: (s, ev) => ({ cost: Math.max(50, Math.round(ev.contract.pay * 0.1 / 10) * 10) }),
+      text: (ev, x) => `📋 El administrador del local dice que falta un permiso para el cableado y te cobra ${money(x.cost)}.`,
+      choices: [
+        { label: 'Pagar el permiso', need: (s, ev, x) => (s.money >= x.cost ? null : `No tienes ${money(x.cost)}`),
+          run: (s, ev, x) => { s.money -= x.cost; return { q: 0, msg: `Pagaste ${money(x.cost)} y siguieron trabajando tranquilos.` }; } },
+        { label: 'Negociar con el administrador', run: (s, ev, x) => {
+          if (chance(s, 0.45)) return { q: -2, msg: 'Lo convenciste de dejarlo para otro día.' };
+          const half = Math.round(x.cost / 2);
+          s.money -= half;
+          return { q: -6, msg: `Tardó media hora la discusión y igual pagaste ${money(half)}.` };
+        } },
+        { label: 'Quitar el cableado y usar menos equipos', run: () => ({ q: -12, msg: 'Desarmaste parte del montaje. La transmisión perdió calidad.' }) },
+      ],
+    },
+    transporte: {
+      weight: (s, ev) => 1 + ev.contract.diff * 0.4,
+      when: (s, ev) => ev.contract.diff >= 3,
+      setup: (s, ev) => ({ cost: Math.max(80, Math.round(ev.contract.pay * 0.08 / 10) * 10) }),
+      text: () => '🚐 El carro con los equipos se quedó varado en el tráfico y falta poco para empezar.',
+      choices: [
+        { label: 'Pagar un flete urgente', need: (s, ev, x) => (s.money >= x.cost ? null : `No tienes ${money(x.cost)}`),
+          run: (s, ev, x) => { s.money -= x.cost; return { q: -2, msg: `El flete llegó a tiempo (${money(x.cost)}).` }; } },
+        { label: 'Esperar y montar a la carrera', run: (s) => (chance(s, 0.35)
+          ? { q: -4, msg: 'Llegaron justito. Montaron todo en tiempo récord.' }
+          : { q: -14, msg: 'Empezaste tarde y sin probar nada. Se notó en la transmisión.' }) },
+      ],
+    },
+    robo: {
+      weight: () => 1.2,
+      when: (s, ev) => ev.contract.diff >= 3 && ev.equip.some((e) => ['mics', 'encoder', 'internet'].includes(CATALOG[e.type].cat)),
+      setup: (s, ev) => ({ eq: pick(s, ev.equip.filter((e) => ['mics', 'encoder', 'internet'].includes(CATALOG[e.type].cat))).id }),
+      text: (ev, x) => `🕵️ Entre tanta gente, alguien se llevó tu ${CATALOG[(ev.equip.find((e) => e.id === x.eq) || { type: 'mics' }).type].name}.`,
+      choices: [
+        { label: 'Avisar a seguridad y seguir', run: (s, ev, x) => {
+          if (chance(s, 0.5)) return { q: -3, msg: 'Seguridad lo encontró en la puerta. ¡Lo recuperaste!' };
+          s.equip = s.equip.filter((e) => e.id !== x.eq);
+          return { q: -6, msg: 'No apareció. Lo perdiste para siempre.' };
+        } },
+        { label: 'Dejar a alguien cuidando los equipos', run: () => ({ q: -9, msg: 'No te robaron más, pero trabajaste con una persona menos.' }) },
+      ],
+    },
+    // Imprevistos de habilidad: salir bien depende del nivel de tu gente
+    senal: {
+      weight: () => 2.5,
+      when: (s, ev) => ev.contract.stream && ev.contract.diff >= 3,
+      text: () => '📶 La plataforma avisa que tu transmisión se está trabando para muchos espectadores.',
+      choices: [
+        { label: 'Que el técnico de streaming lo arregle', need: (s, ev) => (bestRole(ev, 'stream') ? null : 'No trajiste técnico de streaming'),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'stream'),
+            (p) => ({ q: 2, msg: `${p.name} bajó la tasa de bits a tiempo. Casi nadie lo notó.` }),
+            (p) => ({ q: -10, msg: `${p.name} probó varias cosas, pero la imagen se congeló varios minutos.` })) },
+        { label: 'Reiniciar la transmisión', run: () => ({ q: -9, msg: 'Volviste al aire, pero perdiste espectadores en el corte.' }) },
+      ],
+    },
+    guion: {
+      weight: () => 2.5,
+      when: (s, ev) => ev.contract.diff >= 3,
+      text: () => '📝 El cliente cambió el orden del programa a último momento y nadie avisó a tu equipo.',
+      choices: [
+        { label: 'Que el director reorganice todo', need: (s, ev) => (bestRole(ev, 'dir') ? null : 'No trajiste director'),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'dir'),
+            (p) => ({ q: 3, msg: `${p.name} reorganizó las cámaras al vuelo. ¡Ni se notó!` }),
+            (p) => ({ q: -9, msg: `${p.name} se enredó con los cambios y se perdieron varias entradas.` })) },
+        { label: 'Seguir el guion original', run: () => ({ q: -8, msg: 'Las cámaras apuntaban al lugar equivocado varias veces.' }) },
+      ],
+    },
+    multitud: {
+      weight: () => 2,
+      when: (s, ev) => ev.contract.diff >= 3 && camsOf(ev).length >= 2,
+      text: () => '👥 La gente se paró frente a tu cámara principal y tapa todo.',
+      choices: [
+        { label: 'Que tu mejor camarógrafo busque otro ángulo', need: (s, ev) => (bestRole(ev, 'cam') ? null : 'No hay camarógrafo'),
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'cam'),
+            (p) => ({ q: 2, msg: `${p.name} se subió a una silla y consiguió una toma mejor.` }),
+            (p) => ({ q: -9, msg: `${p.name} no encontró buen ángulo. Media transmisión se vio tapada.` })) },
+        { label: 'Pedir a seguridad que despeje', run: (s) => (chance(s, 0.4)
+          ? { q: -3, msg: 'Seguridad despejó rápido.' }
+          : { q: -10, msg: 'Seguridad tardó muchísimo.' }) },
+      ],
+    },
     vip: {
       weight: () => 2,
       when: (s, ev) => ev.contract.diff >= 2,
@@ -720,6 +968,12 @@
     },
   };
 
+  /* Prueba de habilidad: cuanto más nivel tiene la persona, más probable que salga bien */
+  function skillCheck(s, p, ok, bad) {
+    const I = BALANCE.incidents;
+    return chance(s, I.skillBase + I.skillPer * p.skill) ? ok(p) : bad(p);
+  }
+
   /* ---------- Evento en vivo ---------- */
   function startEvent(s, contractId, staffIds, equipIds) {
     if (s.currentEvent) return { ok: false, msg: 'Ya hay un evento en curso.' };
@@ -730,8 +984,16 @@
     const equip = s.equip.filter((e) => equipIds.includes(e.id));
     if (!staff.length) return { ok: false, msg: 'Lleva al menos una persona.' };
     if (!equip.some((e) => CATALOG[e.type].cat === 'cam')) return { ok: false, msg: 'Lleva al menos una cámara.' };
-    const wages = staff.reduce((a, p) => a + p.wage, 0);
+    const wages = staff.reduce((a, p) => a + eventWage(p, contract.diff), 0);
     const base = computeQuality(s, contract, staff, equip);
+    const tutorial = inTutorial(s);
+    // Suerte del día: el público, el clima, el lugar... (no en los primeros eventos)
+    if (!tutorial && BALANCE.luck) {
+      const L = Math.max(0, Math.round(BALANCE.luck[0] + BALANCE.luck[1] * contract.diff));
+      const luck = randInt(s, -L, L);
+      base.parts.push(['Cómo estuvo el día (suerte)', luck]);
+      base.q = clamp(base.q + luck, 0, 100);
+    }
     const ev = {
       contract: Object.assign({}, contract),
       staffIds: staff.map((p) => p.id),
@@ -742,12 +1004,17 @@
       deltas: [],
       incidents: [],
       step: 0,
+      tutorial,
     };
     // Elegir imprevistos
     const view = { contract: ev.contract, staff, equip };
-    const worn = equip.filter((e) => e.condition < 40).length;
-    const nInc = clamp(1 + Math.floor(contract.diff / 2) + (worn ? 1 : 0) + (chance(s, 0.3) ? 1 : 0), 1, 4);
-    const pool = Object.keys(INCIDENTS).filter((k) => INCIDENTS[k].when(s, view));
+    const worn = equip.filter((e) => e.condition < BALANCE.worn).length;
+    const BI = BALANCE.incidents;
+    const nInc = tutorial ? 1
+      : clamp(BI.byDiff[contract.diff] + (worn ? 1 : 0) + (chance(s, BI.extraChance) ? 1 : 0), 1, BI.max);
+    // En los primeros eventos no hay imprevistos que cuestan plata
+    const gentle = ['permiso', 'transporte', 'robo'];
+    const pool = Object.keys(INCIDENTS).filter((k) => INCIDENTS[k].when(s, view) && !(tutorial && gentle.includes(k)));
     for (let i = 0; i < nInc && pool.length; i++) {
       const ws = pool.map((k) => INCIDENTS[k].weight(s, view));
       const tot = ws.reduce((a, b) => a + b, 0);
@@ -799,6 +1066,8 @@
     const why = ch.need ? ch.need(s, view, inc.x) : null;
     if (why) return { ok: false, msg: why };
     const r = ch.run(s, view, inc.x);
+    // En eventos grandes los errores pesan más (salvo en los primeros eventos)
+    if (r.q < 0 && !ev.tutorial) r.q = Math.round(r.q * (1 + BALANCE.incidents.severityPerDiff * (ev.contract.diff - 1)));
     inc.done = true;
     inc.result = r;
     ev.deltas.push(r.q);
@@ -813,31 +1082,46 @@
     const c = ev.contract;
     const t = EVENT_TYPES[c.type];
     const quality = clamp(ev.base + ev.deltas.reduce((a, b) => a + b, 0), 0, 100);
-    const stars = quality >= 85 ? 5 : quality >= 70 ? 4 : quality >= 55 ? 3 : quality >= 40 ? 2 : 1;
+    const B = BALANCE.stars;
+    const stars = quality >= B[0] ? 5 : quality >= B[1] ? 4 : quality >= B[2] ? 3 : quality >= B[3] ? 2 : 1;
     const pay = Math.round(c.pay * STARS_PAY[stars]);
     const repRaw = STARS_REP[stars] * (0.5 + c.diff * 0.15);
     // Cuanta más fama tienes, más cuesta seguir subiendo
     let repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
-    // Contrato disputado con MegaVisión: duelo ganado (4+) o perdido (2 o menos)
-    let duel = null;
+    // Contrato disputado: ganas el duelo solo si tu calidad final supera la de MegaVisión
+    let duel = null, rivalQuality = null;
     if (c.rival) {
-      if (stars >= 4) { duel = 'won'; repDelta += 3; }
-      else if (stars <= 2) { duel = 'lost'; repDelta -= 3; }
-      else duel = 'tie';
+      rivalQuality = typeof c.rivalQuality === 'number' ? c.rivalQuality : rivalQualityFor(s, c);
+      if (quality > rivalQuality) { duel = 'won'; repDelta += BALANCE.rival.winRep; }
+      else { duel = 'lost'; repDelta -= BALANCE.rival.loseRep; }
     }
-    s.money += pay - ev.wages;
+    // Algunos clientes pagan la mitad ahora y el resto unos días después
+    const LP = BALANCE.latePay;
+    let payNow = pay, payLater = 0;
+    if (!ev.tutorial && !c.story && c.diff >= LP.minDiff && pay > 0 && chance(s, LP.chance)) {
+      payLater = Math.round(pay * (1 - LP.share));
+      payNow = pay - payLater;
+      s.pending = s.pending || [];
+      s.pending.push({ day: s.day + LP.days, amount: payLater, client: c.client });
+    }
+    s.money += payNow - ev.wages;
     s.rep = clamp(s.rep + repDelta, 0, 100);
-    // Desgaste de equipos, experiencia y moral del personal
+    s.lastWorkDay = s.day + 1; // el evento ocupa el día
+    // Desgaste de equipos (más en eventos grandes), experiencia y moral del personal
     const view = evView(s);
-    view.equip.forEach((e) => { e.condition = clamp(e.condition - randInt(s, 3, 6 + c.diff * 2), 1, 100); });
+    const W = BALANCE.wear;
+    view.equip.forEach((e) => { e.condition = clamp(e.condition - randInt(s, W.min + c.diff * W.perDiffMin, W.max + c.diff * W.perDiffMax), 1, 100); });
     const ups = [];
     view.staff.forEach((p) => {
       p.events++;
-      if (!p.owner) p.morale = clamp(p.morale + (stars >= 4 ? 6 : stars <= 2 ? -10 : 1), 0, 100);
-      if (p.skill < 5 && p.events % (3 + p.skill * 2) === 0) {
+      const tired = BALANCE.morale.fatigue * Math.max(0, c.diff - 2);
+      if (!p.owner) p.morale = clamp(p.morale + (stars >= 4 ? 6 : stars <= 2 ? -10 : 1) - tired, 0, 100);
+      p.xp = (p.xp || 0) + 1;
+      if (p.skill < 5 && p.xp >= BALANCE.skillUp[p.skill]) {
         p.skill++;
-        if (!p.owner) p.wage += 12;
-        ups.push(`${p.name} subió a habilidad ${p.skill}`);
+        p.xp = 0;
+        if (!p.owner) p.wage += BALANCE.wage.raisePerLevel;
+        ups.push(p.owner ? `${p.name} subió a habilidad ${p.skill}` : `${p.name} subió a habilidad ${p.skill} y ahora cobra ${money(p.wage)}`);
       }
     });
     s.stats.events++;
@@ -855,14 +1139,18 @@
     const result = {
       title: `${t.icon} ${t.name} · ${c.client}`,
       quality, stars, pay, wages: ev.wages, net: pay - ev.wages, repDelta, ups,
-      rival: !!c.rival, duel, // duel: 'won' | 'lost' | 'tie' | null
+      rival: !!c.rival, duel, // duel: 'won' | 'lost' | null
+      rivalQuality, // calidad de MegaVisión en un contrato disputado (o null)
+      payNow, payLater, payLaterDays: payLater ? LP.days : 0, // cobro en dos partes
+      dailyCost: dailyCost(s),
       base: ev.base, parts: ev.parts,
       incidents: ev.incidents.map((i) => ({ text: INCIDENTS[i.key].text(view, i.x), result: i.result })),
     };
-    log(s, `${'⭐'.repeat(stars)} ${t.name} para ${c.client}: cobraste ${money(pay)}, sueldos ${money(ev.wages)}, fama ${repDelta >= 0 ? '+' : ''}${repDelta}.`);
+    log(s, `${'⭐'.repeat(stars)} ${t.name} para ${c.client}: cobraste ${money(payNow)}${payLater ? ` (y ${money(payLater)} en ${LP.days} días)` : ''}, sueldos ${money(ev.wages)}, fama ${repDelta >= 0 ? '+' : ''}${repDelta}.`);
+    if (payLater) log(s, `🧾 ${c.client} pagó la mitad y dice que el resto llega en ${LP.days} días.`);
     ups.forEach((u) => log(s, `📈 ${u}.`));
-    if (duel === 'won') log(s, `⚔️ ¡Duelo ganado contra MegaVisión! (+3 de fama extra) ${pick(s, TAUNTS.duelWin)}`);
-    if (duel === 'lost') log(s, `⚔️ Perdiste el duelo contra MegaVisión (-3 de fama extra). ${pick(s, TAUNTS.duelLose)}`);
+    if (duel === 'won') log(s, `⚔️ ¡Duelo ganado contra MegaVisión! Tu calidad ${quality} contra ${rivalQuality} de ellos (+${BALANCE.rival.winRep} de fama extra). ${pick(s, TAUNTS.duelWin)}`);
+    if (duel === 'lost') log(s, `⚔️ MegaVisión ganó el duelo: su calidad ${rivalQuality} contra tu ${quality} (-${BALANCE.rival.loseRep} de fama extra). ${pick(s, TAUNTS.duelLose)}`);
     storyMilestone(s, c.type, stars, duel);
     s.currentEvent = null;
     s.lastResult = result;
@@ -914,7 +1202,7 @@
   function deserialize(str) {
     try {
       const s = JSON.parse(str);
-      if (!s || s.v !== SAVE_VERSION || !Array.isArray(s.staff)) return null;
+      if (!s || !(s.v === 1 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
       // Rellenar campos nuevos en partidas guardadas antes
       s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
       s.stats.best = s.stats.best || {};
@@ -933,7 +1221,16 @@
         const ch = CHAPTERS[s.chapter];
         s.storyNext = ch && ch.offer ? s.day + 1 : 0;
       }
-      (s.contracts || []).forEach((c) => { c.rival = !!c.rival; c.story = !!c.story; });
+      (s.contracts || []).forEach((c) => {
+        c.rival = !!c.rival; c.story = !!c.story;
+        if (c.rival && typeof c.rivalQuality !== 'number') c.rivalQuality = rivalQualityFor(s, c);
+      });
+      if (s.currentEvent && s.currentEvent.contract && s.currentEvent.contract.rival && typeof s.currentEvent.contract.rivalQuality !== 'number') {
+        s.currentEvent.contract.rivalQuality = rivalQualityFor(s, s.currentEvent.contract);
+      }
+      if (!Array.isArray(s.pending)) s.pending = [];
+      if (typeof s.lastWorkDay !== 'number') s.lastWorkDay = s.day;
+      s.v = SAVE_VERSION;
       return s;
     } catch (e) { return null; }
   }
@@ -944,6 +1241,7 @@
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay,
     computeQuality, suggestLoadout, startEvent, currentIncident, resolveIncident, finishEvent,
     checkChapter, countCat, serialize, deserialize, money,
+    BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.Game = API;

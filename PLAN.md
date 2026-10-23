@@ -47,24 +47,53 @@ transmitir finales en estadios.
 ### Pendientes de ajuste (balance)
 - [x] Capítulos 4→5→6 se completaban muy seguido (~4 días entre ellos). Rediseñados (ver abajo).
 - [ ] Revisar si el inicio es muy difícil para alguien que no contrata personal.
-- [ ] El bot gana casi todos los duelos contra MegaVisión: probar con jugadores reales si son muy fáciles.
+- [x] El bot ganaba todos los duelos contra MegaVisión y el juego era muy fácil. Rebalanceado (ver "Dificultad" abajo).
+- [ ] Probar con jugadores reales si el capítulo 4 (crecer sin quebrar) se siente justo.
 
 ### Historia (6 capítulos) · ritmo medido con el bot (día mediano en que se completa)
-| Cap. | Personaje | Objetivo | Día |
-|---|---|---|---|
-| 1 · El garaje | Don Ramiro | 3 eventos | 4 |
-| 2 · Armando el equipo | Don Ramiro | 2 cámaras, 2 contratados, 12 de fama | 32 |
-| 3 · El gran lanzamiento | Lucía Mena (marca) | 2 lanzamientos de marca con 4⭐+ | 45 |
-| 4 · La rival | Germán Vélez (MegaVisión) | 3 duelos ganados + 40 de fama + $12.000 | 60 |
-| 5 · Al estadio | Don Aurelio (dirigente) | Switcher ATEM + 2 partidos de LigaPro con 4⭐+ | 79 |
-| 6 · La final | Don Ramiro | Final de campeonato con 5⭐ (65 de fama) | ~103 |
+| Cap. | Personaje | Objetivo | Día (antes) | Día (ahora) |
+|---|---|---|---|---|
+| 1 · El garaje | Don Ramiro | 3 eventos | 4 | 4 |
+| 2 · Armando el equipo | Don Ramiro | 2 cámaras, 2 contratados, 12 de fama | 32 | ~50 |
+| 3 · El gran lanzamiento | Lucía Mena (marca) | 2 lanzamientos de marca con 4⭐+ | 45 | ~70 |
+| 4 · La rival | Germán Vélez (MegaVisión) | 3 duelos ganados + 40 de fama + $12.000 | 60 | ~125 |
+| 5 · Al estadio | Don Aurelio (dirigente) | Switcher ATEM + 2 partidos de LigaPro con 4⭐+ | 79 | ~160 |
+| 6 · La final | Don Ramiro | Final de campeonato con 5⭐ (65 de fama) | ~103 | ~210 |
 
 Reglas nuevas:
 - Ofertas de la historia: el evento que pide el capítulo (lanzamiento, LigaPro, final) ya no aparece al azar; llega como oferta especial cada cierto tiempo (cap. 3: cada 6 días; cap. 5: cada 10; cap. 6: la final a los 18 días y luego cada 10). MegaVisión no puede robarlas.
 - LigaPro solo aparece desde el capítulo 5 y la final desde el 6 (en modo libre, siempre).
-- Contratos disputados (desde el capítulo 4): 20% de las ofertas de dificultad 2+. Pagan 30% más y son 1 punto más difíciles. 4⭐+ = duelo ganado (+3 fama extra); 2⭐ o menos = duelo perdido (-3 fama extra).
+- Contratos disputados (desde el capítulo 4): 20% de las ofertas de dificultad 2+. Pagan 30% más y son 1 punto más difíciles. Cada uno muestra la calidad que promete MegaVisión (entre 45 y 95, sube con el capítulo y la dificultad). Ganas el duelo solo si tu calidad final la supera (+3 fama extra); si no, lo pierdes (-4 fama extra). Ya no hay empates.
 - Lo que pide cada capítulo (lanzamientos, partidos, duelos) cuenta desde que empieza ese capítulo.
 - Mensajes cortos de los personajes en el registro (Lucía Mena, Germán Vélez, Don Aurelio, Don Ramiro).
+
+### Dificultad (23 oct 2026) · el juego gratis tiene que exigir, pero se puede terminar sin pagar
+Todos los números están juntos en `BALANCE`, al inicio de `js/logic.js`, para ajustarlos fácil (y más adelante sumar equipos mejores).
+
+Qué cambió:
+- **Los 3 primeros eventos siguen suaves:** 1 solo imprevisto, sin "suerte del día", sin imprevistos que cuestan plata, sin pagos atrasados ni pérdida de fama.
+- **MegaVisión es una rival de verdad:** su calidad aparece en el contrato disputado y hay que superarla (ver arriba).
+- **Más imprevistos en eventos grandes:** dificultad 1-2: 1; dificultad 3: 2; dificultad 4-5: 3 (más 1 si llevas equipo gastado y 35% de chance de 1 extra; máximo 5). Los errores pesan más en eventos grandes (+15% por punto de dificultad).
+- **Imprevistos nuevos:** permiso del local y flete urgente (cuestan entre 8% y 10% del pago del evento), robo de un equipo, señal que se traba, cambio de guion y gente tapando la cámara. Los tres últimos dependen del nivel de tu técnico, director o camarógrafo.
+- **Gastos diarios que crecen con la empresa** (`dailyCost`): local según el tamaño (personas + equipos): garaje $20, oficina $60 (13+), estudio $160 (16+), centro de producción $310 (19+). Más $2 por persona, 3% de los sueldos y 0,3% del valor de los equipos cada día. Crecer muy rápido puede quebrarte.
+- **Sueldos:** cada nivel que sube una persona le sube $15 el sueldo; en eventos grandes cobran más (+15% por punto de dificultad sobre 1); a veces piden aumento y, si el equipo está desmotivado, hay reclamo y baja la moral de todos.
+- **Ánimo del equipo:** los eventos grandes cansan; un día sin evento lo recupera. Un equipo cansado resta hasta 5 puntos de calidad.
+- **Clientes:** a veces cancelan una oferta (5% al día) o pagan la mitad ahora y la otra mitad a los 3 días (25% de los eventos de dificultad 2+).
+- **Fama:** -1 cada 3 días sin trabajar. Los clientes exigen más cuanto más famoso eres (-0,18 puntos por cada punto de fama).
+- **Equipos:** se gastan más en eventos grandes y fallan con menos de 40% de estado.
+- **Habilidad:** cuesta más subir (4, 7, 11 y 16 eventos para cada nivel).
+- **Ofertas de la historia:** vienen con apoyo del personaje (lanzamiento +6, LigaPro +9, final +24 de calidad) para que la historia se pueda terminar.
+
+Resultado con el bot (400 partidas, 400 días, 4 semillas):
+| Medida | Antes | Ahora | Meta |
+|---|---|---|---|
+| Quiebras | 0% | 7% a 10,5% | 6% a 15% |
+| Termina la historia | 100% | 75% a 83% | 60% a 85% |
+| Día mediano de la final | 103 | 202 a 214 | 150 a 220 |
+| Duelos perdidos | 0% | ~61% | 25% o más |
+| Estrellas promedio cap. 3 a 6 | ~4,8 | ~3,5 (3,8 / 3,7 / 3,8 / 3,2) | 3,0 a 3,8 |
+
+Nota: el bot es "razonable" pero no muy fino. Un bot que solo acepta duelos con más margen pierde ~36%. Una persona que repara, descansa al equipo y elige bien sus duelos debería ir mejor que el bot.
 
 ### Fase 2 — Juego bonito (en curso)
 - [x] Íconos propios dibujados (equipos, roles, eventos, menú)
@@ -93,3 +122,4 @@ Reglas nuevas:
 - 2026-10-22: prototipo completo y probado. Balance medido con bot: gana la historia en ~53 días de juego (mediana), 0 quiebras en 400 partidas.
 - 2026-10-23: rediseño del ritmo de la historia. Cada capítulo tiene personaje (retrato en la pantalla), ofertas de la historia espaciadas y la rival MegaVisión con contratos disputados. Bot: capítulos en días 4 / 32 / 45 / 60 / 79 / 103 (mediana), 0% quiebras, 100% termina la historia en 400 días. La prueba ahora falla si el ritmo se rompe.
 - 2026-10-23: parte gráfica (íconos, retratos, sede, escena animada), sonidos y app instalable. Todo subido a GitHub.
+- 2026-10-23: juego más difícil (para que luego tenga sentido comprar mejor equipo). MegaVisión con calidad propia en los duelos, más imprevistos y algunos que cuestan plata, gastos que crecen con la empresa, sueldos más altos, pagos atrasados, cancelaciones y pérdida de fama sin trabajar. Los 3 primeros eventos siguen suaves. Bot: capítulos en días 4 / 50 / 70 / 126 / 160 / 212, 8% quiebras, 79,5% termina la historia, pierde el 61% de los duelos, 3,5⭐ promedio en los capítulos 3 a 6. Números en `BALANCE` (js/logic.js). Guardado v2 (las partidas v1 cargan bien).

@@ -1,6 +1,7 @@
 /* Prueba automática de la lógica: juega cientos de partidas con un "bot"
-   y revisa que nada se rompa (dinero válido, sin errores, historia completable).
-   Uso:  node tests/test_logic.js                                            */
+   y revisa que nada se rompa (dinero válido, sin errores, historia completable)
+   y que la dificultad esté en el rango buscado (quiebras, duelos, estrellas).
+   Uso:  node tests/test_logic.js      (SEED=5000 node tests/test_logic.js para otra semilla) */
 'use strict';
 const G = require('../js/logic.js');
 
@@ -56,10 +57,13 @@ function botTurn(s) {
     let score = c.pay * (q / 100) * (q >= 50 ? 1 : 0.2);
     // Perseguir la historia: ofertas del capítulo y duelos contra la rival (si se pueden ganar)
     if (c.story && q >= 60) score *= 2;
-    if (c.rival && s.chapter === 3 && !s.storyDone) score *= q >= 75 ? 1.5 : 0.5;
+    // Duelos: el contrato muestra la calidad que promete MegaVisión; el bot solo se arriesga si cree que le gana
+    if (c.rival) score *= q >= c.rivalQuality + 10 ? (s.chapter === 3 && !s.storyDone ? 1.6 : 1) : 0.3;
     if (!best || score > best.score) best = { c, lo, score };
   }
   if (!best) { G.nextDay(s); return; }
+  // Antes de un evento de la historia, deja todo el equipo como nuevo (lo que haría una persona)
+  if (best.c.story) s.equip.filter((e) => e.condition < 80).forEach((e) => { if (s.money > G.repairCost(e) + 200) G.repair(s, e.id); });
   const r = G.startEvent(s, best.c.id, best.lo.staffIds, best.lo.equipIds);
   check(r.ok, 'startEvent falló: ' + r.msg);
   if (!r.ok) { G.nextDay(s); return; }
@@ -70,24 +74,36 @@ function botTurn(s) {
     const rr = G.resolveIncident(s, ch.i);
     check(rr.ok && typeof rr.msg === 'string', 'resolveIncident falló');
   }
+  const chBefore = s.storyDone ? NCH : s.chapter;
   const f = G.finishEvent(s);
   check(f.ok && f.result.stars >= 1 && f.result.stars <= 5, 'finishEvent falló');
+  if (f.ok) {
+    starsByChapter[chBefore].push(f.result.stars);
+    if (f.result.rival) {
+      check(typeof f.result.rivalQuality === 'number' && (f.result.duel === 'won') === (f.result.quality > f.result.rivalQuality),
+        'duelo: el resultado no coincide con la calidad de MegaVisión');
+    }
+    check(f.result.payNow + f.result.payLater === f.result.pay, 'cobro en dos partes no suma el total');
+  }
 }
 
-const GAMES = 400, MAX_DAYS = 400;
+const GAMES = 400, MAX_DAYS = 400, SEED = Number(process.env.SEED) || 1000;
 const NCH = G.CHAPTERS.length;
+const starsByChapter = G.CHAPTERS.map(() => []).concat([[]]); // índice NCH = modo libre
 let storyWins = 0, bankrupt = 0, daysToWin = [], chapterReached = new Array(NCH + 1).fill(0);
 const chapterDays = G.CHAPTERS.map(() => []);
 let rivalSeen = 0, rivalEarly = 0, duelsWon = 0, duelsLost = 0;
 for (let g = 0; g < GAMES; g++) {
-  const s = G.newGame(1000 + g);
+  const s = G.newGame(SEED + g);
   validState(s, `partida ${g} inicio`);
   let winDay = null, lastCh = s.chapter;
   for (let t = 0; t < MAX_DAYS && !s.gameOver; t++) {
     try { botTurn(s); } catch (e) { check(false, `partida ${g} día ${s.day}: EXCEPCIÓN ${e.stack}`); break; }
     validState(s, `partida ${g} día ${s.day}`);
+    check(Number.isFinite(G.dailyCost(s)) && G.dailyCost(s) >= 20, `partida ${g}: gasto diario inválido`);
     s.contracts.forEach((c) => {
       check(typeof c.rival === 'boolean', `partida ${g}: contrato sin campo rival`);
+      if (c.rival) check(typeof c.rivalQuality === 'number', `partida ${g}: contrato disputado sin calidad de MegaVisión`);
       if (c.rival) { rivalSeen++; if (!s.storyDone && s.chapter < 3) rivalEarly++; }
       if (!s.storyDone && c.type === 'ligapro') check(s.chapter >= 4, `partida ${g}: LigaPro antes del capítulo 5`);
     });
@@ -123,24 +139,30 @@ G.CHAPTERS.forEach((ch, i) => {
     return G.finishEvent(s).result;
   }
   const s = G.newGame(77);
-  s.chapter = 3; s.rep = 30; s.contracts = [];
+  s.chapter = 3; s.rep = 30; s.contracts = []; s.stats.events = 5;
   const c = G.addContract(s, 'boda');
   check(c && c.rival === false, 'contrato pedido a mano no debería ser disputado');
-  c.rival = true; c.stream = true; c.audio = true; c.cams = 3; c.diff = 4;
+  c.rival = true; c.stream = true; c.audio = true; c.cams = 3; c.diff = 4; c.rivalQuality = 70;
   const owner = s.staff.find((p) => p.owner);
   const rep0 = s.rep;
   const r = play(s, c, [owner.id], s.equip.map((e) => e.id));
-  check(r.rival && r.stars <= 2 && r.duel === 'lost' && s.stats.duels.lost === 1, 'duelo perdido no se registró');
-  check(s.rep - rep0 <= -3, `duelo perdido debería quitar fama extra (${s.rep - rep0})`);
-  // Ganar: subir la calidad base a la fuerza
+  check(r.rival && r.rivalQuality === 70 && r.quality <= 70 && r.duel === 'lost' && s.stats.duels.lost === 1, 'duelo perdido no se registró');
+  check(s.rep - rep0 <= -G.BALANCE.rival.loseRep, `duelo perdido debería quitar fama extra (${s.rep - rep0})`);
+  // Ganar: tu calidad final debe superar la de MegaVisión (aunque saques 3 estrellas)
   const s2 = G.newGame(78);
   s2.chapter = 3; s2.rep = 30; s2.contracts = [];
-  const c2 = G.addContract(s2, 'misa'); c2.rival = true; c2.stream = false; c2.outdoor = false; c2.cams = 1; c2.audio = false;
+  const c2 = G.addContract(s2, 'misa'); c2.rival = true; c2.stream = false; c2.outdoor = false; c2.cams = 1; c2.audio = false; c2.rivalQuality = 60;
   const ok = G.startEvent(s2, c2.id, [s2.staff[0].id], [s2.equip[0].id]);
   check(ok.ok, 'duelo 2: no se pudo iniciar');
   s2.currentEvent.base = 100; s2.currentEvent.incidents = [];
   const r2 = G.finishEvent(s2).result;
-  check(r2.stars >= 4 && r2.duel === 'won' && s2.stats.duels.won === 1 && s2.stats.good.misa === 1, 'duelo ganado no se registró');
+  check(r2.stars >= 4 && r2.duel === 'won' && r2.rivalQuality === 60 && s2.stats.duels.won === 1 && s2.stats.good.misa === 1, 'duelo ganado no se registró');
+  // Empate de calidad = gana MegaVisión
+  const s4 = G.newGame(80); s4.chapter = 3; s4.contracts = [];
+  const c4 = G.addContract(s4, 'misa'); c4.rival = true; c4.rivalQuality = 64; c4.stream = false; c4.outdoor = false; c4.cams = 1;
+  G.startEvent(s4, c4.id, [s4.staff[0].id], [s4.equip[0].id]);
+  s4.currentEvent.base = 64; s4.currentEvent.incidents = [];
+  check(G.finishEvent(s4).result.duel === 'lost', 'con la misma calidad debería ganar MegaVisión');
   check(s2.chapterStats.duels === 1 && /Duelos 1\/3/.test(G.CHAPTERS[3].progress(s2)), 'el duelo no cuenta para el capítulo 4');
   // Antes del capítulo 4 no hay contratos disputados
   const s3 = G.newGame(79); s3.rep = 30; s3.contracts = [];
@@ -150,20 +172,24 @@ G.CHAPTERS.forEach((ch, i) => {
 // Una partida vieja (sin los campos nuevos) debe cargar bien
 (function () {
   const s = G.newGame(5);
-  delete s.stats.good; delete s.stats.duels; delete s.storyNext; delete s.chapterStats;
+  s.v = 1; // guardado de la versión anterior
+  delete s.stats.good; delete s.stats.duels; delete s.storyNext; delete s.chapterStats; delete s.pending; delete s.lastWorkDay;
   s.contracts.forEach((c) => { delete c.rival; delete c.story; });
+  s.contracts[0].rival = true; // disputado sin calidad de MegaVisión (no existía en v1)
   s.stats.best.lanzamiento = 4; s.chapter = 2;
   const o = G.deserialize(JSON.stringify(s));
   check(o && o.stats.good.lanzamiento === 1 && o.stats.duels.won === 0 && typeof o.storyNext === 'number', 'deserialize no rellenó campos nuevos');
   check(o && o.chapterStats && o.chapterStats.good.lanzamiento === 1 && o.chapterStats.duels === 0, 'deserialize no rellenó chapterStats');
   check(o && /1\/2/.test(G.CHAPTERS[2].progress(o)), 'progreso del capítulo 3 en partida vieja');
-  check(o && o.contracts.every((c) => c.rival === false && c.story === false), 'deserialize no rellenó campos de contratos');
+  check(o && o.contracts.slice(1).every((c) => c.rival === false && c.story === false), 'deserialize no rellenó campos de contratos');
+  check(o && typeof o.contracts[0].rivalQuality === 'number', 'deserialize no rellenó la calidad de MegaVisión');
+  check(o && Array.isArray(o.pending) && typeof o.lastWorkDay === 'number' && o.v === G.SAVE_VERSION, 'deserialize no rellenó cobros pendientes / versión');
   for (let i = 0; i < 30; i++) { G.nextDay(o); validState(o, 'partida vieja'); }
 })();
 
 // Probar que un guardado dañado no rompa el juego
 check(G.deserialize('{basura') === null, 'deserialize debería rechazar basura');
-check(G.deserialize('{"v":99}') === null, 'deserialize debería rechazar versión vieja');
+check(G.deserialize('{"v":99}') === null, 'deserialize debería rechazar versión desconocida');
 
 // Probar reglas puntuales
 (function () {
@@ -176,6 +202,35 @@ check(G.deserialize('{"v":99}') === null, 'deserialize debería rechazar versió
   const m1 = G.marketing(s, 'redes');
   const m2 = G.marketing(s, 'redes');
   check(m1.ok && !m2.ok, 'redes solo una vez por día');
+  // Gastos diarios: crecen con el tamaño de la productora
+  const g0 = G.dailyCost(G.newGame(1));
+  const big = G.newGame(1);
+  for (let i = 0; i < 6; i++) big.staff.push({ id: 900 + i, name: 'X', role: 'cam', skill: 3, wage: 60, morale: 80, events: 0 });
+  for (let i = 0; i < 12; i++) big.equip.push({ id: 950 + i, type: 'cam_pro', condition: 100 });
+  const bd = G.dailyCostBreakdown(big);
+  check(g0 === 20 + Math.round(600 * G.BALANCE.daily.equipShare), `gasto diario inicial inesperado (${g0})`);
+  check(G.dailyCost(big) > g0 * 5 && bd.total === G.dailyCost(big) && typeof bd.place === 'string', 'el gasto diario debería crecer con la empresa');
+  const money0 = big.money; G.nextDay(big);
+  check(money0 - big.money === bd.total, 'nextDay debería cobrar exactamente dailyCost');
+  // Cobro pendiente: llega a los días indicados
+  const lp = G.newGame(3); lp.pending = [{ day: lp.day + 2, amount: 500, client: 'Prueba' }];
+  const m0 = lp.money; G.nextDay(lp); const m1b = lp.money; G.nextDay(lp);
+  check(lp.pending.length === 0 && lp.money - m1b === 500 - G.dailyCost(lp), `el cobro pendiente no llegó (${m0} ${m1b} ${lp.money})`);
+  // Los primeros eventos son suaves: 1 solo imprevisto y sin sorpresas de plata
+  const tu = G.newGame(9);
+  const t0 = tu.contracts[0];
+  G.startEvent(tu, t0.id, [tu.staff[0].id], [tu.equip[0].id]);
+  check(tu.currentEvent.incidents.length === 1 && tu.currentEvent.tutorial, 'el primer evento debería tener un solo imprevisto');
+  // Eventos grandes: al menos 2 imprevistos desde dificultad 3
+  const hi = G.newGame(10); hi.stats.events = 10; hi.rep = 40; hi.contracts = [];
+  for (let i = 0; i < 20; i++) {
+    const k = G.addContract(hi, 'lanzamiento'); k.diff = 3;
+    G.startEvent(hi, k.id, [hi.staff[0].id], [hi.equip[0].id]);
+    check(hi.currentEvent.incidents.length >= 2, 'dificultad 3 debería tener al menos 2 imprevistos');
+    hi.currentEvent = null;
+  }
+  // Sueldo en eventos grandes
+  check(G.eventWage({ wage: 100 }, 1) === 100 && G.eventWage({ wage: 100 }, 5) > 100, 'el sueldo debería subir en eventos grandes');
 })();
 
 daysToWin.sort((a, b) => a - b);
@@ -188,19 +243,31 @@ if (daysToWin.length) console.log(`Días para ganar: mínimo ${daysToWin[0]}, me
 console.log('Día mediano en que se completa cada capítulo:');
 G.CHAPTERS.forEach((ch, i) => console.log(`  ${ch.title.padEnd(34)} día ${medians[i]}  (${chapterDays[i].length} partidas)` +
   (i ? `  +${medians[i] - medians[i - 1]} días` : '')));
-console.log(`Duelos contra MegaVisión: ganados ${duelsWon}, perdidos ${duelsLost}`);
+const duelLoss = duelsLost / Math.max(1, duelsWon + duelsLost);
+console.log(`Duelos contra MegaVisión: ganados ${duelsWon}, perdidos ${duelsLost} (pierde el ${(duelLoss * 100).toFixed(1)}%)`);
+const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN);
+console.log('Estrellas promedio por evento:');
+starsByChapter.forEach((a, i) => console.log(`  ${(i < NCH ? G.CHAPTERS[i].title : 'Modo libre').padEnd(34)} ${avg(a).toFixed(2)}⭐  (${a.length} eventos)`));
+const lateStars = avg([].concat(...starsByChapter.slice(2, NCH)));
+console.log(`  Capítulos 3 a 6 juntos: ${lateStars.toFixed(2)}⭐`);
 
-// Ritmo de la historia
+// Metas de dificultad (el juego gratis debe exigir, pero se puede terminar sin pagar)
 const bankRate = bankrupt / GAMES, winRate = storyWins / GAMES;
-const MIN_GAP = [0, 10, 5, 10, 10, 10];
+const MIN_GAP = [0, 10, 10, 15, 15, 15];
 medians.forEach((m, i) => {
   check(Number.isFinite(m), `capítulo ${i + 1}: sin mediana`);
   if (i > 0) check(m - medians[i - 1] >= MIN_GAP[i], `capítulo ${i + 1}: llega muy rápido tras el anterior (+${m - medians[i - 1]} días, mínimo ${MIN_GAP[i]})`);
 });
 check(medians[0] <= 10, `capítulo 1 debería ser rápido (mediana ${medians[0]})`);
-check(medians[NCH - 1] >= 90 && medians[NCH - 1] <= 140, `la historia debería durar ~100-120 días (mediana ${medians[NCH - 1]})`);
-check(bankRate < 0.05, `demasiadas quiebras: ${(bankRate * 100).toFixed(1)}%`);
-check(winRate > 0.85, `pocas partidas terminan la historia: ${(winRate * 100).toFixed(1)}%`);
+check(medians[NCH - 1] >= 150 && medians[NCH - 1] <= 220, `la historia debería durar ~150-220 días (mediana ${medians[NCH - 1]})`);
+check(bankRate >= 0.06 && bankRate <= 0.15, `quiebras fuera de rango (6-15%): ${(bankRate * 100).toFixed(1)}%`);
+check(winRate >= 0.60 && winRate <= 0.85, `historia completada fuera de rango (60-85%): ${(winRate * 100).toFixed(1)}%`);
+check(duelLoss >= 0.25, `el bot pierde muy pocos duelos (${(duelLoss * 100).toFixed(1)}%, mínimo 25%)`);
+for (let i = 2; i < NCH; i++) {
+  const a = avg(starsByChapter[i]);
+  check(a >= 3.0 && a <= 3.9, `capítulo ${i + 1}: estrellas promedio fuera de rango (3,0-3,9): ${a.toFixed(2)}`);
+}
+check(lateStars >= 3.0 && lateStars <= 3.8, `estrellas promedio de los capítulos 3-6 fuera de rango (3,0-3,8): ${lateStars.toFixed(2)}`);
 console.log(`Quiebras ${(bankRate * 100).toFixed(1)}% · historia completada ${(winRate * 100).toFixed(1)}%`);
 
 if (errors) { console.error(`\n❌ ${errors} errores encontrados`); process.exit(1); }
