@@ -667,6 +667,8 @@
     servidores: ['globe', 'inicio.pl.servidores'], decoracion: ['planta', 'inicio.pl.decoracion'], copa: ['crown', 'inicio.pl.copa'], vip: ['vip', 'inicio.pl.vip'],
     pase: ['star', 'inicio.pl.pase'], estrellas: ['sparkle', 'inicio.pl.estrellas'], historia: ['flag', 'historia.tag'],
     flota: ['unidad_movil', 'inicio.pl.flota'],
+    logros: ['gem', 'inicio.pl.logros'],
+    misiones: ['target', 'inicio.pl.misiones'],
     visitas: ['home', 'inicio.pl.visitas'],
     ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
   };

@@ -66,6 +66,10 @@ final class Cuentas
                 Db::q('UPDATE vip_regalos SET de_nombre = NULL WHERE comprador_id = ?', [$jugador]);   // su nombre ya no sale en cofres ajenos
             }
             if (Migraciones::columnas('vip_jugadores') !== null) Db::q('UPDATE vip_jugadores SET ocultar_mecenas = 1 WHERE jugador_id = ?', [$jugador]);
+            // Módulos nuevos (si están): enlaces de clave, avisos push y la vitrina pública de Visitas no deben quedar
+            foreach (['recuperaciones', 'push_suscripciones', 'push_cola', 'push_jugador', 'visitas_vitrinas', 'visitas_ajustes'] as $tabla) {
+                if (Migraciones::columnas($tabla) !== null) Db::q("DELETE FROM $tabla WHERE jugador_id = ?", [$jugador]);
+            }
             Db::q("UPDATE jugadores SET email = ?, nombre = 'Cuenta borrada', alias = NULL, alias_clave = NULL, clave_hash = '!', estado = 'borrado',
                      estado_motivo = 'Borrada por el jugador', estado_desde = ?, creditos = 0, deuda = 0, vip_hasta = NULL, tarjeta_hasta = NULL, fama_publica = 0, riesgo_motivo = NULL WHERE id = ?",
                 ['borrado-' . $jugador . '@invalid', time(), $jugador]);

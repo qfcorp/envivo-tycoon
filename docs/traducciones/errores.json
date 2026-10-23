@@ -327,7 +327,18 @@
     "visitas_cerradas": "existe · Visitas.php · 403 (la productora apagó las visitas: ver y aplaudir)",
     "productora_no_existe": "existe · Visitas.php · 404 (no existe, borrada o bloqueada)",
     "aplauso_ya": "existe · Visitas.php · 409 (1 aplauso por visitante, productora y día)",
-    "aplauso_propio": "existe · Visitas.php · 400"
+    "aplauso_propio": "existe · Visitas.php · 400",
+    "analitica_invalida": "existe · Analitica.php / AnaliticaApi.php · 400 · lote de eventos mal armado (instalación, sesión o lista de eventos)",
+    "recuperar_limite": "existe · Recuperar.php · 429 · más de 3 pedidos de enlace por correo en una hora",
+    "recuperar_enlace_invalido": "existe · Recuperar.php · 410 · enlace vencido (30 min), ya usado, inventado o de una cuenta baneada",
+    "periodo_invalido": "existe · Misiones.php · 400 · el periodo no es d:AAAA-MM-DD ni s:AAAA-MM-DD",
+    "misiones_vencidas": "existe · Misiones.php · 409 · el día no es hoy ±1, o la semana ya pasó",
+    "mision_invalida": "existe · Misiones.php · 400/404 · la misión no es de ese periodo o no existe",
+    "push_no_configurado": "existe · Push.php · 503 (suscribir) / 400 (prueba del Centro de Control) · faltan PUSH_VAPID_* en /etc/envivo/config.env",
+    "push_endpoint_invalido": "existe · Push.php · 400 · el endpoint no es de un servicio de push conocido (FCM, Mozilla, Windows, Apple)",
+    "push_llaves_invalidas": "existe · Push.php · 400 · p256dh no es un punto P-256 o auth no tiene 16 bytes",
+    "push_categoria_invalida": "existe · Push.php · 400 · categoría desconocida o valor que no es true/false",
+    "push_no_suscrito": "existe · Push.php · 404 · ese aparato no tiene las notificaciones activadas"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -656,7 +667,18 @@
     "visitas_cerradas": "Esta productora no recibe visitas por ahora.",
     "productora_no_existe": "Esa productora no existe.",
     "aplauso_ya": "Ya le diste un aplauso hoy a esta productora. Vuelve mañana.",
-    "aplauso_propio": "No puedes aplaudirte a ti mismo."
+    "aplauso_propio": "No puedes aplaudirte a ti mismo.",
+    "analitica_invalida": "Datos de estadísticas no válidos.",
+    "recuperar_limite": "Ya te enviamos varios enlaces a ese correo. Revisa tu bandeja de entrada y el spam, o espera una hora para pedir otro.",
+    "recuperar_enlace_invalido": "Este enlace ya no sirve: venció o ya se usó. Pide uno nuevo desde «¿Olvidaste tu contraseña?».",
+    "periodo_invalido": "Ese periodo de misiones no es válido.",
+    "misiones_vencidas": "Esas misiones ya vencieron. Mira las de hoy.",
+    "mision_invalida": "Esa misión ya no está disponible.",
+    "push_no_configurado": "Las notificaciones aún no están activas en el servidor.",
+    "push_endpoint_invalido": "Este navegador usa un servicio de notificaciones que no podemos usar.",
+    "push_llaves_invalidas": "No se pudieron activar las notificaciones. Intenta otra vez.",
+    "push_categoria_invalida": "Esa opción de notificaciones no existe.",
+    "push_no_suscrito": "Las notificaciones no están activas en este aparato."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -985,7 +1007,18 @@
     "visitas_cerradas": "This company is not receiving visits right now.",
     "productora_no_existe": "That company does not exist.",
     "aplauso_ya": "You already applauded this company today. Come back tomorrow.",
-    "aplauso_propio": "You cannot applaud yourself."
+    "aplauso_propio": "You cannot applaud yourself.",
+    "analitica_invalida": "Invalid statistics data.",
+    "recuperar_limite": "We already sent several links to that email. Check your inbox and spam, or wait an hour to ask for another.",
+    "recuperar_enlace_invalido": "This link no longer works: it expired or was already used. Ask for a new one from \"Forgot your password?\".",
+    "periodo_invalido": "That mission period isn’t valid.",
+    "misiones_vencidas": "Those missions have expired. Check today’s.",
+    "mision_invalida": "That mission is no longer available.",
+    "push_no_configurado": "Notifications aren't active on the server yet.",
+    "push_endpoint_invalido": "This browser uses a notification service we can't use.",
+    "push_llaves_invalidas": "Couldn't turn on notifications. Try again.",
+    "push_categoria_invalida": "That notification option doesn't exist.",
+    "push_no_suscrito": "Notifications aren't on for this device."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1314,7 +1347,18 @@
     "visitas_cerradas": "Esta produtora não está recebendo visitas agora.",
     "productora_no_existe": "Essa produtora não existe.",
     "aplauso_ya": "Você já aplaudiu esta produtora hoje. Volte amanhã.",
-    "aplauso_propio": "Você não pode aplaudir a si mesmo."
+    "aplauso_propio": "Você não pode aplaudir a si mesmo.",
+    "analitica_invalida": "Dados de estatísticas inválidos.",
+    "recuperar_limite": "Já enviamos vários links para esse e-mail. Veja a caixa de entrada e o spam, ou espere uma hora para pedir outro.",
+    "recuperar_enlace_invalido": "Este link não serve mais: venceu ou já foi usado. Peça um novo em \"Esqueceu a senha?\".",
+    "periodo_invalido": "Esse período de missões não é válido.",
+    "misiones_vencidas": "Essas missões já venceram. Veja as de hoje.",
+    "mision_invalida": "Essa missão não está mais disponível.",
+    "push_no_configurado": "As notificações ainda não estão ativas no servidor.",
+    "push_endpoint_invalido": "Este navegador usa um serviço de notificações que não podemos usar.",
+    "push_llaves_invalidas": "Não foi possível ativar as notificações. Tente de novo.",
+    "push_categoria_invalida": "Essa opção de notificações não existe.",
+    "push_no_suscrito": "As notificações não estão ativas neste aparelho."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1643,7 +1687,18 @@
     "visitas_cerradas": "Cette société ne reçoit pas de visites pour le moment.",
     "productora_no_existe": "Cette société n’existe pas.",
     "aplauso_ya": "Vous avez déjà applaudi cette société aujourd’hui. Revenez demain.",
-    "aplauso_propio": "Vous ne pouvez pas vous applaudir vous-même."
+    "aplauso_propio": "Vous ne pouvez pas vous applaudir vous-même.",
+    "analitica_invalida": "Données de statistiques non valides.",
+    "recuperar_limite": "Nous avons déjà envoyé plusieurs liens à cet e-mail. Regarde ta boîte et les spams, ou attends une heure pour en demander un autre.",
+    "recuperar_enlace_invalido": "Ce lien ne marche plus : il a expiré ou a déjà servi. Demande-en un nouveau depuis « Mot de passe oublié ? ».",
+    "periodo_invalido": "Cette période de missions n’est pas valide.",
+    "misiones_vencidas": "Ces missions ont expiré. Regarde celles du jour.",
+    "mision_invalida": "Cette mission n’est plus disponible.",
+    "push_no_configurado": "Les notifications ne sont pas encore actives sur le serveur.",
+    "push_endpoint_invalido": "Ce navigateur utilise un service de notifications que nous ne pouvons pas utiliser.",
+    "push_llaves_invalidas": "Impossible d'activer les notifications. Réessaie.",
+    "push_categoria_invalida": "Cette option de notifications n'existe pas.",
+    "push_no_suscrito": "Les notifications ne sont pas activées sur cet appareil."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -1972,7 +2027,18 @@
     "visitas_cerradas": "Diese Firma empfängt gerade keine Besuche.",
     "productora_no_existe": "Diese Firma gibt es nicht.",
     "aplauso_ya": "Du hast dieser Firma heute schon applaudiert. Komm morgen wieder.",
-    "aplauso_propio": "Du kannst dir nicht selbst applaudieren."
+    "aplauso_propio": "Du kannst dir nicht selbst applaudieren.",
+    "analitica_invalida": "Ungültige Statistikdaten.",
+    "recuperar_limite": "Wir haben schon mehrere Links an diese E-Mail geschickt. Schau in Posteingang und Spam oder warte eine Stunde.",
+    "recuperar_enlace_invalido": "Dieser Link geht nicht mehr: abgelaufen oder schon benutzt. Fordere über „Passwort vergessen?\" einen neuen an.",
+    "periodo_invalido": "Dieser Missionszeitraum ist ungültig.",
+    "misiones_vencidas": "Diese Missionen sind abgelaufen. Schau dir die von heute an.",
+    "mision_invalida": "Diese Mission gibt es nicht mehr.",
+    "push_no_configurado": "Benachrichtigungen sind auf dem Server noch nicht aktiv.",
+    "push_endpoint_invalido": "Dieser Browser nutzt einen Benachrichtigungsdienst, den wir nicht verwenden können.",
+    "push_llaves_invalidas": "Benachrichtigungen konnten nicht aktiviert werden. Versuch es noch einmal.",
+    "push_categoria_invalida": "Diese Benachrichtigungsoption gibt es nicht.",
+    "push_no_suscrito": "Benachrichtigungen sind auf diesem Gerät nicht aktiv."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2301,7 +2367,18 @@
     "visitas_cerradas": "Questa casa di produzione non riceve visite al momento.",
     "productora_no_existe": "Questa casa di produzione non esiste.",
     "aplauso_ya": "Hai già applaudito questa casa di produzione oggi. Torna domani.",
-    "aplauso_propio": "Non puoi applaudire te stesso."
+    "aplauso_propio": "Non puoi applaudire te stesso.",
+    "analitica_invalida": "Dati statistici non validi.",
+    "recuperar_limite": "Abbiamo già mandato vari link a quell'e-mail. Controlla posta e spam, o aspetta un'ora per chiederne un altro.",
+    "recuperar_enlace_invalido": "Questo link non funziona più: è scaduto o è già stato usato. Chiedine uno nuovo da \"Password dimenticata?\".",
+    "periodo_invalido": "Questo periodo di missioni non è valido.",
+    "misiones_vencidas": "Quelle missioni sono scadute. Guarda quelle di oggi.",
+    "mision_invalida": "Questa missione non è più disponibile.",
+    "push_no_configurado": "Le notifiche non sono ancora attive sul server.",
+    "push_endpoint_invalido": "Questo browser usa un servizio di notifiche che non possiamo usare.",
+    "push_llaves_invalidas": "Impossibile attivare le notifiche. Riprova.",
+    "push_categoria_invalida": "Questa opzione di notifica non esiste.",
+    "push_no_suscrito": "Le notifiche non sono attive su questo dispositivo."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -2630,7 +2707,18 @@
     "visitas_cerradas": "Эта студия сейчас не принимает гостей.",
     "productora_no_existe": "Такой студии нет.",
     "aplauso_ya": "Вы уже хлопали этой студии сегодня. Приходите завтра.",
-    "aplauso_propio": "Нельзя хлопать самому себе."
+    "aplauso_propio": "Нельзя хлопать самому себе.",
+    "analitica_invalida": "Неверные данные статистики.",
+    "recuperar_limite": "Мы уже отправили несколько ссылок на эту почту. Проверь входящие и спам или подожди час.",
+    "recuperar_enlace_invalido": "Ссылка больше не работает: срок истёк или её уже использовали. Запроси новую через «Забыл пароль?».",
+    "periodo_invalido": "Неверный период заданий.",
+    "misiones_vencidas": "Эти задания уже истекли. Посмотри сегодняшние.",
+    "mision_invalida": "Это задание больше недоступно.",
+    "push_no_configurado": "Уведомления на сервере ещё не включены.",
+    "push_endpoint_invalido": "Этот браузер использует службу уведомлений, которую мы не поддерживаем.",
+    "push_llaves_invalidas": "Не удалось включить уведомления. Попробуй ещё раз.",
+    "push_categoria_invalida": "Такой настройки уведомлений нет.",
+    "push_no_suscrito": "На этом устройстве уведомления не включены."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -2959,7 +3047,18 @@
     "visitas_cerradas": "Bu şirket şu an ziyaretçi kabul etmiyor.",
     "productora_no_existe": "Böyle bir şirket yok.",
     "aplauso_ya": "Bu şirketi bugün zaten alkışladın. Yarın tekrar gel.",
-    "aplauso_propio": "Kendini alkışlayamazsın."
+    "aplauso_propio": "Kendini alkışlayamazsın.",
+    "analitica_invalida": "Geçersiz istatistik verisi.",
+    "recuperar_limite": "Bu e-postaya zaten birkaç bağlantı gönderdik. Gelen kutunu ve spam'i kontrol et ya da bir saat bekle.",
+    "recuperar_enlace_invalido": "Bu bağlantı artık çalışmıyor: süresi doldu ya da kullanıldı. \"Şifreni mi unuttun?\" bölümünden yenisini iste.",
+    "periodo_invalido": "Bu görev dönemi geçerli değil.",
+    "misiones_vencidas": "Bu görevlerin süresi doldu. Bugünkülere bak.",
+    "mision_invalida": "Bu görev artık yok.",
+    "push_no_configurado": "Bildirimler sunucuda henüz etkin değil.",
+    "push_endpoint_invalido": "Bu tarayıcı kullanamadığımız bir bildirim hizmeti kullanıyor.",
+    "push_llaves_invalidas": "Bildirimler açılamadı. Tekrar dene.",
+    "push_categoria_invalida": "Böyle bir bildirim seçeneği yok.",
+    "push_no_suscrito": "Bu cihazda bildirimler açık değil."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -3288,7 +3387,18 @@
     "visitas_cerradas": "Rumah produksi ini sedang tidak menerima kunjungan.",
     "productora_no_existe": "Rumah produksi itu tidak ada.",
     "aplauso_ya": "Kamu sudah bertepuk tangan untuk rumah produksi ini hari ini. Kembali besok.",
-    "aplauso_propio": "Kamu tidak bisa bertepuk tangan untuk dirimu sendiri."
+    "aplauso_propio": "Kamu tidak bisa bertepuk tangan untuk dirimu sendiri.",
+    "analitica_invalida": "Data statistik tidak valid.",
+    "recuperar_limite": "Kami sudah mengirim beberapa tautan ke email itu. Cek kotak masuk dan spam, atau tunggu satu jam.",
+    "recuperar_enlace_invalido": "Tautan ini tidak berlaku lagi: sudah kedaluwarsa atau sudah dipakai. Minta yang baru lewat \"Lupa kata sandi?\".",
+    "periodo_invalido": "Periode misi itu tidak valid.",
+    "misiones_vencidas": "Misi itu sudah kedaluwarsa. Lihat misi hari ini.",
+    "mision_invalida": "Misi itu sudah tidak tersedia.",
+    "push_no_configurado": "Notifikasi belum aktif di server.",
+    "push_endpoint_invalido": "Browser ini memakai layanan notifikasi yang tidak bisa kami gunakan.",
+    "push_llaves_invalidas": "Tidak bisa mengaktifkan notifikasi. Coba lagi.",
+    "push_categoria_invalida": "Opsi notifikasi itu tidak ada.",
+    "push_no_suscrito": "Notifikasi tidak aktif di perangkat ini."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -3617,6 +3727,17 @@
     "visitas_cerradas": "这家制作公司暂时不接受拜访。",
     "productora_no_existe": "这家制作公司不存在。",
     "aplauso_ya": "今天你已经为这家制作公司鼓过掌了，明天再来吧。",
-    "aplauso_propio": "不能为自己鼓掌。"
+    "aplauso_propio": "不能为自己鼓掌。",
+    "analitica_invalida": "统计数据无效。",
+    "recuperar_limite": "我们已向这个邮箱发送了多个链接。请查看收件箱和垃圾邮件，或一小时后再申请。",
+    "recuperar_enlace_invalido": "这个链接已失效：已过期或已被使用。请在“忘记密码？”中重新申请。",
+    "periodo_invalido": "这个任务周期无效。",
+    "misiones_vencidas": "这些任务已过期，看看今天的吧。",
+    "mision_invalida": "这个任务已经不可用了。",
+    "push_no_configurado": "服务器尚未开启通知功能。",
+    "push_endpoint_invalido": "此浏览器使用的通知服务我们无法支持。",
+    "push_llaves_invalidas": "无法开启通知，请重试。",
+    "push_categoria_invalida": "该通知选项不存在。",
+    "push_no_suscrito": "此设备未开启通知。"
   }
 }
