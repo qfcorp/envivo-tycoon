@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f14">
+<title>EN VIVO Tycoon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#161a22; --panel2:#1e2430; --line:#2a3242;
+    --text:#e9edf5; --muted:#8b95a8; --red:#ff3b3b; --amber:#ffb020; --green:#2ecc71; --blue:#4da3ff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:15px}
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  button{font:inherit;color:inherit;cursor:pointer}
+  .num{font-family:"JetBrains Mono",monospace}
+  h1,h2,h3{font-family:"Barlow Condensed",sans-serif;letter-spacing:.5px;margin:0}
+
+  /* Barra superior */
+  header{position:sticky;top:0;z-index:5;background:linear-gradient(#0d0f14 80%,#0d0f1400);padding:10px 16px 12px}
+  .brand{display:flex;align-items:center;gap:8px;font-family:"Barlow Condensed";font-weight:800;font-size:20px;text-transform:uppercase}
+  .tally{width:11px;height:11px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .stats{display:flex;gap:8px;margin-top:8px}
+  .chip{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px;text-align:center}
+  .chip small{display:block;color:var(--muted);font-size:11px}
+  .chip b{font-family:"JetBrains Mono";font-size:15px}
+  .neg{color:var(--red)}
+
+  main{padding:0 16px;max-width:640px;margin:0 auto}
+  section{display:none}
+  section.on{display:block}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+  .card h2{font-size:22px;margin-bottom:6px}
+  .card h3{font-size:18px}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  .row{display:flex;align-items:center;gap:10px}
+  .between{justify-content:space-between}
+  .wrap{flex-wrap:wrap}
+  .tag{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:12px;margin:3px 4px 0 0}
+  .tag.red{border-color:#ff3b3b66;color:#ffb3b3}
+  .tag.amber{border-color:#ffb02066;color:#ffd78a}
+  .btn{display:block;width:100%;border:0;border-radius:12px;padding:13px;font-weight:700;background:var(--panel2);border:1px solid var(--line);margin-top:8px;text-align:center}
+  .btn.main{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.green{background:var(--green);border-color:var(--green);color:#06210f}
+  .btn.sm{display:inline-block;width:auto;padding:8px 12px;font-size:13px;margin:0}
+  .btn:disabled{opacity:.4}
+  .btn:active:not(:disabled){transform:scale(.98)}
+  .sectitle{font-family:"Barlow Condensed";font-size:15px;text-transform:uppercase;color:var(--muted);letter-spacing:1px;margin:18px 0 8px}
+  .bar{height:7px;background:var(--panel2);border-radius:9px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--green)}
+  .bar.amber i{background:var(--amber)}
+  .bar.red i{background:var(--red)}
+  .pay{font-family:"JetBrains Mono";color:var(--green);font-size:18px}
+  .icon{font-size:26px;width:40px;text-align:center}
+  .grow{flex:1;min-width:0}
+  .log p{margin:0;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .log p span{color:var(--muted);font-family:"JetBrains Mono";font-size:11px;margin-right:6px}
+
+  /* Navegación inferior */
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:#11141bf2;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(8px)}
+  nav button{flex:1;background:none;border:0;padding:9px 0 8px;font-size:11px;color:var(--muted)}
+  nav button span{display:block;font-size:21px;margin-bottom:2px}
+  nav button.on{color:var(--text)}
+  nav button.on span{filter:drop-shadow(0 0 6px #ff3b3b99)}
+  .badge{display:inline-block;background:var(--red);color:#fff;border-radius:9px;font-size:10px;padding:0 5px;margin-left:2px}
+
+  /* Ventanas */
+  .overlay{position:fixed;inset:0;z-index:20;background:#000b;display:none;align-items:flex-end;justify-content:center}
+  .overlay.on{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:92vh;overflow:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+  .modal h2{font-size:24px;margin-bottom:8px}
+  .live{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;font-weight:800;font-family:"Barlow Condensed";padding:3px 10px;border-radius:6px;letter-spacing:1px}
+  .live i{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1s infinite}
+  .incident{font-size:18px;line-height:1.4;margin:14px 0}
+  .choice{text-align:left}
+  .choice small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
+  .delta{font-family:"JetBrains Mono";font-weight:700}
+  .up{color:var(--green)} .down{color:var(--red)}
+  .stars{font-size:34px;letter-spacing:4px;text-align:center;margin:8px 0}
+  .pick{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--panel2)}
+  .pick.sel{border-color:var(--red);background:#2a1a1f}
+  .pick input{width:20px;height:20px;accent-color:var(--red)}
+  .preview{position:sticky;bottom:-18px;background:var(--panel);padding-top:10px;border-top:1px solid var(--line);margin-top:10px}
+  details summary{cursor:pointer;color:var(--muted);font-size:13px;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:4px 0;border-bottom:1px solid var(--line)}
+  td:last-child{text-align:right;font-family:"JetBrains Mono"}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:30;background:#000e;border:1px solid var(--line);padding:10px 14px;border-radius:10px;font-size:14px;max-width:90%;display:none}
+  .story{font-size:16px;line-height:1.5}
+  .story-tag{color:var(--amber);font-family:"Barlow Condensed";text-transform:uppercase;letter-spacing:1px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="tally"></span> En Vivo Tycoon</div>
+  <div class="stats">
+    <div class="chip"><small>Dinero</small><b id="hMoney">$0</b></div>
+    <div class="chip"><small>Fama</small><b id="hRep">0</b></div>
+    <div class="chip"><small>Día</small><b id="hDay">1</b></div>
+  </div>
+</header>
+
+<main>
+  <section id="tab-inicio" class="on"></section>
+  <section id="tab-clientes"></section>
+  <section id="tab-personal"></section>
+  <section id="tab-bodega"></section>
+  <section id="tab-registro"></section>
+</main>
+
+<nav>
+  <button data-tab="inicio" class="on"><span>🏠</span>Inicio</button>
+  <button data-tab="clientes"><span>📋</span>Clientes <b class="badge" id="badgeC"></b></button>
+  <button data-tab="personal"><span>👥</span>Personal</button>
+  <button data-tab="bodega"><span>📦</span>Bodega</button>
+  <button data-tab="registro"><span>📜</span>Registro</button>
+</nav>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/logic.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
