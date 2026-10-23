@@ -481,7 +481,7 @@
       ${installCard()}
       ${plegablesInicio(story)}
       <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
-      ${soporteBtn()}
+      ${soporteBtn()}${unirseDiscordBtn()}
       <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}${T('inicio.nueva')}</button>`;
   }
 
@@ -1162,7 +1162,7 @@
           <div class="small muted" style="text-align:end;min-width:0;overflow-wrap:anywhere">${esc(E.jugador.nombre)}<br>${esc(E.jugador.email)}</div></div>
         ${vip}
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
-        ${discordBtn('sm')}
+        ${discordBtn('sm')}${unirseDiscordBtn('sm')}
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button></div>`;
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
@@ -2017,6 +2017,14 @@
     const v = !!(Api.estado && Api.estado.discord_vinculado);
     return `<button class="btn ${cls || ''} ${v ? '' : 'discord'}" data-act="discord">${I(v ? 'check' : 'link', 'sm')} ${v ? T('discord.vinculado') : T('discord.vincular')}</button>`;
   }
+  // "Únete a nuestro Discord": invitación de DISCORD_INVITACION (/api/estado → discord_invitacion). Sin invitación, no sale.
+  const invitacionDiscord = () => {
+    const u = Api.estado && Api.estado.discord_invitacion;
+    return typeof u === 'string' && /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]{2,40}$/.test(u) ? u : '';
+  };
+  function unirseDiscordBtn(cls) {
+    return invitacionDiscord() ? `<button class="btn ${cls || ''} discord" data-act="discord-unirse">${I('people', 'sm')} ${T('discord.unirse')}</button>` : '';
+  }
   let discordT = null;
   async function abrirDiscord() {
     let r;
@@ -2098,6 +2106,7 @@
       case 'tab': tab = el.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); break;
       case 'online': vistaOnline = el.dataset.k || 'hub'; snd.play('tap'); desmontarOnline(); render(); window.scrollTo(0, 0); break;
       case 'discord': abrirDiscord(); break;
+      case 'discord-unirse': { const u = invitacionDiscord(); if (u) window.open(u, '_blank', 'noopener'); break; }
       case 'discord-copiar': {
         const txt = el.dataset.k || '';
         try { navigator.clipboard.writeText(txt).then(() => toast(T('discord.copiado'))).catch(() => toast(txt)); } catch (err) { toast(txt); }

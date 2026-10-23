@@ -1,5 +1,7 @@
 # Servidor oficial de Discord de EN VIVO Tycoon
 
+> **¿Primera vez?** Empieza por `docs/DISCORD_CREAR_SERVIDOR.md`: la guía paso a paso (celular o PC) que te dice cuándo usar este script.
+
 Guía para dejar listo el Discord oficial del juego, como los de Kingshot, Whiteout Survival o Rise of Kingdoms, **sin armarlo canal por canal**.
 Tú haces 3 cosas a mano (crear el servidor, crear el bot y correr un comando) y el script `discord/configurar_servidor.js` arma todo lo demás.
 
@@ -8,7 +10,7 @@ Tú haces 3 cosas a mano (crear el servidor, crear el bot y correr un comando) y
 | Qué | Quién lo hace |
 |---|---|
 | Crear el servidor vacío y el bot "EN VIVO Bot" | Tú (pasos 1 y 2) |
-| 22 roles, 8 categorías, 43 canales, foros con etiquetas, permisos, AutoMod, Comunidad, Onboarding y los mensajes de bienvenida, reglas y FAQ en 10 idiomas | El script (pasos 3 y 4) |
+| 22 roles, 8 categorías, 45 canales, foros con etiquetas, permisos, AutoMod, Comunidad, Onboarding y los mensajes de bienvenida, reglas y FAQ en 10 idiomas | El script (pasos 3 y 4) |
 | Verificación de reglas, ícono, enlace de invitación y quitarle permisos al bot | Tú (pasos 5 y 6) |
 
 > 🔒 **Regla de oro:** el **token del bot** es como la contraseña del bot. Va **solo** en tu PC o en el VPS (archivo `.env` o variable de entorno).
@@ -197,10 +199,10 @@ un momento y apágalo al terminar (el script te avisa si le falta).
 
 | Categoría | Canales | Quién escribe |
 |---|---|---|
-| 📌 INFORMACIÓN | bienvenida, reglas, **anuncios**, **novedades-del-juego**, **eventos-en-curso**, **estado-del-servidor** (estos 4 son canales de anuncios que otros servidores pueden seguir), preguntas-frecuentes, vincular-cuenta | Solo staff (en vincular-cuenta todos usan `/vincular`) |
+| 📌 INFORMACIÓN | bienvenida, reglas, **anuncios**, **novedades-del-juego**, **códigos-de-regalo**, **eventos-en-curso**, **estado-del-servidor** (estos 5 son canales de anuncios que otros servidores pueden seguir), preguntas-frecuentes, vincular-cuenta | Solo staff (en vincular-cuenta todos usan `/vincular`) |
 | 🛟 SOPORTE Y OPINIONES | **soporte** (foro), **reporte-de-errores** (foro con plantilla), **sugerencias** (foro con votos), ayuda-entre-jugadores | Todos, con etiqueta obligatoria |
 | 💬 COMUNIDAD | general-español, general-english, general-português, capturas-y-clips, creadores-de-contenido, fuera-de-tema, comandos-bot | Todos (creadores: solo el rol Creador publica, todos comentan) |
-| 🎥 PRODUCTORAS | eventos-y-ligas, **reclutamiento-de-asociaciones** (foro, 1 cada 6 h, solo verificados), **mercado** (foro solo para conversar), **guias-y-consejos** (foro), sala-vip | Según el rol |
+| 🎥 PRODUCTORAS | eventos-y-ligas, **copa-de-servidores**, **reclutamiento-de-asociaciones** (foro, 1 cada 6 h, solo verificados), **mercado** (foro solo para conversar), **guias-y-consejos** (foro), sala-vip | Según el rol |
 | 🌎 SERVIDORES DEL JUEGO | un canal por servidor (hoy: servidor-1-quito) | Solo quien tiene el rol de ese servidor lo ve |
 | 🌐 IDIOMAS | français, deutsch, italiano, русский, türkçe, bahasa-indonesia, 中文 | Solo quien eligió ese idioma lo ve |
 | 🔊 VOZ Y EN VIVO | Sala de productoras, Asociaciones 1 y 2, **Escenario EN VIVO** (charlas con el equipo), Sala VIP | Todos (VIP solo VIP) |

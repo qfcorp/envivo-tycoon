@@ -1080,6 +1080,7 @@
     "discord.copiado": "Скопировано",
     "discord.desvincular": "Отвязать Discord",
     "discord.desvinculado": "Discord отвязан",
+    "discord.unirse": "Присоединяйся к нашему Discord",
     "prep.peor_mejor": "Худший и лучший случай",
     "prep.duelo_dificil": "Тяжело",
     "prep.duelo_det_dificil": "Победишь только при большой удаче и без серьёзных происшествий. Усиль команду или камеры.",

@@ -1080,6 +1080,7 @@
     "discord.copiado": "Copié",
     "discord.desvincular": "Délier Discord",
     "discord.desvinculado": "Discord délié",
+    "discord.unirse": "Rejoins notre Discord",
     "prep.peor_mejor": "Pire et meilleur cas",
     "prep.duelo_dificil": "Mal parti",
     "prep.duelo_det_dificil": "Tu ne gagnes qu’avec beaucoup de chance et sans gros imprévu. Renforce ton équipe ou tes caméras.",

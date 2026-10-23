@@ -131,9 +131,10 @@ final class Discord
         return ['discord_vinculado' => $v, 'discord_invitacion' => self::invitacion()];
     }
 
+    /** Invitación permanente al Discord oficial (DISCORD_INVITACION; DISCORD_INVITE_URL vale como otro nombre). Solo discord.gg o discord.com/invite. */
     public static function invitacion(): ?string
     {
-        $u = trim(Config::get('DISCORD_INVITACION'));
+        $u = trim(Config::get('DISCORD_INVITACION', Config::get('DISCORD_INVITE_URL')));
         return preg_match('#^https://(discord\.gg|discord\.com/invite)/[A-Za-z0-9-]{2,40}$#', $u) ? $u : null;
     }
 

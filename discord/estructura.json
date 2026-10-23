@@ -356,6 +356,21 @@
           }
         },
         {
+          "clave": "codigos-regalo",
+          "nombre": "🎁┃códigos-de-regalo",
+          "tipo": "anuncios",
+          "tema": "Códigos de regalo, sorteos y premios oficiales. Solo el staff publica aquí. Un código de verdad SOLO sale en este canal o dentro del juego: nunca por mensaje privado. Nadie del equipo te pedirá tu contraseña para darte un regalo.",
+          "permisos": {
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS",
+                "MENTION_EVERYONE"
+              ]
+            }
+          }
+        },
+        {
           "clave": "eventos-en-curso",
           "nombre": "🎪┃eventos-en-curso",
           "tipo": "anuncios",
@@ -716,6 +731,13 @@
           "tipo": "texto",
           "lento": 5,
           "tema": "Conversa sobre la Liga Semanal, el Mega Festival, los Duelos, el Desafío Técnico del Día, las Copas internacionales y el Desafío de Cadenas. Los anuncios oficiales van en #eventos-en-curso."
+        },
+        {
+          "clave": "copa-servidores",
+          "nombre": "🏆┃copa-de-servidores",
+          "tipo": "texto",
+          "lento": 5,
+          "tema": "La Copa de Servidores: tu servidor del juego contra los demás. Inscripciones, equipos de copa, resultados y barras. Los anuncios oficiales van en #eventos-en-curso. Respeto a los rivales: se compite en el juego, no con insultos."
         },
         {
           "clave": "reclutamiento",
@@ -1245,6 +1267,7 @@
       "reglas",
       "anuncios",
       "novedades",
+      "codigos-regalo",
       "eventos-en-curso",
       "estado-servidor",
       "faq",
