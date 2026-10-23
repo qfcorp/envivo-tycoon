@@ -24,7 +24,7 @@ y, más adelante, las claves de Discord (`docs/DISCORD_BOT.md`).
 
 **Antes de empezar, ten a mano:**
 - PuTTY abierto en el VPS (como siempre).
-- Las claves de **pruebas (sandbox)** de Pago Plux (panel de Plux, sección Desarrolladores).
+- Las claves de **producción** de Pago Plux (panel de Plux, sección Desarrolladores). La integración es la misma de TuPass, ya certificada por Plux: se cobra de verdad desde el primer día.
 - En el celular, una app de códigos: **Google Authenticator** (gratis en Play Store) o la que ya uses.
 
 > 💡 **Truco para los bloques de varias líneas:** antes de pegar un bloque largo, corre solo esto y escribe tu clave:
@@ -122,7 +122,7 @@ Si una línea aparece dos veces, **vale la de más abajo**.
 |---|---|---|
 | `ENVIVO_DB`, `ENVIVO_URL`, `ENVIVO_ZONA` | El instalador | No tocar |
 | `ENVIVO_ADMIN_USUARIO`, `ENVIVO_ADMIN_CLAVE_HASH` | El instalador (lo que contestaste en el paso 2) | Para cambiar la clave, ver "Si algo sale mal" |
-| `PLUX_AMBIENTE` | Queda en `sandbox` | Pasa a `produccion` **solo** cuando Plux certifique el dominio |
+| `PLUX_AMBIENTE` | Viene en `produccion` (cobra de verdad) | Solo para pruebas: `sandbox` con claves de pruebas |
 | `PLUX_ID_ESTABLECIMIENTO`, `PLUX_ID_CLIENTE`, `PLUX_CLAVE_SECRETA`, `PLUX_LLAVE_PUBLICA` | Tú, del panel de Plux | Paso 4 |
 | `PLUX_WEBHOOK_USUARIO`, `PLUX_WEBHOOK_CLAVE` | El instalador (clave al azar) | Solo se los das a Plux si te piden el "aviso de pago" |
 | `SOPORTE_CORREO`, `SOPORTE_HORARIO` | Tú | Cuando tengas el correo de soporte (ver "Antes de cobrar") |
@@ -146,8 +146,8 @@ Si una línea aparece dos veces, **vale la de más abajo**.
 sudo nano /etc/envivo/config.env
 ```
 
-2. Baja con las flechas hasta las líneas que empiezan con `PLUX_` y escribe después del `=` las claves de **pruebas (sandbox)**
-   de tu cuenta de Pago Plux (las del panel de Plux, sección Desarrolladores). **Deja `PLUX_AMBIENTE=sandbox`.**
+2. Baja con las flechas hasta las líneas que empiezan con `PLUX_` y escribe después del `=` las claves de **producción**
+   de tu cuenta de Pago Plux (las del panel de Plux, sección Desarrolladores). **Deja `PLUX_AMBIENTE=produccion`.**
    - `PLUX_ID_ESTABLECIMIENTO=PEGA_AQUI`
    - `PLUX_ID_CLIENTE=PEGA_AQUI`
    - `PLUX_CLAVE_SECRETA=PEGA_AQUI`
@@ -338,7 +338,7 @@ En la columna **Paths** deben aparecer `/etc/envivo` y `/var/backups/envivo`. Si
 | Comando | Qué debe salir |
 |---|---|
 | `curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/` | `200` |
-| `curl -s https://juego.tukanec.com/api/estado \| grep -o '"plux":{[^}]*}'` | `"plux":{"disponible":true,"ambiente":"sandbox"}` (`false` si faltan las claves del paso 4) |
+| `curl -s https://juego.tukanec.com/api/estado \| grep -o '"plux":{[^}]*}'` | `"plux":{"disponible":true,"ambiente":"produccion"}` (`false` si faltan las claves del paso 4) |
 | `curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/server/src/Config.php` | `404` (el código está protegido) |
 | `curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/control/lib/base.php` | `404` |
 | `curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://juego.tukanec.com/admin.php` | `302 https://juego.tukanec.com/control/` |
@@ -421,9 +421,8 @@ sudo bash /var/www/envivo/server/deploy/ops/instalar_ops.sh
 2. **Páginas legales** (`terminos.html`, `privacidad.html`, `borrar-cuenta.html`): mándame el **RUC**, el **correo de
    soporte**, la **dirección** y la **fecha**, y las completo en GitHub (no las edites en el VPS). Después, que un
    abogado las revise, junto con la lista de nombres parodia de marcas y torneos.
-3. **Certificación de Pago Plux:** pedirle a Plux que apruebe **juego.tukanec.com** con tus credenciales. Hasta que lo
-   aprueben, todo queda en `PLUX_AMBIENTE=sandbox`. Cuando lo aprueben: en `config.env` cambia las 4 claves `PLUX_` por
-   las de **producción**, pon `PLUX_AMBIENTE=produccion`, recarga PHP y haz una compra real pequeña ($0,99).
+3. **Pago Plux en producción:** la integración es la misma de TuPass (ya certificada). Con las claves de producción
+   puestas (paso 4) y `PLUX_AMBIENTE=produccion`, haz una compra real pequeña: la **Oferta de bienvenida ($0,99)**.
    Si Plux te pide la dirección del aviso de pago (webhook): `https://juego.tukanec.com/api/plux/webhook`, con el
    usuario y la clave que están en `PLUX_WEBHOOK_USUARIO` y `PLUX_WEBHOOK_CLAVE` (míralos con
    `sudo grep PLUX_WEBHOOK /etc/envivo/config.env`, sin captura).

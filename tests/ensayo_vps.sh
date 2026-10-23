@@ -150,9 +150,16 @@ LLAVE=$(grep -v -- '-----' "$S/plux_pub.pem" | tr -d '\n')
 # Lo que hace con nano: llena las 4 lineas PLUX_ (y, solo en el ensayo, apunta la API al Plux falso)
 sed -i -e "s#^PLUX_ID_ESTABLECIMIENTO=.*#PLUX_ID_ESTABLECIMIENTO=EST-SANDBOX-1#" -e "s#^PLUX_ID_CLIENTE=.*#PLUX_ID_CLIENTE=cliente_sandbox#" \
        -e "s#^PLUX_CLAVE_SECRETA=.*#PLUX_CLAVE_SECRETA=secreto_sandbox_123#" -e "s#^PLUX_LLAVE_PUBLICA=.*#PLUX_LLAVE_PUBLICA=$LLAVE#" $C
+sudo systemctl reload php8.3-fpm
+check "instalar.sh deja Plux en PRODUCCION (decision 2026-10-23)" "1" "$(grep -c '^PLUX_AMBIENTE=produccion$' $C)"
+check "PASOS 8 (como lo vera Dimitry): plux en produccion" '"plux":{"disponible":true,"ambiente":"produccion"}' "$(curl -s https://$D/api/estado | grep -o '"plux":{[^}]*}')"
+{ sudo cat $C; echo "PLUX_API_BASE=http://127.0.0.1:1/x/"; } > "$S/conf_prod.env"; chmod 644 "$S/conf_prod.env"
+check "en produccion se ignora PLUX_API_BASE (auditoria A-15)" "https://api.pagoplux.com/intv1/" "$(cd $APP/server && ENVIVO_CONFIG="$S/conf_prod.env" php -r 'require "src/arranque.php"; echo \EnVivo\Plux::urlBase();' 2>&1)"; rm -f "$S/conf_prod.env"
+# Solo en el ensayo: el Plux falso necesita sandbox (en produccion la API falsa se ignora a proposito)
+sed -i "s#^PLUX_AMBIENTE=.*#PLUX_AMBIENTE=sandbox#" $C
 echo "PLUX_API_BASE=http://127.0.0.1:$P_PLUX/intv1/" >> $C
 sudo systemctl reload php8.3-fpm
-check "plux disponible en sandbox" '"plux":{"disponible":true,"ambiente":"sandbox"}' "$(curl -s https://$D/api/estado | grep -o '"plux":{[^}]*}')"
+check "plux disponible en sandbox (solo ensayo, Plux falso)" '"plux":{"disponible":true,"ambiente":"sandbox"}' "$(curl -s https://$D/api/estado | grep -o '"plux":{[^}]*}')"
 
 echo "== 3. Paso 6: secreto 2FA (como el usuario normal, sin sudo) y ponerlo en la config"
 sudo -u ubuntu php $APP/server/bin/control_totp.php dimitry > "$S/totp.txt" 2> "$S/totp.err"
@@ -186,7 +193,7 @@ check "la cuenta real y sus compras siguen" "2" "$(sudo -u www-data sqlite3 /var
 
 echo "== 6. Paso 8: comprobaciones (los comandos EXACTOS de las guias)"
 uno() { bash -c "$1" 2>&1 | tr -d '\r'; }
-check "PASOS 8: plux"           '"plux":{"disponible":true,"ambiente":"sandbox"}' "$(uno "curl -s https://juego.tukanec.com/api/estado | grep -o '\"plux\":{[^}]*}'")"
+check "PASOS 8: plux (ensayo en sandbox)" '"plux":{"disponible":true,"ambiente":"sandbox"}' "$(uno "curl -s https://juego.tukanec.com/api/estado | grep -o '\"plux\":{[^}]*}'")"
 check "PASOS 8: Config.php 404" "404"    "$(uno "curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/server/src/Config.php")"
 check "PASOS 8: validador"      "active" "$(uno "systemctl is-active envivo-validador")"
 check "DESPLIEGUE 8: / 200"     "200"    "$(uno "curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/")"

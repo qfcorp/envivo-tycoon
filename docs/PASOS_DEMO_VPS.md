@@ -8,10 +8,10 @@ La guía larga con todos los detalles es `docs/DESPLIEGUE.md` (estos pasos son u
 | 1 | Crear la dirección `juego` en Cloudflare | Celular (Cloudflare) | 5 min |
 | 2 | Instalar el juego | VPS (PuTTY) | 15 min |
 | 3 | Revisar la lista RESULTADO | VPS | 1 min |
-| 4 | Poner las claves de prueba de Plux | VPS | 5 min |
+| 4 | Poner las claves de Plux (producción) | VPS | 5 min |
 | 5 | Primera entrada al Centro de Control | Celular | 2 min |
 | 6 | Activar el código del celular (2FA) | VPS + celular | 10 min |
-| 7 | Probar el juego y una compra de prueba | Celular | 10 min |
+| 7 | Probar el juego y una compra real pequeña ($0,99) | Celular | 10 min |
 | 8 | Comprobaciones rápidas | VPS | 5 min |
 | 9 | Actualizar a la última versión (cuando te avise) | VPS | 2 min |
 | 10 | Llenar el mundo con productoras de muestra | VPS | 2 min |
@@ -51,18 +51,18 @@ Al final sale una lista. Mándame captura. Debe decir:
 - `3) Prueba de la API en este servidor: 200 (debe ser 200)`
 - `4) Prueba de que el codigo esta protegido: 404 (debe ser 404)`
 - `5) Centro de Control /control/: con usuario y clave (falta el codigo del celular)` (normal: es el paso 6)
-- `6) Plux: SIN credenciales (...)` (normal: es el paso 4)
+- `6) Plux: SIN credenciales (...)` (normal: es el paso 4; ya viene en producción)
 - `7) HTTPS: si`
 - `8) Validador de partidas: activo`
 
 Debajo sale "Lista de lo que falta": ya está en estos pasos, no hace falta seguirla ahora.
 
-## Paso 4 · Claves de prueba de Plux
+## Paso 4 · Claves de Plux (producción: cobra de verdad)
 
 1. `sudo nano /etc/envivo/config.env`
-2. En las líneas `PLUX_` pega las claves de **pruebas (sandbox)** del panel de Plux:
+2. En las líneas `PLUX_` pega las claves de **producción** del panel de Plux (la misma integración de TuPass, ya certificada):
    `PLUX_ID_ESTABLECIMIENTO=`, `PLUX_ID_CLIENTE=`, `PLUX_CLAVE_SECRETA=`, `PLUX_LLAVE_PUBLICA=` (en una sola línea).
-   Deja `PLUX_AMBIENTE=sandbox`.
+   `PLUX_AMBIENTE=produccion` ya viene puesto: no lo cambies.
 3. **Ctrl + O**, Enter, **Ctrl + X**.
 4. `sudo systemctl reload php8.3-fpm`
 
@@ -83,8 +83,8 @@ En el celular: **https://juego.tukanec.com/control/** → usuario y clave del pa
 
 En el celular **https://juego.tukanec.com**:
 1. Juega el tutorial (3 eventos: **Clientes** → Preparar → En vivo).
-2. **Tienda** → **Crear cuenta** → la tienda avisa que está en **modo de pruebas** → comprar **700 créditos** con una
-   **tarjeta de pruebas de Plux** (te lleva a la página de pago y vuelve solo al juego con los créditos).
+2. **Tienda** → **Crear cuenta** → comprar la **Oferta de bienvenida ($0,99)** con **tu tarjeta real** (es una compra
+   de verdad: te lleva a la página de pago de Plux y vuelve solo al juego con los créditos y el camarógrafo).
 3. Revisa que lleguen los créditos y que en `/control/` → **Compras** aparezca la venta.
 4. **Inicio**: sale la tarjeta **Tu servidor** (por ejemplo `Servidor 1 · Quito`).
 5. Pestaña **En línea**: deben salir Liga Semanal, Mega Festival, Duelo de Productoras, Desafío del Día y
@@ -97,7 +97,7 @@ En el celular **https://juego.tukanec.com**:
 ```
 curl -s https://juego.tukanec.com/api/estado | grep -o '"plux":{[^}]*}'
 ```
-Debe salir `"plux":{"disponible":true,"ambiente":"sandbox"}`.
+Debe salir `"plux":{"disponible":true,"ambiente":"produccion"}`.
 
 ```
 curl -s -o /dev/null -w '%{http_code}\n' https://juego.tukanec.com/server/src/Config.php

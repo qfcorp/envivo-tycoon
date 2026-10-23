@@ -11,7 +11,7 @@
 #  Que hace:
 #   1. Instala php8.3-sqlite3 y php8.3-curl si faltan (y git).
 #   2. Crea /var/lib/envivo (la base de datos; solo www-data, permisos 750).
-#   3. Crea /etc/envivo/config.env si no existe (pregunta usuario y clave del Centro de Control; Plux queda vacio en sandbox).
+#   3. Crea /etc/envivo/config.env si no existe (pregunta usuario y clave del Centro de Control; Plux queda vacio, en PRODUCCION).
 #   4. Baja (git clone) o actualiza (git pull) https://github.com/qfcorp/envivo-tycoon en /var/www/envivo.
 #      Si bajo una version nueva de este instalador, sigue con la nueva.
 #   5. Agrega a config.env las lineas de server/config.env.ejemplo que falten (vacias o con su valor por defecto;
@@ -117,9 +117,9 @@ ENVIVO_ZONA=America/Guayaquil
 ENVIVO_ADMIN_USUARIO=$ADMIN_U
 ENVIVO_ADMIN_CLAVE_HASH=$HASH
 
-; Pago Plux: queda en PRUEBAS (sandbox). Pega aqui los datos que te da Plux.
-; Cuando Plux certifique, cambia a: PLUX_AMBIENTE=produccion
-PLUX_AMBIENTE=sandbox
+; Pago Plux: en PRODUCCION (cobra de verdad; la integracion es la misma de TuPass, ya certificada).
+; Pega aqui las claves de PRODUCCION del panel de Plux. Solo para pruebas: PLUX_AMBIENTE=sandbox con claves de pruebas
+PLUX_AMBIENTE=produccion
 PLUX_ID_ESTABLECIMIENTO=
 PLUX_ID_CLIENTE=
 PLUX_CLAVE_SECRETA=
@@ -279,7 +279,7 @@ echo "      Tipo A   Nombre: juego   IPv4: $(curl -s -4 --max-time 5 https://ifc
 echo "    (con la nube gris certbot funciona directo; si luego la pones naranja, en SSL/TLS elige 'Full (strict)')"
 echo " b) Certificado:   sudo certbot --nginx -d $DOMINIO     y despues otra vez:   sudo bash $APP/server/deploy/instalar.sh"
 echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_CLIENTE, PLUX_CLAVE_SECRETA y PLUX_LLAVE_PUBLICA"
-echo "    (deja PLUX_AMBIENTE=sandbox hasta probar), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
+echo "    (claves de PRODUCCION; PLUX_AMBIENTE=produccion ya viene puesto), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
 echo " c2) Codigo del celular (2FA) del Centro de Control: docs/DESPLIEGUE.md, paso 6"
 echo " d) Revisa con un abogado y completa terminos.html y privacidad.html ([RUC], [CORREO DE SOPORTE], [DIRECCION], [FECHA])."
 echo " d2) Soporte: cuando tengas el correo de soporte, ponlo en $CONF (SOPORTE_CORREO=... y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00)"
