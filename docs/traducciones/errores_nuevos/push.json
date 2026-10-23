@@ -1,0 +1,80 @@
+{
+  "_info": "Códigos de error nuevos del módulo de notificaciones push (server/src/Push.php, PushApi.php; server/INTEGRAR_PUSH.md). Mismo formato que docs/traducciones/errores.json: el integrador los copia ahí (en \"_codigos\" y en cada idioma).",
+  "_codigos": {
+    "push_no_configurado": "existe · Push.php · 503 (suscribir) / 400 (prueba del Centro de Control) · faltan PUSH_VAPID_* en /etc/envivo/config.env",
+    "push_endpoint_invalido": "existe · Push.php · 400 · el endpoint no es de un servicio de push conocido (FCM, Mozilla, Windows, Apple)",
+    "push_llaves_invalidas": "existe · Push.php · 400 · p256dh no es un punto P-256 o auth no tiene 16 bytes",
+    "push_categoria_invalida": "existe · Push.php · 400 · categoría desconocida o valor que no es true/false",
+    "push_no_suscrito": "existe · Push.php · 404 · ese aparato no tiene las notificaciones activadas"
+  },
+  "es": {
+    "push_no_configurado": "Las notificaciones aún no están activas en el servidor.",
+    "push_endpoint_invalido": "Este navegador usa un servicio de notificaciones que no podemos usar.",
+    "push_llaves_invalidas": "No se pudieron activar las notificaciones. Intenta otra vez.",
+    "push_categoria_invalida": "Esa opción de notificaciones no existe.",
+    "push_no_suscrito": "Las notificaciones no están activas en este aparato."
+  },
+  "en": {
+    "push_no_configurado": "Notifications aren't active on the server yet.",
+    "push_endpoint_invalido": "This browser uses a notification service we can't use.",
+    "push_llaves_invalidas": "Couldn't turn on notifications. Try again.",
+    "push_categoria_invalida": "That notification option doesn't exist.",
+    "push_no_suscrito": "Notifications aren't on for this device."
+  },
+  "pt-BR": {
+    "push_no_configurado": "As notificações ainda não estão ativas no servidor.",
+    "push_endpoint_invalido": "Este navegador usa um serviço de notificações que não podemos usar.",
+    "push_llaves_invalidas": "Não foi possível ativar as notificações. Tente de novo.",
+    "push_categoria_invalida": "Essa opção de notificações não existe.",
+    "push_no_suscrito": "As notificações não estão ativas neste aparelho."
+  },
+  "fr": {
+    "push_no_configurado": "Les notifications ne sont pas encore actives sur le serveur.",
+    "push_endpoint_invalido": "Ce navigateur utilise un service de notifications que nous ne pouvons pas utiliser.",
+    "push_llaves_invalidas": "Impossible d'activer les notifications. Réessaie.",
+    "push_categoria_invalida": "Cette option de notifications n'existe pas.",
+    "push_no_suscrito": "Les notifications ne sont pas activées sur cet appareil."
+  },
+  "de": {
+    "push_no_configurado": "Benachrichtigungen sind auf dem Server noch nicht aktiv.",
+    "push_endpoint_invalido": "Dieser Browser nutzt einen Benachrichtigungsdienst, den wir nicht verwenden können.",
+    "push_llaves_invalidas": "Benachrichtigungen konnten nicht aktiviert werden. Versuch es noch einmal.",
+    "push_categoria_invalida": "Diese Benachrichtigungsoption gibt es nicht.",
+    "push_no_suscrito": "Benachrichtigungen sind auf diesem Gerät nicht aktiv."
+  },
+  "it": {
+    "push_no_configurado": "Le notifiche non sono ancora attive sul server.",
+    "push_endpoint_invalido": "Questo browser usa un servizio di notifiche che non possiamo usare.",
+    "push_llaves_invalidas": "Impossibile attivare le notifiche. Riprova.",
+    "push_categoria_invalida": "Questa opzione di notifica non esiste.",
+    "push_no_suscrito": "Le notifiche non sono attive su questo dispositivo."
+  },
+  "ru": {
+    "push_no_configurado": "Уведомления на сервере ещё не включены.",
+    "push_endpoint_invalido": "Этот браузер использует службу уведомлений, которую мы не поддерживаем.",
+    "push_llaves_invalidas": "Не удалось включить уведомления. Попробуй ещё раз.",
+    "push_categoria_invalida": "Такой настройки уведомлений нет.",
+    "push_no_suscrito": "На этом устройстве уведомления не включены."
+  },
+  "tr": {
+    "push_no_configurado": "Bildirimler sunucuda henüz etkin değil.",
+    "push_endpoint_invalido": "Bu tarayıcı kullanamadığımız bir bildirim hizmeti kullanıyor.",
+    "push_llaves_invalidas": "Bildirimler açılamadı. Tekrar dene.",
+    "push_categoria_invalida": "Böyle bir bildirim seçeneği yok.",
+    "push_no_suscrito": "Bu cihazda bildirimler açık değil."
+  },
+  "id": {
+    "push_no_configurado": "Notifikasi belum aktif di server.",
+    "push_endpoint_invalido": "Browser ini memakai layanan notifikasi yang tidak bisa kami gunakan.",
+    "push_llaves_invalidas": "Tidak bisa mengaktifkan notifikasi. Coba lagi.",
+    "push_categoria_invalida": "Opsi notifikasi itu tidak ada.",
+    "push_no_suscrito": "Notifikasi tidak aktif di perangkat ini."
+  },
+  "zh-CN": {
+    "push_no_configurado": "服务器尚未开启通知功能。",
+    "push_endpoint_invalido": "此浏览器使用的通知服务我们无法支持。",
+    "push_llaves_invalidas": "无法开启通知，请重试。",
+    "push_categoria_invalida": "该通知选项不存在。",
+    "push_no_suscrito": "此设备未开启通知。"
+  }
+}

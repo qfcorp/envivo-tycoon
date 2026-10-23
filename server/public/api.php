@@ -55,6 +55,9 @@ try {
     // Duelo de Productoras y Desafío Técnico del Día (server/INTEGRAR_DUELOS_DESAFIO.md): /api/duelos* y /api/desafio*
     if (($r = Duelos::ruta($ruta, $metodo) ?? Desafio::ruta($ruta, $metodo)) !== null) Http::json(200, $r);
 
+    // Notificaciones push (server/INTEGRAR_PUSH.md): /api/push/*
+    if (class_exists(\EnVivo\PushApi::class) && \EnVivo\PushApi::esRuta($ruta)) \EnVivo\PushApi::responder($ruta, $metodo, requiere_sesion());
+
     // Salud de servidores, fusión y traslado voluntario (server/INTEGRAR_FUSIONES.md): /api/servidor/*
     if (($r = \EnVivo\Fusiones::ruta($ruta, $metodo)) !== null) Http::json(200, $r);
 

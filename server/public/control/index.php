@@ -64,6 +64,7 @@ try {
         'facturacion' => cc_t_facturacion(),                                                 // facturación SRI (INTEGRAR_FACTURACION.md)
         'errores' => cc_t_errores(),
         'analitica' => cc_t_analitica(),
+        'push' => cc_t_push(),
     };
     cc_pagina(CC_PESTANAS[$t], $t, $cuerpo);
 } catch (\Throwable $e) {
@@ -150,6 +151,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'facturacion_') => cc_a_facturacion($accion, $q),
             str_starts_with($accion, 'errores_') => cc_a_errores($accion, $q),
             str_starts_with($accion, 'analitica_') => cc_a_analitica($accion, $q),
+            str_starts_with($accion, 'push_') => cc_a_push($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);

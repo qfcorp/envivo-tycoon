@@ -49,6 +49,7 @@ const SHELL = [
   './js/escena.js',     // franja animada del evento en vivo (opcional)
   './js/visitas.js',    // visitar productoras de otros jugadores
   './js/compartir.js',  // compartir por WhatsApp, calificar y novedades (opcional)
+  './js/push.js',       // notificaciones push: aviso previo y ajustes (opcional)
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',
@@ -162,4 +163,43 @@ self.addEventListener('fetch', (event) => {
     if (/^\/(api\/|pago\.php|pago-assets\/|admin\.php|control(\/|$)|discord(\/|$)|\.well-known\/|terminos\.html|privacidad\.html)/.test(url.pathname)) return;
     event.respondWith(cacheFirstShell(req, event));
   }
+});
+
+/* ---------- Notificaciones push (server/INTEGRAR_PUSH.md, js/push.js) ----------
+   El servidor manda {t: título, b: cuerpo, u: ruta del juego, tag: categoría}. Al tocarla se abre (o enfoca) el juego.
+   Si el navegador cambia la suscripción, se vuelve a registrar sola con la misma cuenta (la galleta va en el fetch). */
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { b: event.data ? event.data.text() : '' }; }
+  event.waitUntil(self.registration.showNotification(String(d.t || 'EN VIVO Tycoon').slice(0, 80), {
+    body: String(d.b || '').slice(0, 200), icon: './icons/icon-192.png', tag: String(d.tag || 'envivo'),
+    data: { u: typeof d.u === 'string' ? d.u : '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  let u = '/';
+  try { const x = new URL((event.notification.data && event.notification.data.u) || '/', self.location.origin); if (x.origin === self.location.origin) u = x.href; } catch (e) { /* inicio */ }
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+      if (new URL(w.url).origin !== self.location.origin) continue;
+      try { await w.focus(); if ('navigate' in w && w.url !== u) await w.navigate(u); } catch (e) { /* ya enfocado */ }
+      return;
+    }
+    await self.clients.openWindow(u);
+  })());
+});
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    const pedir = (ruta, body) => fetch(ruta, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' }, body: JSON.stringify(body) }).then((r) => r.json());
+    const est = await pedir('/api/push/estado', {});
+    if (!est || !est.publica) return;
+    const k = est.publica.replace(/-/g, '+').replace(/_/g, '/');
+    const key = Uint8Array.from(atob(k + '='.repeat((4 - (k.length % 4)) % 4)), (c) => c.charCodeAt(0));
+    const sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    await pedir('/api/push/suscribir', { suscripcion: sub.toJSON(), anterior: event.oldSubscription ? event.oldSubscription.endpoint : undefined });
+  })().catch(() => {}));
 });
