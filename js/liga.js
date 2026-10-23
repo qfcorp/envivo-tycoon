@@ -7,7 +7,11 @@
              jugarIntento(intento) -> Promise<{decisiones, resultado}>   (juega el evento con la semilla
                del servidor; ver server/validador/README.md "Lado del juego"),
              equipoIntento(s)? (equipo a registrar; si no, todo el personal y los equipos),
-             abrirAsociaciones()? }
+             abrirAsociaciones()? (abre el chat en "Asociación"; "Crear asociación" lo usa para ir directo al formulario),
+             alUnirse(r)? / alCanjear(r)? (refrescar /api/estado después de unirse o canjear),
+             abrirModo(k)? (ir a otro modo en línea; si falta, window.EnVivoAbrirOnline) }
+   Sin asociación: lista para unirse en un toque (GET /api/liga → asociaciones, o GET /api/asociaciones en servidores
+   viejos; POST /api/asociaciones/unirse), cuánto falta para crear una ($ de la partida) y los modos que no la piden.
    Liga.progresoLocal(s, tarea) -> avance del encargo contando lo jugado que todavía no llegó al servidor.
    Textos: usa I18N si existe (claves liga.*) y si no, el español de aquí.
    ========================================================= */
@@ -39,17 +43,149 @@
     'liga.cuenta': '¡Cuenta para el encargo! ({a}/{m})', 'liga.no_cuenta': 'Ese evento no cumplió el encargo.', 'liga.completado': '¡Encargo completado! +{p} puntos para la asociación',
     'liga.pendiente': 'Resultado guardado: el servidor lo revisa en un momento.', 'liga.sin_juego': 'Actualiza el juego para jugar encargos de la liga.',
     'liga.sin_internet': 'Sin conexión. Tu resultado quedó guardado y se enviará después.',
+    // Pantalla para quien todavía no tiene asociación (liga.n.*: traducciones en TRAD, abajo)
+    'liga.n.titulo': 'Juega la liga en equipo', 'liga.n.txt': 'Únete gratis a una asociación: cada semana hacen encargos juntos, suben de liga y ganan fichas.',
+    'liga.n.buscar': 'Buscar asociación', 'liga.n.buscando': 'Buscando asociaciones…', 'liga.n.miembros': '{n}/{max} miembros',
+    'liga.n.pts_semana': '{p} pts esta semana', 'liga.n.activa': 'Más activa', 'liga.n.libre': 'Entrada libre', 'liga.n.con_solicitud': 'Con solicitud',
+    'liga.n.unirme': 'Unirme', 'liga.n.pedir': 'Pedir entrar', 'liga.n.pedida': 'Pedida', 'liga.n.ver_mas': 'Ver {n} más',
+    'liga.n.unido': '¡Ya eres parte de {n}! Toma tu primer encargo.', 'liga.n.solicitud': 'Solicitud enviada a {n}. Te avisan cuando te acepten.',
+    'liga.n.llena': 'Esa asociación se llenó. Prueba con otra.', 'liga.n.error_lista': 'No se pudo cargar la lista de asociaciones.',
+    'liga.n.crear_t': 'Crea tu propia asociación', 'liga.n.crear_txt': 'Cuesta {c} del juego y tú serás el presidente.', 'liga.n.crear_gratis': 'Gratis con tu Pase VIP: tú serás el presidente.',
+    'liga.n.tienes': 'Tienes {m} de {c}', 'liga.n.faltan': 'Te faltan {m}', 'liga.n.faltan_txt': 'Gánalos haciendo eventos con tu productora.',
+    'liga.n.crear': 'Crear asociación', 'liga.n.vacio_t': 'Todavía no hay asociaciones aquí',
+    'liga.n.vacio_txt': '¡Sé la primera productora en crear una! Mientras tanto, estos modos no necesitan asociación:',
+    'liga.n.otros': 'Sin asociación también puedes jugar',
+    // Nombres de los otros modos: los da I18N (js/lang); esto es por si falta
+    'online.duelos': 'Duelo de Productoras', 'online.duelos_det': 'Reta a otra productora: mismo contrato, misma suerte.',
+    'online.desafio': 'Desafío del Día', 'online.desafio_det': 'El mismo reto para todos, una vez al día.',
+    'online.copa': 'Copa de Servidores', 'online.copa_det': 'Tu servidor contra los demás, cada semana.',
   };
+  /* Textos nuevos que todavía no están en js/lang/*: aquí, por idioma (I18N.idioma). Lo que falte sale en español. */
+  const TRAD = {
+    en: {
+      'liga.n.titulo': 'Play the league as a team', 'liga.n.txt': 'Join an association for free: every week you do tasks together, move up leagues and earn tokens.',
+      'liga.n.buscar': 'Find an association', 'liga.n.buscando': 'Looking for associations…', 'liga.n.miembros': '{n}/{max} members',
+      'liga.n.pts_semana': '{p} pts this week', 'liga.n.activa': 'Most active', 'liga.n.libre': 'Open to all', 'liga.n.con_solicitud': 'By request',
+      'liga.n.unirme': 'Join', 'liga.n.pedir': 'Ask to join', 'liga.n.pedida': 'Requested', 'liga.n.ver_mas': 'Show {n} more',
+      'liga.n.unido': "You're now part of {n}! Take your first task.", 'liga.n.solicitud': "Request sent to {n}. You'll be notified when they accept you.",
+      'liga.n.llena': 'That association just filled up. Try another one.', 'liga.n.error_lista': "Couldn't load the list of associations.",
+      'liga.n.crear_t': 'Create your own association', 'liga.n.crear_txt': "It costs {c} of in-game money and you'll be the president.", 'liga.n.crear_gratis': "Free with your VIP Pass: you'll be the president.",
+      'liga.n.tienes': 'You have {m} of {c}', 'liga.n.faltan': 'You need {m} more', 'liga.n.faltan_txt': 'Earn it by running events with your company.',
+      'liga.n.crear': 'Create association', 'liga.n.vacio_t': 'No associations here yet',
+      'liga.n.vacio_txt': 'Be the first company to create one! Meanwhile, these modes need no association:', 'liga.n.otros': 'Without an association you can also play',
+    },
+    'pt-BR': {
+      'liga.n.titulo': 'Jogue a liga em equipe', 'liga.n.txt': 'Entre de graça numa associação: toda semana vocês fazem encomendas juntos, sobem de liga e ganham fichas.',
+      'liga.n.buscar': 'Buscar associação', 'liga.n.buscando': 'Buscando associações…', 'liga.n.miembros': '{n}/{max} membros',
+      'liga.n.pts_semana': '{p} pts nesta semana', 'liga.n.activa': 'Mais ativa', 'liga.n.libre': 'Entrada livre', 'liga.n.con_solicitud': 'Com pedido',
+      'liga.n.unirme': 'Entrar', 'liga.n.pedir': 'Pedir para entrar', 'liga.n.pedida': 'Pedido feito', 'liga.n.ver_mas': 'Ver mais {n}',
+      'liga.n.unido': 'Agora você faz parte de {n}! Pegue sua primeira encomenda.', 'liga.n.solicitud': 'Pedido enviado para {n}. Você será avisado quando aceitarem.',
+      'liga.n.llena': 'Essa associação lotou. Tente outra.', 'liga.n.error_lista': 'Não deu para carregar a lista de associações.',
+      'liga.n.crear_t': 'Crie sua própria associação', 'liga.n.crear_txt': 'Custa {c} do jogo e você será o presidente.', 'liga.n.crear_gratis': 'Grátis com seu Passe VIP: você será o presidente.',
+      'liga.n.tienes': 'Você tem {m} de {c}', 'liga.n.faltan': 'Faltam {m}', 'liga.n.faltan_txt': 'Ganhe fazendo eventos com sua produtora.',
+      'liga.n.crear': 'Criar associação', 'liga.n.vacio_t': 'Ainda não há associações aqui',
+      'liga.n.vacio_txt': 'Seja a primeira produtora a criar uma! Enquanto isso, estes modos não precisam de associação:', 'liga.n.otros': 'Sem associação você também pode jogar',
+    },
+    fr: {
+      'liga.n.titulo': 'Jouez la ligue en équipe', 'liga.n.txt': 'Rejoignez gratuitement une association : chaque semaine, vous faites des missions ensemble, montez de ligue et gagnez des jetons.',
+      'liga.n.buscar': 'Trouver une association', 'liga.n.buscando': 'Recherche d’associations…', 'liga.n.miembros': '{n}/{max} membres',
+      'liga.n.pts_semana': '{p} pts cette semaine', 'liga.n.activa': 'La plus active', 'liga.n.libre': 'Entrée libre', 'liga.n.con_solicitud': 'Sur demande',
+      'liga.n.unirme': 'Rejoindre', 'liga.n.pedir': 'Demander', 'liga.n.pedida': 'Demandé', 'liga.n.ver_mas': 'Voir {n} de plus',
+      'liga.n.unido': 'Vous faites partie de {n} ! Prenez votre première mission.', 'liga.n.solicitud': 'Demande envoyée à {n}. Vous serez prévenu quand ils vous accepteront.',
+      'liga.n.llena': 'Cette association vient d’être complète. Essayez-en une autre.', 'liga.n.error_lista': 'Impossible de charger la liste des associations.',
+      'liga.n.crear_t': 'Créez votre propre association', 'liga.n.crear_txt': 'Elle coûte {c} du jeu et vous en serez le président.', 'liga.n.crear_gratis': 'Gratuit avec votre Pass VIP : vous en serez le président.',
+      'liga.n.tienes': 'Vous avez {m} sur {c}', 'liga.n.faltan': 'Il vous manque {m}', 'liga.n.faltan_txt': 'Gagnez-les en faisant des événements avec votre société.',
+      'liga.n.crear': 'Créer l’association', 'liga.n.vacio_t': 'Pas encore d’association ici',
+      'liga.n.vacio_txt': 'Soyez la première société à en créer une ! En attendant, ces modes ne demandent pas d’association :', 'liga.n.otros': 'Sans association, vous pouvez aussi jouer',
+    },
+    de: {
+      'liga.n.titulo': 'Spiel die Liga im Team', 'liga.n.txt': 'Tritt kostenlos einem Verband bei: Jede Woche erledigt ihr gemeinsam Aufträge, steigt auf und verdient Marken.',
+      'liga.n.buscar': 'Verband suchen', 'liga.n.buscando': 'Suche Verbände…', 'liga.n.miembros': '{n}/{max} Mitglieder',
+      'liga.n.pts_semana': '{p} Pkt. diese Woche', 'liga.n.activa': 'Am aktivsten', 'liga.n.libre': 'Freier Beitritt', 'liga.n.con_solicitud': 'Auf Anfrage',
+      'liga.n.unirme': 'Beitreten', 'liga.n.pedir': 'Anfragen', 'liga.n.pedida': 'Angefragt', 'liga.n.ver_mas': '{n} weitere zeigen',
+      'liga.n.unido': 'Du gehörst jetzt zu {n}! Nimm deinen ersten Auftrag.', 'liga.n.solicitud': 'Anfrage an {n} gesendet. Du erfährst es, sobald sie dich aufnehmen.',
+      'liga.n.llena': 'Dieser Verband ist gerade voll. Versuch einen anderen.', 'liga.n.error_lista': 'Die Liste der Verbände konnte nicht geladen werden.',
+      'liga.n.crear_t': 'Gründe deinen eigenen Verband', 'liga.n.crear_txt': 'Kostet {c} Spielgeld und du wirst Präsident.', 'liga.n.crear_gratis': 'Gratis mit deinem VIP-Pass: Du wirst Präsident.',
+      'liga.n.tienes': 'Du hast {m} von {c}', 'liga.n.faltan': 'Dir fehlen {m}', 'liga.n.faltan_txt': 'Verdiene es mit Events deiner Produktionsfirma.',
+      'liga.n.crear': 'Verband gründen', 'liga.n.vacio_t': 'Hier gibt es noch keine Verbände',
+      'liga.n.vacio_txt': 'Sei die erste Firma, die einen gründet! Diese Modi brauchen keinen Verband:', 'liga.n.otros': 'Ohne Verband kannst du auch spielen',
+    },
+    it: {
+      'liga.n.titulo': 'Gioca la lega in squadra', 'liga.n.txt': 'Entra gratis in un’associazione: ogni settimana fate incarichi insieme, salite di lega e guadagnate gettoni.',
+      'liga.n.buscar': 'Cerca un’associazione', 'liga.n.buscando': 'Cerco associazioni…', 'liga.n.miembros': '{n}/{max} membri',
+      'liga.n.pts_semana': '{p} pt questa settimana', 'liga.n.activa': 'La più attiva', 'liga.n.libre': 'Ingresso libero', 'liga.n.con_solicitud': 'Su richiesta',
+      'liga.n.unirme': 'Entra', 'liga.n.pedir': 'Chiedi di entrare', 'liga.n.pedida': 'Richiesta inviata', 'liga.n.ver_mas': 'Mostra altre {n}',
+      'liga.n.unido': 'Ora fai parte di {n}! Prendi il tuo primo incarico.', 'liga.n.solicitud': 'Richiesta inviata a {n}. Ti avviseranno quando ti accettano.',
+      'liga.n.llena': 'Quell’associazione si è appena riempita. Provane un’altra.', 'liga.n.error_lista': 'Impossibile caricare l’elenco delle associazioni.',
+      'liga.n.crear_t': 'Crea la tua associazione', 'liga.n.crear_txt': 'Costa {c} del gioco e sarai tu il presidente.', 'liga.n.crear_gratis': 'Gratis con il tuo Pass VIP: sarai tu il presidente.',
+      'liga.n.tienes': 'Hai {m} su {c}', 'liga.n.faltan': 'Ti mancano {m}', 'liga.n.faltan_txt': 'Guadagnali facendo eventi con la tua casa di produzione.',
+      'liga.n.crear': 'Crea associazione', 'liga.n.vacio_t': 'Ancora nessuna associazione qui',
+      'liga.n.vacio_txt': 'Sii la prima casa di produzione a crearne una! Intanto, queste modalità non richiedono un’associazione:', 'liga.n.otros': 'Anche senza associazione puoi giocare',
+    },
+    ru: {
+      'liga.n.titulo': 'Играй в лиге командой', 'liga.n.txt': 'Вступи в ассоциацию бесплатно: каждую неделю вы вместе выполняете заказы, поднимаетесь в лигах и получаете фишки.',
+      'liga.n.buscar': 'Найти ассоциацию', 'liga.n.buscando': 'Ищем ассоциации…', 'liga.n.miembros': '{n}/{max} участников',
+      'liga.n.pts_semana': '{p} очк. за неделю', 'liga.n.activa': 'Самая активная', 'liga.n.libre': 'Вход свободный', 'liga.n.con_solicitud': 'По заявке',
+      'liga.n.unirme': 'Вступить', 'liga.n.pedir': 'Подать заявку', 'liga.n.pedida': 'Заявка подана', 'liga.n.ver_mas': 'Показать ещё {n}',
+      'liga.n.unido': 'Теперь ты в {n}! Возьми свой первый заказ.', 'liga.n.solicitud': 'Заявка отправлена в {n}. Тебе сообщат, когда примут.',
+      'liga.n.llena': 'Эта ассоциация уже заполнена. Попробуй другую.', 'liga.n.error_lista': 'Не удалось загрузить список ассоциаций.',
+      'liga.n.crear_t': 'Создай свою ассоциацию', 'liga.n.crear_txt': 'Стоит {c} игровых денег, и ты станешь президентом.', 'liga.n.crear_gratis': 'Бесплатно с VIP-пропуском: ты станешь президентом.',
+      'liga.n.tienes': 'У тебя {m} из {c}', 'liga.n.faltan': 'Не хватает {m}', 'liga.n.faltan_txt': 'Заработай их на мероприятиях своей студии.',
+      'liga.n.crear': 'Создать ассоциацию', 'liga.n.vacio_t': 'Здесь пока нет ассоциаций',
+      'liga.n.vacio_txt': 'Создай первую! А пока в эти режимы можно играть без ассоциации:', 'liga.n.otros': 'Без ассоциации тоже можно играть',
+    },
+    tr: {
+      'liga.n.titulo': 'Ligi takımla oyna', 'liga.n.txt': 'Bir birliğe ücretsiz katıl: her hafta birlikte görev yapar, lig atlar ve jeton kazanırsınız.',
+      'liga.n.buscar': 'Birlik bul', 'liga.n.buscando': 'Birlikler aranıyor…', 'liga.n.miembros': '{n}/{max} üye',
+      'liga.n.pts_semana': 'Bu hafta {p} puan', 'liga.n.activa': 'En aktif', 'liga.n.libre': 'Serbest giriş', 'liga.n.con_solicitud': 'Başvuruyla',
+      'liga.n.unirme': 'Katıl', 'liga.n.pedir': 'Başvur', 'liga.n.pedida': 'Başvuruldu', 'liga.n.ver_mas': '{n} tane daha göster',
+      'liga.n.unido': 'Artık {n} üyesisin! İlk görevini al.', 'liga.n.solicitud': '{n} birliğine başvuru gönderildi. Kabul edilince haber verilecek.',
+      'liga.n.llena': 'Bu birlik az önce doldu. Başka birini dene.', 'liga.n.error_lista': 'Birlik listesi yüklenemedi.',
+      'liga.n.crear_t': 'Kendi birliğini kur', 'liga.n.crear_txt': 'Oyun parasıyla {c} tutar ve başkan sen olursun.', 'liga.n.crear_gratis': 'VIP Pasınla ücretsiz: başkan sen olursun.',
+      'liga.n.tienes': '{c} tutarın {m} kadarı sende', 'liga.n.faltan': '{m} eksik', 'liga.n.faltan_txt': 'Yapım şirketinle etkinlik yaparak kazan.',
+      'liga.n.crear': 'Birlik kur', 'liga.n.vacio_t': 'Burada henüz birlik yok',
+      'liga.n.vacio_txt': 'İlk birliği kuran sen ol! Bu arada şu modlar birlik gerektirmez:', 'liga.n.otros': 'Birlik olmadan da oynayabilirsin',
+    },
+    id: {
+      'liga.n.titulo': 'Main liga bersama tim', 'liga.n.txt': 'Gabung asosiasi gratis: tiap minggu kalian mengerjakan tugas bersama, naik liga, dan dapat token.',
+      'liga.n.buscar': 'Cari asosiasi', 'liga.n.buscando': 'Mencari asosiasi…', 'liga.n.miembros': '{n}/{max} anggota',
+      'liga.n.pts_semana': '{p} poin minggu ini', 'liga.n.activa': 'Paling aktif', 'liga.n.libre': 'Bebas masuk', 'liga.n.con_solicitud': 'Lewat permintaan',
+      'liga.n.unirme': 'Gabung', 'liga.n.pedir': 'Minta gabung', 'liga.n.pedida': 'Sudah diminta', 'liga.n.ver_mas': 'Lihat {n} lagi',
+      'liga.n.unido': 'Kamu sekarang bagian dari {n}! Ambil tugas pertamamu.', 'liga.n.solicitud': 'Permintaan dikirim ke {n}. Kamu akan diberi tahu saat diterima.',
+      'liga.n.llena': 'Asosiasi itu baru saja penuh. Coba yang lain.', 'liga.n.error_lista': 'Daftar asosiasi tidak bisa dimuat.',
+      'liga.n.crear_t': 'Buat asosiasimu sendiri', 'liga.n.crear_txt': 'Biayanya {c} uang game dan kamu jadi ketuanya.', 'liga.n.crear_gratis': 'Gratis dengan VIP Pass: kamu jadi ketuanya.',
+      'liga.n.tienes': 'Kamu punya {m} dari {c}', 'liga.n.faltan': 'Kurang {m}', 'liga.n.faltan_txt': 'Dapatkan dengan mengadakan acara bersama rumah produksimu.',
+      'liga.n.crear': 'Buat asosiasi', 'liga.n.vacio_t': 'Belum ada asosiasi di sini',
+      'liga.n.vacio_txt': 'Jadilah rumah produksi pertama yang membuatnya! Sementara itu, mode ini tidak butuh asosiasi:', 'liga.n.otros': 'Tanpa asosiasi kamu juga bisa main',
+    },
+    'zh-CN': {
+      'liga.n.titulo': '组队参加联赛', 'liga.n.txt': '免费加入一个协会：每周一起完成委托、升级联赛并赢取筹码。',
+      'liga.n.buscar': '寻找协会', 'liga.n.buscando': '正在寻找协会…', 'liga.n.miembros': '{n}/{max} 名成员',
+      'liga.n.pts_semana': '本周 {p} 分', 'liga.n.activa': '最活跃', 'liga.n.libre': '自由加入', 'liga.n.con_solicitud': '需申请',
+      'liga.n.unirme': '加入', 'liga.n.pedir': '申请加入', 'liga.n.pedida': '已申请', 'liga.n.ver_mas': '再看 {n} 个',
+      'liga.n.unido': '你已加入 {n}！去接第一个委托吧。', 'liga.n.solicitud': '已向 {n} 发送申请，通过后会通知你。',
+      'liga.n.llena': '这个协会刚刚满员了，换一个试试。', 'liga.n.error_lista': '无法加载协会列表。',
+      'liga.n.crear_t': '创建你自己的协会', 'liga.n.crear_txt': '需要 {c} 游戏币，你将担任会长。', 'liga.n.crear_gratis': 'VIP 通行证免费：你将担任会长。',
+      'liga.n.tienes': '你有 {m} / {c}', 'liga.n.faltan': '还差 {m}', 'liga.n.faltan_txt': '用你的制作公司办活动来赚吧。',
+      'liga.n.crear': '创建协会', 'liga.n.vacio_t': '这里还没有协会',
+      'liga.n.vacio_txt': '成为第一个创建协会的制作公司！在此期间，这些模式不需要协会：', 'liga.n.otros': '没有协会也可以玩',
+    },
+  };
+  const idioma = () => { try { return (root.I18N && root.I18N.idioma) || 'es'; } catch (e) { return 'es'; } };
   const T = (k, p) => {
     try { if (root.I18N && root.I18N.T && (!root.I18N.T.has || root.I18N.T.has(k))) return root.I18N.T(k, p); } catch (e) { /* español */ }
-    return String(ES[k] || k).replace(/\{(\w+)\}/g, (m, x) => (p && p[x] !== undefined ? p[x] : m));
+    const d = TRAD[idioma()] || {};
+    const s = Object.prototype.hasOwnProperty.call(d, k) ? d[k] : ES[k] || k;
+    return String(s).replace(/\{(\w+)\}/g, (m, x) => (p && p[x] !== undefined ? p[x] : m));
   };
+  const dinero = (n) => { try { if (root.I18N && root.I18N.money) return root.I18N.money(n); } catch (e) { /* nada */ } return '$' + num(n); };
   const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const num = (n) => Number(n || 0).toLocaleString('es-EC');
   const CORTES = ['internet', 'luz', 'senal', 'cable', 'bateria', 'falla'];
   const ESTRELLAS = [85, 70, 55, 40];
 
-  const st = { ctx: null, el: null, datos: null, tienda: null, vista: 'encargos', cargando: false, error: '', reloj: null, base: 0, ocupado: false, cargadoEn: 0 };
+  const st = { ctx: null, el: null, datos: null, tienda: null, vista: 'encargos', cargando: false, error: '', reloj: null, base: 0, ocupado: false, cargadoEn: 0,
+    asocs: null, verTodas: false };   // asocs: lista de GET /api/asociaciones si /api/liga no la trae (servidor viejo)
 
   /* ---------- Gráficos propios ---------- */
   const icon = (n, cls, size) => {
@@ -153,7 +289,38 @@
       .lg-precio{display:inline-flex;align-items:center;gap:4px;font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;color:var(--amber)}
       .lg-art .btn.sm{flex:none;min-width:86px}
       .lg-art .motivo{font-size:11px;color:var(--muted);text-align:right;max-width:96px}
-      .lg-vacio{text-align:center;color:var(--muted);font-size:13px}`;
+      .lg-vacio{text-align:center;color:var(--muted);font-size:13px}
+      .lg-intro{display:flex;gap:12px;align-items:flex-start}
+      .lg-intro .grow{min-width:0}
+      .lg-intro h3{margin:0 0 4px;font-size:18px}
+      .lg-intro p{margin:0;font-size:13.5px;line-height:1.4;color:var(--muted)}
+      .lg-lista{padding:2px 12px}
+      .lg-a{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);min-width:0}
+      .lg-a:last-child{border-bottom:0}
+      .lg-a .lg-av{flex:none;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;font-weight:700;color:#0d0f14}
+      .lg-a .grow{flex:1 1 0;min-width:0}
+      .lg-a .nom{font-weight:600;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lg-a .det{font-size:12px;line-height:1.35;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+      .lg-a .det b{color:var(--amber);font-weight:600}
+      .lg-a .lg-top{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#0d0f14;background:var(--amber);border-radius:6px;padding:1px 5px;margin-inline-end:5px;vertical-align:1px}
+      .lg .lg-a .btn.sm{flex:none;width:auto;min-width:78px;max-width:40%;padding:11px 10px;font-size:14px;margin:0}
+      .lg .lg-mas{margin:0;border:0;background:none;color:var(--muted);font-size:13px;padding:10px 0 8px;text-decoration:underline}
+      .lg-crear .lg-barra{height:12px;margin-top:10px}
+      .lg-crear .lg-barra i{background:linear-gradient(90deg,#ffb020,#2ecc71)}
+      .lg-crear .cifras{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-top:6px}
+      .lg-crear .cifras b{color:var(--amber)}
+      .lg-sinasoc{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:18px 14px 14px}
+      .lg-sinasoc .ei{width:58px;height:58px;border-radius:18px;display:grid;place-items:center;background:#0f2440;border:1px dashed #1c3d66;color:#8cc4ff}
+      .lg-sinasoc .ei .ico{width:28px;height:28px}
+      .lg-sinasoc h3{margin:4px 0 0;font-size:18px}
+      .lg-sinasoc p{margin:0;font-size:13.5px;line-height:1.4;color:var(--muted)}
+      .lg-modos{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
+      .lg .lg-modo{display:flex;align-items:center;gap:10px;width:100%;margin:0;padding:10px 12px;text-align:start;background:var(--panel2);border:1px solid var(--line);border-radius:12px;font-weight:600;color:var(--text)}
+      .lg-modo .tile{width:36px;height:36px;border-radius:10px}
+      .lg-modo .tile .ico{width:18px;height:18px;margin:0}
+      .lg-modo .grow{flex:1 1 0;min-width:0}
+      .lg-modo small{display:block;font-weight:400;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .lg-modo .flecha{flex:none;color:var(--muted);font-size:18px}`;
     document.head.appendChild(s);
   }
 
@@ -249,7 +416,9 @@
       if (q <= 0 && n.dataset.recargar) recargar = true;
       n.textContent = T(n.dataset.texto, { t: tiempo(q) });
     });
-    if ((recargar || Date.now() - st.cargadoEn > 60000) && !st.cargando && !st.ocupado) cargar();
+    // Sin asociación se mira más seguido: así, si la crea desde el chat, la liga aparece enseguida
+    const cada = st.datos && st.datos.sin_asociacion ? 15000 : 60000;
+    if ((recargar || Date.now() - st.cargadoEn > cada) && !st.cargando && !st.ocupado) cargar();
   }
 
   /* ---------- Pintar ---------- */
@@ -365,6 +534,92 @@
       }).join('')}`;
   }
 
+  /* ---------- Sin asociación: unirse en un toque, crear una o jugar otros modos ---------- */
+  const MODOS_LIBRES = [['duelos', 'rival', 't-red'], ['desafio', 'target', 't-green'], ['copa', 'crown', 't-amber']];   // no piden asociación (el Festival sí)
+  const VISIBLES = 5;
+  const colorOk = (c) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : '#8b95a8');
+  const irModo = () => (st.ctx && typeof st.ctx.abrirModo === 'function' ? st.ctx.abrirModo : typeof root.EnVivoAbrirOnline === 'function' ? root.EnVivoAbrirOnline : null);
+
+  /* Lista para unirse: la que trae GET /api/liga (asociaciones) o, si es un servidor viejo, GET /api/asociaciones.
+     Sin las llenas; primero las de entrada libre y, entre ellas, las más activas (puntos y encargos de la semana, miembros). */
+  function listaAsoc(d) {
+    const l = Array.isArray(d.asociaciones) ? d.asociaciones : st.asocs && Array.isArray(st.asocs.lista) ? st.asocs.lista : null;
+    if (!l) return null;
+    const act = (a) => [Number(a.puntos_semana) || 0, Number(a.tareas_semana) || 0, Number(a.miembros) || 0, Number(a.fama) || 0];
+    return l.filter((a) => a && (Number(a.miembros) || 0) < (Number(a.max_miembros) || 20)).map((a, i) => ({ a, i })).sort((x, y) => {
+      const lx = x.a.ingreso === 'solicitud' ? 1 : 0, ly = y.a.ingreso === 'solicitud' ? 1 : 0;
+      if (lx !== ly) return lx - ly;
+      const ax = act(x.a), ay = act(y.a);
+      for (let k = 0; k < ax.length; k++) if (ax[k] !== ay[k]) return ay[k] - ax[k];
+      return x.i - y.i;
+    }).map((x) => x.a);
+  }
+  function datosCrear(d) {
+    const c = d.crear || (st.asocs && st.asocs.crear) || {};
+    const s = st.ctx && st.ctx.estado ? st.ctx.estado() : null;
+    const costo = Math.max(1, Number(c.costo) || 5000);
+    const tengo = Math.max(0, Math.floor(Number(s && s.money) || 0));
+    return { costo, tengo, gratis: !!c.gratis, alcanza: !!c.gratis || tengo >= costo, pct: Math.min(100, Math.round((tengo / costo) * 100)) };
+  }
+
+  function filaAsoc(a, primera) {
+    const libre = a.ingreso !== 'solicitud';
+    const pts = Number(a.puntos_semana) || 0;
+    const det = [T('liga.n.miembros', { n: Number(a.miembros) || 0, max: Number(a.max_miembros) || 20 }),
+      pts > 0 ? `<b>${esc(T('liga.n.pts_semana', { p: num(pts) }))}</b>` : a.liga && a.liga.nombre ? esc(a.liga.nombre) : '',
+      libre ? '' : esc(T('liga.n.con_solicitud'))].filter(Boolean);
+    const btn = a.solicitud_enviada ? `<button class="btn sm" disabled>${esc(T('liga.n.pedida'))}</button>`
+      : `<button class="btn sm ${libre ? 'main' : ''}" data-liga="unirme" data-id="${Number(a.id)}" ${st.ocupado ? 'disabled' : ''} aria-label="${esc(T(libre ? 'liga.n.unirme' : 'liga.n.pedir') + ': ' + a.nombre)}">${esc(T(libre ? 'liga.n.unirme' : 'liga.n.pedir'))}</button>`;
+    return `<div class="lg-a" data-asoc="${Number(a.id)}"><span class="lg-av" style="background:${colorOk(a.color)}">${esc(a.siglas)}</span>
+      <div class="grow"><div class="nom">${esc(a.nombre)}</div>
+        <div class="det">${primera && pts > 0 ? `<span class="lg-top">${esc(T('liga.n.activa'))}</span>` : ''}${det.map((x, i) => (i === 0 ? esc(x) : x)).join(' · ')}</div></div>${btn}</div>`;
+  }
+
+  function botonesModos() {
+    if (!irModo()) return '';
+    return `<div class="lg-modos">${MODOS_LIBRES.map(([k, ic, tono]) => `<button class="lg-modo" data-liga="modo" data-k="${k}">
+      <span class="tile ${tono}">${icon(ic)}</span><span class="grow">${esc(T('online.' + k))}<small>${esc(T('online.' + k + '_det'))}</small></span><span class="flecha" aria-hidden="true">›</span></button>`).join('')}</div>`;
+  }
+
+  function tarjetaCrear(d, hayLista) {
+    const c = datosCrear(d);
+    const puede = c.alcanza && !!(st.ctx && st.ctx.abrirAsociaciones);
+    return `<div class="card lg-crear">
+      <div class="lg-intro"><div class="tile t-amber">${icon('flag')}</div><div class="grow"><h3>${esc(T('liga.n.crear_t'))}</h3>
+        <p>${esc(c.gratis ? T('liga.n.crear_gratis') : T('liga.n.crear_txt', { c: dinero(c.costo) }))}</p></div></div>
+      ${c.gratis ? '' : `<div class="lg-barra" role="progressbar" aria-valuemin="0" aria-valuemax="${c.costo}" aria-valuenow="${Math.min(c.tengo, c.costo)}" aria-label="${esc(T('liga.n.tienes', { m: dinero(c.tengo), c: dinero(c.costo) }))}"><i style="width:${c.pct}%"></i></div>
+        <div class="cifras"><span>${esc(T('liga.n.tienes', { m: dinero(Math.min(c.tengo, c.costo)), c: dinero(c.costo) }))}</span>${c.alcanza ? `<span class="up">${icon('check', 'sm')}</span>` : `<b>${esc(T('liga.n.faltan', { m: dinero(c.costo - c.tengo) }))}</b>`}</div>
+        ${c.alcanza ? '' : `<p class="small muted" style="margin:6px 0 0">${esc(T('liga.n.faltan_txt'))}</p>`}`}
+      <button class="btn ${puede ? (hayLista ? '' : 'main') : ''}" data-liga="crear" ${puede ? '' : 'disabled'}>${icon('flag')}${esc(T('liga.n.crear'))}</button></div>`;
+  }
+
+  function vistaSinAsociacion(d) {
+    const lista = listaAsoc(d);
+    const intro = `<div class="card"><div class="lg-intro"><div class="tile t-blue">${icon('people')}</div><div class="grow">
+      <h3>${esc(T('liga.n.titulo'))}</h3><p>${esc(T('liga.n.txt'))}</p></div></div></div>`;
+    if (!lista) {
+      const err = st.asocs && st.asocs.error;
+      return `${intro}<div class="sectitle">${esc(T('liga.n.buscar'))}</div>
+        <div class="card ${err ? '' : 'lg-vacio'}" data-liga-lista="${err ? 'error' : 'cargando'}">${err ? `<p class="small neg" style="margin:0">${esc(T('liga.n.error_lista'))}</p>
+          <button class="btn sm" data-liga="recargar" style="margin-top:10px">${esc(T('liga.reintentar'))}</button>
+          ${st.ctx && st.ctx.abrirAsociaciones ? `<button class="btn" data-liga="asociaciones">${icon('people')}${esc(T('liga.ir_asociaciones'))}</button>` : ''}` : esc(T('liga.n.buscando'))}</div>
+        ${tarjetaCrear(d, false)}`;
+    }
+    if (!lista.length) {
+      return `${intro}<div class="card lg-sinasoc" data-liga-lista="vacia"><div class="ei">${icon('people')}</div>
+          <h3>${esc(T('liga.n.vacio_t'))}</h3><p>${esc(T('liga.n.vacio_txt'))}</p>${botonesModos()}</div>
+        ${tarjetaCrear(d, false)}`;
+    }
+    const ver = st.verTodas ? lista : lista.slice(0, VISIBLES);
+    const resto = lista.length - ver.length;
+    const modos = botonesModos();
+    return `${intro}<div class="sectitle">${esc(T('liga.n.buscar'))} (${lista.length})</div>
+      <div class="card lg-lista" data-liga-lista="llena">${ver.map((a, i) => filaAsoc(a, i === 0)).join('')}
+        ${resto > 0 ? `<button class="btn lg-mas" data-liga="ver_mas">${esc(T('liga.n.ver_mas', { n: resto }))}</button>` : ''}</div>
+      ${tarjetaCrear(d, true)}
+      ${modos ? `<div class="sectitle">${esc(T('liga.n.otros'))}</div>${modos}` : ''}`;
+  }
+
   function pintar() {
     const el = st.el;
     if (!el) return;
@@ -375,9 +630,7 @@
       return;
     }
     if (d.sin_asociacion) {
-      el.innerHTML = `<div class="lg">${cabecera(d)}<div class="card"><h3>${esc(T('liga.sin_asociacion'))}</h3><p class="small muted">${esc(T('liga.sin_asociacion_txt'))}</p>
-        <div class="lg-escalera">${(d.ligas || []).map((l) => `<span style="border-color:${esc(l.color)}">${esc(l.nombre.replace(/^Liga /, ''))}</span>`).join('')}</div>
-        ${st.ctx && st.ctx.abrirAsociaciones ? `<button class="btn main" data-liga="asociaciones">${icon('people')}${esc(T('liga.ir_asociaciones'))}</button>` : ''}</div>
+      el.innerHTML = `<div class="lg">${cabecera(d)}${vistaSinAsociacion(d)}
         ${st.vista === 'tienda' ? vistaTienda() : `<button class="btn" data-liga="vista" data-v="tienda">${ficha(16)} ${esc(T('liga.tab.tienda'))}</button>`}</div>`;
       return;
     }
@@ -391,10 +644,17 @@
     try {
       st.datos = await pedir('GET', '/api/liga');
       st.base = Date.now(); st.cargadoEn = Date.now(); st.error = '';
+      if (st.datos && st.datos.sin_asociacion && !Array.isArray(st.datos.asociaciones)) await cargarAsociaciones();
       if (st.vista === 'tienda') await cargarTienda(true);
     } catch (e) { st.error = e.message; if (!st.datos) st.datos = null; }
     st.cargando = false;
     pintar();
+  }
+  async function cargarAsociaciones() {
+    try {
+      const r = await pedir('GET', '/api/asociaciones?buscar=');
+      st.asocs = { lista: Array.isArray(r.asociaciones) ? r.asociaciones : [], crear: { costo: r.costo_crear, gratis: !!(r.puede_crear && r.puede_crear.gratis) } };
+    } catch (e) { st.asocs = { error: e.message }; }
   }
   async function cargarTienda(sinPintar) {
     try { st.tienda = await pedir('GET', '/api/liga/tienda'); } catch (e) { toast(e.message); }
@@ -461,6 +721,35 @@
     for (const p of (L ? L.pendientes.slice() : [])) await enviarUno(s, p);
   }
 
+  /* Unirse en un toque (POST /api/asociaciones/unirse). Con "solicitud" queda pedida; si entra, se abre su liga. */
+  async function unirme(id) {
+    const lista = listaAsoc(st.datos || {}) || [];
+    const a = lista.find((x) => Number(x.id) === id) || { id, nombre: '' };
+    let r;
+    try { r = await pedir('POST', '/api/asociaciones/unirse', { id }); } catch (e) {
+      if (e.codigo === 'llena') { const err = new Error(T('liga.n.llena')); err.status = 409; throw err; }
+      throw e;
+    }
+    if (r.estado === 'solicitud') { a.solicitud_enviada = true; toast(T('liga.n.solicitud', { n: a.nombre })); return; }
+    toast(T('liga.n.unido', { n: (r.asociacion && r.asociacion.nombre) || a.nombre }));
+    const f = st.ctx && (st.ctx.alUnirse || st.ctx.alCanjear);   // ui.js: refresca /api/estado (chat, festival… ya ven la asociación)
+    try { if (f) f(r); } catch (e) { /* nada */ }
+    st.vista = 'encargos'; st.asocs = null; st.verTodas = false;
+    for (let n = 0; st.cargando && n < 50; n++) await new Promise((ok) => setTimeout(ok, 100));   // una recarga en curso traería la liga de antes
+    await cargar();
+  }
+  /* Crear: el formulario y el cobro están en el chat (js/chat.js); se abre directo en "Crear asociación". */
+  function abrirCrear() {
+    if (!st.ctx || !st.ctx.abrirAsociaciones) return;
+    st.ctx.abrirAsociaciones();
+    if (typeof document === 'undefined') return;
+    let n = 0;
+    const t = setInterval(() => {
+      const b = document.querySelector('#chat-panel [data-chat="crear"]');
+      if (b) { clearInterval(t); b.click(); } else if (++n > 40) clearInterval(t);
+    }, 75);
+  }
+
   function clic(b) {
     const acc = b.dataset.liga, id = Number(b.dataset.id);
     const d = st.datos || {};
@@ -468,6 +757,10 @@
     if (acc === 'recargar') { st.error = ''; pintar(); cargar(); return; }
     if (acc === 'vista') { st.vista = b.dataset.v; pintar(); if (st.vista === 'tienda') cargarTienda(); return; }
     if (acc === 'asociaciones') { st.ctx.abrirAsociaciones(); return; }
+    if (acc === 'unirme') { accion(() => unirme(id)); return; }
+    if (acc === 'crear') { abrirCrear(); return; }
+    if (acc === 'ver_mas') { st.verTodas = true; pintar(); return; }
+    if (acc === 'modo') { const f = irModo(); if (f) f(b.dataset.k); return; }
     if (acc === 'tomar') { accion(async () => { usar(await pedir('POST', '/api/liga/tomar', { tarea_id: id })); toast(T('liga.tomado')); }); return; }
     if (acc === 'descartar' && tarea) {
       preguntar(T('liga.descartar_pregunta', { t: esc(tarea.titulo) }), T('liga.descartar'), () => accion(async () => { usar(await pedir('POST', '/api/liga/descartar', { tarea_id: id })); toast(T('liga.descartado')); }));
@@ -502,7 +795,7 @@
       if (!st.reloj) st.reloj = setInterval(tic, 1000);
     },
     recargar: () => cargar(),
-    invalidar() { st.datos = null; st.tienda = null; st.error = ''; },
+    invalidar() { st.datos = null; st.tienda = null; st.error = ''; st.asocs = null; st.verTodas = false; },
     progresoLocal, cumple, equipoDe, tiempo,
     enviarPendientes: () => enviarPendientes().catch(() => false),
     _estado: st,

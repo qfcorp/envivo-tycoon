@@ -82,6 +82,21 @@ const TIENDA = {
   ].map(([id, nombre, detalle, icono, fichas, tipo, max, comp, motivo]) => ({ id, nombre, detalle, icono, fichas, tipo, max_semana: max, compradas_semana: comp, disponible: !motivo, alcanza: 135 >= fichas, motivo })),
 };
 const SIN_ASOC = { ok: true, semana: DATOS.semana, ligas: LIGAS, fichas: 0, validacion: 'firma', max_tareas: 9, sin_asociacion: true, asociacion: null };
+// Jugador nuevo: /api/liga trae las asociaciones del servidor (ya sin las llenas) y lo que cuesta crear una
+const ASO = (id, nombre, siglas, color, miembros, puntos, tareas, ingreso, extra) => Object.assign({ id, nombre, siglas, color, ingreso: ingreso || 'abierto', miembros, max_miembros: 20,
+  liga: LIGAS[0], puntos_semana: puntos, tareas_semana: tareas, solicitud_enviada: false }, extra || {});
+const LISTA = [
+  ASO(31, 'Sin Señal', 'SSE', '#8b95a8', 1, 0, 0),
+  ASO(8, 'Los Reyes del Streaming de Guayaquil y Samborondón', 'RSG', '#4da3ff', 14, 5120, 20, 'solicitud', { liga: LIGAS[1] }),
+  ASO(12, 'Cámara Uno', 'CU1', '#2ecc71', 6, 2900, 11),
+  ASO(15, 'Transmisiones Andinas', 'TAN', '#ffb020', 9, 2900, 13),
+  ASO(21, 'Señal Austral', 'SAU', '#b07cff', 3, 0, 0),
+  ASO(23, 'Eventos Pichincha', 'EVP', '#ff7a59', 4, 860, 4),
+  ASO(30, 'Multicámara Manabí Producciones', 'MMP', '#00c2c7', 20, 3000, 12),   // llena: no se muestra
+  ASO(40, 'Producciones del Pacífico', 'PDP', '#ff3b3b', 2, 120, 1),
+];
+const NUEVO_VACIO = Object.assign({}, SIN_ASOC, { liga: LIGAS[0], asociaciones: [], crear: { costo: 5000, gratis: false } });
+const NUEVO_LISTA = Object.assign({}, SIN_ASOC, { liga: LIGAS[0], asociaciones: LISTA, crear: { costo: 5000, gratis: false } });
 
 (async () => {
   const errores = [];
@@ -108,13 +123,29 @@ const SIN_ASOC = { ok: true, semana: DATOS.semana, ligas: LIGAS, fichas: 0, vali
     const u = new URL(req.url());
     if (u.pathname === '/liga.html') return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: pagina });
     if (u.pathname.startsWith('/js/')) return route.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(RAIZ, u.pathname)) });
+    if (u.pathname.startsWith('/api/asociaciones')) {
+      const h = req.headers();
+      const cuerpo = req.postData() ? JSON.parse(req.postData()) : null;
+      pedidos.push({ metodo: req.method(), ruta: u.pathname, xenvivo: h['x-envivo'], cuerpo });
+      const json = (st, d) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(d) });
+      if (req.method() === 'POST' && h['x-envivo'] !== '1') return json(403, { ok: false, error: 'Petición no permitida.' });
+      if (u.pathname === '/api/asociaciones') return json(200, { ok: true, asociaciones: LISTA.slice(0, 3).map((a) => ({ id: a.id, nombre: a.nombre, siglas: a.siglas, color: a.color, ingreso: a.ingreso, miembros: a.miembros, max_miembros: 20, fama: 100 - a.id })),
+        mi_asociacion: null, solicitudes: [], puede_crear: { puede: true, gratis: false, motivo: '' }, costo_crear: 5000 });
+      if (u.pathname === '/api/asociaciones/unirse') {
+        const a = LISTA.find((x) => x.id === cuerpo.id);
+        if (a.ingreso === 'solicitud') return json(200, { ok: true, estado: 'solicitud' });
+        modo = 'con_tarea';
+        return json(200, { ok: true, estado: 'miembro', asociacion: { id: a.id, nombre: a.nombre, siglas: a.siglas, color: a.color, cargo: 'socio' } });
+      }
+      return json(404, { ok: false, error: 'No encontrado.' });
+    }
     if (u.pathname.startsWith('/api/liga')) {
       const h = req.headers();
       const cuerpo = req.postData() ? JSON.parse(req.postData()) : null;
       pedidos.push({ metodo: req.method(), ruta: u.pathname, xenvivo: h['x-envivo'], cuerpo });
       const json = (st, d) => route.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(d) });
       if (req.method() === 'POST' && h['x-envivo'] !== '1') return json(403, { ok: false, error: 'Petición no permitida.' });
-      if (u.pathname === '/api/liga') return json(200, modo === 'sin_asociacion' ? SIN_ASOC : modo === 'sin_tarea' ? SIN_TAREA : DATOS);
+      if (u.pathname === '/api/liga') return json(200, modo === 'sin_asociacion' ? SIN_ASOC : modo === 'nuevo_vacio' ? NUEVO_VACIO : modo === 'nuevo_lista' ? NUEVO_LISTA : modo === 'sin_tarea' ? SIN_TAREA : DATOS);
       if (u.pathname === '/api/liga/tomar') { modo = 'con_tarea'; return json(200, { ok: true, liga: DATOS }); }
       if (u.pathname === '/api/liga/intento') return json(200, { ok: true, intento: { id: 501, tarea_id: 101, seed: 123456, contrato: { type: 'boda', cams: 2, stream: false, outdoor: true, diff: 1, rival: false }, equipo: cuerpo.equipo, contexto: { fama: 20 }, vip: false, firma: 'f'.repeat(64), vence: '2026-10-29T13:00:00-05:00', modo: 'firma' } });
       if (u.pathname === '/api/liga/completar') {
@@ -244,14 +275,99 @@ const SIN_ASOC = { ok: true, semana: DATOS.semana, ligas: LIGAS, fichas: 0, vali
   bien(pk && pk.xenvivo === '1' && pk.cuerpo.articulo === 'cables', 'Canjear: POST /api/liga/tienda {articulo}');
   bien((await page.locator('#liga-fichas').innerText()).trim() === '110', 'El saldo de fichas se actualiza');
 
-  // ---- Sin asociación
+  await page.click('[data-liga="vista"][data-v="encargos"]');   // la pantalla nueva, sin la tienda abierta debajo
+  // ---- Sin asociación (servidor viejo: /api/liga no trae la lista -> GET /api/asociaciones)
   modo = 'sin_asociacion';
-  await page.evaluate(() => { Liga.invalidar(); Liga.render(document.getElementById('liga'), Object.assign({}, window.CTX, { abrirAsociaciones: () => { window.__asoc = 1; } })); });
-  await page.waitForSelector('[data-liga="asociaciones"]');
-  await page.click('[data-liga="asociaciones"]');
-  bien(await page.evaluate(() => window.__asoc === 1), 'Sin asociación: botón para buscar una');
-  await sinDesborde('Sin asociación');
-  await page.screenshot({ path: path.join(OUT, 'liga_sin_asociacion.png'), fullPage: false });
+  pedidos.length = 0;
+  await page.evaluate(() => { window.S.money = 1800; Liga.invalidar(); Liga.render(document.getElementById('liga'), Object.assign({}, window.CTX, { abrirAsociaciones: () => { window.__asoc = (window.__asoc || 0) + 1; } })); });
+  await page.waitForSelector('[data-liga-lista="llena"]');
+  bien(pedidos.some((p) => p.ruta === '/api/asociaciones' && p.metodo === 'GET'), 'Servidor viejo: la lista sale de GET /api/asociaciones');
+  bien(await page.locator('.lg-a').count() === 3 && await page.locator('.lg-a').first().getAttribute('data-asoc') === '12' && await page.locator('.lg-a').last().getAttribute('data-asoc') === '8', 'Servidor viejo: entrada libre primero (más miembros), la de solicitud al final');
+
+  // ---- Jugador nuevo: no hay ninguna asociación
+  modo = 'nuevo_vacio';
+  await page.evaluate(() => {
+    window.__modo = null; window.__asoc = 0;
+    window.EnVivoAbrirOnline = (k) => { window.__modo = k; };
+    Liga.invalidar(); Liga.render(document.getElementById('liga'), Object.assign({}, window.CTX, { abrirAsociaciones: () => { window.__asoc = (window.__asoc || 0) + 1; } }));
+  });
+  await page.waitForSelector('[data-liga-lista="vacia"]');
+  const vacia = await page.locator('[data-liga-lista="vacia"]').innerText();
+  bien(/Todavía no hay asociaciones/.test(vacia) && /no necesitan asociación/.test(vacia), 'Sin asociaciones: mensaje amable');
+  bien(/Juega la liga en equipo/.test(await page.locator('.lg-intro').first().innerText()), 'Explicación corta arriba');
+  const modos = await page.locator('[data-liga="modo"]').evaluateAll((bs) => bs.map((b) => b.dataset.k));
+  bien(JSON.stringify(modos) === '["duelos","desafio","copa"]', 'Sin asociaciones: botones a Duelos, Desafío y Copa (no piden asociación)');
+  await page.click('[data-liga="modo"][data-k="desafio"]');
+  bien(await page.evaluate(() => window.__modo === 'desafio'), 'El botón lleva al Desafío del Día (EnVivoAbrirOnline)');
+  bien(await page.locator('[data-liga="crear"]').isDisabled(), 'Sin dinero: "Crear" desactivado');
+  const crearTxt = await page.locator('.lg-crear').innerText();
+  bien(/\$5\.000/.test(crearTxt) && /Tienes \$1\.800 de \$5\.000/.test(crearTxt) && /Te faltan \$3\.200/.test(crearTxt), 'Crear: costo, lo que tiene y cuánto le falta');
+  bien(await page.locator('.lg-crear .lg-barra i').evaluate((i) => i.style.width) === '36%', 'Barra de dinero al 36 %');
+  await sinDesborde('Nuevo sin asociaciones');
+  await page.screenshot({ path: path.join(OUT, 'liga_nuevo_vacio.png'), fullPage: true });
+
+  // ---- Jugador nuevo: hay asociaciones (la más activa primero, unirse en un toque)
+  modo = 'nuevo_lista';
+  await page.evaluate(() => { Liga.invalidar(); Liga.render(document.getElementById('liga'), Object.assign({}, window.CTX, { abrirAsociaciones: () => { window.__asoc = (window.__asoc || 0) + 1; }, alCanjear: () => { window.__refresco = (window.__refresco || 0) + 1; } })); });
+  await page.waitForSelector('[data-liga-lista="llena"]');
+  const orden = await page.locator('.lg-a').evaluateAll((xs) => xs.map((x) => Number(x.dataset.asoc)));
+  bien(JSON.stringify(orden) === '[15,12,23,40,21]', 'Lista: 5 a la vista, las más activas primero, sin la llena (' + orden + ')');
+  bien(/Más activa/i.test(await page.locator('.lg-a').first().innerText()) && /2\.900 pts esta semana/.test(await page.locator('.lg-a').first().innerText()), 'La primera marcada "Más activa" con sus puntos');
+  bien(/Buscar asociación \(7\)/i.test(await page.locator('.sectitle', { hasText: 'Buscar' }).innerText()), 'Título con cuántas hay');
+  await page.screenshot({ path: path.join(OUT, 'liga_nuevo_lista.png'), fullPage: false });
+  await page.click('[data-liga="ver_mas"]');
+  bien(await page.locator('.lg-a').count() === 7 && await page.locator('.lg-a').last().getAttribute('data-asoc') === '8', '"Ver más": todas, la de solicitud al final');
+  bien(/Pedir entrar/.test(await page.locator('.lg-a[data-asoc="8"]').innerText()), 'La de solicitud dice "Pedir entrar"');
+  bien(await page.locator('[data-liga="modo"]').count() === 3, 'Con lista: abajo los modos que no piden asociación');
+  await sinDesborde('Nuevo con lista');
+  await page.screenshot({ path: path.join(OUT, 'liga_nuevo_lista_completa.png'), fullPage: true });
+  await page.locator('.lg-crear').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(OUT, 'liga_nuevo_sin_dinero.png'), fullPage: false });
+
+  // Pedir entrar (con solicitud): queda "Pedida"
+  pedidos.length = 0;
+  await page.evaluate(() => { window.__toasts = []; });
+  await page.click('.lg-a[data-asoc="8"] [data-liga="unirme"]');
+  await page.waitForFunction(() => window.__toasts.some((t) => /Solicitud enviada/.test(t)));
+  bien(await page.locator('.lg-a[data-asoc="8"] button').isDisabled() && /Pedida/.test(await page.locator('.lg-a[data-asoc="8"]').innerText()), 'Con solicitud: el botón queda "Pedida"');
+
+  // Unirme en un toque -> entra y se abre su liga
+  pedidos.length = 0;
+  await page.evaluate(() => { window.__toasts = []; });
+  await page.click('.lg-a[data-asoc="15"] [data-liga="unirme"]');
+  await page.waitForSelector('.lg-t');
+  const pu = pedidos.find((p) => p.ruta === '/api/asociaciones/unirse');
+  bien(pu && pu.metodo === 'POST' && pu.xenvivo === '1' && pu.cuerpo.id === 15, 'Unirme: POST /api/asociaciones/unirse {id} con X-Envivo');
+  bien(await page.evaluate(() => window.__toasts.some((t) => /Ya eres parte de Transmisiones Andinas/.test(t))), 'Unirme: aviso de bienvenida');
+  bien(await page.evaluate(() => window.__refresco === 1), 'Unirme: el juego refresca su estado (ctx.alCanjear)');
+  bien(await page.locator('.lg-tabs').count() === 1, 'Unirme: aparece la liga de la asociación');
+
+  // ---- Con dinero suficiente: "Crear" abre el formulario del chat
+  modo = 'nuevo_vacio';
+  await page.evaluate(() => {
+    window.S.money = 7200; window.__crear = 0;
+    const p = document.createElement('div'); p.id = 'chat-panel'; p.hidden = true; document.body.appendChild(p);
+    window.CTX_CREAR = Object.assign({}, window.CTX, { abrirAsociaciones: () => { window.__asoc = (window.__asoc || 0) + 1;
+      setTimeout(() => { p.innerHTML = '<button data-chat="crear">x</button>'; p.querySelector('button').onclick = () => { window.__crear++; }; }, 120); } });
+    Liga.invalidar(); Liga.render(document.getElementById('liga'), window.CTX_CREAR);
+  });
+  await page.waitForSelector('[data-liga-lista="vacia"]');
+  bien(!(await page.locator('[data-liga="crear"]').isDisabled()) && /Crear asociación/.test(await page.locator('[data-liga="crear"]').innerText()), 'Con $7.200: "Crear asociación" activo');
+  await page.screenshot({ path: path.join(OUT, 'liga_nuevo_crear.png'), fullPage: true });
+  await page.evaluate(() => { window.__asoc = 0; });
+  await page.click('[data-liga="crear"]');
+  await page.waitForFunction(() => window.__crear === 1, null, { timeout: 4000 });
+  bien(await page.evaluate(() => window.__asoc === 1 && window.__crear === 1), 'Crear: abre el chat y va directo al formulario');
+
+  // ---- Textos en otro idioma (las claves nuevas vienen de liga.js)
+  await page.evaluate(() => {
+    const t = () => ''; t.has = () => false;
+    window.I18N = { T: t, idioma: 'en' };
+    Liga.invalidar(); Liga.render(document.getElementById('liga'), window.CTX_CREAR);
+  });
+  await page.waitForSelector('[data-liga-lista="vacia"]');
+  bien(/No associations here yet/.test(await page.locator('[data-liga-lista="vacia"]').innerText()) && /Create association/.test(await page.locator('[data-liga="crear"]').innerText()), 'Pantalla nueva traducida (inglés)');
+  await page.evaluate(() => { delete window.I18N; });
 
   // ---- I18N
   modo = 'con_tarea';

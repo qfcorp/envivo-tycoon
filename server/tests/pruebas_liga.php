@@ -149,6 +149,10 @@ check('Banderas de la Liga Barrial', [[1000, 15], [3000, 25], [6000, 35], [10000
 check('Banderas más altas en la Liga Mundial', [3200, 9600, 19200, 32000], array_column(Liga::banderas(4), 'puntos'));
 $eLibre = Liga::estado($LIBRE);
 check('Sin asociación: sin_asociacion y la semana igual', [true, '2026-10-26'], [$eLibre['sin_asociacion'] ?? false, $eLibre['semana']['id']]);
+check('Sin asociación: las 17 asociaciones para unirse, la más activa primero (A, 5 miembros), y lo que cuesta crear una',
+    [17, $ASOC[$A], 5, 'abierto', 'barrial', false, 5000, false],
+    [count($eLibre['asociaciones'] ?? []), $eLibre['asociaciones'][0]['id'] ?? null, $eLibre['asociaciones'][0]['miembros'] ?? null, $eLibre['asociaciones'][0]['ingreso'] ?? null,
+     $eLibre['asociaciones'][0]['liga']['id'] ?? null, $eLibre['asociaciones'][0]['solicitud_enviada'] ?? null, $eLibre['crear']['costo'] ?? null, $eLibre['crear']['gratis'] ?? null]);
 
 // Encargos balanceados por liga
 $boards = [];

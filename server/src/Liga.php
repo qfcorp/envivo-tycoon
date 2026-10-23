@@ -873,6 +873,33 @@ final class Liga
         return $o;
     }
 
+    /**
+     * Asociaciones del servidor del jugador para quien todavía no tiene una (pantalla de la liga sin asociación):
+     * las más activas primero (puntos y encargos de esta semana, luego miembros). Las llenas no aparecen.
+     */
+    private static function sugeridas(int $jugador, string $semana): array
+    {
+        $sid = (int) Db::valor('SELECT servidor_id FROM jugadores WHERE id = ?', [$jugador]);
+        $filas = Db::todas('SELECT a.id, a.nombre, a.siglas, a.color, a.ingreso,
+                   (SELECT COUNT(*) FROM asociacion_miembros m WHERE m.asociacion_id = a.id) AS n,
+                   COALESCE(p.puntos, 0) AS puntos, COALESCE(p.tareas_completadas, 0) AS tareas, COALESCE(la.liga, 0) AS liga,
+                   (SELECT 1 FROM asociacion_solicitudes s WHERE s.asociacion_id = a.id AND s.jugador_id = ?) AS pedida
+            FROM asociaciones a
+            LEFT JOIN liga_participantes p ON p.asociacion_id = a.id AND p.semana = ?
+            LEFT JOIN liga_asociaciones la ON la.asociacion_id = a.id
+            WHERE a.servidor_id = ?
+            ORDER BY puntos DESC, tareas DESC, n DESC, a.id LIMIT 60', [$jugador, $semana, $sid]);
+        $o = [];
+        foreach ($filas as $a) {
+            if ((int) $a['n'] >= Social::MAX_MIEMBROS) continue;
+            $o[] = ['id' => (int) $a['id'], 'nombre' => $a['nombre'], 'siglas' => $a['siglas'], 'color' => $a['color'], 'ingreso' => $a['ingreso'],
+                    'miembros' => (int) $a['n'], 'max_miembros' => Social::MAX_MIEMBROS, 'liga' => self::ligaJson(max(0, min(4, (int) $a['liga']))),
+                    'puntos_semana' => (int) $a['puntos'], 'tareas_semana' => (int) $a['tareas'], 'solicitud_enviada' => (bool) $a['pedida']];
+            if (count($o) >= 30) break;
+        }
+        return $o;
+    }
+
     /** GET /api/liga */
     public static function estado(int $jugador): array
     {
@@ -882,7 +909,8 @@ final class Liga
         $base = ['ok' => true, 'semana' => $semana, 'ligas' => array_map(fn($i) => self::ligaJson($i), array_keys(self::LIGAS)), 'fichas' => self::fichas($jugador),
                  'validacion' => self::modoValidacion(), 'max_tareas' => self::MAX_TAREAS_SEMANA];
         $m = Social::miembro($jugador);
-        if (!$m) return $base + ['sin_asociacion' => true, 'asociacion' => null];
+        if (!$m) return $base + ['sin_asociacion' => true, 'asociacion' => null, 'asociaciones' => self::sugeridas($jugador, $sem['semana']),
+                                 'crear' => ['costo' => Social::COSTO_CREAR, 'gratis' => Monedero::vipActivo($jugador)]];
         $asoc = (int) $m['asociacion_id'];
         $part = self::inscribir($sem['semana'], $asoc);
         Db::tx(fn() => self::mantener($sem['semana'], $asoc));
