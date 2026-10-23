@@ -669,6 +669,7 @@
     flota: ['unidad_movil', 'inicio.pl.flota'],
     logros: ['gem', 'inicio.pl.logros'],
     misiones: ['target', 'inicio.pl.misiones'],
+    diario: ['gift', 'inicio.pl.diario'],
     visitas: ['home', 'inicio.pl.visitas'],
     ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
   };

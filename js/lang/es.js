@@ -90,6 +90,7 @@
     'inicio.pl.estrellas': 'Personal estrella',
     'inicio.pl.decoracion': 'Decoración del local',
     'inicio.pl.flota': 'Flota y movilización',
+    'inicio.pl.diario': 'Premio diario',
     'inicio.ayuda_texto': '1) Toma una oferta en {clientes}. 2) Elige personal y equipos. 3) Resuelve los imprevistos en vivo. 4) Cobra, gana fama y compra mejor equipo en {bodega}. Cada evento ocupa un día. Si tus deudas pasan de {m}, quiebras.',
     'inicio.nueva': 'Empezar partida nueva',
     'inicio.nueva_q': 'Se borrará tu partida actual.',

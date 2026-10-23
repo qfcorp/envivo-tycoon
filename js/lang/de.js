@@ -85,6 +85,7 @@
     "inicio.pl.estrellas": "Star-Personal",
     "inicio.pl.decoracion": "Einrichtung",
     "inicio.pl.flota": "Fuhrpark & Transport",
+    "inicio.pl.diario": "Tagesbelohnung",
     "inicio.ayuda_texto": "1) Nimm einen Auftrag unter {clientes} an. 2) Wähle Team und Technik. 3) Löse die Pannen live. 4) Kassiere, gewinne Ruhm und kaufe im {bodega} bessere Technik. Jedes Event dauert einen Tag. Steigen deine Schulden über {m}, bist du pleite.",
     "inicio.nueva": "Neues Spiel starten",
     "inicio.nueva_q": "Dein aktueller Spielstand wird gelöscht.",

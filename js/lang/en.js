@@ -85,6 +85,7 @@
     "inicio.pl.estrellas": "Star staff",
     "inicio.pl.decoracion": "Venue decor",
     "inicio.pl.flota": "Fleet & transport",
+    "inicio.pl.diario": "Daily reward",
     "inicio.ayuda_texto": "1) Take an offer in {clientes}. 2) Pick crew and gear. 3) Solve the surprises live. 4) Get paid, earn fame and buy better gear in {bodega}. Each event takes one day. If your debt goes over {m}, you go bankrupt.",
     "inicio.nueva": "Start a new game",
     "inicio.nueva_q": "Your current game will be erased.",
