@@ -145,6 +145,7 @@ cat <<NGINX
     location = /terminos.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_legal) }
     location = /privacidad.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_legal) }
     location = /borrar-cuenta.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_legal) }
+    location = /canjear.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_juego) }
     # App de Android (Trusted Web Activity): Digital Asset Links. El archivo va en la raiz del juego: .well-known/assetlinks.json
     location = /.well-known/assetlinks.json { default_type application/json; add_header Cache-Control "no-cache"; $(cab) try_files \$uri =404; }
     location ^~ /pago-assets/ {

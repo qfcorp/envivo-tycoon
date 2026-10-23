@@ -530,7 +530,7 @@
     const filas = [];
     const fila = (id, html, o) => {
       if (!html) return;
-      const info = PL_INFO[id] || ['box', ''];
+      const info = PL_INFO[id] || [(o && o.icono) || 'box', ''];
       const abierta = ab['*'] === true || (ab[id] != null ? !!ab[id] : !!(o && o.abierta));
       const f = o && o.sinNuevo ? '' : plFirma(html);
       if (abierta && f && vis[id] !== f) { vis[id] = f; cambio = true; }
@@ -552,7 +552,7 @@
       if (typeof m.tarjeta !== 'function') return;
       let h = '';
       try { h = m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); h = ''; }
-      fila(m.id, h);
+      fila(m.id, h, typeof m.fila === 'function' ? m.fila(ctx) : undefined);   // el módulo puede dar {titulo, icono, abierta, tono, resumen}
     });
     const ch = G.CHAPTERS[S.chapter];
     fila('historia', story, { abierta: !S.storyDone && S.chapter === 0,
@@ -1163,6 +1163,7 @@
         ${vip}
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
         ${discordBtn('sm')}
+        ${window.Buzon && window.Buzon.botonCanjear ? window.Buzon.botonCanjear() : ''}
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button></div>`;
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
