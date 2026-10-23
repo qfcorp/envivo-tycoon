@@ -200,6 +200,12 @@
   }
 
   /* ---------- Ventana ---------- */
+  // Alto de la barra de arriba (para que las ventanas no queden debajo de ella: ver index.html)
+  try {
+    const hdr = document.querySelector('header');
+    const ponerAlto = () => document.documentElement.style.setProperty('--hdr-h', Math.ceil(hdr.getBoundingClientRect().height) + 'px');
+    if (hdr) { ponerAlto(); if (window.ResizeObserver) new ResizeObserver(ponerAlto).observe(hdr); else window.addEventListener('resize', ponerAlto); }
+  } catch (e) { /* sin barra */ }
   function openModal(html) { $('modal').innerHTML = html; $('overlay').classList.add('on'); $('modal').scrollTop = 0; }
   function closeModal() { $('overlay').classList.remove('on'); $('modal').innerHTML = ''; }
   let confirmCb = null;

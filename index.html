@@ -92,6 +92,9 @@
   /* Ventanas */
   .overlay{position:fixed;inset:0;z-index:20;background:#000b;display:none;align-items:flex-end;justify-content:center}
   .overlay.on{display:flex}
+  /* Con una ventana abierta, la barra de arriba (dinero, fama, créditos, día) queda encima para ver cuánto tienes al comprar */
+  body:has(#overlay.on) header{z-index:22}
+  body:has(#overlay.on) .overlay .modal{max-height:calc(100vh - var(--hdr-h, 120px) - 6px);max-height:calc(100dvh - var(--hdr-h, 120px) - 6px)}
   .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:640px;max-height:92vh;overflow:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
   .modal h2{font-size:24px;margin-bottom:8px}
   .live{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;font-weight:800;font-family:var(--f-head);padding:3px 10px;border-radius:6px;letter-spacing:1px}
@@ -263,7 +266,7 @@
   .tag.excl{border-color:var(--amber);color:#ffd78a}
 
   /* ---- Pulido visual (rarezas, equipos, avatares, transiciones) ---- */
-  html,body{overflow-x:hidden}
+  html{overflow-x:hidden} body{overflow-x:clip}   /* en body "clip" y no "hidden": hidden rompe la barra fija de arriba (position:sticky) */
   .card,.modal,.btn,.sectitle,.costbox,.toast{overflow-wrap:break-word}
   .card h2,.card h3,.modal h2{overflow-wrap:anywhere}
   svg{direction:ltr}
