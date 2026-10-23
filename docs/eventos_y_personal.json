@@ -1,0 +1,1653 @@
+{
+  "roles": [
+    {
+      "key": "director",
+      "nombre": "Realizador / director",
+      "que_hace": "Elige en vivo qué cámara sale al aire, pide planos y marca el ritmo.",
+      "si_falta": "Planos que llegan tarde, se pierden goles y momentos clave; cada camarógrafo hace lo que cree.",
+      "rol_actual_juego": "dir"
+    },
+    {
+      "key": "productor",
+      "nombre": "Productor / coordinador",
+      "que_hace": "Habla con el cliente, arma la escaleta (guion por minutos), contrata y resuelve permisos.",
+      "si_falta": "Retrasos, el cliente cambia todo a última hora y nadie avisa; se pierde el inicio o el discurso.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "camarografo",
+      "nombre": "Camarógrafo",
+      "que_hace": "Opera una cámara: encuadre, foco y zoom.",
+      "si_falta": "La cámara queda fija o apagada; un plano menos para el director.",
+      "rol_actual_juego": "cam"
+    },
+    {
+      "key": "operador_ptz",
+      "nombre": "Operador de cámara robótica (PTZ)",
+      "que_hace": "Maneja varias cámaras robóticas desde un joystick.",
+      "si_falta": "Las robóticas quedan en un solo plano fijo; no siguen a quien habla.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "cablero",
+      "nombre": "Asistente de cámara / cablero",
+      "que_hace": "Tiende y recoge cables, sigue al camarógrafo con el cable, cambia baterías y cuida el equipo.",
+      "si_falta": "Cables enredados o pisados, gente que se tropieza, la cámara de mano no puede moverse; un conector se arranca y se pierde la señal.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "sonidista",
+      "nombre": "Sonidista / operador de audio (A1)",
+      "que_hace": "Mezcla micrófonos, música y ambiente para la transmisión.",
+      "si_falta": "Audio saturado, micrófono abierto a destiempo, acoples; el streaming se escucha mal aunque la imagen sea buena.",
+      "rol_actual_juego": "audio"
+    },
+    {
+      "key": "microfonista",
+      "nombre": "Microfonista / operador de boom (A2)",
+      "que_hace": "Pone corbateros, lleva la caña con shotgun en entrevistas y revisa pilas.",
+      "si_falta": "Entrevistas con audio lejano o con viento; corbateros mal puestos que rozan la ropa; pilas que se acaban en vivo.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "operador_repeticion",
+      "nombre": "Operador de repeticiones (EVX/replay)",
+      "que_hace": "Marca jugadas y lanza repeticiones en cámara lenta.",
+      "si_falta": "No hay repeticiones en deportes: el gol se ve una sola vez y el cliente reclama.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "operador_graficos",
+      "nombre": "Operador de gráficos (CG)",
+      "que_hace": "Marcador, reloj, nombres, alineaciones, logos de auspiciantes.",
+      "si_falta": "Sin marcador ni cintillos; nombres mal escritos; los auspiciantes no salen y se quejan.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "shader",
+      "nombre": "Ingeniero de video / shader (CCU)",
+      "que_hace": "Ajusta a distancia iris, color y negros de las cámaras de sistema para que todas se vean iguales.",
+      "si_falta": "Cámaras con colores distintos (\"cancha radioactiva\"), imagen quemada al salir el sol o oscura al caer la noche.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "tecnico_transmision",
+      "nombre": "Técnico de transmisión / streaming",
+      "que_hace": "Encoder, internet, bonding, satélite o fibra; vigila que la señal llegue.",
+      "si_falta": "Cortes de la transmisión sin que nadie lo note; nadie cambia al internet de respaldo.",
+      "rol_actual_juego": "stream"
+    },
+    {
+      "key": "piloto_dron",
+      "nombre": "Piloto de dron",
+      "que_hace": "Vuela el dron con permiso y seguridad.",
+      "si_falta": "No se puede usar el dron (o se vuela sin permiso: multa y riesgo de accidente).",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "coordinador_piso",
+      "nombre": "Coordinador de piso / stage manager",
+      "que_hace": "Es el contacto del director en el escenario o la cancha: da entradas a presentadores, controla tiempos.",
+      "si_falta": "Presentadores que entran tarde, artistas que no saben cuándo empezar, entrevistas que no ocurren.",
+      "rol_actual_juego": null
+    },
+    {
+      "key": "runner",
+      "nombre": "Asistente de producción / runner",
+      "que_hace": "Lleva y trae cosas, compra pilas, guía a invitados, comida del equipo.",
+      "si_falta": "Nadie va por la pieza que falta; el equipo trabaja con hambre y cansado.",
+      "rol_actual_juego": null
+    }
+  ],
+  "niveles_personal": [
+    {
+      "key": "junior",
+      "nombre": "Junior",
+      "sueldo_dia_usd_aprox": [
+        40,
+        60
+      ],
+      "multiplicador": 1.0,
+      "multiplicador_real": 1.0,
+      "nota": "Recién salido o menos de 2 años. En Ecuador el salario básico 2026 es $482/mes (~$22 por día laborable, F77); un freelance de eventos cobra 2-3 veces eso por jornada. (estimado)"
+    },
+    {
+      "key": "semi_senior",
+      "nombre": "Semi-senior",
+      "sueldo_dia_usd_aprox": [
+        70,
+        110
+      ],
+      "multiplicador": 1.7,
+      "multiplicador_real": 1.7,
+      "nota": "2-5 años, ya hizo deportes y conciertos. (estimado)"
+    },
+    {
+      "key": "senior",
+      "nombre": "Senior",
+      "sueldo_dia_usd_aprox": [
+        120,
+        200
+      ],
+      "multiplicador": 3.0,
+      "multiplicador_real": 3.0,
+      "nota": "Más de 5 años, trabajó con canales nacionales; resuelve imprevistos solo. (estimado)"
+    },
+    {
+      "key": "internacional",
+      "nombre": "Internacional",
+      "sueldo_dia_usd_aprox": [
+        500,
+        750
+      ],
+      "multiplicador": 5.0,
+      "multiplicador_real": 11.0,
+      "nota": "Ha trabajado con transmisiones host / extranjeras. Referencia Reino Unido (Bectu 2023): camarógrafo GBP 400-500, operador de repeticiones GBP 400-575, ingeniero de visión GBP 410-480 por 10 h (F76). En la vida real es 10-12 veces un junior local; en el juego se sugiere x5 para que sea jugable, más viáticos."
+    }
+  ],
+  "eventos": [
+    {
+      "key": "misa",
+      "nombre": "Misa / ceremonia",
+      "camaras_min": 1,
+      "camaras_ideal": 2,
+      "posiciones_camara": [
+        "Fija al fondo de la nave, plano general del altar (trípode o PTZ)",
+        "PTZ lateral para lectores y consagración"
+      ],
+      "personal": {
+        "director": {
+          "min": 0,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 0
+        },
+        "camarografo": {
+          "min": 1,
+          "ideal": 1
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 0
+        },
+        "sonidista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 0
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 0
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 0
+        }
+      },
+      "equipo_clave": [
+        "cam_panasonika_aw_uv22",
+        "cam_kanon_xa65",
+        "sw_blackmagia_atema_mini_pro",
+        "au_yamaka_mg10xv",
+        "enc_blackmagia_web_presentador_4k",
+        "net_hotspot_5g"
+      ],
+      "pago_ecuador_usd_aprox": [
+        150,
+        400
+      ],
+      "pago_juego_sugerido": [
+        150,
+        390
+      ],
+      "notas": "Lo más importante es el audio: tomar la señal de la consola de la iglesia. Muchas parroquias instalan PTZ fijas. Pago estimado."
+    },
+    {
+      "key": "funeral",
+      "nombre": "Funeral / velorio en vivo",
+      "camaras_min": 1,
+      "camaras_ideal": 2,
+      "posiciones_camara": [
+        "Fija y discreta, ligeramente de costado, plano calmado del ataúd y el atril",
+        "Segunda cámara (opcional) para el oficiante"
+      ],
+      "personal": {
+        "director": {
+          "min": 0,
+          "ideal": 0
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 1,
+          "ideal": 1
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 0
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 0
+        },
+        "sonidista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 0
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 0
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 0
+        }
+      },
+      "equipo_clave": [
+        "cam_celular_gimbal",
+        "cam_optiptz_movil_22x",
+        "sop_tripode_basico",
+        "mic_sennhauser_ewdz_corbatero",
+        "enc_kilovista_p3",
+        "net_hotspot_5g"
+      ],
+      "pago_ecuador_usd_aprox": [
+        100,
+        300
+      ],
+      "pago_juego_sugerido": [
+        100,
+        300
+      ],
+      "notas": "Sin zooms ni movimientos dramáticos; transmisión privada (link solo para la familia). Una persona vigila el stream y el respaldo de internet (F85). Pago estimado."
+    },
+    {
+      "key": "boda",
+      "nombre": "Boda",
+      "camaras_min": 1,
+      "camaras_ideal": 3,
+      "posiciones_camara": [
+        "Frontal en el altar o mesa (trípode, plano de los novios)",
+        "Contraplano desde el fondo (entrada de la novia)",
+        "Cámara de cine en gimbal para detalles",
+        "Dron para la toma del lugar (exterior)"
+      ],
+      "personal": {
+        "director": {
+          "min": 0,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 1,
+          "ideal": 3
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 0
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 1
+        },
+        "sonidista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 0
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 0,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 0
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_fz6_cine",
+        "sop_gimbal_dgi_rz4_pro",
+        "cam_kanon_xa65",
+        "mic_sennhauser_ewdz_corbatero",
+        "dron_dgi_micro_4_pro",
+        "sw_blackmagia_atema_mini_pro"
+      ],
+      "pago_ecuador_usd_aprox": [
+        400,
+        1500
+      ],
+      "pago_juego_sugerido": [
+        390,
+        1050
+      ],
+      "notas": "El streaming suele ser un extra para familiares en el exterior; lo que más se vende es el video editado. Pago estimado."
+    },
+    {
+      "key": "prensa",
+      "nombre": "Rueda de prensa",
+      "camaras_min": 1,
+      "camaras_ideal": 3,
+      "posiciones_camara": [
+        "Frontal a la mesa (plano medio del vocero)",
+        "Abierta de la mesa completa (PTZ)",
+        "Cámara de reacción / periodistas preguntando"
+      ],
+      "personal": {
+        "director": {
+          "min": 0,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 1,
+          "ideal": 2
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 0
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 0
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 0
+        }
+      },
+      "equipo_clave": [
+        "cam_kanon_xa65",
+        "cam_panasonika_aw_uv22",
+        "mic_shur_sm59",
+        "mic_roade_ntg6_boom",
+        "au_mydas_mr19",
+        "sw_vmax_hd_pc",
+        "gfx_kasparcg_pc"
+      ],
+      "pago_ecuador_usd_aprox": [
+        200,
+        600
+      ],
+      "pago_juego_sugerido": [
+        200,
+        530
+      ],
+      "notas": "Los periodistas preguntan sin micrófono: el boom o un micrófono de mano para preguntas evita el \"no se escucha\". Cintillos con nombre y cargo."
+    },
+    {
+      "key": "barrial",
+      "nombre": "Partido de liga barrial",
+      "camaras_min": 2,
+      "camaras_ideal": 4,
+      "posiciones_camara": [
+        "Principal en alto a la altura de la media cancha (andamio, terraza o techo)",
+        "Cámara cerrada al lado de la principal",
+        "Detrás de un arco o al hombro en la banda",
+        "Dron para tomas de apertura"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 2,
+          "ideal": 3
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 0
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 1
+        },
+        "sonidista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 0
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 0
+        }
+      },
+      "equipo_clave": [
+        "cam_kanon_xa65",
+        "cam_zony_pxv_z210",
+        "sw_vmax_hd_pc",
+        "gfx_kasparcg_pc",
+        "enc_kilovista_p3",
+        "pw_jonda_eu2300i",
+        "mic_sennhauser_hmd27"
+      ],
+      "pago_ecuador_usd_aprox": [
+        200,
+        600
+      ],
+      "pago_juego_sugerido": [
+        200,
+        530
+      ],
+      "notas": "En Chile un streaming deportivo básico con equipo y personal ronda CLP 200.000 por 4 h (F83). Muchas canchas no tienen luz ni internet: generador y bonding."
+    },
+    {
+      "key": "graduacion",
+      "nombre": "Graduación de colegio",
+      "camaras_min": 2,
+      "camaras_ideal": 4,
+      "posiciones_camara": [
+        "Frontal al escenario desde el centro del público (lente largo)",
+        "Lateral para la entrega de diplomas",
+        "Jib o PTZ para tomas del público",
+        "Cámara de reacción de familias"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 2,
+          "ideal": 3
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 1
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_kanon_xf615",
+        "cam_blackmagia_estudio_4k_g3",
+        "sop_jib_proeme_4m",
+        "sw_blackmagia_atema_mini_extremo_iso_g3",
+        "mic_shur_slxd25_doble",
+        "gfx_kasparcg_pc"
+      ],
+      "pago_ecuador_usd_aprox": [
+        300,
+        900
+      ],
+      "pago_juego_sugerido": [
+        300,
+        710
+      ],
+      "notas": "Los nombres de los graduados en pantalla son lo que más valoran las familias. Eventos largos: baterías y UPS."
+    },
+    {
+      "key": "lanzamiento",
+      "nombre": "Lanzamiento de marca / producto",
+      "camaras_min": 2,
+      "camaras_ideal": 5,
+      "posiciones_camara": [
+        "Frontal al escenario (plano del presentador)",
+        "Abierta del escenario y pantalla LED",
+        "Gimbal / steadicam entre invitados e influencers",
+        "PTZ cenital o jib para la revelación",
+        "Cámara de entrevistas en el photocall"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 2,
+          "ideal": 4
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 1,
+          "ideal": 2
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 1,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_kanon_xf615",
+        "cam_zony_fz6_cine",
+        "sop_gimbal_dgi_rz4_pro",
+        "sw_blackmagia_atema_2me_constelacion_4k",
+        "mic_sennhauser_ewdz_corbatero",
+        "ic_hollyband_solidkom_c2",
+        "enc_liveyou_solo_pro"
+      ],
+      "pago_ecuador_usd_aprox": [
+        1500,
+        5000
+      ],
+      "pago_juego_sugerido": [
+        1050,
+        2600
+      ],
+      "notas": "La señal va a la pantalla LED del evento (IMAG) y al streaming a la vez. Escaleta al minuto; el coordinador de piso da las entradas."
+    },
+    {
+      "key": "lanzamiento_autos",
+      "nombre": "Lanzamiento de autos",
+      "camaras_min": 3,
+      "camaras_ideal": 7,
+      "posiciones_camara": [
+        "Frontal al escenario (presentador y auto)",
+        "Grúa o jib para la revelación del auto",
+        "Dolly/riel en paralelo al auto",
+        "Gimbal con cámara de cine alrededor del auto (detalles)",
+        "Minicámaras POV dentro del auto",
+        "Dron en exteriores (prueba de manejo)",
+        "Cámara de entrevistas con influencers"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 3,
+          "ideal": 5
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 1,
+          "ideal": 2
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 1
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 1,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 1,
+          "ideal": 2
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_fz6_cine",
+        "sop_gimbal_dgi_ronan_2",
+        "srv_grua_telescopica",
+        "sop_dolly_riel_6m",
+        "cam_marchall_cv513_pov",
+        "dron_dgi_inspira_3x",
+        "tx_terradek_rayo_6",
+        "mic_roade_ntg6_boom"
+      ],
+      "pago_ecuador_usd_aprox": [
+        3000,
+        12000
+      ],
+      "pago_juego_sugerido": [
+        1750,
+        5000
+      ],
+      "notas": "Estilo de comercial: la marca exige look de cine, luces y reflejos controlados sobre la carrocería. Influencers con corbatero. Pago estimado."
+    },
+    {
+      "key": "concierto",
+      "nombre": "Concierto",
+      "camaras_min": 4,
+      "camaras_ideal": 8,
+      "posiciones_camara": [
+        "Desde la torre de sonido (FOH) con lente largo: primeros planos del cantante",
+        "Abierta del escenario",
+        "Al hombro en el foso frente a la valla",
+        "Jib o grúa sobre el público",
+        "Riel en la valla",
+        "Robóticas / POV en batería y teclados",
+        "Steadicam en el escenario",
+        "Dron (al aire libre)"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 3,
+          "ideal": 6
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 2
+        },
+        "cablero": {
+          "min": 1,
+          "ideal": 3
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 2
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 1
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 1,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_pxv_z210",
+        "cam_blackmagia_urso_broadcast_g3",
+        "lente_kanon_kx21x8_2",
+        "sop_jib_proeme_4m",
+        "cam_marchall_cv513_pov",
+        "sw_blackmagia_atema_2me_constelacion_4k",
+        "au_mydas_m33_live",
+        "tx_terradek_rayo_6"
+      ],
+      "pago_ecuador_usd_aprox": [
+        3000,
+        10000
+      ],
+      "pago_juego_sugerido": [
+        1750,
+        4350
+      ],
+      "notas": "El audio del streaming es una mezcla aparte de la del público (FOH). Las cámaras alimentan las pantallas gigantes (IMAG). Pago estimado."
+    },
+    {
+      "key": "boxeo",
+      "nombre": "Velada de boxeo",
+      "camaras_min": 4,
+      "camaras_ideal": 6,
+      "posiciones_camara": [
+        "Principal en alto (balcón o tarima) con trípode: plano abierto del ring",
+        "Cerrada junto a la principal",
+        "Al hombro inalámbrica en esquina neutral 1",
+        "Al hombro inalámbrica en esquina neutral 2 (entrevistas entre peleas)",
+        "Abierta fija \"beauty\" del recinto",
+        "Minicámaras en postes del ring / steadicam en la caminata"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 3,
+          "ideal": 5
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 1,
+          "ideal": 2
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 1,
+          "ideal": 1
+        },
+        "operador_graficos": {
+          "min": 1,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 1
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 1,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_pxv_z210",
+        "cam_blackmagia_urso_broadcast_g3",
+        "tx_terradek_rayo_6",
+        "cam_marchall_cv513_pov",
+        "sw_blackmagia_atema_1me_constelacion",
+        "rep_vmax_repeticion",
+        "gfx_kasparcg_pc",
+        "enc_liveyou_solo_pro",
+        "mic_sennhauser_hmd27"
+      ],
+      "pago_ecuador_usd_aprox": [
+        800,
+        4000
+      ],
+      "pago_juego_sugerido": [
+        650,
+        2200
+      ],
+      "notas": "Caso real en streaming: 5 cámaras (2 en balcón, 2 inalámbricas en esquinas neutrales, 1 beauty), mezcla en 1 M/E, shading, gráficos y lenta por software y salida por bonding de 4 chips + WiFi + cable (F75). Gráficos: reloj de round y tarjetas de puntuación. Pago estimado."
+    },
+    {
+      "key": "lucha_libre",
+      "nombre": "Lucha libre",
+      "camaras_min": 3,
+      "camaras_ideal": 5,
+      "posiciones_camara": [
+        "Cámara principal fija (\"hard cam\") frente al ring",
+        "Al hombro en el ring (lado izquierdo)",
+        "Al hombro en el ring (lado derecho)",
+        "Rampa de entrada / escenario de entrada",
+        "POV en esquinas y público"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 2,
+          "ideal": 4
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 1
+        },
+        "cablero": {
+          "min": 1,
+          "ideal": 1
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_kanon_xf615",
+        "cam_blackmagia_urso_broadcast_g3",
+        "cam_gopra_heroe13",
+        "sw_vmax_pro_pc",
+        "au_behringa_x33_rack",
+        "enc_kilovista_p3"
+      ],
+      "pago_ecuador_usd_aprox": [
+        400,
+        1500
+      ],
+      "pago_juego_sugerido": [
+        390,
+        1050
+      ],
+      "notas": "Más espectáculo que deporte: entradas con música y luces, caídas fuera del ring (hay que mover la cámara rápido: el cablero es clave). Pago estimado."
+    },
+    {
+      "key": "ligapro",
+      "nombre": "Partido de LigaPro",
+      "camaras_min": 6,
+      "camaras_ideal": 10,
+      "posiciones_camara": [
+        "Cam 1 principal abierta en tribuna alta a la altura de la media cancha (cámara de sistema, lente box angular o ENG largo)",
+        "Cam 2 principal cerrada junto a la 1 (lente box 80-100x)",
+        "Cam 3 y 4 en línea con cada área (16 m / offside) en tribuna",
+        "Cam 5 y 6 detrás de cada arco, en alto (que el punto penal se vea sobre el travesaño)",
+        "Cam 7 al hombro en la banda (bancas, festejos, cambios)",
+        "Cam 8 contraplano en la tribuna opuesta, alineada con el centro",
+        "Cam 9 súper lenta en un área / robótica táctica",
+        "Cam 10 steadicam o inalámbrica en la salida de los equipos y entrevistas"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 2
+        },
+        "camarografo": {
+          "min": 4,
+          "ideal": 7
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 2
+        },
+        "cablero": {
+          "min": 2,
+          "ideal": 4
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 2
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 1,
+          "ideal": 2
+        },
+        "operador_graficos": {
+          "min": 1,
+          "ideal": 1
+        },
+        "shader": {
+          "min": 1,
+          "ideal": 1
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 1,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 1,
+          "ideal": 2
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_hdk_3200",
+        "lente_box_kanon_digisupra_88",
+        "sop_vinter_vector_760",
+        "cam_zony_pxv_z210",
+        "lente_kanon_kx21x8_2",
+        "rep_evx_xt_nano",
+        "gfx_rosco_xpresion_go",
+        "au_mydas_m33_live",
+        "fib_cable_smpte_100m",
+        "srv_unidad_movil_4cam",
+        "mic_sennhauser_hmd27"
+      ],
+      "pago_ecuador_usd_aprox": [
+        6000,
+        15000
+      ],
+      "pago_juego_sugerido": [
+        2950,
+        5900
+      ],
+      "notas": "Plan según normas de transmisión de fútbol (F70, F71, F72): plataforma principal, offside, alto detrás de cada arco, bajas detrás de la línea de fondo, contraplano y súper lentas. En 2026 LigaPro asumió su propia producción con aliados internacionales (F80); hubo robo de una unidad móvil (F81) y críticas por mala calibración de cámaras (F82) = el shader importa. Pago por partido estimado (Italia 2016: tope EUR 9.500-61.000 según categoría, F22)."
+    },
+    {
+      "key": "final",
+      "nombre": "Final de campeonato",
+      "camaras_min": 8,
+      "camaras_ideal": 16,
+      "posiciones_camara": [
+        "Todo lo de LigaPro, más:",
+        "Cam principal cerrada con lente box 4K 100x+",
+        "Segunda cámara súper lenta en la otra área",
+        "Bajas detrás de cada línea de fondo (2)",
+        "Robóticas dentro de los arcos (2)",
+        "Cámara táctica alta",
+        "Arañacam o cablecam sobre la cancha",
+        "Dron para la apertura y la premiación",
+        "Steadicam en la premiación y el túnel"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 2
+        },
+        "camarografo": {
+          "min": 6,
+          "ideal": 12
+        },
+        "operador_ptz": {
+          "min": 1,
+          "ideal": 3
+        },
+        "cablero": {
+          "min": 3,
+          "ideal": 6
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 2
+        },
+        "microfonista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 2,
+          "ideal": 3
+        },
+        "operador_graficos": {
+          "min": 1,
+          "ideal": 2
+        },
+        "shader": {
+          "min": 1,
+          "ideal": 2
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 2
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 1,
+          "ideal": 2
+        },
+        "runner": {
+          "min": 1,
+          "ideal": 3
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_hdk_3600",
+        "lente_box_fujinox_ux108x",
+        "cam_zony_hdk_5600_hfr",
+        "rep_evx_xt_via",
+        "srv_aranacam",
+        "veh_trailer_ob_hd12",
+        "au_kalrek_brio_37",
+        "ic_clearkom_freehabla_3",
+        "srv_sng_satelital",
+        "pw_kummins_22kva"
+      ],
+      "pago_ecuador_usd_aprox": [
+        15000,
+        40000
+      ],
+      "pago_juego_sugerido": [
+        5900,
+        12500
+      ],
+      "notas": "Las finales internacionales usan 11-21 cámaras (Copa Libertadores Femenina, F73) y hasta 34 en un Mundial (F72). Doble enlace (fibra + satélite o bonding) y generador redundante. Pago estimado."
+    },
+    {
+      "key": "irl",
+      "nombre": "Stream IRL con influencer",
+      "camaras_min": 1,
+      "camaras_ideal": 2,
+      "posiciones_camara": [
+        "Celular o cámara de bolsillo en gimbal / soporte de pecho (en movimiento)",
+        "Segunda cámara de acción (opcional) para otro ángulo"
+      ],
+      "personal": {
+        "director": {
+          "min": 0,
+          "ideal": 0
+        },
+        "productor": {
+          "min": 0,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 1,
+          "ideal": 1
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 0
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 0
+        },
+        "sonidista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 0
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 0,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 0
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 1
+        }
+      },
+      "equipo_clave": [
+        "cam_dgi_osmo_bolsillo_3",
+        "cam_celular_gimbal",
+        "enc_liveyou_solo_pro",
+        "net_hotspot_5g",
+        "mic_dgi_mike_2",
+        "cons_plan_bonding_mes"
+      ],
+      "pago_ecuador_usd_aprox": [
+        150,
+        600
+      ],
+      "pago_juego_sugerido": [
+        150,
+        530
+      ],
+      "notas": "Mochila: bonding (o app en el celular + hotspot de otra operadora), batería grande, micrófono inalámbrico. Equipo de 1-3: camarógrafo/streamer, productor que modera el chat y vigila desde la base, y un asistente de seguridad (F19). Pago estimado por día."
+    },
+    {
+      "key": "internacional_unilateral",
+      "nombre": "Unilateral para canal extranjero (Copa en Ecuador)",
+      "camaras_min": 2,
+      "camaras_ideal": 3,
+      "posiciones_camara": [
+        "Posición del presentador con el estadio de fondo",
+        "Cámara al hombro para zona mixta y entrevista flash",
+        "Cámara de comentaristas (opcional)"
+      ],
+      "personal": {
+        "director": {
+          "min": 0,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 1,
+          "ideal": 1
+        },
+        "camarografo": {
+          "min": 2,
+          "ideal": 3
+        },
+        "operador_ptz": {
+          "min": 0,
+          "ideal": 0
+        },
+        "cablero": {
+          "min": 0,
+          "ideal": 1
+        },
+        "sonidista": {
+          "min": 1,
+          "ideal": 1
+        },
+        "microfonista": {
+          "min": 0,
+          "ideal": 1
+        },
+        "operador_repeticion": {
+          "min": 0,
+          "ideal": 0
+        },
+        "operador_graficos": {
+          "min": 0,
+          "ideal": 0
+        },
+        "shader": {
+          "min": 0,
+          "ideal": 0
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 1
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 0
+        },
+        "coordinador_piso": {
+          "min": 0,
+          "ideal": 1
+        },
+        "runner": {
+          "min": 0,
+          "ideal": 0
+        }
+      },
+      "equipo_clave": [
+        "cam_zony_pxv_z760",
+        "lente_kanon_cx25ex7_5",
+        "mic_sennhauser_hmd27",
+        "enc_liveyou_lu900",
+        "srv_sng_satelital",
+        "case_maletas_pelikano"
+      ],
+      "pago_ecuador_usd_aprox": [
+        3000,
+        10000
+      ],
+      "pago_juego_sugerido": [
+        1750,
+        4350
+      ],
+      "notas": "El canal extranjero recibe la señal internacional del host y contrata aparte su propia cobertura (unilateral). Pide experiencia internacional, acreditación del torneo e idioma. Pago estimado."
+    },
+    {
+      "key": "internacional_host",
+      "nombre": "Producción host de partido internacional (subcontrato)",
+      "camaras_min": 11,
+      "camaras_ideal": 21,
+      "posiciones_camara": [
+        "Plan completo de final (ver \"final\")",
+        "Súper lentas en ambas áreas",
+        "Cámaras de comentaristas (ComCams)",
+        "Cámara de túnel y beauty",
+        "Contraplano y bajas detrás de las líneas de fondo"
+      ],
+      "personal": {
+        "director": {
+          "min": 1,
+          "ideal": 1
+        },
+        "productor": {
+          "min": 2,
+          "ideal": 2
+        },
+        "camarografo": {
+          "min": 10,
+          "ideal": 16
+        },
+        "operador_ptz": {
+          "min": 2,
+          "ideal": 4
+        },
+        "cablero": {
+          "min": 4,
+          "ideal": 8
+        },
+        "sonidista": {
+          "min": 2,
+          "ideal": 3
+        },
+        "microfonista": {
+          "min": 1,
+          "ideal": 2
+        },
+        "operador_repeticion": {
+          "min": 2,
+          "ideal": 4
+        },
+        "operador_graficos": {
+          "min": 1,
+          "ideal": 2
+        },
+        "shader": {
+          "min": 2,
+          "ideal": 3
+        },
+        "tecnico_transmision": {
+          "min": 1,
+          "ideal": 2
+        },
+        "piloto_dron": {
+          "min": 0,
+          "ideal": 1
+        },
+        "coordinador_piso": {
+          "min": 2,
+          "ideal": 3
+        },
+        "runner": {
+          "min": 2,
+          "ideal": 4
+        }
+      },
+      "equipo_clave": [
+        "veh_ob_hd8_camion",
+        "cam_zony_hdk_3600",
+        "lente_box_kanon_uhd_digisupra_125",
+        "cam_zony_hdk_5600_hfr",
+        "rep_evx_xt_via",
+        "gfx_vizart_ar",
+        "srv_sng_satelital",
+        "pw_kummins_22kva"
+      ],
+      "pago_ecuador_usd_aprox": [
+        40000,
+        120000
+      ],
+      "pago_juego_sugerido": [
+        12500,
+        28000
+      ],
+      "notas": "Real: 11-21 cámaras, 2 OB HD, flyaways y más de 100 profesionales para un torneo continental (F73). En el juego, evento muy raro y de máximo nivel. Pago estimado."
+    }
+  ],
+  "internacionales": [
+    {
+      "nombre": "Unilateral para canal extranjero en un partido de Copa (Libertadores / Sudamericana / Eliminatorias) en Ecuador",
+      "requisitos": [
+        "Acreditación del torneo para cada persona",
+        "2-3 cámaras broadcast de hombro con lente 4K",
+        "Diademas de comentarista",
+        "Enlace propio: bonding de 8 módems o satélite",
+        "Al menos 1 productor y 1 camarógrafo de nivel Internacional",
+        "Factura al exterior y pago en 30 días"
+      ],
+      "pago_multiplicador": 2.5,
+      "frecuencia_sugerida": "1 oferta cada 20-30 días desde el capítulo 5, con fama 55 o más"
+    },
+    {
+      "nombre": "Producción host (subcontrato) de un partido internacional para la confederación",
+      "requisitos": [
+        "11-21 cámaras, varias de sistema con fibra",
+        "Lentes box 80-100x+ y 2 súper lentas",
+        "Servidor de repetición broadcast con 2 operadores",
+        "Unidad móvil HD propia o alquilada + generador redundante",
+        "Doble enlace (fibra + satélite)",
+        "Shader y personal internacional en puestos clave",
+        "Seguro de equipos y responsabilidad civil"
+      ],
+      "pago_multiplicador": 5.0,
+      "frecuencia_sugerida": "Muy rara: 1 por temporada (60-90 días) con fama 80 o más, después de la final"
+    },
+    {
+      "nombre": "Fecha de gira de un artista internacional (pantallas IMAG + streaming)",
+      "requisitos": [
+        "Cumplir el rider técnico de la gira (formatos 4K, lentes largos desde FOH)",
+        "Jib o grúa y cámaras robóticas en escenario",
+        "Personal Senior; contrato de confidencialidad",
+        "Ensayo técnico el día anterior",
+        "Anticipo del 50%"
+      ],
+      "pago_multiplicador": 3.0,
+      "frecuencia_sugerida": "1 cada 30-40 días con fama 45 o más"
+    },
+    {
+      "nombre": "Lanzamiento regional de marca (varios países a la vez)",
+      "requisitos": [
+        "Señal SRT a la agencia en otro país con encoder de respaldo",
+        "Gráficos en dos idiomas",
+        "Intercom y escaleta al minuto",
+        "Prueba de enlace con 24 h de anticipación",
+        "Pago a 30-60 días (riesgo de caja)"
+      ],
+      "pago_multiplicador": 2.0,
+      "frecuencia_sugerida": "1 cada 25 días después del capítulo 3"
+    },
+    {
+      "nombre": "Evento en país vecino (Colombia / Perú) con equipo propio",
+      "requisitos": [
+        "Permiso aduanero de exportación/importación temporal: Ecuador no usa carnet ATA (F79)",
+        "Flete y seguro del equipo en tránsito",
+        "Viáticos, hotel y vuelos del personal",
+        "1-2 días de viaje: el equipo no puede tomar otros eventos",
+        "Personal con pasaporte; nivel Internacional en jefaturas"
+      ],
+      "pago_multiplicador": 4.0,
+      "frecuencia_sugerida": "1 cada 40-50 días con fama 60 o más; con gastos altos"
+    },
+    {
+      "nombre": "Velada de boxeo/MMA para una plataforma de streaming extranjera",
+      "requisitos": [
+        "Paquete gráfico del cliente",
+        "Grabación ISO de cada cámara",
+        "Mezcla de audio internacional (sin narración) por canales separados (F75)",
+        "Bonding con respaldo",
+        "Pago en dólares por transferencia"
+      ],
+      "pago_multiplicador": 2.0,
+      "frecuencia_sugerida": "1 cada 20-30 días con fama 35 o más"
+    }
+  ]
+}

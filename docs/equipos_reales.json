@@ -1,0 +1,2630 @@
+[
+  {
+    "key": "cam_zony_fdx_ax44",
+    "nombre": "Zony Handicam FDX-AX44",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "camcorder_consumo",
+    "calidad": 1,
+    "precio_juego": 750,
+    "precio_real_usd": 967,
+    "eventos_ideales": [
+      "misa",
+      "funeral",
+      "boda",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "4K, zoom 20x, estabilizador. Solo micro-HDMI y micrófono de 3,5 mm: el cable HDMI se suelta fácil.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_kanon_xa65",
+    "nombre": "Kanon XA65",
+    "marca_parodia": "Kanon",
+    "categoria": "cam",
+    "subtipo": "camcorder_pro",
+    "calidad": 2,
+    "precio_juego": 1300,
+    "precio_real_usd": 1974,
+    "eventos_ideales": [
+      "boda",
+      "misa",
+      "prensa",
+      "graduacion",
+      "barrial"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "4K, zoom 20x, 2 entradas XLR. Salida HDMI (sin SDI): cables cortos.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_optiptz_movil_22x",
+    "nombre": "OptiPTZ Movil 4K 22X",
+    "marca_parodia": "OptiPTZ",
+    "categoria": "cam",
+    "subtipo": "ptz",
+    "calidad": 2,
+    "precio_juego": 1500,
+    "precio_real_usd": 2466,
+    "eventos_ideales": [
+      "misa",
+      "funeral",
+      "prensa",
+      "graduacion",
+      "lanzamiento"
+    ],
+    "requiere": [
+      "operador_ptz"
+    ],
+    "acepta": [],
+    "dato": "Robótica 4K, 20x, seguimiento automático, red NDI/SRT. Solo interiores.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_panasonika_aw_uv22",
+    "nombre": "Panasonika AW-UV22",
+    "marca_parodia": "Panasonika",
+    "categoria": "cam",
+    "subtipo": "ptz",
+    "calidad": 2,
+    "precio_juego": 1250,
+    "precio_real_usd": 1938,
+    "eventos_ideales": [
+      "misa",
+      "funeral",
+      "prensa"
+    ],
+    "requiere": [
+      "operador_ptz"
+    ],
+    "acepta": [],
+    "dato": "Robótica 4K pequeña, 12x, un solo cable de red (PoE). Ideal para iglesias y auditorios.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_blackmagia_estudio_4k_g3",
+    "nombre": "Blackmagia Estudio Cam 4K Plus G3",
+    "marca_parodia": "Blackmagia",
+    "categoria": "cam",
+    "subtipo": "estudio_ligera",
+    "calidad": 2,
+    "precio_juego": 1100,
+    "precio_real_usd": 1555,
+    "eventos_ideales": [
+      "graduacion",
+      "lanzamiento",
+      "misa",
+      "prensa",
+      "boxeo"
+    ],
+    "requiere": [
+      "lente_mft"
+    ],
+    "acepta": [
+      "lente_mft"
+    ],
+    "dato": "4K60, pantalla 7\", tally y talkback por el cable SDI. Necesita lente aparte.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_kanon_xf615",
+    "nombre": "Kanon XF615",
+    "marca_parodia": "Kanon",
+    "categoria": "cam",
+    "subtipo": "camcorder_pro_sdi",
+    "calidad": 3,
+    "precio_juego": 2550,
+    "precio_real_usd": 4922,
+    "eventos_ideales": [
+      "graduacion",
+      "lanzamiento",
+      "concierto",
+      "barrial",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Sensor 1\", zoom 15x, 12G-SDI (cable largo hasta el switcher), 4K60.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_zony_pxv_z210",
+    "nombre": "Zony PXV-Z210",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "camcorder_pro_sdi",
+    "calidad": 3,
+    "precio_juego": 2450,
+    "precio_real_usd": 4680,
+    "eventos_ideales": [
+      "barrial",
+      "lanzamiento",
+      "concierto",
+      "ligapro",
+      "boxeo"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Sensor 1\", zoom 20x, 12G-SDI, 4K60 HDR. La de mano típica de cancha.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_jvk_gy_hk560",
+    "nombre": "JVK GY-HK560 Conectada",
+    "marca_parodia": "JVK",
+    "categoria": "cam",
+    "subtipo": "camcorder_streaming",
+    "calidad": 3,
+    "precio_juego": 2800,
+    "precio_real_usd": 5496,
+    "eventos_ideales": [
+      "prensa",
+      "barrial",
+      "irl",
+      "internacional_unilateral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Sensor 1\", 20x y encoder interno: transmite sola por SRT sin switcher.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_zony_fz6_cine",
+    "nombre": "Zony FZ6 Cine",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "cine",
+    "calidad": 3,
+    "precio_juego": 3150,
+    "precio_real_usd": 6480,
+    "eventos_ideales": [
+      "boda",
+      "lanzamiento",
+      "lanzamiento_autos",
+      "concierto"
+    ],
+    "requiere": [
+      "lente_cine"
+    ],
+    "acepta": [
+      "lente_cine"
+    ],
+    "dato": "Full frame, 4K 120p, fondo desenfocado de cine. Para gimbal o steadicam.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_blackmagia_urso_broadcast_g3",
+    "nombre": "Blackmagia URSO Broadcast G3",
+    "marca_parodia": "Blackmagia",
+    "categoria": "cam",
+    "subtipo": "eng_hombro",
+    "calidad": 3,
+    "precio_juego": 2450,
+    "precio_real_usd": 4643,
+    "eventos_ideales": [
+      "barrial",
+      "concierto",
+      "ligapro",
+      "boxeo",
+      "lucha_libre"
+    ],
+    "requiere": [
+      "lente_b4"
+    ],
+    "acepta": [
+      "lente_eng"
+    ],
+    "dato": "Al hombro, montura B4: usa lentes ENG de televisión. 4K/6K, SDI.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_panasonika_aw_uv170",
+    "nombre": "Panasonika AW-UV170",
+    "marca_parodia": "Panasonika",
+    "categoria": "cam",
+    "subtipo": "ptz_broadcast",
+    "calidad": 4,
+    "precio_juego": 5450,
+    "precio_real_usd": 13529,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "final",
+      "lanzamiento",
+      "lanzamiento_autos"
+    ],
+    "requiere": [
+      "operador_ptz"
+    ],
+    "acepta": [],
+    "dato": "Robótica broadcast: sensor 1\", 20x, 12G-SDI y fibra, 120p en HD. Táctica o detrás del arco.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_zony_pxv_z760",
+    "nombre": "Zony PXV-Z760",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "eng_hombro",
+    "calidad": 4,
+    "precio_juego": 12500,
+    "precio_real_usd": 39784,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto",
+      "boxeo",
+      "internacional_unilateral"
+    ],
+    "requiere": [
+      "lente_b4"
+    ],
+    "acepta": [
+      "lente_eng"
+    ],
+    "dato": "3 sensores 2/3\" 4K, obturador global (sin \"gelatina\" con flashes), 120p en HD. Sin lente.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_zony_hdk_3200",
+    "nombre": "Zony HDK-3200 (cadena con CCU)",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "sistema",
+    "calidad": 5,
+    "precio_juego": 13000,
+    "precio_real_usd": 43057,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto",
+      "internacional_host"
+    ],
+    "requiere": [
+      "lente_b4",
+      "cable_fibra_smpte",
+      "shader"
+    ],
+    "acepta": [
+      "lente_eng",
+      "lente_box"
+    ],
+    "dato": "Cámara de sistema: viaja por fibra hasta su CCU y el shader le ajusta el color a distancia. 2/3\" HD/4K.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_zony_hdk_3600",
+    "nombre": "Zony HDK-3600 4K HDR (cadena con CCU)",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "sistema_4k",
+    "calidad": 6,
+    "precio_juego": 25500,
+    "precio_real_usd": 106083,
+    "eventos_ideales": [
+      "final",
+      "ligapro",
+      "internacional_host"
+    ],
+    "requiere": [
+      "lente_b4",
+      "cable_fibra_smpte",
+      "shader"
+    ],
+    "acepta": [
+      "lente_eng",
+      "lente_box"
+    ],
+    "dato": "La cámara principal de una final: 4K HDR, 2/3\" global shutter. Con lente box 100x+ en la tribuna.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_zony_hdk_5600_hfr",
+    "nombre": "Zony HDK-5600 Ultra Lenta (HFR)",
+    "marca_parodia": "Zony",
+    "categoria": "cam",
+    "subtipo": "super_lenta",
+    "calidad": 6,
+    "precio_juego": 40000,
+    "precio_real_usd": 193649,
+    "eventos_ideales": [
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "lente_b4",
+      "cable_fibra_smpte",
+      "shader",
+      "servidor_repeticion"
+    ],
+    "acepta": [
+      "lente_eng",
+      "lente_box"
+    ],
+    "dato": "Súper cámara lenta (hasta 8x en HD) conectada al servidor de repeticiones. Los goles se ven en otra dimensión.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_fantomas_vio4k",
+    "nombre": "Fantomas VIO 4K Ultra Movimiento",
+    "marca_parodia": "Fantomas",
+    "categoria": "cam",
+    "subtipo": "ultra_movimiento",
+    "calidad": 5,
+    "precio_juego": 9900,
+    "precio_real_usd": 29933,
+    "eventos_ideales": [
+      "final",
+      "boxeo",
+      "internacional_host"
+    ],
+    "requiere": [
+      "operador_repeticion",
+      "lente_cine"
+    ],
+    "acepta": [
+      "lente_cine"
+    ],
+    "dato": "Graba ráfagas de 1.000 cuadros por segundo: no es en vivo continuo, sirve para repeticiones espectaculares.",
+    "rareza": "elite",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_marchall_cv513_pov",
+    "nombre": "Marchall CV513 Minicámara POV",
+    "marca_parodia": "Marchall",
+    "categoria": "cam",
+    "subtipo": "pov",
+    "calidad": 2,
+    "precio_juego": 610,
+    "precio_real_usd": 735,
+    "eventos_ideales": [
+      "boxeo",
+      "lucha_libre",
+      "concierto",
+      "lanzamiento_autos",
+      "ligapro"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Minicámara fija para el arco, la esquina del ring, la batería o el auto. No necesita camarógrafo.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_gopra_heroe13",
+    "nombre": "GoPra HÉROE 13",
+    "marca_parodia": "GoPra",
+    "categoria": "cam",
+    "subtipo": "accion",
+    "calidad": 1,
+    "precio_juego": 370,
+    "precio_real_usd": 380,
+    "eventos_ideales": [
+      "irl",
+      "lucha_libre",
+      "lanzamiento_autos"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cámara de acción resistente al agua, transmite desde el celular. Vista POV.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_dgi_osmo_bolsillo_3",
+    "nombre": "DGI Osmo Bolsillo 3",
+    "marca_parodia": "DGI",
+    "categoria": "cam",
+    "subtipo": "gimbal_compacta",
+    "calidad": 2,
+    "precio_juego": 490,
+    "precio_real_usd": 549,
+    "eventos_ideales": [
+      "irl",
+      "boda",
+      "lanzamiento_autos"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cámara de bolsillo con gimbal y sensor 1\". La favorita de los streamers IRL.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cam_celular_gimbal",
+    "nombre": "Celular gama alta + gimbal DGI Osmo Móvil 8",
+    "marca_parodia": "DGI",
+    "categoria": "cam",
+    "subtipo": "celular",
+    "calidad": 1,
+    "precio_juego": 900,
+    "precio_real_usd": 1225,
+    "eventos_ideales": [
+      "irl",
+      "funeral",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cámara, encoder y módem en un solo aparato. Se calienta y se descarga rápido.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "dron_dgi_micro_4_pro",
+    "nombre": "DGI Micro 4 Pro (dron)",
+    "marca_parodia": "DGI",
+    "categoria": "cam",
+    "subtipo": "dron",
+    "calidad": 3,
+    "precio_juego": 740,
+    "precio_real_usd": 951,
+    "eventos_ideales": [
+      "boda",
+      "lanzamiento_autos",
+      "barrial",
+      "concierto"
+    ],
+    "requiere": [
+      "piloto_dron"
+    ],
+    "acepta": [],
+    "dato": "Dron liviano 4K. Tomas aéreas de apertura; con viento fuerte no vuela.",
+    "rareza": "comun",
+    "durabilidad": 1,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "dron_dgi_inspira_3x",
+    "nombre": "DGI Inspira 3X Cine (dron)",
+    "marca_parodia": "DGI",
+    "categoria": "cam",
+    "subtipo": "dron_cine",
+    "calidad": 5,
+    "precio_juego": 6450,
+    "precio_real_usd": 16971,
+    "eventos_ideales": [
+      "lanzamiento_autos",
+      "concierto",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "piloto_dron"
+    ],
+    "acepta": [],
+    "dato": "Dron de cine 8K de doble operador (piloto + cámara). Necesita permiso de vuelo.",
+    "rareza": "exclusivo",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "srv_aranacam",
+    "nombre": "Arañacam (cámara aérea por cables) - servicio",
+    "marca_parodia": "Arañacam",
+    "categoria": "service",
+    "subtipo": "camara_aerea_cables",
+    "calidad": 6,
+    "precio_juego": 3650,
+    "precio_real_usd": 34467,
+    "eventos_ideales": [
+      "final",
+      "internacional_host",
+      "concierto"
+    ],
+    "requiere": [
+      "generador"
+    ],
+    "acepta": [],
+    "dato": "Cámara colgada de 4 cables que vuela sobre la cancha. Viene con piloto y operador.",
+    "rareza": "vip",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": true
+  },
+  {
+    "key": "srv_cablecam_riel",
+    "nombre": "Cámara en riel / cablecam lineal - servicio",
+    "marca_parodia": "Rielcam",
+    "categoria": "service",
+    "subtipo": "riel",
+    "calidad": 4,
+    "precio_juego": 570,
+    "precio_real_usd": 2898,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto",
+      "lanzamiento_autos"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Corre por un riel paralelo a la línea de banda o a la valla del escenario.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": true
+  },
+  {
+    "key": "srv_grua_telescopica",
+    "nombre": "Grúa de 12 m con operador - servicio",
+    "marca_parodia": "Jimi Jib",
+    "categoria": "service",
+    "subtipo": "grua",
+    "calidad": 4,
+    "precio_juego": 340,
+    "precio_real_usd": 1438,
+    "eventos_ideales": [
+      "concierto",
+      "lanzamiento_autos",
+      "final",
+      "graduacion",
+      "lanzamiento"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Barridos sobre el público. Necesita espacio y un operador especializado.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": true
+  },
+  {
+    "key": "srv_unidad_movil_4cam",
+    "nombre": "Alquiler de unidad móvil (hasta 4 cámaras)",
+    "marca_parodia": "Móvil Andes",
+    "categoria": "service",
+    "subtipo": "ob_alquiler",
+    "calidad": 4,
+    "precio_juego": 1400,
+    "precio_real_usd": 9526,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Llega con switcher, audio, repetición y técnico. Caro, pero salva un partido si no tienes OB propia.",
+    "rareza": "profesional",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": true
+  },
+  {
+    "key": "srv_sng_satelital",
+    "nombre": "Enlace satelital SNG - servicio",
+    "marca_parodia": "SatAndes",
+    "categoria": "service",
+    "subtipo": "satelite",
+    "calidad": 5,
+    "precio_juego": 650,
+    "precio_real_usd": 3429,
+    "eventos_ideales": [
+      "final",
+      "internacional_host",
+      "internacional_unilateral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Sube la señal al satélite: no depende del internet del estadio.",
+    "rareza": "profesional",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": true
+  },
+  {
+    "key": "lente_kit_mft",
+    "nombre": "Lente kit 14-140 (montura MFT)",
+    "marca_parodia": "Panasonika",
+    "categoria": "lens",
+    "subtipo": "lente_mft",
+    "calidad": 1,
+    "precio_juego": 530,
+    "precio_real_usd": 600,
+    "eventos_ideales": [
+      "misa",
+      "graduacion",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Zoom corto para cámaras de estudio livianas. Sirve para planos medios, no para lejos.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_zony_gm_24_75",
+    "nombre": "Zony Gran Maestro 24-75 II",
+    "marca_parodia": "Zony",
+    "categoria": "lens",
+    "subtipo": "lente_cine",
+    "calidad": 2,
+    "precio_juego": 1450,
+    "precio_real_usd": 2298,
+    "eventos_ideales": [
+      "boda",
+      "lanzamiento",
+      "lanzamiento_autos",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Lente luminoso para cámara de cine: fondo desenfocado, poco zoom.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_kanon_kx21x8_2",
+    "nombre": "Kanon KX21x8.2 IRSD (ENG HD 20x)",
+    "marca_parodia": "Kanon",
+    "categoria": "lens",
+    "subtipo": "lente_eng",
+    "calidad": 3,
+    "precio_juego": 3650,
+    "precio_real_usd": 7900,
+    "eventos_ideales": [
+      "barrial",
+      "concierto",
+      "ligapro",
+      "boxeo",
+      "lucha_libre"
+    ],
+    "requiere": [
+      "montura_b4"
+    ],
+    "acepta": [],
+    "dato": "ENG 20x con duplicador 2x interno (hasta 328 mm). El lente de hombro clásico.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_fujinox_ux15x4_5",
+    "nombre": "Fujinox UX15x4.5 Gran Angular 4K",
+    "marca_parodia": "Fujinox",
+    "categoria": "lens",
+    "subtipo": "lente_eng",
+    "calidad": 4,
+    "precio_juego": 8500,
+    "precio_real_usd": 24495,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "final",
+      "boxeo"
+    ],
+    "requiere": [
+      "montura_b4"
+    ],
+    "acepta": [],
+    "dato": "Angular 4K (93°): ideal en escenario, bancas y ring. Duplicador 2x interno.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_kanon_cx25ex7_5",
+    "nombre": "Kanon CX25ex7.5 (ENG 4K 24x)",
+    "marca_parodia": "Kanon",
+    "categoria": "lens",
+    "subtipo": "lente_eng",
+    "calidad": 5,
+    "precio_juego": 7800,
+    "precio_real_usd": 21794,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto",
+      "internacional_unilateral"
+    ],
+    "requiere": [
+      "montura_b4"
+    ],
+    "acepta": [],
+    "dato": "ENG 4K largo con 2x interno. En cancha y en tribuna baja.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_box_fujinox_xa23x7",
+    "nombre": "Fujinox XA23x7 Box de estudio",
+    "marca_parodia": "Fujinox",
+    "categoria": "lens",
+    "subtipo": "lente_box",
+    "calidad": 4,
+    "precio_juego": 4500,
+    "precio_real_usd": 10392,
+    "eventos_ideales": [
+      "boxeo",
+      "concierto",
+      "graduacion",
+      "lanzamiento"
+    ],
+    "requiere": [
+      "cam_sistema",
+      "adaptador_lente_box",
+      "soporte_pesado"
+    ],
+    "acepta": [],
+    "dato": "Lente box corto: planos abiertos en estudio, ring o escenario.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_box_kanon_digisupra_75",
+    "nombre": "Kanon DIGISUPRA 75 (box 72x)",
+    "marca_parodia": "Kanon",
+    "categoria": "lens",
+    "subtipo": "lente_box",
+    "calidad": 4,
+    "precio_juego": 15000,
+    "precio_real_usd": 52915,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final"
+    ],
+    "requiere": [
+      "cam_sistema",
+      "adaptador_lente_box",
+      "soporte_pesado"
+    ],
+    "acepta": [],
+    "dato": "Box 72x: cámara cerrada de tribuna en estadios medianos.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_box_kanon_digisupra_88",
+    "nombre": "Kanon DIGISUPRA 88 (box 86x)",
+    "marca_parodia": "Kanon",
+    "categoria": "lens",
+    "subtipo": "lente_box",
+    "calidad": 5,
+    "precio_juego": 18000,
+    "precio_real_usd": 67082,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "cam_sistema",
+      "adaptador_lente_box",
+      "soporte_pesado"
+    ],
+    "acepta": [],
+    "dato": "9-800 mm con 2x (hasta 1.600 mm). Se usa también en súper lentas.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_box_fujinox_xa105x",
+    "nombre": "Fujinox XA105x8.9 (box HD 101x)",
+    "marca_parodia": "Fujinox",
+    "categoria": "lens",
+    "subtipo": "lente_box",
+    "calidad": 5,
+    "precio_juego": 32500,
+    "precio_real_usd": 144962,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "cam_sistema",
+      "adaptador_lente_box",
+      "soporte_pesado"
+    ],
+    "acepta": [],
+    "dato": "Box 100x HD con asistente de foco: la cara del jugador desde la tribuna opuesta.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_box_fujinox_ux108x",
+    "nombre": "Fujinox UX108x8.4 (box 4K 107x)",
+    "marca_parodia": "Fujinox",
+    "categoria": "lens",
+    "subtipo": "lente_box",
+    "calidad": 6,
+    "precio_juego": 27000,
+    "precio_real_usd": 112916,
+    "eventos_ideales": [
+      "final",
+      "ligapro",
+      "internacional_host"
+    ],
+    "requiere": [
+      "cam_sistema",
+      "adaptador_lente_box",
+      "soporte_pesado"
+    ],
+    "acepta": [],
+    "dato": "Box 4K 107x con estabilizador óptico. Lente de final.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "lente_box_kanon_uhd_digisupra_125",
+    "nombre": "Kanon UHD-DIGISUPRA 125 AF (box 4K 122x)",
+    "marca_parodia": "Kanon",
+    "categoria": "lens",
+    "subtipo": "lente_box",
+    "calidad": 6,
+    "precio_juego": 44500,
+    "precio_real_usd": 223607,
+    "eventos_ideales": [
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "cam_sistema_4k",
+      "adaptador_lente_box",
+      "soporte_pesado"
+    ],
+    "acepta": [],
+    "dato": "8,2-1.000 mm (2.000 mm con 2x) y autofoco con seguimiento. El lente más grande del juego.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "adaptador_lente_box",
+    "nombre": "Adaptador de lente grande para cámara de sistema",
+    "marca_parodia": "Zony",
+    "categoria": "lens",
+    "subtipo": "adaptador_lente_box",
+    "calidad": 4,
+    "precio_juego": 4650,
+    "precio_real_usd": 10954,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto"
+    ],
+    "requiere": [
+      "cam_sistema"
+    ],
+    "acepta": [
+      "lente_box"
+    ],
+    "dato": "Convierte la cámara de sistema portátil en \"cámara de tribuna\" para montar un lente box.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_tripode_basico",
+    "nombre": "Trípode de video básico Manfrotti Compacto",
+    "marca_parodia": "Manfrotti",
+    "categoria": "support",
+    "subtipo": "tripode",
+    "calidad": 1,
+    "precio_juego": 160,
+    "precio_real_usd": 158,
+    "eventos_ideales": [
+      "misa",
+      "funeral",
+      "boda",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cabezal de fricción: los paneos salen a saltos.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_manfrotti_504x",
+    "nombre": "Manfrotti 504X con patas gemelas",
+    "marca_parodia": "Manfrotti",
+    "categoria": "support",
+    "subtipo": "tripode_fluido",
+    "calidad": 2,
+    "precio_juego": 770,
+    "precio_real_usd": 1000,
+    "eventos_ideales": [
+      "boda",
+      "graduacion",
+      "barrial",
+      "prensa",
+      "lanzamiento"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cabezal fluido hasta 12 kg: paneos suaves con camcorders y cámaras chicas.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_sachtel_aktiv8",
+    "nombre": "Sachtel aktiv8 flowtec75",
+    "marca_parodia": "Sachtel",
+    "categoria": "support",
+    "subtipo": "tripode_fluido",
+    "calidad": 3,
+    "precio_juego": 1850,
+    "precio_real_usd": 3233,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "boxeo",
+      "lanzamiento"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Trípode broadcast de nivelación rápida para cámaras de hombro.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_vinter_vector_760",
+    "nombre": "Vinter Vector 760 + trípode pesado",
+    "marca_parodia": "Vinter",
+    "categoria": "support",
+    "subtipo": "soporte_pesado",
+    "calidad": 5,
+    "precio_juego": 10000,
+    "precio_real_usd": 31305,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto",
+      "internacional_host"
+    ],
+    "requiere": [],
+    "acepta": [
+      "lente_box"
+    ],
+    "dato": "Cabezal para 75 kg: obligatorio para cámaras con lente box.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_gimbal_dgi_rz4_pro",
+    "nombre": "DGI RZ 4 Pro (gimbal)",
+    "marca_parodia": "DGI",
+    "categoria": "support",
+    "subtipo": "gimbal",
+    "calidad": 2,
+    "precio_juego": 750,
+    "precio_real_usd": 967,
+    "eventos_ideales": [
+      "boda",
+      "lanzamiento_autos",
+      "lanzamiento",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Gimbal de mano para cámara de cine: tomas caminando sin temblor.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_gimbal_dgi_ronan_2",
+    "nombre": "DGI Ronan 2 (gimbal pesado)",
+    "marca_parodia": "DGI",
+    "categoria": "support",
+    "subtipo": "gimbal",
+    "calidad": 4,
+    "precio_juego": 3350,
+    "precio_real_usd": 6999,
+    "eventos_ideales": [
+      "concierto",
+      "lanzamiento_autos",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Gimbal para 13 kg: va en grúa, auto o cablecam.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_steadikam_aereo_32",
+    "nombre": "Steadikam Aéreo 32 (chaleco y brazo)",
+    "marca_parodia": "Steadikam",
+    "categoria": "support",
+    "subtipo": "steadicam",
+    "calidad": 4,
+    "precio_juego": 3300,
+    "precio_real_usd": 6928,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "boxeo",
+      "concierto",
+      "boda"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Chaleco con brazo para 9 kg: salida de equipos, caminata al ring, festejos.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_jib_proeme_4m",
+    "nombre": "Jib Proeme 4 m",
+    "marca_parodia": "Proeme",
+    "categoria": "support",
+    "subtipo": "jib",
+    "calidad": 3,
+    "precio_juego": 1350,
+    "precio_real_usd": 2121,
+    "eventos_ideales": [
+      "graduacion",
+      "boda",
+      "lanzamiento",
+      "concierto",
+      "lucha_libre"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Grúa chica con cabeza remota: tomas desde arriba del público.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sop_dolly_riel_6m",
+    "nombre": "Dolly con riel de 6 m",
+    "marca_parodia": "Proeme",
+    "categoria": "support",
+    "subtipo": "dolly",
+    "calidad": 3,
+    "precio_juego": 1500,
+    "precio_real_usd": 2449,
+    "eventos_ideales": [
+      "lanzamiento_autos",
+      "concierto",
+      "lanzamiento"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Travelling suave junto al escenario o al auto.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_vmax_basico_laptop",
+    "nombre": "Laptop con vMax Básico HD",
+    "marca_parodia": "vMax",
+    "categoria": "switcher",
+    "subtipo": "software",
+    "calidad": 1,
+    "precio_juego": 800,
+    "precio_real_usd": 1041,
+    "eventos_ideales": [
+      "misa",
+      "funeral",
+      "boda",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Solo 4 entradas (3 cámaras). Mezcla, gráficos simples y transmite.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_blackmagia_atema_mini_pro",
+    "nombre": "Blackmagia ATEMA Mini Pro",
+    "marca_parodia": "Blackmagia",
+    "categoria": "switcher",
+    "subtipo": "mini_hdmi",
+    "calidad": 1,
+    "precio_juego": 300,
+    "precio_real_usd": 295,
+    "eventos_ideales": [
+      "misa",
+      "boda",
+      "prensa",
+      "funeral",
+      "barrial"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "4 entradas HDMI y streaming directo. Botones físicos, no se cuelga.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_blackmagia_atema_mini_extremo_iso_g3",
+    "nombre": "Blackmagia ATEMA Mini Extremo ISO G3",
+    "marca_parodia": "Blackmagia",
+    "categoria": "switcher",
+    "subtipo": "mini_hdmi",
+    "calidad": 2,
+    "precio_juego": 1500,
+    "precio_real_usd": 2445,
+    "eventos_ideales": [
+      "graduacion",
+      "lanzamiento",
+      "barrial",
+      "boxeo"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "8 HDMI, graba cada cámara por separado (ISO) y transmite.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_vmax_hd_pc",
+    "nombre": "PC de producción con vMax HD",
+    "marca_parodia": "vMax",
+    "categoria": "switcher",
+    "subtipo": "software",
+    "calidad": 2,
+    "precio_juego": 1700,
+    "precio_real_usd": 2806,
+    "eventos_ideales": [
+      "barrial",
+      "graduacion",
+      "lanzamiento",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Entradas ilimitadas por NDI/SRT, gráficos y marcador. Necesita buen operador.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_blackmagia_atema_1me_constelacion",
+    "nombre": "Blackmagia ATEMA 1 M/E Constelación HD",
+    "marca_parodia": "Blackmagia",
+    "categoria": "switcher",
+    "subtipo": "sdi",
+    "calidad": 3,
+    "precio_juego": 880,
+    "precio_real_usd": 1195,
+    "eventos_ideales": [
+      "barrial",
+      "graduacion",
+      "boxeo",
+      "lucha_libre"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "10 entradas SDI con multiview. Cables de 100 m sin perder señal.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_vmax_pro_pc",
+    "nombre": "Estación vMax Pro (con repetición)",
+    "marca_parodia": "vMax",
+    "categoria": "switcher",
+    "subtipo": "software",
+    "calidad": 3,
+    "precio_juego": 2550,
+    "precio_real_usd": 4893,
+    "eventos_ideales": [
+      "barrial",
+      "lanzamiento",
+      "concierto",
+      "boxeo",
+      "lucha_libre"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Incluye repetición de 8 cámaras y varias salidas. La \"TV en una PC\".",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_blackmagia_atema_tv_estudio_hd9_iso",
+    "nombre": "Blackmagia ATEMA TV Estudio HD9 ISO",
+    "marca_parodia": "Blackmagia",
+    "categoria": "switcher",
+    "subtipo": "sdi",
+    "calidad": 3,
+    "precio_juego": 2350,
+    "precio_real_usd": 4409,
+    "eventos_ideales": [
+      "barrial",
+      "concierto",
+      "ligapro",
+      "boxeo"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "8 SDI con panel incorporado, talkback y grabación ISO.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_blackmagia_atema_2me_constelacion_4k",
+    "nombre": "Blackmagia ATEMA 2 M/E Constelación 4K + panel",
+    "marca_parodia": "Blackmagia",
+    "categoria": "switcher",
+    "subtipo": "sdi_me",
+    "calidad": 4,
+    "precio_juego": 3600,
+    "precio_real_usd": 7722,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "final",
+      "lanzamiento_autos"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "20 entradas 12G-SDI, 2 bancos de mezcla (M/E). Necesita panel físico.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_rosco_carbonita_ultra",
+    "nombre": "Rosco Carbonita Ultra + panel",
+    "marca_parodia": "Rosco",
+    "categoria": "switcher",
+    "subtipo": "sdi_me",
+    "calidad": 5,
+    "precio_juego": 7650,
+    "precio_real_usd": 21213,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_unilateral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "12 entradas 12G-SDI, 1 M/E + 2 MiniME, mezclador de audio interno. Switcher de canal de TV.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "sw_glass_valley_kayena",
+    "nombre": "Glass Valley Kayena K-Marco (4 M/E)",
+    "marca_parodia": "Glass Valley",
+    "categoria": "switcher",
+    "subtipo": "grande_me",
+    "calidad": 6,
+    "precio_juego": 52000,
+    "precio_real_usd": 273861,
+    "eventos_ideales": [
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "vehiculo_ob"
+    ],
+    "acepta": [],
+    "dato": "Switcher de unidad móvil grande: 4 bancos, decenas de cámaras, gráficos por capas.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "rep_vmax_repeticion",
+    "nombre": "PC de repetición vMax Pro dedicada",
+    "marca_parodia": "vMax",
+    "categoria": "replay",
+    "subtipo": "software",
+    "calidad": 3,
+    "precio_juego": 2400,
+    "precio_real_usd": 4583,
+    "eventos_ideales": [
+      "barrial",
+      "ligapro",
+      "boxeo",
+      "lucha_libre"
+    ],
+    "requiere": [
+      "operador_repeticion"
+    ],
+    "acepta": [],
+    "dato": "Repeticiones de hasta 8 cámaras en cámara lenta. Se cuelga si la PC es débil.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "rep_trikaster_3jugadas",
+    "nombre": "TriKaster 3Jugadas",
+    "marca_parodia": "TriKaster",
+    "categoria": "replay",
+    "subtipo": "servidor_medio",
+    "calidad": 4,
+    "precio_juego": 8500,
+    "precio_real_usd": 24495,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "boxeo"
+    ],
+    "requiere": [
+      "operador_repeticion"
+    ],
+    "acepta": [],
+    "dato": "Servidor de repetición de 4-8 canales con control de palanca (T-bar).",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "rep_evx_xt_nano",
+    "nombre": "EVX XT-Nano",
+    "marca_parodia": "EVX",
+    "categoria": "replay",
+    "subtipo": "servidor_broadcast",
+    "calidad": 5,
+    "precio_juego": 26500,
+    "precio_real_usd": 112250,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "operador_repeticion"
+    ],
+    "acepta": [],
+    "dato": "El servidor de repetición de la TV deportiva. Repetición en segundos, cero cuelgues.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "rep_evx_xt_via",
+    "nombre": "EVX XT-VIA 4K (servidor top)",
+    "marca_parodia": "EVX",
+    "categoria": "replay",
+    "subtipo": "servidor_broadcast",
+    "calidad": 6,
+    "precio_juego": 43000,
+    "precio_real_usd": 212132,
+    "eventos_ideales": [
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "operador_repeticion"
+    ],
+    "acepta": [],
+    "dato": "12-20 canales 4K, conecta súper lentas. Dos operadores trabajan a la vez.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "gfx_kasparcg_pc",
+    "nombre": "KasparCG (gráficos libres) + PC",
+    "marca_parodia": "KasparCG",
+    "categoria": "graphics",
+    "subtipo": "software",
+    "calidad": 2,
+    "precio_juego": 1250,
+    "precio_real_usd": 1936,
+    "eventos_ideales": [
+      "barrial",
+      "boxeo",
+      "lucha_libre",
+      "graduacion",
+      "prensa"
+    ],
+    "requiere": [
+      "operador_graficos"
+    ],
+    "acepta": [],
+    "dato": "Marcador, reloj, nombres y logos. Gratis, pero hay que armar las plantillas.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "gfx_rosco_xpresion_go",
+    "nombre": "Rosco XPresión Estudio Go",
+    "marca_parodia": "Rosco",
+    "categoria": "graphics",
+    "subtipo": "cg_3d",
+    "calidad": 4,
+    "precio_juego": 6600,
+    "precio_real_usd": 17425,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "lanzamiento",
+      "final"
+    ],
+    "requiere": [
+      "operador_graficos"
+    ],
+    "acepta": [],
+    "dato": "Gráficos 3D en vivo con datos (estadísticas, alineaciones).",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "gfx_vizart_ar",
+    "nombre": "Vizart Motor 3D + realidad aumentada",
+    "marca_parodia": "Vizart",
+    "categoria": "graphics",
+    "subtipo": "cg_ar",
+    "calidad": 6,
+    "precio_juego": 23500,
+    "precio_real_usd": 94868,
+    "eventos_ideales": [
+      "final",
+      "internacional_host",
+      "lanzamiento_autos"
+    ],
+    "requiere": [
+      "operador_graficos",
+      "cam_sistema"
+    ],
+    "acepta": [],
+    "dato": "Gráficos sobre la cancha y publicidad virtual. Lo que ve el mundo en una final.",
+    "rareza": "vip",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mon_blackmagia_multivista_16",
+    "nombre": "Blackmagia MultiVista 16",
+    "marca_parodia": "Blackmagia",
+    "categoria": "monitor",
+    "subtipo": "multiviewer",
+    "calidad": 3,
+    "precio_juego": 770,
+    "precio_real_usd": 995,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final",
+      "boxeo"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Muestra 16 cámaras en una pantalla: el director ve todo a la vez.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_behringa_xenix_1204",
+    "nombre": "Behringa Xenix 1204USB",
+    "marca_parodia": "Behringa",
+    "categoria": "audio",
+    "subtipo": "analoga",
+    "calidad": 1,
+    "precio_juego": 190,
+    "precio_real_usd": 189,
+    "eventos_ideales": [
+      "misa",
+      "funeral",
+      "boda",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Consola analógica chica con USB. Sin efectos ni memoria.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_yamaka_mg10xv",
+    "nombre": "Yamaka MG10XV",
+    "marca_parodia": "Yamaka",
+    "categoria": "audio",
+    "subtipo": "analoga",
+    "calidad": 1,
+    "precio_juego": 270,
+    "precio_real_usd": 268,
+    "eventos_ideales": [
+      "misa",
+      "boda",
+      "prensa",
+      "graduacion"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "10 canales con efectos. Más silenciosa que la más barata.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_mydas_mr19",
+    "nombre": "Mydas MR19 (digital 18 canales)",
+    "marca_parodia": "Mydas",
+    "categoria": "audio",
+    "subtipo": "digital_chica",
+    "calidad": 2,
+    "precio_juego": 630,
+    "precio_real_usd": 765,
+    "eventos_ideales": [
+      "boda",
+      "graduacion",
+      "lanzamiento",
+      "prensa",
+      "barrial"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "18 canales digitales controlados por tablet. Guarda escenas.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_behringa_x33_rack",
+    "nombre": "Behringa X33 Rack (40 canales)",
+    "marca_parodia": "Behringa",
+    "categoria": "audio",
+    "subtipo": "digital",
+    "calidad": 3,
+    "precio_juego": 690,
+    "precio_real_usd": 854,
+    "eventos_ideales": [
+      "lanzamiento",
+      "concierto",
+      "ligapro",
+      "boxeo",
+      "lucha_libre"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "40 canales, 16 envíos, stagebox por cable de red.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_behringa_ala_rack",
+    "nombre": "Behringa ALA Rack (48 canales)",
+    "marca_parodia": "Behringa",
+    "categoria": "audio",
+    "subtipo": "digital",
+    "calidad": 3,
+    "precio_juego": 1050,
+    "precio_real_usd": 1529,
+    "eventos_ideales": [
+      "concierto",
+      "lanzamiento",
+      "ligapro",
+      "boxeo"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "48 canales estéreo, graba 64 pistas en tarjetas SD.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_mydas_m33_live",
+    "nombre": "Mydas M33 Live (40 canales)",
+    "marca_parodia": "Mydas",
+    "categoria": "audio",
+    "subtipo": "digital_superficie",
+    "calidad": 4,
+    "precio_juego": 1900,
+    "precio_real_usd": 3295,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "final",
+      "lanzamiento_autos"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Superficie con 25 faders y preamplificadores de gama alta.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_yamaka_kl5",
+    "nombre": "Yamaka KL5 (72 canales)",
+    "marca_parodia": "Yamaka",
+    "categoria": "audio",
+    "subtipo": "digital_grande",
+    "calidad": 5,
+    "precio_juego": 7000,
+    "precio_real_usd": 18823,
+    "eventos_ideales": [
+      "concierto",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Consola de gira grande, red digital entre escenario y control.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "au_kalrek_brio_37",
+    "nombre": "Kalrek Brío 37 (broadcast)",
+    "marca_parodia": "Kalrek",
+    "categoria": "audio",
+    "subtipo": "broadcast",
+    "calidad": 6,
+    "precio_juego": 12500,
+    "precio_real_usd": 40472,
+    "eventos_ideales": [
+      "final",
+      "ligapro",
+      "internacional_host"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Consola de televisión: mezcla narradores, ambiente 5.1 y retornos sin fallas.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_shur_sm59",
+    "nombre": "Shur SM59 de mano (con cable)",
+    "marca_parodia": "Shur",
+    "categoria": "mics",
+    "subtipo": "dinamico",
+    "calidad": 1,
+    "precio_juego": 100,
+    "precio_real_usd": 103,
+    "eventos_ideales": [
+      "misa",
+      "prensa",
+      "graduacion",
+      "boda",
+      "funeral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "El micrófono indestructible. Con cable XLR.",
+    "rareza": "comun",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_inalambrico_basico",
+    "nombre": "Inalámbrico de mano doble Behringa ULM",
+    "marca_parodia": "Behringa",
+    "categoria": "mics",
+    "subtipo": "inalambrico",
+    "calidad": 1,
+    "precio_juego": 210,
+    "precio_real_usd": 212,
+    "eventos_ideales": [
+      "boda",
+      "graduacion",
+      "misa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Barato, pero tiene interferencias y cortes.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_shur_slxd25_doble",
+    "nombre": "Shur SLXD25D doble inalámbrico",
+    "marca_parodia": "Shur",
+    "categoria": "mics",
+    "subtipo": "inalambrico",
+    "calidad": 3,
+    "precio_juego": 1050,
+    "precio_real_usd": 1549,
+    "eventos_ideales": [
+      "graduacion",
+      "lanzamiento",
+      "concierto",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Digital, 2 micrófonos, escaneo automático de frecuencias.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_sennhauser_ewdz_corbatero",
+    "nombre": "Sennhauser EW-DZ ME3 corbatero",
+    "marca_parodia": "Sennhauser",
+    "categoria": "mics",
+    "subtipo": "corbatero",
+    "calidad": 3,
+    "precio_juego": 620,
+    "precio_real_usd": 749,
+    "eventos_ideales": [
+      "prensa",
+      "lanzamiento",
+      "lanzamiento_autos",
+      "funeral",
+      "boda"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Micrófono de solapa inalámbrico para presentadores y entrevistas.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_roade_ntg6_boom",
+    "nombre": "Roade NTG6 (shotgun para boom)",
+    "marca_parodia": "Roade",
+    "categoria": "mics",
+    "subtipo": "shotgun",
+    "calidad": 3,
+    "precio_juego": 480,
+    "precio_real_usd": 525,
+    "eventos_ideales": [
+      "prensa",
+      "lanzamiento_autos",
+      "boxeo",
+      "ligapro"
+    ],
+    "requiere": [
+      "microfonista"
+    ],
+    "acepta": [],
+    "dato": "Micrófono direccional en caña: entrevistas y ambiente de cancha.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_sennhauser_hmd27",
+    "nombre": "Sennhauser HMD 27 diadema de comentarista",
+    "marca_parodia": "Sennhauser",
+    "categoria": "mics",
+    "subtipo": "diadema_comentarista",
+    "calidad": 3,
+    "precio_juego": 480,
+    "precio_real_usd": 527,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "boxeo",
+      "barrial",
+      "internacional_unilateral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Diadema de narrador: aísla el ruido del estadio.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mic_dgi_mike_2",
+    "nombre": "DGI Mike 2 (solapa inalámbrico)",
+    "marca_parodia": "DGI",
+    "categoria": "mics",
+    "subtipo": "corbatero",
+    "calidad": 2,
+    "precio_juego": 200,
+    "precio_real_usd": 199,
+    "eventos_ideales": [
+      "irl",
+      "funeral",
+      "prensa",
+      "boda"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Micrófono de solapa para celular o cámara, con grabación de respaldo.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "ic_hollyband_solidkom_c2",
+    "nombre": "Hollyband Solidkom C2 Pro (8 diademas)",
+    "marca_parodia": "Hollyband",
+    "categoria": "intercom",
+    "subtipo": "inalambrico",
+    "calidad": 3,
+    "precio_juego": 1900,
+    "precio_real_usd": 3298,
+    "eventos_ideales": [
+      "graduacion",
+      "lanzamiento",
+      "concierto",
+      "barrial",
+      "boxeo"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Intercom inalámbrico full dúplex para 8 personas, 350-500 m.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "ic_clearkom_encora",
+    "nombre": "ClearKom Encora (línea compartida con cable)",
+    "marca_parodia": "ClearKom",
+    "categoria": "intercom",
+    "subtipo": "cableado",
+    "calidad": 3,
+    "precio_juego": 2000,
+    "precio_real_usd": 3536,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Intercom con cable: nunca se corta, pero el cable llega a cada posición.",
+    "rareza": "profesional",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "ic_clearkom_freehabla_3",
+    "nombre": "ClearKom FreeHabla III (10 petacas)",
+    "marca_parodia": "ClearKom",
+    "categoria": "intercom",
+    "subtipo": "inalambrico_digital",
+    "calidad": 5,
+    "precio_juego": 9500,
+    "precio_real_usd": 28284,
+    "eventos_ideales": [
+      "final",
+      "internacional_host",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Intercom inalámbrico de estadio con varias antenas y canales.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "net_hotspot_5g",
+    "nombre": "Hotspot 5G NetGir M7",
+    "marca_parodia": "NetGir",
+    "categoria": "internet",
+    "subtipo": "hotspot",
+    "calidad": 1,
+    "precio_juego": 250,
+    "precio_real_usd": 249,
+    "eventos_ideales": [
+      "irl",
+      "funeral",
+      "misa",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Internet de respaldo por chip celular de otra operadora.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "enc_blackmagia_web_presentador_4k",
+    "nombre": "Blackmagia Web Presentador 4K",
+    "marca_parodia": "Blackmagia",
+    "categoria": "encoder",
+    "subtipo": "encoder_hw",
+    "calidad": 1,
+    "precio_juego": 490,
+    "precio_real_usd": 543,
+    "eventos_ideales": [
+      "misa",
+      "boda",
+      "graduacion",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Encoder de hardware con SDI: transmite aunque la PC se cuelgue.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "enc_kilovista_p3",
+    "nombre": "Kilovista P3 (bonding 4 módems)",
+    "marca_parodia": "Kilovista",
+    "categoria": "encoder",
+    "subtipo": "bonding",
+    "calidad": 2,
+    "precio_juego": 1350,
+    "precio_real_usd": 2116,
+    "eventos_ideales": [
+      "barrial",
+      "graduacion",
+      "lanzamiento",
+      "irl",
+      "funeral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Une 4 chips celulares + WiFi + cable. Cuenta como encoder e internet de respaldo.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "enc_liveyou_solo_pro",
+    "nombre": "LiveYou Solo PRO (bonding)",
+    "marca_parodia": "LiveYou",
+    "categoria": "encoder",
+    "subtipo": "bonding",
+    "calidad": 3,
+    "precio_juego": 1700,
+    "precio_real_usd": 2882,
+    "eventos_ideales": [
+      "irl",
+      "boxeo",
+      "lanzamiento",
+      "barrial",
+      "internacional_unilateral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Bonding de 6 conexiones en 4K. Necesita suscripción mensual.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "enc_liveyou_lu900",
+    "nombre": "LiveYou LU900 (8 módems, 4 cámaras)",
+    "marca_parodia": "LiveYou",
+    "categoria": "encoder",
+    "subtipo": "bonding_broadcast",
+    "calidad": 5,
+    "precio_juego": 7600,
+    "precio_real_usd": 21000,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_unilateral",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "8 módems 5G y hasta 4 cámaras a la vez por celular. Calidad de canal de TV.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "tx_hollyband_marte_4k",
+    "nombre": "Hollyband Marte 4K (video inalámbrico)",
+    "marca_parodia": "Hollyband",
+    "categoria": "wireless",
+    "subtipo": "tx_video",
+    "calidad": 2,
+    "precio_juego": 350,
+    "precio_real_usd": 346,
+    "eventos_ideales": [
+      "boda",
+      "graduacion",
+      "lanzamiento",
+      "barrial"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "La cámara se mueve sin cable hasta 135 m. Retraso de 0,06 s.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "tx_terradek_rayo_6",
+    "nombre": "Terradek Rayo 6 LT 750",
+    "marca_parodia": "Terradek",
+    "categoria": "wireless",
+    "subtipo": "tx_video",
+    "calidad": 4,
+    "precio_juego": 1900,
+    "precio_real_usd": 3290,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "boxeo",
+      "lanzamiento_autos",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Video inalámbrico sin retraso (<1 ms) hasta 230 m. Para steadicam y cámara de ring.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "fib_conversor_sdi_fibra",
+    "nombre": "Par de conversores SDI-fibra",
+    "marca_parodia": "Blackmagia",
+    "categoria": "cable",
+    "subtipo": "conversor_fibra",
+    "calidad": 3,
+    "precio_juego": 300,
+    "precio_real_usd": 300,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Lleva la señal SDI kilómetros por fibra: cámaras lejos del control.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "fib_cable_smpte_100m",
+    "nombre": "Cable híbrido de fibra SMPTE 100 m",
+    "marca_parodia": "Generico",
+    "categoria": "cable",
+    "subtipo": "cable_fibra_smpte",
+    "calidad": 4,
+    "precio_juego": 1100,
+    "precio_real_usd": 1588,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Lleva video, energía e intercom a la cámara de sistema. Si se pisa o se dobla, adiós cámara.",
+    "rareza": "profesional",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mon_campo_7",
+    "nombre": "Monitor de campo 7\" básico",
+    "marca_parodia": "Generico",
+    "categoria": "monitor",
+    "subtipo": "monitor_campo",
+    "calidad": 1,
+    "precio_juego": 210,
+    "precio_real_usd": 212,
+    "eventos_ideales": [
+      "boda",
+      "misa",
+      "barrial"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Pantalla grande para enfocar bien.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mon_atomix_ninja_6",
+    "nombre": "Atomix Ninja VI (monitor-grabador)",
+    "marca_parodia": "Atomix",
+    "categoria": "monitor",
+    "subtipo": "grabador",
+    "calidad": 2,
+    "precio_juego": 460,
+    "precio_real_usd": 500,
+    "eventos_ideales": [
+      "boda",
+      "lanzamiento",
+      "concierto",
+      "graduacion"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Monitor 5\" de 1.000 nits que graba 4K de respaldo.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "mon_referencia_shader",
+    "nombre": "Monitor de referencia broadcast 17\" (shader)",
+    "marca_parodia": "Zony",
+    "categoria": "monitor",
+    "subtipo": "referencia",
+    "calidad": 5,
+    "precio_juego": 2550,
+    "precio_real_usd": 4899,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto"
+    ],
+    "requiere": [
+      "shader"
+    ],
+    "acepta": [],
+    "dato": "Para que el shader iguale el color de todas las cámaras.",
+    "rareza": "elite",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "pw_apz_smart_ups_1500",
+    "nombre": "APZ Smart-UPS 1500 VA",
+    "marca_parodia": "APZ",
+    "categoria": "power",
+    "subtipo": "ups",
+    "calidad": 2,
+    "precio_juego": 690,
+    "precio_real_usd": 853,
+    "eventos_ideales": [
+      "misa",
+      "graduacion",
+      "prensa",
+      "boda",
+      "barrial"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Unos 10-20 minutos para switcher y encoder si se va la luz.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "pw_jonda_eu2300i",
+    "nombre": "Jonda EU2300i (generador inverter 2,2 kW)",
+    "marca_parodia": "Jonda",
+    "categoria": "power",
+    "subtipo": "generador_portatil",
+    "calidad": 2,
+    "precio_juego": 910,
+    "precio_real_usd": 1241,
+    "eventos_ideales": [
+      "barrial",
+      "boda",
+      "irl",
+      "lucha_libre"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Silencioso, para canchas sin luz. No alcanza para luces grandes.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "pw_kummins_22kva",
+    "nombre": "Kummins 22 kVA diésel insonorizado",
+    "marca_parodia": "Kummins",
+    "categoria": "power",
+    "subtipo": "generador_diesel",
+    "calidad": 4,
+    "precio_juego": 5300,
+    "precio_real_usd": 12961,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final",
+      "lanzamiento_autos"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Mueve toda la producción si el estadio se queda sin luz.",
+    "rareza": "exclusivo",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "pw_bateria_tipo_v_98",
+    "nombre": "Batería tipo V 98 Wh Kore",
+    "marca_parodia": "Kore",
+    "categoria": "consumable",
+    "subtipo": "bateria_v",
+    "calidad": 1,
+    "precio_juego": 300,
+    "precio_real_usd": 299,
+    "eventos_ideales": [
+      "concierto",
+      "ligapro",
+      "boxeo",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Unas 3 horas de cámara de hombro. Se puede llevar en avión.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "rain_cobertor_basico",
+    "nombre": "Cobertor de lluvia básico",
+    "marca_parodia": "Generico",
+    "categoria": "rain",
+    "subtipo": "cobertor",
+    "calidad": 1,
+    "precio_juego": 50,
+    "precio_real_usd": 49,
+    "eventos_ideales": [
+      "boda",
+      "barrial",
+      "irl"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Protege una camcorder de la llovizna.",
+    "rareza": "comun",
+    "durabilidad": 1,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "rain_cobertor_broadcast",
+    "nombre": "Cobertor broadcast para cámara y lente box",
+    "marca_parodia": "Generico",
+    "categoria": "rain",
+    "subtipo": "cobertor",
+    "calidad": 3,
+    "precio_juego": 450,
+    "precio_real_usd": 490,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cubre cámara, lente largo y operador en aguaceros de estadio.",
+    "rareza": "profesional",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "case_maletas_pelikano",
+    "nombre": "Juego de maletas rígidas Pelikano",
+    "marca_parodia": "Pelikano",
+    "categoria": "case",
+    "subtipo": "maletas",
+    "calidad": 2,
+    "precio_juego": 570,
+    "precio_real_usd": 671,
+    "eventos_ideales": [
+      "barrial",
+      "concierto",
+      "ligapro",
+      "internacional_unilateral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Los equipos se gastan menos en el transporte y en los viajes.",
+    "rareza": "comun",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "veh_camioneta_carga",
+    "nombre": "Camioneta de carga usada",
+    "marca_parodia": "Generico",
+    "categoria": "vehicle",
+    "subtipo": "camioneta",
+    "calidad": 2,
+    "precio_juego": 7650,
+    "precio_real_usd": 21213,
+    "eventos_ideales": [
+      "barrial",
+      "graduacion",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Llegas a tiempo con todo el equipo; sin ella pagas fletes.",
+    "rareza": "comun",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "veh_sprinto_ob_usada",
+    "nombre": "Furgoneta Sprinto de producción (usada)",
+    "marca_parodia": "Sprinto",
+    "categoria": "vehicle",
+    "subtipo": "ob_chica",
+    "calidad": 3,
+    "precio_juego": 7950,
+    "precio_real_usd": 22296,
+    "eventos_ideales": [
+      "barrial",
+      "ligapro",
+      "concierto"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Una pequeña sala de control con ruedas, lista para armarla.",
+    "rareza": "profesional",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "veh_sprinto_ob_equipada",
+    "nombre": "Sprinto OB equipada (4-6 cámaras)",
+    "marca_parodia": "Sprinto",
+    "categoria": "vehicle",
+    "subtipo": "ob_chica",
+    "calidad": 4,
+    "precio_juego": 26000,
+    "precio_real_usd": 108618,
+    "eventos_ideales": [
+      "ligapro",
+      "concierto",
+      "final"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Unidad móvil chica completa: switcher, audio, intercom y monitores.",
+    "rareza": "exclusivo",
+    "durabilidad": 4,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "veh_trailer_ob_hd12",
+    "nombre": "Tráiler OB HD 12 cámaras (usado)",
+    "marca_parodia": "Andes Broadcast",
+    "categoria": "vehicle",
+    "subtipo": "ob_grande",
+    "calidad": 5,
+    "precio_juego": 61000,
+    "precio_real_usd": 337285,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "generador"
+    ],
+    "acepta": [],
+    "dato": "Sala de control de 12 cámaras: es tu canal de televisión sobre ruedas.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "veh_ob_hd8_camion",
+    "nombre": "Camión OB HD 8 cámaras",
+    "marca_parodia": "Andes Broadcast",
+    "categoria": "vehicle",
+    "subtipo": "ob_grande",
+    "calidad": 5,
+    "precio_juego": 105000,
+    "precio_real_usd": 680287,
+    "eventos_ideales": [
+      "ligapro",
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "generador"
+    ],
+    "acepta": [],
+    "dato": "Camión moderno y ampliable (más nuevo que el tráiler usado de 12 cámaras): switcher grande, repeticiones, audio y control de cámaras.",
+    "rareza": "elite",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "veh_trailer_ob_uhd20",
+    "nombre": "Tráiler OB UHD 20 cámaras 4K",
+    "marca_parodia": "Andes Broadcast",
+    "categoria": "vehicle",
+    "subtipo": "ob_uhd",
+    "calidad": 6,
+    "precio_juego": 390000,
+    "precio_real_usd": 4001685,
+    "eventos_ideales": [
+      "final",
+      "internacional_host"
+    ],
+    "requiere": [
+      "generador"
+    ],
+    "acepta": [],
+    "dato": "La aspiración final: 20 cámaras 4K HDR, como la de un Mundial.",
+    "rareza": "vip",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cons_cable_hdmi_10m",
+    "nombre": "Cable HDMI 10 m",
+    "marca_parodia": "Generico",
+    "categoria": "consumable",
+    "subtipo": "cable_hdmi",
+    "calidad": 1,
+    "precio_juego": 30,
+    "precio_real_usd": 28,
+    "eventos_ideales": [
+      "misa",
+      "boda",
+      "prensa",
+      "funeral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "HDMI largo falla más de 10-15 m. Se suelta con un tirón.",
+    "rareza": "comun",
+    "durabilidad": 1,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cons_cable_sdi_50m",
+    "nombre": "Bobina de cable SDI 3G 50 m",
+    "marca_parodia": "Generico",
+    "categoria": "consumable",
+    "subtipo": "cable_sdi",
+    "calidad": 1,
+    "precio_juego": 130,
+    "precio_real_usd": 126,
+    "eventos_ideales": [
+      "barrial",
+      "graduacion",
+      "concierto",
+      "ligapro"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Con conector BNC de seguro: no se suelta. Hasta ~100 m en HD.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cons_cable_xlr_10m",
+    "nombre": "Cable XLR 10 m",
+    "marca_parodia": "Generico",
+    "categoria": "consumable",
+    "subtipo": "cable_xlr",
+    "calidad": 1,
+    "precio_juego": 20,
+    "precio_real_usd": 23,
+    "eventos_ideales": [
+      "misa",
+      "boda",
+      "graduacion",
+      "prensa"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Cable de micrófono balanceado. Siempre falta uno.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cons_multipar_16",
+    "nombre": "Multipar de audio 16 canales 30 m",
+    "marca_parodia": "Generico",
+    "categoria": "consumable",
+    "subtipo": "multipar",
+    "calidad": 2,
+    "precio_juego": 350,
+    "precio_real_usd": 354,
+    "eventos_ideales": [
+      "graduacion",
+      "concierto",
+      "lanzamiento"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Lleva todos los micrófonos del escenario a la consola.",
+    "rareza": "comun",
+    "durabilidad": 3,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cons_bateria_camcorder",
+    "nombre": "Batería extra de camcorder",
+    "marca_parodia": "Generico",
+    "categoria": "consumable",
+    "subtipo": "bateria_chica",
+    "calidad": 1,
+    "precio_juego": 70,
+    "precio_real_usd": 67,
+    "eventos_ideales": [
+      "misa",
+      "boda",
+      "prensa",
+      "funeral"
+    ],
+    "requiere": [],
+    "acepta": [],
+    "dato": "Una hora más de grabación.",
+    "rareza": "comun",
+    "durabilidad": 2,
+    "es_alquiler_por_evento": false
+  },
+  {
+    "key": "cons_plan_bonding_mes",
+    "nombre": "Plan mensual de bonding (servicio)",
+    "marca_parodia": "LiveYou",
+    "categoria": "consumable",
+    "subtipo": "suscripcion",
+    "calidad": 1,
+    "precio_juego": 40,
+    "precio_real_usd": 45,
+    "eventos_ideales": [
+      "irl",
+      "boxeo",
+      "barrial"
+    ],
+    "requiere": [
+      "enc_liveyou_solo_pro"
+    ],
+    "acepta": [],
+    "dato": "Sin suscripción, la mochila solo usa una conexión.",
+    "rareza": "comun",
+    "durabilidad": 5,
+    "es_alquiler_por_evento": false
+  }
+]
