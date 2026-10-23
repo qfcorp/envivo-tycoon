@@ -475,6 +475,7 @@ final class Db
             if ((string) $pdo->query("SELECT valor FROM esquema_modulos WHERE clave = 'huella'")->fetchColumn() === $huella) return;   // otra petición ya lo hizo
             foreach ($archivos as $f) Migraciones::aplicar(basename($f));
             self::unificarPases($pdo);
+            self::ampliarCanales($pdo);
             self::q("INSERT INTO esquema_modulos (clave, valor, actualizado) VALUES ('huella', ?, ?) ON CONFLICT (clave) DO UPDATE SET valor = excluded.valor, actualizado = excluded.actualizado", [$huella, time()]);
         });
     }
@@ -506,6 +507,28 @@ final class Db
             self::q('INSERT OR IGNORE INTO festival_pases (jugador_id, cambio, saldo, motivo, ref, dia, creado) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [$j, (int) $f['cambio'], max(0, $saldo), $m, 'pases_prensa:' . $f['id'], date('Y-m-d', (int) $f['creado']), (int) $f['creado']]);
         }
+    }
+
+    /**
+     * PayPal (src/PayPal.php, migraciones/paypal.sql): la regla del canal de compras (migración 4) solo aceptaba 'web_plux'
+     * y 'google_play'. SQLite no cambia un CHECK con ALTER TABLE: se rehace la tabla con el MISMO texto (todas sus columnas,
+     * también las que hayan agregado los módulos) más 'web_paypal', se copian todas las filas y se vuelven a crear sus índices.
+     * Ninguna tabla apunta a compras con REFERENCES. Si ya acepta 'web_paypal' no hace nada.
+     */
+    private static function ampliarCanales(PDO $pdo): void
+    {
+        $sql = (string) $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compras'")->fetchColumn();
+        if ($sql === '' || str_contains($sql, "'web_paypal'")) return;
+        $nuevo = str_replace("CHECK (canal IN ('web_plux', 'google_play'))", "CHECK (canal IN ('web_plux', 'google_play', 'web_paypal'))", $sql, $n);
+        if ($n !== 1 || !preg_match('/^CREATE TABLE "?compras"?\s*\(/i', $nuevo)) throw new \RuntimeException('compras: no se pudo ampliar la regla del canal');
+        $indices = $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'compras' AND sql IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
+        $antes = (int) $pdo->query('SELECT COUNT(*) FROM compras')->fetchColumn();
+        $pdo->exec((string) preg_replace('/^CREATE TABLE "?compras"?/i', 'CREATE TABLE compras_nueva', $nuevo));
+        $pdo->exec('INSERT INTO compras_nueva SELECT * FROM compras');
+        $pdo->exec('DROP TABLE compras');
+        $pdo->exec('ALTER TABLE compras_nueva RENAME TO compras');
+        foreach ($indices as $i) $pdo->exec((string) $i);
+        if ((int) $pdo->query('SELECT COUNT(*) FROM compras')->fetchColumn() !== $antes) throw new \RuntimeException('compras: se perdieron filas al ampliar el canal');
     }
 
     private static function migrarVersiones(PDO $pdo): int

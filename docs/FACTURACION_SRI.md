@@ -183,8 +183,9 @@ ERP lo confirma: **el ERP debe ser idempotente** y usar `referencia` (o `id`) co
 - `comprador.tipo_identificacion` usa la tabla 6 del SRI: `04` RUC, `05` cédula, `06` pasaporte, `07` consumidor final.
   Con `07`, `identificacion = "9999999999999"` y `razon_social = "CONSUMIDOR FINAL"`. El correo se manda igual, por si
   el ERP quiere enviar el RIDE.
-- `forma_pago.codigo` (tabla 24): `19` tarjeta de crédito (Plux), `20` otros con utilización del sistema financiero
-  (Google Play). El ERP puede cambiarlo si su contador lo indica.
+- `forma_pago.codigo` (tabla 24): `19` tarjeta de crédito (Plux), `20` otros con utilización del sistema financiero (Google Play y PayPal). El ERP puede cambiarlo si su contador lo indica.
+- `compra.canal`: `web_plux` (tarjeta), `web_paypal` (PayPal: `transaccion` = número de la captura de PayPal) o `google_play`
+  (`transaccion` = número de orden de Google). Con PayPal el comprador elige consumidor final o escribe su cédula / RUC.
 - `fecha_venta` es el día del pago. La **fecha de emisión** del comprobante la pone el ERP: es el día en que lo emite,
   que debería ser el mismo día.
 - `advertencia`: algo que conviene revisar antes de emitir y que no frena el envío. Por ejemplo, una identificación

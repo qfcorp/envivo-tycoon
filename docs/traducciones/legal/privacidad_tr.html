@@ -32,6 +32,7 @@
     <li><b>Hesabın:</b> e-posta, ad, oyuncu numarası, takma ad ve oyun sunucusu ile şifren (kimsenin, bizim bile okuyamayacağı şekilde saklanır).</li>
     <li><b>Oyun ilerlemen:</b> bulutta kaydettiğin ilerleme, kredilerin, aldıkların, VIP'in ve Aylık Kartın.</li>
     <li><b>Web'deki satın almalar (Pago Plux):</b> ürün, tutar, tarih, işlem numarası ve ödeme sırasında yazdığın kart sahibi bilgileri (ad soyad, kimlik kartı veya pasaport numarası, e-posta ve cep telefonu); elektronik fatura (SRI) için gereklidir.</li>
+    <li><b>Web'de PayPal ile satın almalar:</b> ürün, tutar, tarih, PayPal sipariş ve ödeme numaraları ve yazarsan elektronik faturan (SRI) için kimlik numarası veya RUC ile ad. PayPal bize kartının ya da PayPal hesabının bilgilerini vermez.</li>
     <li><b>Android uygulamasındaki satın almalar (Google Play):</b> ürün, tarih, sipariş numarası ve Google'ın doğrulama için bize verdiği satın alma belgesi.</li>
     <li><b>Topluluk:</b> yapım şirketinin herkese açık adı, birliğin, sohbet mesajları, şikâyetler ve engellemeler ile pazardaki ilanların ve satışların.</li>
     <li><b>Discord (isteğe bağlı):</b> hesabını Discord'a bağlarsan, Discord kullanıcı numaranı, kullanıcı adını ve botun sana verdiği rolleri saklarız. Discord şifreni veya mesajlarını almayız.</li>
@@ -46,6 +47,7 @@
   <p>Web'de ödeme <b>Pago Plux</b> tarafından işlenir: kart bilgilerin (numara, son kullanma tarihi ve CVV) tarayıcında şifrelenir ve
   şifreli olarak Pago Plux'a gönderilir. Android uygulamasında ödemeyi Google Play alır. <b>Kart bilgilerini görmeyiz, saklamayız ve kaydetmeyiz.</b>
   Yalnızca ödeme sonucunu ve işlem numarasını alırız.</p>
+  <p><b>PayPal</b>'ı seçersen ödemeyi PayPal'ın sayfasında (PayPal hesabınla ya da kartla) yaparsın; biz yalnızca ödemenin sonucunu ve numarasını alırız. PayPal ile ödediğinde PayPal'ın gizlilik politikası da geçerlidir.</p>
 
   <h2>4. Verilerini ne için ve hangi hukuki dayanakla kullanıyoruz</h2>
   <p>Verilerini yalnızca LOPDP'nin izin verdiği hukuki dayanaklardan biriyle işleriz (md. 7):</p>
@@ -63,6 +65,7 @@
   <p><b>Verilerini satmayız ve reklam için kullanmayız.</b> Yalnızca şunlarla paylaşırız:</p>
   <ul>
     <li><b>Pago Plux</b>, web'deki ödemeleri işlemek için.</li>
+    <li><b>PayPal</b>, web'deki PayPal ödemelerini işlemek için (yalnızca PayPal ile ödemeyi seçersen).</li>
     <li><b>Google</b>, uygulamadaki satın almalar için (Google Play Billing). Ayrıca oyun yazı tiplerini Google Fonts'tan yüklediği için, yüklenirken Google IP adresini ve tarayıcını alır.</li>
     <li><b>Discord</b>, yalnızca hesabını bağlarsan.</li>
     <li><b>OVHcloud</b>, oyunun çalıştığı sunucuyu bize kiralayan şirket; verileri yalnızca bizim adımıza saklar.</li>
@@ -73,7 +76,7 @@
 
   <h2>6. Nerede saklanır ve uluslararası aktarım</h2>
   <p>Oyun, <b>Ekvador dışında bulunan bir OVHcloud sunucusunda</b> çalışır (OVHcloud'un Ekvador'da veri merkezi yoktur; Avrupa'da,
-  Kuzey Amerika'da ve Asya-Pasifik'te vardır). Şifreli bir yedek kopyayı Ekvador'daki kendi sunucumuzda tutarız. Google ve Discord aldıkları verileri
+  Kuzey Amerika'da ve Asya-Pasifik'te vardır). Şifreli bir yedek kopyayı Ekvador'daki kendi sunucumuzda tutarız. Google, PayPal ve Discord aldıkları verileri
   kendi sunucularında, çoğunlukla Amerika Birleşik Devletleri'nde işler.
   Bu bir <b>uluslararası veri aktarımıdır</b> (LOPDP, md. 55-57). Bunu yalnızca hizmeti sunmak için, veri koruma sözleşmesi
   olan sağlayıcılarla, şifreli bağlantılarla (HTTPS) ve şifreli yedeklerle yaparız. Bu güvenceler hakkında daha fazla bilgiyi

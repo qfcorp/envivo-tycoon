@@ -182,9 +182,10 @@ final class Cuentas
     {
         $j = $jugador ? self::porId($jugador) : null;
         $plux = ['disponible' => Plux::configurado(), 'ambiente' => Plux::ambiente()];
+        $paypal = PayPal::estado();   // {disponible, ambiente, minimo}: el juego solo lo muestra en la web (nunca en la app de Google Play)
         if (!$j) {
             return ['ok' => true, 'logueado' => false, 'jugador' => null, 'creditos' => 0, 'vip_hasta' => null, 'vip_activo' => false, 'vip_bono_hoy' => false,
-                    'inicio_comprado' => false, 'entregas' => [], 'tienda' => Catalogo::tienda(), 'plux' => $plux,
+                    'inicio_comprado' => false, 'entregas' => [], 'tienda' => Catalogo::tienda(), 'plux' => $plux, 'paypal' => $paypal,
                     'inventario' => [], 'mercado' => Mercado::resumen(null), 'servidor' => null, 'asociacion' => null, 'perfil' => null,
                     'tarjeta_hasta' => null, 'tarjeta_activa' => false, 'tarjeta_reclamada_hoy' => false, 'cuenta_estado' => null, 'aviso' => null,
                     'soporte_sin_leer' => 0, 'compras_recientes' => [], 'transferencia' => null, 'creditos_retenidos' => 0, 'duelos' => null, 'desafio' => null]
@@ -207,6 +208,7 @@ final class Cuentas
             'entregas' => Monedero::entregas($id),
             'tienda' => Catalogo::tienda(),
             'plux' => $plux,
+            'paypal' => $paypal,
             'inventario' => Inventario::deJugador($id),
             'mercado' => Mercado::resumen($id),
             'servidor' => Social::servidorDe($id),

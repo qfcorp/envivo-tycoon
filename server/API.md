@@ -22,7 +22,8 @@ Errores: `{ "ok": false, "error": "texto para el jugador" }` con código HTTP 4x
     "productos": [ { "id": "creditos_250", "nombre": "...", "detalle": "...", "precio": 1.99, "creditos": 250, "una_vez": false } ],
     "premium":   [ { "id": "dron4k", "nombre": "...", "detalle": "...", "creditos": 450 } ]
   },
-  "plux": { "disponible": true, "ambiente": "sandbox" }
+  "plux": { "disponible": true, "ambiente": "sandbox" },
+  "paypal": { "disponible": true, "ambiente": "sandbox", "minimo": 4.99 }   // solo web (nunca en la app de Google Play)
 }
 ```
 Sin sesión: `logueado:false`, `creditos:0`, `entregas:[]`, el resto igual (la tienda siempre viene).
@@ -83,6 +84,16 @@ Una vez por día (zona America/Guayaquil). Da $150 del juego (entrega) + 10 cré
 3. Si el banco pide validación 3DS vuelve a `GET /api/plux/3ds` (sin parámetros propios).
 4. Al aprobarse: se entregan los créditos / el paquete / el VIP y se redirige a `/?compra=ok`.
    Si falla vuelve a la página de pago con el mensaje.
+
+### Con PayPal (solo en la web; src/PayPal.php, docs/PAYPAL.md)
+1. `POST /api/orden` `{ "producto": "creditos_700", "metodo": "paypal" }` → la misma respuesta (compra con canal `web_paypal`).
+   Sin llaves de PayPal → 503 `paypal_no_disponible`; producto de menos de `paypal.minimo` (PAYPAL_MINIMO, $4,99) → 409 `paypal_minimo`.
+2. `pago.php?o=<token>` muestra el producto, los datos de la factura y «Pagar con PayPal» → `POST /api/paypal/crear`
+   `{ "o": "<token>", "factura": { "modo": "consumidor_final" | "otro", ... } }` → `{ "ok": true, "url": "<PayPal>" }`.
+3. PayPal vuelve a `GET /api/paypal/volver?token=<orden>`: el servidor CAPTURA, revisa COMPLETED, USD, valor y `custom_id`
+   (`EV-<compra>`) y entrega → `/?compra=ok`. Cancelar en PayPal → `GET /api/paypal/cancelado` → pago.php.
+4. `POST /api/paypal/webhook` (firmado; lo revisa la API verify-webhook-signature): PAYMENT.CAPTURE.COMPLETED entrega lo que
+   quedó pendiente; REFUNDED (total), REVERSED y CUSTOMER.DISPUTE.CREATED revierten la compra (como un reembolso de Plux).
 
 ## Catálogo inicial (precios finales con IVA 15 % incluido; editable en `server/src/Catalogo.php`)
 | id | Qué es | Precio |
@@ -175,7 +186,7 @@ Las rutas de monetización solo responden si su módulo está instalado (si no, 
 
 ## Monetización (server/MONETIZACION.md)
 - **Ganchos** (`src/Ganchos.php`): `Compras::aprobar` emite `compra_aprobada {compra_id, jugador_id, producto, monto_usd,
-  canal: 'plux'|'google'}` (dentro de su transacción, cada oyente en un SAVEPOINT; no se emite si no se entregó nada: producto
+  canal: 'plux'|'paypal'|'google'}` (dentro de su transacción, cada oyente en un SAVEPOINT; no se emite si no se entregó nada: producto
   desconocido o "una sola vez" pagado dos veces); `Compras::revertir` emite `compra_revertida {compra_id, jugador_id, motivo:
   'reembolso'|'contracargo', detalle, producto}`; `Monedero::mover` emite `creditos_gastados {jugador_id, cantidad, motivo, ref}`
   en cada débito que no es reversión, ajuste del Centro de Control ni cuenta borrada. Un oyente que falla nunca rompe la compra

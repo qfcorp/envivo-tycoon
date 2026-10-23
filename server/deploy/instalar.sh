@@ -131,6 +131,17 @@ PLUX_LLAVE_PUBLICA=
 PLUX_WEBHOOK_USUARIO=plux_aviso
 PLUX_WEBHOOK_CLAVE=$HOOK_CLAVE
 
+; PayPal: segundo medio de pago, SOLO en la tienda web (nunca en la app de Google Play). Paso a paso: docs/PAYPAL.md
+; Sin PAYPAL_CLIENT_ID y PAYPAL_SECRET el boton "Pagar con PayPal" no aparece. PAYPAL_AMBIENTE: sandbox (pruebas, por
+; defecto) o produccion. PAYPAL_WEBHOOK_ID: el id del webhook https://$DOMINIO/api/paypal/webhook (sin el, los
+; reembolsos y disputas de PayPal no se revierten solos). PAYPAL_MINIMO: los productos mas baratos no ofrecen PayPal
+; (la comision en Ecuador es 5,4 % + 0,30 dolares por venta). PAYPAL_SECRET es SECRETO.
+PAYPAL_AMBIENTE=sandbox
+PAYPAL_CLIENT_ID=
+PAYPAL_SECRET=
+PAYPAL_WEBHOOK_ID=
+PAYPAL_MINIMO=4.99
+
 ; Soporte (lo muestra el juego en "Ayuda y soporte"). Solo correo, sin WhatsApp. Crealo con Cloudflare Email Routing (docs/CORREO.md)
 SOPORTE_CORREO=soporte@tukanec.com
 SOPORTE_HORARIO=

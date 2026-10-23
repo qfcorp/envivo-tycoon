@@ -69,7 +69,7 @@ function cc_t_resumen(): string
             (Catalogo::productoCompra((string) $f['producto'])['nombre'] ?? $f['producto']), (float) $f['t'], cc_dinero($f['t']) . ' · ' . (int) $f['n'] . ' compras · ' . round(100 * $f['t'] / $tot30) . ' %'], $porProd), 'Sin ventas en 30 días.', 'mas-vendidos') . '</section>';
     if (Control::columna('compras', 'canal')) {
         $porCanal = Db::todas("SELECT canal, COUNT(*) AS n, SUM(total) AS t FROM compras WHERE estado = 'pagado' AND pagado_en >= ? GROUP BY canal ORDER BY t DESC", [$d30]);
-        $nom = ['web_plux' => 'Web (Plux)', 'google_play' => 'Google Play'];
+        $nom = ['web_plux' => 'Web (Plux)', 'web_paypal' => 'Web (PayPal)', 'google_play' => 'Google Play'];
         $h .= '<section class="panel"><h2>Por canal (30 días)</h2>' . cc_barras_lista(array_map(fn($f) => [$nom[$f['canal']] ?? $f['canal'], (float) $f['t'], cc_dinero($f['t']) . ' · ' . (int) $f['n'] . ' compras'], $porCanal), 'Sin ventas en 30 días.', 'por-canal') . '</section>';
     } else {
         $h .= '<section class="panel"><h2>Por canal</h2>' . cc_no_disponible('Ventas por canal', 'La tabla compras todavía no tiene la columna "canal".') . '</section>';

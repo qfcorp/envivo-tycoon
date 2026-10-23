@@ -19,6 +19,9 @@ try {
     if ($ruta === '/plux/webhook') api_plux_webhook();
     // El regreso del banco (3DS) es una navegación normal del navegador (GET), no una petición del juego.
     if ($ruta === '/plux/3ds') api_plux_3ds();
+    // PayPal (src/PayPalApi.php, docs/PAYPAL.md): el regreso de PayPal es una navegación (GET) y el webhook llega firmado
+    // desde PayPal; /api/paypal/crear revisa X-Envivo y la sesión él mismo.
+    if (class_exists(\EnVivo\PayPalApi::class) && \EnVivo\PayPalApi::esRuta($ruta)) \EnVivo\PayPalApi::responder($ruta, $metodo);
     // Facturación SRI para el ERP del dueño (server/INTEGRAR_FACTURACION.md): firmada con HMAC, sin sesión ni X-Envivo
     if (class_exists(\EnVivo\FacturacionApi::class) && \EnVivo\FacturacionApi::esRuta($ruta)) \EnVivo\FacturacionApi::responder($ruta, $metodo);
     // Errores del juego (server/INTEGRAR_ERRORES.md): /api/error va ANTES de X-Envivo (sendBeacon no manda cabeceras; revisa el origen él mismo)
@@ -248,8 +251,10 @@ function api_orden(): never
     $j = requiere_sesion();
     $in = Http::entrada(10000);
     if (Limite::contar('orden:' . $j, 30)) Http::error(429, 'Demasiados intentos de compra. Espera unos minutos.', [], 'limite_intentos');
-    $c = Compras::crear($j, texto_de($in, 'producto'));
-    Http::json(200, ['ok' => true, 'url' => '/pago.php?o=' . $c['token'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'total' => (float) $c['total']]]);
+    // metodo: "tarjeta" (Pago Plux, por defecto) o "paypal" (src/PayPal.php: solo en la web y desde PAYPAL_MINIMO)
+    $metodo = texto_de($in, 'metodo') === 'paypal' ? 'paypal' : 'tarjeta';
+    $c = Compras::crear($j, texto_de($in, 'producto'), null, $metodo);
+    Http::json(200, ['ok' => true, 'url' => '/pago.php?o=' . $c['token'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'total' => (float) $c['total'], 'canal' => $c['canal']]]);
 }
 
 /** Respuestas de /api/plux/pago (mismo formato que TuPass: status success|otp_required|otp_incorrecto|3ds_required|failed). */
@@ -268,6 +273,7 @@ function api_plux_pago(): never
     if (!$c || (int) $c['jugador_id'] !== $j) pago_json(404, ['status' => 'failed', 'message' => 'Compra no encontrada.']);
     if ($c['estado'] === 'pagado') pago_json(200, ['status' => 'success', 'ir' => '/?compra=ok']);
     if ($c['estado'] !== 'pendiente') pago_json(409, ['status' => 'failed', 'message' => 'Esta compra ya no está abierta. Vuelve al juego y empieza otra.']);
+    if (($c['canal'] ?? 'web_plux') !== 'web_plux') pago_json(409, ['status' => 'failed', 'message' => 'Esta compra es para pagar con PayPal. Vuelve a la tienda y elige «Pagar con tarjeta».', 'codigo' => 'pago_metodo_distinto']);
     if (!Plux::configurado()) pago_json(503, ['status' => 'failed', 'message' => 'El pago con tarjeta no está disponible.', 'codigo' => 'plux_no_disponible']);
     if (Ajustes::mantenimiento()) pago_json(503, ['status' => 'failed', 'message' => Ajustes::mensajeMantenimiento(), 'codigo' => 'mantenimiento']);
     if (Cuentas::estadoCuenta($j) !== 'activo') pago_json(403, ['status' => 'failed', 'message' => Cuentas::aviso(Cuentas::estadoCuenta($j)) ?? 'Tu cuenta no está activa.', 'codigo' => 'cuenta_suspendida']);

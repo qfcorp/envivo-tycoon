@@ -1,15 +1,17 @@
 <?php
 declare(strict_types=1);
 
-// Página de pago con tarjeta (Pago Plux): /pago.php?o=<token de la compra>
+// Página de pago con tarjeta (Pago Plux) o con PayPal: /pago.php?o=<token de la compra>
 // - Solo la ve el dueño de la compra (su sesión del juego).
+// - Compra con canal web_paypal (POST /api/orden con metodo "paypal"): datos de la factura y «Pagar con PayPal», que va a
+//   POST /api/paypal/crear y de ahí a PayPal (redirección: nada de JavaScript de PayPal aquí, la CSP sigue siendo 'self').
 // - El valor es FIJO (del catálogo, con IVA incluido) y no se puede cambiar desde la página.
 // - La tarjeta se cifra en el navegador (assets/pago.js con CryptoJS + JSEncrypt) y va cifrada a /api/plux/pago.
 //   Este servidor nunca ve el número, la fecha ni el CVV.
 
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Ajustes, Catalogo, Compras, Cuentas, Db, Http, Plux, Sesiones};
+use EnVivo\{Ajustes, Catalogo, Compras, Cuentas, Db, Http, PayPal, Plux, Sesiones};
 
 try {
     Db::pdo();
@@ -19,7 +21,9 @@ try {
     if (!$c || (int) $c['jugador_id'] !== $j) Http::pagina(404, 'Compra no encontrada', 'Vuelve al juego y toca Comprar otra vez.');
     if ($c['estado'] === 'pagado') Http::redirigir('/?compra=ok');
     if ($c['estado'] !== 'pendiente') Http::pagina(409, 'Esta compra ya no está abierta', 'Vuelve al juego y empieza otra compra.');
-    if (!Plux::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con tarjeta todavía no está listo. Intenta más tarde.');
+    $paypal = ($c['canal'] ?? 'web_plux') === 'web_paypal';
+    if ($paypal && !PayPal::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con PayPal todavía no está listo. Vuelve a la tienda y paga con tarjeta.');
+    if (!$paypal && !Plux::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con tarjeta todavía no está listo. Intenta más tarde.');
     if (Ajustes::mantenimiento()) Http::pagina(503, 'Tienda en mantenimiento', Ajustes::mensajeMantenimiento());
     if (Cuentas::estadoCuenta($j) !== 'activo') Http::pagina(403, 'Cuenta suspendida', Cuentas::aviso(Cuentas::estadoCuenta($j)) ?? 'Tu cuenta no está activa.');
     $p = Catalogo::productoCompra((string) $c['producto']);
@@ -37,12 +41,47 @@ $total = Http::dinero($c['total']);
 $avisos = [
     'rechazado' => 'Tu banco no aprobó el pago. Puedes intentar de nuevo o usar otra tarjeta.',
     'incompleto' => 'La respuesta del banco llegó incompleta. Intenta otra vez o usa otra tarjeta.',
+    'paypal_cancelado' => 'No se completó el pago en PayPal y no se cobró nada. Puedes intentarlo otra vez.',
+    'paypal_rechazado' => 'PayPal no aprobó el pago. Prueba con otra forma de pago en PayPal o vuelve a la tienda y paga con tarjeta.',
+    'paypal_error' => 'No pudimos confirmar el pago con PayPal. Si PayPal te cobró, no pagues otra vez: escríbenos desde «Ayuda y soporte» en el juego.',
 ];
 $aviso = $avisos[(string) ($_GET['r'] ?? '')] ?? '';
 $nombres = explode(' ', (string) $jug['nombre'], 2);
 
 Http::cabecerasPagina();
 echo Http::inicioHtml('Pagar ' . $p['nombre']);
+if ($paypal):   // ---------------------------------------------------------------- PayPal
+?>
+<main class="caja" id="paypal-caja" data-o="<?= $e($c['token']) ?>">
+  <div class="marca">EN VIVO <b>Tycoon</b></div>
+<?php if (PayPal::ambiente() === 'sandbox'): ?>
+  <div class="aviso aviso-info"><b>MODO DE PRUEBAS (sandbox):</b> no se cobra dinero real. Usa solo una cuenta de comprador de prueba de PayPal.</div>
+<?php endif; ?>
+  <h1>Pagar con PayPal</h1>
+  <section class="producto">
+    <div class="producto-nombre"><?= $e($p['nombre']) ?></div>
+    <div class="producto-detalle"><?= $e($p['detalle']) ?></div>
+    <div class="producto-total"><span>Total a pagar</span><output id="valor-fijo"><?= $e($total) ?></output></div>
+    <div class="tenue">Incluye IVA 15 %. El valor es fijo y no se puede cambiar.</div>
+  </section>
+<?php if ($aviso !== ''): ?>
+  <div class="aviso aviso-error" id="aviso-regreso"><?= $e($aviso) ?></div>
+<?php endif; ?>
+<?= class_exists(\EnVivo\Facturacion::class) ? \EnVivo\Facturacion::htmlPago($c, $jug, true) : '' /* datos para la factura SRI (INTEGRAR_FACTURACION.md) */ ?>
+  <label class="casilla"><input type="checkbox" id="paypal-terminos"> <span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener">términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
+  <button type="button" class="boton grande paypal" id="paypal-pagar">Pagar <?= $e($total) ?> con <b>Pay<i>Pal</i></b></button>
+  <div id="paypal-mensaje" aria-live="polite"></div>
+  <p class="tenue seguro">Te llevamos a la página de PayPal para pagar con tu cuenta PayPal o con tarjeta. Nosotros no vemos ni guardamos tus datos de pago. Al terminar vuelves solo al juego.</p>
+  <p class="tenue">Si eres menor de edad, pide permiso a tus padres antes de comprar.</p>
+  <p class="tenue">¿Problemas con un pago? Usa la opción «Ayuda y soporte» dentro del juego.</p>
+  <p class="pie"><a href="/">← Volver al juego</a> · <a href="/terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
+</main>
+<script src="/pago-assets/factura.js?v=1"></script>
+<script src="/pago-assets/paypal.js?v=1"></script>
+</body></html>
+<?php
+    exit;
+endif;   // ------------------------------------------------------------------------ tarjeta (Pago Plux)
 ?>
 <main class="caja" id="plux-caja" data-o="<?= $e($c['token']) ?>" data-llave="<?= $e(Plux::llavePem()) ?>">
   <div class="marca">EN VIVO <b>Tycoon</b></div>

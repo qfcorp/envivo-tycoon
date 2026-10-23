@@ -1190,7 +1190,17 @@
   const tipoProd = (p) => p.tipo || (/^creditos_/.test(p.id) ? 'creditos' : p.id === 'vip30' ? 'vip' : p.id === 'tarjeta_mensual' ? 'tarjeta'
     : /^pack_obra_/.test(p.id) ? 'pack_obra' : /^pase_premium/.test(p.id) ? 'pase' : ['inicio', 'bienvenida', 'pase_copa'].includes(p.id) ? p.id : 'otro');
   const prodPorId = (id) => { try { return ((Api.estado && Api.estado.tienda && Api.estado.tienda.productos) || []).find((p) => p.id === id) || null; } catch (e) { return null; } };
-  const puedePagarAhora = () => (enApp() ? playOk : !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible));
+  // PayPal (server/src/PayPal.php, docs/PAYPAL.md): SOLO en la web, nunca en la app de Google Play (enApp) ni en la versión
+  // de un solo archivo (dist/, sin servidor: no llega "paypal" en /api/estado). Desde paypal.minimo (la comisión se come las ventas chicas).
+  const pluxDisp = () => !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible);
+  const paypalDisp = () => !enApp() && !!(Api.disponible && Api.estado && Api.estado.paypal && Api.estado.paypal.disponible);
+  function paypalPara(id, usd) {
+    if (!paypalDisp()) return false;
+    let v = usd !== undefined && usd !== null && usd !== '' && isFinite(Number(usd)) ? Number(usd) : null;
+    if (v === null) { const p = prodPorId(id); v = p && isFinite(Number(p.precio)) ? Number(p.precio) : null; }
+    return v !== null && v + 0.001 >= (Number(Api.estado.paypal.minimo) || 0);
+  }
+  const puedePagarAhora = () => (enApp() ? playOk : pluxDisp() || paypalDisp());
   // Precio REAL de un producto en este canal: en la app solo el de Google Play (si no lo tiene: null, no se vende aquí)
   function precioReal(id, usd) {
     if (enApp()) return playOk && preciosPlay[id] && preciosPlay[id].precio ? String(preciosPlay[id].precio) : null;
@@ -1222,6 +1232,12 @@
     const valor = precioReal(id, o.usd);
     if (!valor) return '';
     const hecho = !!o.hecho;
+    // En la web, con PayPal: dos botones (tarjeta y PayPal). En la app o sin PayPal: el botón de siempre.
+    if (!hecho && paypalPara(id, o.usd)) {
+      return `<div class="tv-foot tv-foot2"><span class="price" data-precio="${esc(id)}">${esc(valor)}</span><div class="tv-pagos">
+        <button class="btn sm main" data-act="comprar" data-k="${esc(id)}" data-metodo="tarjeta" ${pluxDisp() ? '' : 'disabled'}>${I('card', 'sm')}${T('tienda.pagar_tarjeta')}</button>
+        <button class="btn sm paypal" data-act="comprar" data-k="${esc(id)}" data-metodo="paypal">${T('tienda.pagar_paypal')}</button></div></div>`;
+    }
     return `<div class="tv-foot"><span class="price" data-precio="${esc(id)}">${esc(valor)}</span>
       <button class="btn sm main" data-act="comprar" data-k="${esc(id)}" ${hecho || !puedePagarAhora() ? 'disabled' : ''}>${hecho ? T('tienda.ya_tienes') : T('tienda.comprar')}</button></div>`;
   }
@@ -1443,12 +1459,14 @@
         ${window.Buzon && window.Buzon.botonCanjear ? window.Buzon.botonCanjear() : ''}
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
     }
-    const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
+    const conPaypal = paypalDisp();
+    const prueba = (!app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '')
+      + (conPaypal && E.paypal.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.paypal_sandbox')}</p>` : '');
     // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta
     const lista = ((E.tienda && E.tienda.productos) || []).filter((p) => p && p.id && p.id !== 'transferencia_cuenta' && (!app || (playOk && preciosPlay[p.id])));
     const sinPago = app
       ? (playOk ? '' : `<div class="card small muted">${T('tienda.play_no_disp')}</div>`)
-      : (E.plux && E.plux.disponible ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
+      : (pluxDisp() || conPaypal ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
     // Para empezar: ofertas de una sola vez (bienvenida y paquete de inicio)
     const empezar = lista.filter((p) => ['inicio', 'bienvenida'].includes(tipoProd(p))).map((p) => cardProd(p, {
       cls: 'dest', ribbon: T('tienda.oferta_unica'), hecho: (p.id === 'inicio' && !!E.inicio_comprado) || (p.id === 'bienvenida' && !!E.bienvenida_comprada) })).join('');
@@ -1492,7 +1510,7 @@
       <div class="sectitle">${T('tienda.tu_cuenta')}</div>${cuenta}
       ${atajos}
       <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
-      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : T('tienda.precios')}</p>`}${prueba}
+      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}${prueba}
       ${sinPago}
       ${secs.map((x) => x.html).join('')}
       <p class="small muted">${T('tienda.aviso')}</p>
@@ -1610,10 +1628,25 @@
 
   // Se llama directo desde el clic: en la app, GooglePlay.comprar() va primero (sin nada esperado antes),
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
-  function comprar(id) {
-    AN('compra_iniciada', { producto: id, canal: enApp() ? 'google_play' : 'web_plux' });
-    if (enApp()) { comprarPlay(id); return; }
-    comprarWeb(id);
+  function comprar(id, metodo) {
+    if (enApp()) { AN('compra_iniciada', { producto: id, canal: 'google_play' }); comprarPlay(id); return; }   // en la app: solo Google Play
+    // Botón sin método (pase, VIP, Copa...) y el producto se puede pagar con PayPal: se pregunta cómo pagar
+    if (metodo !== 'tarjeta' && metodo !== 'paypal' && paypalPara(id)) { elegirPago(id); return; }
+    if (metodo === 'paypal' && !paypalPara(id)) metodo = 'tarjeta';
+    closeModal();
+    AN('compra_iniciada', { producto: id, canal: metodo === 'paypal' ? 'web_paypal' : 'web_plux' });
+    comprarWeb(id, metodo === 'paypal' ? 'paypal' : undefined);
+  }
+  // ¿Cómo quieres pagar? (tarjeta con Pago Plux o PayPal). Solo en la web.
+  function elegirPago(id) {
+    if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
+    const p = prodPorId(id);
+    const valor = precioReal(id);
+    openModal(`<div class="row between"><h2>${T('tienda.como_pagar')}</h2><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      ${p || valor ? `<p class="small muted">${p ? esc(TL(p.nombre)) : ''}${p && valor ? ' · ' : ''}${valor ? `<b>${esc(valor)}</b>` : ''}</p>` : ''}
+      <div class="tv-pagos tv-pagos-modal">
+        <button class="btn main" data-act="comprar" data-k="${esc(id)}" data-metodo="tarjeta" ${pluxDisp() ? '' : 'disabled'}>${I('card', 'sm')}${T('tienda.pagar_tarjeta')}</button>
+        <button class="btn paypal" data-act="comprar" data-k="${esc(id)}" data-metodo="paypal">${T('tienda.pagar_paypal')}</button></div>`);
   }
   // Después de una compra: el pase (premium), el nivel VIP y el Pase de Copa se ven al momento (INTEGRAR_PASE.md §7)
   function trasCompra() {
@@ -1670,11 +1703,11 @@
     } catch (e) { /* se reintenta la próxima vez */ }
   }
 
-  async function comprarWeb(id) {
+  async function comprarWeb(id, metodo) {
     if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
     try {
       save(); await subirNube();
-      const r = await Api.orden(id);
+      const r = await Api.orden(id, metodo);
       snd.play('tap');
       location.href = r.url;
     } catch (e) { toast(TL(e.message)); snd.play('error'); }
@@ -2390,7 +2423,7 @@
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
-      case 'comprar': comprar(el.dataset.k); break;
+      case 'comprar': comprar(el.dataset.k, el.dataset.metodo); break;
       case 'tienda-ir': snd.play('tap'); irSeccionTienda(el.dataset.k); break;
       case 'tienda-estrellas': snd.play('tap'); abrirEstrellas(); break;
       case 'tienda-pase': snd.play('tap'); try { window.Pase.abrir(ctxInicio()); } catch (err) { console.error('[tienda pase]', err); toast(T('err.no_completo')); } break;

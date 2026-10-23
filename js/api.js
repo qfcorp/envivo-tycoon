@@ -106,7 +106,8 @@
   Api.subirPartida = (datos, o) => req('POST', '/api/partida', o ? { datos, base: o.base, dispositivo: o.dispositivo, tomar: !!o.tomar } : { datos }, 20000);
   Api.gastar = (item) => req('POST', '/api/gastar', { item });
   Api.bonoVip = () => req('POST', '/api/vip/bono', {});
-  Api.orden = (producto) => req('POST', '/api/orden', { producto });
+  // metodo: undefined = tarjeta (Pago Plux) · 'paypal' = PayPal (solo web, server/src/PayPal.php)
+  Api.orden = (producto, metodo) => req('POST', '/api/orden', metodo === 'paypal' ? { producto, metodo } : { producto });
 
   // Mercado entre jugadores (server/MERCADO.md)
   Api.mercado = (item, orden) => req('GET', '/api/mercado?' + new URLSearchParams({ item: item || '', orden: orden || 'precio' }).toString());

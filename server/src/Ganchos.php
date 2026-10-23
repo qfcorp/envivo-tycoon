@@ -7,7 +7,7 @@ namespace EnVivo;
  * Ganchos del servidor (eventos), server/MONETIZACION.md §2.
  *   Ganchos::en('compra_aprobada', fn(array $d) => ...);   // lo registra cada módulo en arranque.php (Vip::registrar(), ...)
  *   Ganchos::emitir('compra_aprobada', [...]);              // lo emite Compras / Monedero
- * Eventos: compra_aprobada {compra_id, jugador_id, producto, monto_usd, canal:'plux'|'google'},
+ * Eventos: compra_aprobada {compra_id, jugador_id, producto, monto_usd, canal:'plux'|'paypal'|'google'},
  *          compra_revertida {compra_id, jugador_id, motivo}, creditos_gastados {jugador_id, cantidad, motivo, ref}.
  *          (Propios del VIP, opcionales: copa_ganada {jugador_id, copa_id}, sede_nivel {jugador_id, nivel}.)
  * Cada oyente corre aparte: un error de un oyente NUNCA rompe la compra ni a los demás oyentes.

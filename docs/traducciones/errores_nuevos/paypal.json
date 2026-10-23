@@ -1,0 +1,80 @@
+{
+  "_info": "Códigos de error nuevos del pago con PayPal en la tienda web (server/src/PayPal.php, PayPalApi.php, Compras.php; docs/PAYPAL.md). Mismo formato que docs/traducciones/errores.json: se copian ahí con tools/fusionar_errores.py.",
+  "_codigos": {
+    "paypal_no_disponible": "existe · Compras.php / PayPalApi.php · 503 · faltan PAYPAL_CLIENT_ID y PAYPAL_SECRET en /etc/envivo/config.env (o el webhook sin PAYPAL_WEBHOOK_ID)",
+    "paypal_minimo": "existe · Compras.php / PayPal.php · 409 · el producto cuesta menos que PAYPAL_MINIMO (4.99 por defecto): se paga con tarjeta",
+    "paypal_metodo_distinto": "existe · PayPal.php · 409 · la compra se creó para pagar con tarjeta (canal web_plux) y se intentó pagar con PayPal",
+    "paypal_error": "existe · PayPal.php · 502 · PayPal no respondió o respondió algo que no se entiende al crear la orden",
+    "pago_metodo_distinto": "existe · api.php (/api/plux/pago) · 409 · la compra se creó para pagar con PayPal (canal web_paypal) y se intentó pagar con tarjeta"
+  },
+  "es": {
+    "paypal_no_disponible": "El pago con PayPal todavía no está disponible. Paga con tarjeta o intenta más tarde.",
+    "paypal_minimo": "PayPal está disponible solo en compras más grandes. Paga este producto con tarjeta.",
+    "paypal_metodo_distinto": "Esta compra es para pagar con tarjeta. Vuelve a la tienda y elige PayPal.",
+    "paypal_error": "No se pudo conectar con PayPal. No se hizo ningún cobro: intenta otra vez en unos minutos.",
+    "pago_metodo_distinto": "Esta compra es para pagar con PayPal. Vuelve a la tienda y elige «Pagar con tarjeta»."
+  },
+  "en": {
+    "paypal_no_disponible": "PayPal isn't available yet. Pay by card or try again later.",
+    "paypal_minimo": "PayPal is only available for larger purchases. Pay for this item by card.",
+    "paypal_metodo_distinto": "This purchase was started for card payment. Go back to the shop and choose PayPal.",
+    "paypal_error": "Couldn't connect to PayPal. Nothing was charged: try again in a few minutes.",
+    "pago_metodo_distinto": "This purchase was started for PayPal. Go back to the shop and choose \"Pay by card\"."
+  },
+  "pt-BR": {
+    "paypal_no_disponible": "O pagamento com PayPal ainda não está disponível. Pague com cartão ou tente mais tarde.",
+    "paypal_minimo": "O PayPal só está disponível em compras maiores. Pague este produto com cartão.",
+    "paypal_metodo_distinto": "Esta compra foi iniciada para pagar com cartão. Volte à loja e escolha PayPal.",
+    "paypal_error": "Não foi possível conectar ao PayPal. Nada foi cobrado: tente de novo em alguns minutos.",
+    "pago_metodo_distinto": "Esta compra foi iniciada para pagar com PayPal. Volte à loja e escolha \"Pagar com cartão\"."
+  },
+  "fr": {
+    "paypal_no_disponible": "Le paiement PayPal n'est pas encore disponible. Paie par carte ou réessaie plus tard.",
+    "paypal_minimo": "PayPal n'est disponible que pour les achats plus importants. Paie cet article par carte.",
+    "paypal_metodo_distinto": "Cet achat a été lancé pour un paiement par carte. Reviens à la boutique et choisis PayPal.",
+    "paypal_error": "Impossible de se connecter à PayPal. Rien n'a été débité : réessaie dans quelques minutes.",
+    "pago_metodo_distinto": "Cet achat a été lancé pour PayPal. Reviens à la boutique et choisis « Payer par carte »."
+  },
+  "de": {
+    "paypal_no_disponible": "Zahlung mit PayPal ist noch nicht verfügbar. Zahle mit Karte oder versuche es später.",
+    "paypal_minimo": "PayPal gibt es nur bei größeren Käufen. Bezahle diesen Artikel mit Karte.",
+    "paypal_metodo_distinto": "Dieser Kauf wurde für Kartenzahlung gestartet. Geh zurück in den Shop und wähle PayPal.",
+    "paypal_error": "Keine Verbindung zu PayPal. Es wurde nichts abgebucht: Versuche es in ein paar Minuten erneut.",
+    "pago_metodo_distinto": "Dieser Kauf wurde für PayPal gestartet. Geh zurück in den Shop und wähle „Mit Karte zahlen“."
+  },
+  "it": {
+    "paypal_no_disponible": "Il pagamento con PayPal non è ancora disponibile. Paga con carta o riprova più tardi.",
+    "paypal_minimo": "PayPal è disponibile solo per acquisti più grandi. Paga questo prodotto con carta.",
+    "paypal_metodo_distinto": "Questo acquisto è stato avviato per il pagamento con carta. Torna al negozio e scegli PayPal.",
+    "paypal_error": "Impossibile collegarsi a PayPal. Non è stato addebitato nulla: riprova tra qualche minuto.",
+    "pago_metodo_distinto": "Questo acquisto è stato avviato per PayPal. Torna al negozio e scegli «Paga con carta»."
+  },
+  "ru": {
+    "paypal_no_disponible": "Оплата через PayPal пока недоступна. Оплати картой или попробуй позже.",
+    "paypal_minimo": "PayPal доступен только для более крупных покупок. Оплати этот товар картой.",
+    "paypal_metodo_distinto": "Эта покупка начата для оплаты картой. Вернись в магазин и выбери PayPal.",
+    "paypal_error": "Не удалось связаться с PayPal. Деньги не списаны: попробуй снова через несколько минут.",
+    "pago_metodo_distinto": "Эта покупка начата для оплаты через PayPal. Вернись в магазин и выбери «Оплатить картой»."
+  },
+  "tr": {
+    "paypal_no_disponible": "PayPal ile ödeme henüz yok. Kartla öde ya da daha sonra tekrar dene.",
+    "paypal_minimo": "PayPal yalnızca daha büyük alımlarda kullanılabilir. Bu ürünü kartla öde.",
+    "paypal_metodo_distinto": "Bu satın alma kartla ödeme için başlatıldı. Mağazaya dön ve PayPal'ı seç.",
+    "paypal_error": "PayPal'a bağlanılamadı. Hiçbir ücret alınmadı: birkaç dakika sonra tekrar dene.",
+    "pago_metodo_distinto": "Bu satın alma PayPal için başlatıldı. Mağazaya dön ve \"Kartla öde\"yi seç."
+  },
+  "id": {
+    "paypal_no_disponible": "Pembayaran PayPal belum tersedia. Bayar dengan kartu atau coba lagi nanti.",
+    "paypal_minimo": "PayPal hanya tersedia untuk pembelian yang lebih besar. Bayar item ini dengan kartu.",
+    "paypal_metodo_distinto": "Pembelian ini dimulai untuk pembayaran kartu. Kembali ke toko dan pilih PayPal.",
+    "paypal_error": "Tidak bisa terhubung ke PayPal. Tidak ada tagihan: coba lagi beberapa menit lagi.",
+    "pago_metodo_distinto": "Pembelian ini dimulai untuk PayPal. Kembali ke toko dan pilih \"Bayar dengan kartu\"."
+  },
+  "zh-CN": {
+    "paypal_no_disponible": "PayPal 支付暂不可用。请刷卡支付或稍后再试。",
+    "paypal_minimo": "PayPal 仅适用于金额较大的购买。此商品请刷卡支付。",
+    "paypal_metodo_distinto": "这笔购买是按刷卡支付创建的。请返回商店并选择 PayPal。",
+    "paypal_error": "无法连接 PayPal。未扣任何款项，请几分钟后再试。",
+    "pago_metodo_distinto": "这笔购买是按 PayPal 支付创建的。请返回商店并选择“刷卡支付”。"
+  }
+}

@@ -112,11 +112,12 @@ $(solo_cf)
     $(cab)
 
     # Mantenimiento (server/deploy/ops/mantenimiento.sh on|off): con $MANT, /api/ y /pago.php dan 503 en JSON.
-    # Siguen funcionando: el juego sin conexion (archivos), /api/salud, los avisos de pago de Plux y el Centro de Control.
+    # Siguen funcionando: el juego sin conexion (archivos), /api/salud, los avisos de pago de Plux y PayPal y el Centro de Control.
     set \$envivo_mant "";
     if (-f $MANT) { set \$envivo_mant "1"; }
     if (\$uri !~ "^/(api/|pago\\.php)") { set \$envivo_mant ""; }
-    if (\$uri ~ "^/api/(salud|plux/webhook|plux/3ds)/?\$") { set \$envivo_mant ""; }
+    # PayPal (docs/PAYPAL.md): su aviso y el regreso del comprador tambien, para que un pago ya hecho se entregue
+    if (\$uri ~ "^/api/(salud|plux/webhook|plux/3ds|paypal/webhook|paypal/volver|paypal/cancelado)/?\$") { set \$envivo_mant ""; }
     if (\$envivo_mant) { return 503; }
     error_page 503 = @envivo_503;
 

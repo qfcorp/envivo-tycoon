@@ -15,7 +15,7 @@ function cc_compras_filtros(): array
     if (!isset(CC_ESTADOS_COMPRA[$f['estado']])) $f['estado'] = 'pagado';
     foreach (['desde', 'hasta'] as $k) if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $f[$k]) || strtotime($f[$k]) === false) $f[$k] = '';
     if ($f['producto'] !== '' && !Catalogo::productoCompra($f['producto'])) $f['producto'] = '';
-    if (!in_array($f['canal'], ['web_plux', 'google_play'], true) || !Control::columna('compras', 'canal')) $f['canal'] = '';
+    if (!in_array($f['canal'], ['web_plux', 'web_paypal', 'google_play'], true) || !Control::columna('compras', 'canal')) $f['canal'] = '';
     return $f;
 }
 
@@ -51,7 +51,7 @@ function cc_t_compras(): string
        . '<label>Desde<input type="date" name="desde" value="' . e($f['desde']) . '"></label>'
        . '<label>Hasta<input type="date" name="hasta" value="' . e($f['hasta']) . '"></label>'
        . '<label>Producto<select name="producto">' . cc_opciones($prods, $f['producto']) . '</select></label>'
-       . ($canal ? '<label>Canal<select name="canal">' . cc_opciones(['' => 'Todos', 'web_plux' => 'Web (Plux)', 'google_play' => 'Google Play'], $f['canal']) . '</select></label>' : '')
+       . ($canal ? '<label>Canal<select name="canal">' . cc_opciones(['' => 'Todos', 'web_plux' => 'Web (Plux)', 'web_paypal' => 'Web (PayPal)', 'google_play' => 'Google Play'], $f['canal']) . '</select></label>' : '')
        . '<label class="ancho">Buscar<input type="search" name="q" value="' . e($f['q']) . '" placeholder="N°, cédula, nombre, correo, transacción"></label>'
        . '<div class="botones"><button class="btn" type="submit">Filtrar</button><a class="btn btn-sec" id="csv-sri" href="' . e(cc_url(['t' => 'compras', 'csv' => '1'] + $f)) . '">Exportar CSV para el SRI</a></div></form>';
     $filas = cc_compras_consulta($f, 300);
@@ -60,7 +60,7 @@ function cc_t_compras(): string
     $h .= '<p class="tenue">' . count($filas) . ' compra(s)' . (count($filas) === 300 ? ' (se muestran las 300 más recientes; el CSV trae todas)' : '') . ' · total ' . cc_dinero($sum['t']) . ' · subtotal ' . cc_dinero($sum['s']) . ' · IVA ' . cc_dinero($sum['i']) . '</p>';
     $h .= cc_tabla(['N°', 'Fecha', 'Estado', 'Producto', 'Total', 'Comprador', 'Cuenta'], array_map(fn($c) => [
         '<a href="' . e(cc_url(['t' => 'compras', 'id' => $c['id']])) . '"><b>' . (int) $c['id'] . '</b></a>', e(cc_fecha($c['pagado_en'] ?? $c['creado'])), cc_estado_compra((string) $c['estado']),
-        e(Catalogo::productoCompra((string) $c['producto'])['nombre'] ?? $c['producto']) . (isset($c['canal']) && $c['canal'] === 'google_play' ? ' ' . cc_chip('Google Play') : ''),
+        e(Catalogo::productoCompra((string) $c['producto'])['nombre'] ?? $c['producto']) . cc_chip_canal($c),
         cc_dinero($c['total']), e($c['comprador_nombre'] ?: '—') . '<br><span class="tenue">' . e($c['comprador_cedula']) . '</span>',
         '<a href="' . e(cc_url(['t' => 'jugadores', 'id' => $c['jugador_id']])) . '">' . e($c['jugador_email']) . '</a>'], $filas), 'Ninguna compra con esos filtros.', 'tabla-compras');
     return $h;
@@ -76,12 +76,22 @@ function cc_compra_detalle(int $id): string
     $datos = [
         'Producto' => ($p['nombre'] ?? $c['producto']) . ' (' . $c['producto'] . ')', 'Total con IVA' => cc_dinero($c['total']), 'Subtotal' => cc_dinero($c['subtotal']), 'IVA' => cc_dinero($c['iva']),
         'Creada' => cc_fecha($c['creado']), 'Pagada' => cc_fecha($c['pagado_en']), 'Pagada por' => $c['pagado_por'] ?? '—', 'Canal' => $c['canal'] ?? 'web_plux',
-        'Transacción Plux' => $c['plux_transaccion'] ?? '—', 'Paso Plux' => $c['plux_paso'] ?? '—',
+        (($c['canal'] ?? '') === 'web_paypal' ? 'Captura de PayPal' : 'Transacción Plux') => $c['plux_transaccion'] ?? '—', 'Paso del pago' => $c['plux_paso'] ?? '—',
         'Cédula' => $c['comprador_cedula'] ?? '—', 'Nombre' => $c['comprador_nombre'] ?? '—', 'Correo (factura)' => $c['comprador_email'] ?? '—', 'Celular' => $c['comprador_telefono'] ?? '—',
     ];
     if ($c['creditos'] !== null) $datos['Créditos de la compra'] = cc_num($c['creditos']) . ((int) $c['bono_pct'] > 0 ? ' (incluye oferta +' . (int) $c['bono_pct'] . ' %)' : '');
     if (!empty($c['google_order_id'])) $datos['Orden de Google'] = $c['google_order_id'] . (array_key_exists('google_ack', $c) ? ($c['google_ack'] ? ' · aviso a Google ' . cc_fecha($c['google_ack']) : ' · falta avisar a Google') : '');
     if (!empty($c['transferencia_id'])) $datos['Transferencia'] = 'N° ' . $c['transferencia_id'];
+    if (($c['canal'] ?? '') === 'web_paypal' && Control::tabla('paypal_ordenes')) {
+        foreach (Db::todas('SELECT * FROM paypal_ordenes WHERE compra_id = ? ORDER BY creado', [$id]) as $o) {
+            $r = json_decode((string) $o['respuesta'], true);
+            $cap = is_array($r) ? ($r['purchase_units'][0]['payments']['captures'][0] ?? $r) : [];
+            $fee = $cap['seller_receivable_breakdown']['paypal_fee']['value'] ?? null;
+            $neto = $cap['seller_receivable_breakdown']['net_amount']['value'] ?? null;
+            $datos['Orden de PayPal ' . $o['order_id']] = $o['estado'] . ' · ' . cc_fecha($o['creado']) . ($o['capture_id'] ? ' · captura ' . $o['capture_id'] : '')
+                . (is_numeric($fee) ? ' · comisión de PayPal ' . cc_dinero((float) $fee) : '') . (is_numeric($neto) ? ' · te queda ' . cc_dinero((float) $neto) : '');
+        }
+    }
     $h .= '<section class="panel"><dl class="datos">';
     foreach ($datos as $k => $v) $h .= '<dt>' . e($k) . '</dt><dd>' . e((string) $v) . '</dd>';
     $h .= '<dt>Cuenta</dt><dd><a href="' . e(cc_url(['t' => 'jugadores', 'id' => $c['jugador_id']])) . '">' . e($c['jugador_nombre'] . ' · ' . $c['jugador_email']) . '</a></dd></dl></section>';
@@ -102,7 +112,7 @@ function cc_compra_detalle(int $id): string
         $h .= '<li>La cuenta quedó suspendida o baneada hasta que se resuelva (se reactiva en la ficha del jugador).</li></ul></section>';
     } elseif ($c['estado'] === 'pagado') {
         $h .= '<section class="panel peligro"><h2>Reembolso o contracargo</h2><p class="tenue">Quita los créditos que dio la compra (aunque ya los haya gastado: queda como deuda), revoca los equipos de la compra que todavía tiene '
-            . '(y los saca del mercado), descuenta los días de VIP/tarjeta, marca la compra como revertida y <b>suspende la cuenta</b> (un contracargo o varios reembolsos la <b>banean</b>: ver Ajustes). El dinero se devuelve aparte, en Plux o Google.</p>'
+            . '(y los saca del mercado), descuenta los días de VIP/tarjeta, marca la compra como revertida y <b>suspende la cuenta</b> (un contracargo o varios reembolsos la <b>banean</b>: ver Ajustes). El dinero se devuelve aparte, en Plux, PayPal o Google.</p>'
             . cc_form('compra_revertir', ['compra_id' => $id], 'form', '¿Revertir la compra N° ' . $id . ' y suspender la cuenta? No se puede deshacer.')
             . '<label>Tipo<select name="tipo">' . cc_opciones(['reembolso' => 'Reembolso (lo pedimos/aceptamos)', 'contracargo' => 'Contracargo (lo pidió el banco)'], 'reembolso') . '</select></label>'
             . '<label>Motivo (obligatorio)<input name="motivo" required maxlength="300"></label>'

@@ -250,6 +250,16 @@
   .tv-cred .tv-foot{flex-direction:column;align-items:stretch;width:100%;gap:6px;margin-top:10px}
   .tv-cred .tv-foot .price{text-align:center}
   .tv-cred .tv-foot .btn.sm{width:100%;margin:0}
+  /* Dos formas de pago en la web (tarjeta y PayPal, server/src/PayPal.php): los botones se acomodan solos al ancho */
+  .tv-pagos{display:flex;flex-wrap:wrap;gap:6px;margin-inline-start:auto;min-width:0}
+  .tv-foot2 .tv-pagos .btn.sm{margin:0;padding:9px 12px;font-size:13px;flex:1 1 auto}
+  .tv-cred .tv-pagos{flex-direction:column;flex-wrap:nowrap;width:100%;margin:0}
+  .tv-cred .tv-pagos .btn.sm{width:100%}
+  .card .tv-pagos .btn.sm + .btn.sm{margin-inline-start:0}   /* el espacio lo pone gap */
+  .tv-pagos-modal{flex-direction:column;flex-wrap:nowrap;width:100%;margin:8px 0 0}
+  .tv-pagos-modal .btn{width:100%;margin:0}
+  .btn.paypal{background:#ffc439;border-color:#ffc439;color:#111;font-weight:800}
+  .btn.paypal:hover{background:#f2b52e}
   .tv-vipcard{--vc:#ffd34d;border-color:color-mix(in srgb,var(--vc) 45%,var(--line));background:linear-gradient(160deg,color-mix(in srgb,var(--vc) 13%,var(--panel)),var(--panel) 65%)}
   .tv-medal{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--vc);border:2px solid var(--vc);background:color-mix(in srgb,var(--vc) 14%,transparent);position:relative}
   .tv-medal .ico{width:24px;height:24px;margin:0}
