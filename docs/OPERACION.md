@@ -223,6 +223,36 @@ object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
 
 ---
 
+## Paso 5. Simulacro de restauración: probar que el respaldo SIRVE (5 minutos, una vez al mes)
+
+Un respaldo que nunca se probó no es un respaldo. Este comando saca el respaldo más reciente **a una carpeta temporal**,
+lo abre, corre `PRAGMA integrity_check`, cuenta jugadores y compras y revisa la copia de la configuración. **No toca la
+base del juego** y al final borra la carpeta temporal.
+
+**A. Lo que está en el VPS** (las copias de la 1:30):
+
+```
+sudo bash /var/www/envivo/server/deploy/ops/probar_restauracion.sh --local
+```
+
+**B. Lo que está en la laptop (restic de las 2:00)** — el que de verdad salva si se pierde el VPS. La primera vez, dile
+dónde está tu restic (son los mismos datos de tu `backup_restic_erp_qf.sh`; si tu script usa otro repositorio o un
+túnel, mándame `sudo grep -n "restic" /usr/local/bin/backup_restic_erp_qf.sh | sed -E 's/(PASSWORD=).*/\1OCULTO/'`):
+
+```
+printf 'RESTIC_REPOSITORY=sftp:respaldo.qfradioec.com:/erp_qf\nRESTIC_PASSWORD_FILE=/etc/restic/password_erp_qf\n' | sudo tee -a /etc/envivo/ops.env > /dev/null
+sudo bash /var/www/envivo/server/deploy/ops/probar_restauracion.sh
+```
+
+Debe terminar en **`SIMULACRO OK`** y mostrar `integrity_check: ok`, cuántos jugadores y compras tiene, la antigüedad
+(menos de 48 horas) y, en el modo B, `/etc/envivo/config.env: esta en restic`. El resultado queda en
+`/var/backups/envivo/ULTIMO_SIMULACRO`. Si dice `SIMULACRO CON … FALLA(S)`, mándame la pantalla.
+
+> Pon un recordatorio el día 1 de cada mes. (Si quieres que corra solo: `sudo crontab -e` y agrega
+> `15 3 1 * * bash /var/www/envivo/server/deploy/ops/probar_restauracion.sh >> /var/log/envivo-respaldo.log 2>&1`.)
+
+---
+
 ## Qué avisos te pueden llegar y qué hacer
 
 Llegan **solo si algo está mal**. El mismo aviso se repite como máximo **cada 3 horas** (los recordatorios de soporte,
@@ -232,7 +262,8 @@ cada 12 horas). Cuando se arregla, llega una vez "✅ Ya se arreglo".
 |---|---|
 | **El juego NO responde** / responde mal | `sudo systemctl status nginx php8.3-fpm` y mándame la salida. |
 | **El juego está LENTO** (más de 3 s) | Si se repite, mándame `uptime` y `free -h`. |
-| **No existe el socket de PHP** / servicio no activo | `sudo systemctl restart php8.3-fpm` (también lo usan el ERP y TuPass: hazlo con poco tráfico). |
+| **No existe el socket de PHP** / servicio no activo | `sudo systemctl reload php8.3-fpm` (el juego tiene su propio grupo de PHP, socket `php8.3-fpm-envivo.sock`; el servicio lo comparten el ERP y TuPass: si hace falta `restart`, hazlo con poco tráfico). Si sigue: docs/INCIDENTES.md, sección 1. |
+| **El juego está en MODO MANTENIMIENTO** | Lo encendiste tú con `mantenimiento.sh on`. Apágalo con `sudo bash /var/www/envivo/server/deploy/ops/mantenimiento.sh off` (docs/INCIDENTES.md, sección 2). |
 | **Disco casi lleno** | `df -h` y mándamelo. |
 | **La base creció / pesa mucho / el -wal pesa mucho** | Mándame el aviso; puede ser alguien abusando del juego. |
 | **errores de nginx/PHP del juego** | `sudo grep 'server: juego.tukanec.com' /var/log/nginx/error.log \| tail -n 20` y mándamelo. |
@@ -256,6 +287,11 @@ cada 12 horas). Cuando se arregla, llega una vez "✅ Ya se arreglo".
 | Ver cómo manda los avisos | `sudo salud_envivo.sh --modo-telegram` |
 | Ver los registros | `sudo tail -n 30 /var/log/envivo-respaldo.log` · `sudo tail -n 30 /var/log/envivo-salud.log` (y `envivo-tareas`, `envivo-discord`, `envivo-festival`, `envivo-liga`; todos rotan cada semana) |
 | Cambiar umbrales o Telegram | `sudo nano /etc/envivo/ops.env` (vale desde la próxima hora) |
+| Simulacro de restauración (paso 5) | `sudo bash /var/www/envivo/server/deploy/ops/probar_restauracion.sh` |
+| Modo mantenimiento del juego | `sudo bash /var/www/envivo/server/deploy/ops/mantenimiento.sh on` · `off` · `estado` |
+| Volver a la versión anterior | `sudo bash /var/www/envivo/server/deploy/actualizar.sh --anterior` (docs/INCIDENTES.md, sección 3) |
+| Peticiones lentas de PHP del juego | `sudo tail -n 40 /var/log/envivo-php-lento.log` |
+| Monitor externo y aviso del respaldo | docs/MONITOREO.md (UptimeRobot + Healthchecks.io: `HC_RESPALDO=` en `ops.env`) |
 
 ### Volver la base del juego a como estaba en un respaldo (solo si hace falta)
 

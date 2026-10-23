@@ -35,7 +35,9 @@ limpiar() {
          "/etc/nginx/sites-available/$D" "/etc/nginx/sites-enabled/$D" /etc/nginx/conf.d/envivo-limites.conf \
          /etc/systemd/system/envivo-validador.service /etc/logrotate.d/envivo /run/systemd/system \
          /usr/local/sbin/systemctl /usr/local/sbin/certbot /usr/local/bin/respaldo_envivo.sh /usr/local/bin/salud_envivo.sh \
-         /usr/local/bin/alerta-telegram.sh /usr/bin/node /tmp/instalar_envivo.sh /tmp/envivo-salud-prueba /tmp/envivo-nginx-t.log
+         /usr/local/bin/alerta-telegram.sh /usr/bin/node /tmp/instalar_envivo.sh /tmp/envivo-salud-prueba /tmp/envivo-nginx-t.log \
+         /etc/php/8.3/fpm/pool.d/envivo.conf /run/php/php8.3-fpm-envivo.sock /etc/nginx/snippets/envivo-cloudflare-realip.conf \
+         /etc/nginx/conf.d/envivo-cloudflare-geo.conf /etc/cron.d/envivo-cloudflare /tmp/envivo-fpm-t.log
   rm -f /var/log/envivo-*.log
   [ -f "$S/hosts.antes" ] && cat "$S/hosts.antes" > /etc/hosts
   [ -f "$S/ca-sistema.antes" ] && cat "$S/ca-sistema.antes" > /etc/ssl/certs/ca-certificates.crt
@@ -108,6 +110,7 @@ chmod 755 /usr/local/sbin/systemctl /usr/local/sbin/certbot
 # Como en el VPS: nginx y php-fpm ya corren (los usan el ERP y TuPass)
 systemctl start nginx; systemctl start php8.3-fpm
 check "nginx y php-fpm encendidos antes de empezar" "active active" "$(systemctl is-active nginx) $(systemctl is-active php8.3-fpm)"
+md5sum /etc/php/8.3/fpm/pool.d/www.conf /etc/php/8.3/fpm/php-fpm.conf > "$S/md5.fpm_otros"   # el PHP del ERP y TuPass
 
 echo "== 1. Paso 2: instalar (curl ... -o /tmp/instalar_envivo.sh && sudo bash /tmp/instalar_envivo.sh), con teclado"
 git -C "$S/github.git" show main:server/deploy/instalar.sh > /tmp/instalar_envivo.sh    # = lo que baja curl de raw.githubusercontent
@@ -129,7 +132,8 @@ check "la clave corta la pide otra vez" "1" "$(grep -c 'muy corta, otra vez' "$S
 check "certbot se corrio con el dominio" "1" "$(grep -c "certbot --nginx -d $D" "$S/certbot.log" 2> /dev/null)"
 for l in "3) Prueba de la API en este servidor: 200" "4) Prueba de que el codigo esta protegido: 404" \
          "5) Centro de Control /control/: con usuario y clave (falta el codigo del celular)" \
-         "6) Plux: SIN credenciales" "7) HTTPS: si" "8) Validador de partidas: activo"; do
+         "6) Plux: SIN credenciales" "7) HTTPS: si" "8) Validador de partidas: activo" \
+         "9) PHP del juego: grupo propio envivo (/run/php/php8.3-fpm-envivo.sock)"; do
   check "RESULTADO dice: $l" "1" "$(grep -cF "$l" "$S/inst1.txt")"
 done
 check "config 640 root:www-data, carpeta de la base 750 www-data" "640 root:www-data 750 www-data" "$(stat -c '%a %U:%G' $C) $(stat -c '%a %U' /var/lib/envivo)"
@@ -139,6 +143,23 @@ check "el codigo es de root y www-data no puede escribirlo" "root 0" "$(stat -c 
 check "js/intento.js copiado" "1" "$(cmp -s $APP/js/intento.js $APP/server/validador/intento.js && echo 1)"
 check "validador corre sin permisos (nobody)" "nobody" "$(ps -o user= -p "$(cat "$S/val.pid" 2> /dev/null)" 2> /dev/null | tr -d ' ')"
 md5sum $C > "$S/md5.conf"
+
+echo "== 1b. Produccion: grupo propio de PHP, Cloudflare, /api/salud (docs/CLOUDFLARE_PRODUCCION.md, MONITOREO.md)"
+POOL=/etc/php/8.3/fpm/pool.d/envivo.conf; SITIO=/etc/nginx/sites-available/$D
+check "grupo envivo: archivo, socket y procesos; el sitio lo usa (y no el compartido)" "1 1 1 1 0" \
+  "$(grep -c '^\[envivo\]' $POOL) $(test -S /run/php/php8.3-fpm-envivo.sock && echo 1) $(pgrep -f 'php-fpm: pool envivo' | wc -l | awk '{print ($1>=1)}') $(grep -c 'unix:/run/php/php8.3-fpm-envivo.sock;' $SITIO | awk '{print ($1>=5)}') $(grep -c 'unix:/run/php/php8.3-fpm.sock;' $SITIO)"
+check "grupo envivo: dynamic, tope, request_terminate_timeout y slowlog" "1 1 1 1" \
+  "$(grep -c '^pm = dynamic' $POOL) $(grep -cE '^pm.max_children = [0-9]+' $POOL) $(grep -c '^request_terminate_timeout = 100s' $POOL) $(grep -c '^slowlog = /var/log/envivo-php-lento.log' $POOL)"
+check "el PHP del ERP y TuPass (www.conf, php-fpm.conf) no se toco y su grupo sigue" "OK 1" \
+  "$(md5sum -c --quiet "$S/md5.fpm_otros" > /dev/null 2>&1 && echo OK) $(pgrep -f 'php-fpm: pool www' | wc -l | awk '{print ($1>=1)}')"
+check "php-fpm8.3 -t sigue correcto" "0" "$(php-fpm8.3 -t > /dev/null 2>&1; echo $?)"
+check "Cloudflare: snippet de IP real incluido en el sitio, mapa geo y cron semanal" "1 1 1 1" \
+  "$(grep -c 'include /etc/nginx/snippets/envivo-cloudflare-realip.conf;' $SITIO | awk '{print ($1>=1)}') $(grep -c 'real_ip_header CF-Connecting-IP;' /etc/nginx/snippets/envivo-cloudflare-realip.conf) $(grep -c 'geo $realip_remote_addr $envivo_desde_cf' /etc/nginx/conf.d/envivo-cloudflare-geo.conf) $(grep -c ' root bash .*/cloudflare_ips.sh' /etc/cron.d/envivo-cloudflare)"
+check "/api/salud: 200 ok con la base, sin cache; HEAD 200" '{"ok":true,"servicio":"envivo","db":"ok","mantenimiento":false 200' \
+  "$(curl -s https://$D/api/salud | cut -d, -f1-4) $(curl -s -o /dev/null -I -w '%{http_code}' https://$D/api/salud)"
+FRENOS="$(for _ in $(seq 1 40); do curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'X-Envivo: 1' -H 'Content-Type: application/json' -H 'CF-Connecting-IP: 203.0.113.7' -d '{}' https://$D/api/entrar; done | grep -c '^429$')"
+OTRA="$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'X-Envivo: 1' -H 'Content-Type: application/json' -H 'CF-Connecting-IP: 203.0.113.8' -d '{"email":"otra.ip@prueba.ec","clave":"no-es-esta"}' https://$D/api/entrar)"   # (otro correo: PHP tambien limita por correo)
+check "IP real (CF-Connecting-IP desde 127.0.0.1): 40 entrar de una IP se frenan, otra IP no" "si si" "$([ "$FRENOS" -ge 10 ] && echo si) $([ "$OTRA" != 429 ] && echo si)"
 
 echo "== 2. Paso 4: claves de PRUEBAS de Plux (con el Plux falso) y recargar php-fpm"
 P_PLUX=18393
@@ -221,6 +242,22 @@ check "2a: en el VPS quedo la ultima version" "$(git -C "$S/trabajo" rev-parse -
 sudo bash /var/www/envivo/server/deploy/instalar.sh < /dev/null > "$S/inst2.txt" 2>&1; echo "rc=$?" >> "$S/inst2.txt"
 check "instalar.sh otra vez: rc=0, 5) con codigo del celular, 6) Plux puestas, HTTPS si" "1 1 1 1" "$(grep -c '^rc=0$' "$S/inst2.txt") $(grep -c '5) Centro de Control /control/: con usuario, clave y codigo del celular' "$S/inst2.txt") $(grep -c '6) Plux: credenciales puestas (ambiente: sandbox)' "$S/inst2.txt") $(grep -c '7) HTTPS: si' "$S/inst2.txt")"
 check "instalar.sh otra vez: el cron sigue con 8 lineas, sitio con HTTPS" "8 1" "$(crontab -u www-data -l | grep -c envivo) $(grep -c 'listen 443 ssl' /etc/nginx/sites-available/$D)"
+check "actualizar.sh mantiene el grupo envivo (2 veces) e instalar.sh otra vez lo deja igual" "2 1" "$(cat "$S/act1.txt" "$S/act2.txt" | grep -c 'grupo envivo: ya estaba') $(grep -c '9) PHP del juego: grupo propio envivo' "$S/inst2.txt")"
+
+echo "== 7b. INCIDENTES: volver a una version anterior con actualizar.sh --version / --anterior, y regresar"
+C0="$(git -C "$S/trabajo" log --format=%H -n 1 --grep='^arbol de trabajo para el ensayo$')"; ULT="$(git -C "$S/trabajo" rev-parse HEAD)"
+sudo bash /var/www/envivo/server/deploy/actualizar.sh --version "${C0:0:7}" > "$S/vol1.txt" 2>&1; echo "rc=$?" >> "$S/vol1.txt"; sed 's/^/      | /' "$S/vol1.txt"
+check "--version: rc=0, VUELTA, HEAD es esa version, la logica vieja servida, validador reiniciado OK" "1 1 $C0 0 1 1" \
+  "$(grep -c '^rc=0$' "$S/vol1.txt") $(grep -c 'VUELTA a una version anterior' "$S/vol1.txt") $(git -C $APP rev-parse HEAD) $(curl -s https://$D/js/logic.js | grep -c 'ensayo: version nueva 1') $(grep -c 'cambio: js/logic.js' "$S/vol1.txt") $(grep -c 'validador: OK' "$S/vol1.txt")"
+check "--version: la API sigue (200) y la base no se toco (2 compras)" "200 2" "$(curl -s -o /dev/null -w '%{http_code}' https://$D/api/estado) $(sudo -u www-data sqlite3 /var/lib/envivo/envivo.sqlite "select count(*) from compras where estado='pagado'")"
+sudo bash /var/www/envivo/server/deploy/actualizar.sh --version noexiste123 > "$S/vol2.txt" 2>&1; echo "rc=$?" >> "$S/vol2.txt"
+check "--version con un commit que no es de main: rc=1, no cambia nada" "1 1 $C0" "$(grep -c '^rc=1$' "$S/vol2.txt") $(grep -c 'no es una version de la rama main' "$S/vol2.txt") $(git -C $APP rev-parse HEAD)"
+sudo bash /var/www/envivo/server/deploy/actualizar.sh > "$S/vol3.txt" 2>&1; echo "rc=$?" >> "$S/vol3.txt"
+check "actualizar.sh normal despues: vuelve a la rama y a lo ultimo (logica nueva servida)" "1 $ULT main 1" "$(grep -c '^rc=0$' "$S/vol3.txt") $(git -C $APP rev-parse HEAD) $(git -C $APP symbolic-ref --short HEAD) $(curl -s https://$D/js/logic.js | grep -c 'ensayo: version nueva 1')"
+sudo bash /var/www/envivo/server/deploy/actualizar.sh --anterior > "$S/vol4.txt" 2>&1; echo "rc=$?" >> "$S/vol4.txt"
+check "--anterior: vuelve a la de antes del ultimo cambio (la de --version)" "1 $C0" "$(grep -c '^rc=0$' "$S/vol4.txt") $(git -C $APP rev-parse HEAD)"
+sudo bash /var/www/envivo/server/deploy/actualizar.sh > /dev/null 2>&1
+check "y otra vez a lo ultimo; versiones.log anota cada cambio (2 del paso 7 + 4)" "$ULT 6" "$(git -C $APP rev-parse HEAD) $(wc -l < /etc/envivo/versiones.log)"
 
 echo "== 8. DESPLIEGUE paso 7: instalar_ops.sh con el ayudante de Telegram del dueno (falso) y Telegram falso"
 P_TG=18394; mkdir -p "$S/tg"
@@ -244,6 +281,61 @@ uno "sudo salud_envivo.sh --probar-telegram" > "$S/tgp.txt"; sed 's/^/      | /'
 check "--probar-telegram llega al chat 4242 con el token del ayudante" "1" "$(grep -c '"chat":"4242".*Prueba de alertas' "$S/tg/mensajes.log" 2> /dev/null)"
 sudo bash /var/www/envivo/server/deploy/ops/instalar_ops.sh > "$S/ops2.txt" 2>&1
 check "instalar_ops.sh otra vez: cron root sigue en 2, no toca ops.env" "2 1" "$(crontab -u root -l | grep -c _envivo.sh) $(grep -c "^TELEGRAM_API=http://127.0.0.1:$P_TG" /etc/envivo/ops.env)"
+
+echo "== 8b. INCIDENTES: modo mantenimiento"
+OPS=/var/www/envivo/server/deploy/ops
+uno "sudo bash $OPS/mantenimiento.sh on --minutos 20" > "$S/mant1.txt"; sed 's/^/      | /' "$S/mant1.txt"
+check "mantenimiento on: /api/estado 503 JSON (codigo mantenimiento), /pago.php 503" "503 1 503" \
+  "$(curl -s -o "$S/mant.json" -w '%{http_code}' https://$D/api/estado) $(grep -c '"codigo":"mantenimiento"' "$S/mant.json") $(curl -s -o /dev/null -w '%{http_code}' https://$D/pago.php)"
+check "mantenimiento on: siguen el juego (/), /api/salud (dice mantenimiento), el webhook de Plux y /control/" "200 1 1 200" \
+  "$(curl -s -o /dev/null -w '%{http_code}' https://$D/) $(curl -s https://$D/api/salud | grep -c '"mantenimiento":true') $(curl -s -o /dev/null -w '%{http_code}' -X POST https://$D/api/plux/webhook | grep -vc 503) $(curl -s -o /dev/null -w '%{http_code}' https://$D/control/)"
+uno "sudo DRY_RUN=1 salud_envivo.sh" > "$S/salud_mant.txt"
+check "salud_envivo.sh en mantenimiento: avisa MODO MANTENIMIENTO (no 'no responde')" "1 0" "$(grep -c 'MODO MANTENIMIENTO' "$S/salud_mant.txt" | awk '{print ($1>=1)}') $(grep -c 'responde mal' "$S/salud_mant.txt")"
+uno "sudo bash $OPS/mantenimiento.sh off" > /dev/null
+check "mantenimiento off: /api/estado 200 otra vez" "200 apagado" "$(curl -s -o /dev/null -w '%{http_code}' https://$D/api/estado) $(sudo bash $OPS/mantenimiento.sh estado | head -n 1)"
+
+echo "== 8c. OPERACION paso 5: simulacro de restauracion (local y desde restic)"
+uno "sudo bash $OPS/probar_restauracion.sh --local" > "$S/sim1.txt"; sed 's/^/      | /' "$S/sim1.txt"
+check "simulacro local: SIMULACRO OK, integrity ok, config se abre, ULTIMO_SIMULACRO" "1 1 1 1" \
+  "$(grep -c '^SIMULACRO OK' "$S/sim1.txt") $(grep -c 'integrity_check: ok' "$S/sim1.txt") $(grep -c 'tiene config.env' "$S/sim1.txt") $(grep -c '^OK .* local envivo-' /var/backups/envivo/ULTIMO_SIMULACRO)"
+check "simulacro: no queda la carpeta temporal y la base del juego sigue igual (2 compras)" "0 2" "$(ls -d /var/tmp/envivo-simulacro.* 2> /dev/null | wc -l) $(sudo -u www-data sqlite3 /var/lib/envivo/envivo.sqlite "select count(*) from compras where estado='pagado'")"
+head -c 4000 "$(ls /var/backups/envivo/diario/envivo-*.sqlite.gz | tail -n 1)" > "$S/roto.sqlite.gz"
+uno "sudo bash $OPS/probar_restauracion.sh --archivo $S/roto.sqlite.gz; echo rc=\$?" > "$S/sim2.txt"
+check "simulacro con un respaldo cortado: FALLA y rc=1" "1 1" "$(grep -c 'SIMULACRO CON' "$S/sim2.txt") $(grep -c '^rc=1$' "$S/sim2.txt")"
+if command -v restic > /dev/null; then
+  mkdir -p "$S/restic"; openssl rand -hex 16 > "$S/restic/clave"; chmod 600 "$S/restic/clave"
+  restic -q init -r "$S/restic/repo" --password-file "$S/restic/clave" > /dev/null 2>&1
+  # como el restic de las 2:00 del dueno, ya con las 2 carpetas del juego (OPERACION.md paso 3)
+  restic -q -r "$S/restic/repo" --password-file "$S/restic/clave" backup /var/www/envivo/server/deploy /etc/envivo /var/backups/envivo > /dev/null 2>&1
+  printf 'RESTIC_REPOSITORY=%s\nRESTIC_PASSWORD_FILE=%s\n' "$S/restic/repo" "$S/restic/clave" >> /etc/envivo/ops.env
+  uno "sudo bash $OPS/probar_restauracion.sh" > "$S/sim3.txt"; sed 's/^/      | /' "$S/sim3.txt"
+  check "simulacro desde restic (automatico con RESTIC_* en ops.env): OK, config.env esta en restic" "1 1 1" \
+    "$(grep -c 'desde: restic' "$S/sim3.txt") $(grep -c '^SIMULACRO OK' "$S/sim3.txt") $(grep -c 'config.env: esta en restic' "$S/sim3.txt")"
+else
+  echo "  (restic no esta instalado en esta maquina: se salta el simulacro desde restic)"
+fi
+
+echo "== 8d. CLOUDFLARE: rangos al dia (cloudflare_ips.sh) y 'solo Cloudflare' (paso 7 de la guia)"
+{ grep -v '^#' $OPS/cloudflare-ips.txt | grep '\.'; echo "198.51.100.0/24"; } > "$S/v4.txt"; grep -v '^#' $OPS/cloudflare-ips.txt | grep ':' > "$S/v6.txt"
+uno "sudo CF_URL_V4=file://$S/v4.txt CF_URL_V6=file://$S/v6.txt bash $OPS/cloudflare_ips.sh" > "$S/cf1.txt"; sed 's/^/      | /' "$S/cf1.txt"
+check "lista nueva: la pone, nginx -t y recarga; el sitio sigue 200" "1 1 1 200" \
+  "$(grep -c 'nginx recargado' "$S/cf1.txt") $(grep -c 'set_real_ip_from 198.51.100.0/24;' /etc/nginx/snippets/envivo-cloudflare-realip.conf) $(grep -c '198.51.100.0/24 1;' /etc/nginx/conf.d/envivo-cloudflare-geo.conf) $(curl -s -o /dev/null -w '%{http_code}' https://$D/api/salud)"
+uno "sudo CF_URL_V4=file://$S/v4.txt CF_URL_V6=file://$S/v6.txt bash $OPS/cloudflare_ips.sh" > "$S/cf2.txt"
+check "misma lista otra vez: sin cambios" "1" "$(grep -c 'sin cambios' "$S/cf2.txt")"
+printf '<html>error 500</html>\n' > "$S/malo.txt"; md5sum /etc/nginx/snippets/envivo-cloudflare-realip.conf > "$S/md5.cf"
+uno "sudo CF_URL_V4=file://$S/malo.txt CF_URL_V6=file://$S/v6.txt bash $OPS/cloudflare_ips.sh; echo rc=\$?" > "$S/cf3.txt"
+check "lista rara (HTML): no cambia nada, rc=1" "1 1 OK" "$(grep -c 'no se ve bien' "$S/cf3.txt") $(grep -c '^rc=1$' "$S/cf3.txt") $(md5sum -c --quiet "$S/md5.cf" > /dev/null 2>&1 && echo OK)"
+touch /etc/envivo/solo-cloudflare
+sudo bash /var/www/envivo/server/deploy/instalar.sh < /dev/null > "$S/inst3.txt" 2>&1; echo "rc=$?" >> "$S/inst3.txt"
+IPX="$(hostname -I 2> /dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.' | grep -v '^127\.' | head -n 1)"
+check "solo Cloudflare: instalar.sh rc=0 y el sitio tiene la regla; desde 127.0.0.1 sigue 200" "1 1 200" \
+  "$(grep -c '^rc=0$' "$S/inst3.txt") $(grep -c 'if ($envivo_desde_cf = 0) { return 403; }' /etc/nginx/sites-available/$D) $(curl -s -o /dev/null -w '%{http_code}' https://$D/api/salud)"
+if [ -n "$IPX" ]; then
+  check "solo Cloudflare: directo a la IP del servidor ($IPX, sin Cloudflare) da 403" "403" "$(curl -s -o /dev/null -w '%{http_code}' --resolve "$D:443:$IPX" https://$D/api/salud)"
+fi
+rm -f /etc/envivo/solo-cloudflare
+sudo bash /var/www/envivo/server/deploy/instalar.sh < /dev/null > "$S/inst4.txt" 2>&1
+check "sin la marca, instalar.sh quita la regla" "0" "$(grep -c 'envivo_desde_cf' /etc/nginx/sites-available/$D)"
 
 echo "== 9. Sin errores de PHP en los registros"
 check "error.log de nginx sin 'PHP Fatal'" "0" "$(grep -c 'PHP Fatal' /var/log/nginx/error.log 2> /dev/null)"
