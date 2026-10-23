@@ -1,3 +1,6 @@
 tests/capturas/
 node_modules/
 .DS_Store
+
+# copias de trabajo de los ayudantes
+.claude/
