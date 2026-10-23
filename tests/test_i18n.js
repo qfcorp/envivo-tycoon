@@ -7,6 +7,7 @@
       sueltos, y <html lang> correcto. Guarda tests/capturas/i18n_<código>.png (Inicio, 390x844).
    3) Los textos de la lógica pasan por TL(): con una sección `logica` de prueba, los nombres de eventos,
       el imprevisto y sus opciones salen "traducidos".
+   Los idiomas distintos del español se cargan de forma perezosa: tras elegir uno se espera I18N.listo.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_i18n.js */
 'use strict';
 const path = require('path');
@@ -77,7 +78,7 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
   fs.mkdirSync(outDir, { recursive: true });
   const browser = await chromium.launch();
   const url = 'file://' + path.join(ROOT, 'index.html');
-  const TABS = ['inicio', 'clientes', 'personal', 'bodega', 'tienda', 'registro'];
+  const TABS = ['inicio', 'clientes', 'personal', 'bodega', 'tienda', 'online'];
 
   // Revisa la pantalla visible: claves crudas, marcadores sueltos y desplazamiento horizontal
   const revisar = (page, tag) => page.evaluate((tag) => {
@@ -125,6 +126,11 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
       await page.click('#langBtn');
       await page.waitForSelector('#overlay.on [data-act="set-idioma"]');
       await page.click(`#overlay.on [data-act="set-idioma"][data-k="${code}"]`);
+      // Los idiomas se cargan bajo pedido (solo el español viene con la página)
+      await page.waitForFunction((c) => window.I18N.idioma === c, code, { timeout: 10000 }).catch(() => {});
+      // El idioma puede llegar por carga perezosa (js/lang/<código>.js y js/lang/juego/<código>.js)
+      await page.waitForFunction((c) => window.I18N.idioma === c, code, { timeout: 8000 }).catch(() => {});
+      await page.evaluate(() => window.I18N.listo);
       const lang = await page.evaluate(() => ({ lang: document.documentElement.lang, dir: document.documentElement.dir, cur: window.I18N.idioma, saved: localStorage.getItem('envivo_lang') }));
       ok(lang.lang === code && lang.cur === code && lang.saved === code, `${tag}: <html lang>=${lang.lang}, idioma=${lang.cur}, guardado=${lang.saved}`);
       const navTxt = await page.locator('nav button[data-tab="inicio"] em').textContent();
@@ -135,6 +141,10 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
       if (vp.width === 390) await page.screenshot({ path: path.join(outDir, `i18n_${code}.png`) });
       if (vp.width === 360 && ['de', 'ru'].includes(code)) await page.screenshot({ path: path.join(outDir, `i18n_${code}_360.png`) });
       for (const t of TABS.slice(1)) { await page.click(`nav button[data-tab="${t}"]`); await mirar(t); }
+      // El registro completo se abre desde Inicio (su lugar en la barra lo tiene "En línea")
+      await page.click('nav button[data-tab="inicio"]');
+      await page.click('[data-act="tab"][data-tab="registro"]');
+      await mirar('registro');
       // Preparar evento e imprevisto en vivo
       await page.click('nav button[data-tab="clientes"]');
       if (!(await page.locator('[data-act="prep"]').count())) await page.click('[data-act="mkt"][data-k="visitar"]');
@@ -148,6 +158,7 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
       if (vp.width === 390 && ['de', 'ru', 'zh-CN'].includes(code)) { await page.waitForTimeout(350); await page.screenshot({ path: path.join(outDir, `i18n_${code}_vivo.png`) }); }
       // Cambiar el idioma con la ventana del evento abierta no debe romper nada; al recargar, sigue el idioma elegido
       await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.evaluate(() => window.I18N.listo);
       await page.waitForSelector('[data-act="choose"]');
       ok(await page.evaluate(() => window.I18N.idioma) === code, `${tag}: al recargar se mantiene el idioma`);
       await mirar('en vivo (recargado)');
@@ -169,7 +180,9 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
     await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
     await page.addInitScript(() => { try { localStorage.setItem('envivo_lang', 'en'); } catch (e) { /* nada */ } });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => window.I18N.listo);
     await page.waitForSelector('#overlay.on');
+    await page.waitForFunction(() => window.I18N_LANG && window.I18N_LANG.en, null, { timeout: 10000 });
     const capT = await page.locator('#overlay.on h2').first().textContent();
     await page.locator('#overlay.on [data-act="close"]').first().click();
     // Traducción de prueba: todos los nombres de eventos, clientes y equipos, más el capítulo actual
@@ -179,11 +192,12 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
       Object.values(G.CATALOG).forEach((it) => { mark(it.name); mark(it.desc); });
       Object.values(G.CONSUMABLES).forEach((it) => { mark(it.name); mark(it.desc); });
       const ch = G.CHAPTERS[window.__game.state.chapter]; mark(ch.title); mark(ch.intro); mark(ch.goal);
-      window.__game.state.log.forEach((l) => mark(l.text));
+      // El registro se vuelve a armar con su clave (G.tx, ya en inglés con js/lang/juego/en.js) y luego pasa por TL
+      window.__game.state.log.forEach((l) => { mark(l.text); if (l.k) { try { mark(G.tx(l.k, l.p || undefined)); } catch (e) { /* nada */ } } });
       window.__game.state.equip.forEach((e) => mark(e.nick));
     });
     await page.evaluate(() => window.I18N.setIdioma('es'));
-    await page.evaluate(() => window.I18N.setIdioma('en'));
+    await page.evaluate(() => { window.I18N.setIdioma('en'); return window.I18N.listo; });
     ok(capT && !capT.startsWith('«TL»'), 'sin traducción de la lógica, el capítulo se muestra tal cual');
     const h2 = await page.locator('#tab-inicio h2').first().textContent();
     ok(h2.startsWith('«TL»'), `título del capítulo pasa por TL (“${h2}”)`);

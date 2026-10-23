@@ -44,6 +44,34 @@
     role_dir: '<path d="M3 9h18v11H3z"/><path d="M3 9l2-5 16 0-2 5"/><path d="M7.5 4.2L9.5 9M13 4.2L15 9"/>',
     role_audio: '<path d="M4 15v-3a8 8 0 0116 0v3"/><rect x="2.5" y="14" width="4.5" height="6.5" rx="1.5"/><rect x="17" y="14" width="4.5" height="6.5" rx="1.5"/>',
     role_stream: '<circle cx="12" cy="10" r="2"/><path d="M12 12l-3 9M12 12l3 9M10 18h4"/><path d="M8 6.5a5 5 0 000 7M16 6.5a5 5 0 010 7M5.2 4a9 9 0 000 12M18.8 4a9 9 0 010 12"/>',
+    // Los 14 puestos del juego (role_<clave de js/datos.js>)
+    role_director: '<path d="M3 9h18v11H3z"/><path d="M3 9l2-5 16 0-2 5"/><path d="M7.5 4.2L9.5 9M13 4.2L15 9"/><path d="M7 14.5h5"/>',
+    role_productor: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4"/><path d="M8.5 12.5l2.4 2.4 4.6-5"/>',
+    role_camarografo: '<rect x="3" y="7" width="12" height="9" rx="2"/><path d="M15 10l6-3v9l-6-3"/><path d="M7 16l-2 5M11 16l2 5"/>',
+    role_operador_ptz: '<circle cx="12" cy="8.5" r="4.5"/><circle cx="12" cy="8.5" r="1.6"/><rect x="7" y="13" width="10" height="5" rx="1.5"/><path d="M4.5 21h15"/>',
+    role_cablero: '<circle cx="10" cy="11" r="7"/><circle cx="10" cy="11" r="2.3"/><path d="M10 4a7 7 0 016.6 4.7"/><path d="M17 11h2.5a1.5 1.5 0 011.5 1.5V20M19 20h4"/>',
+    role_sonidista: '<path d="M4 15v-3a8 8 0 0116 0v3"/><rect x="2.5" y="14" width="4.5" height="6.5" rx="1.5"/><rect x="17" y="14" width="4.5" height="6.5" rx="1.5"/>',
+    role_microfonista: '<path d="M3.5 20.5L14 10"/><rect x="13.2" y="2.8" width="5.6" height="9.4" rx="2.8" transform="rotate(45 16 7.5)"/><path d="M5.5 15.5l3 3"/>',
+    role_operador_repeticion: '<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/><path d="M10.5 9v6l4.5-3z"/>',
+    role_operador_graficos: '<rect x="2.5" y="4" width="19" height="13" rx="1.5"/><rect x="5" y="11.5" width="9" height="3" rx=".8"/><path d="M15.5 6.5h3.5V9h-3.5z"/><path d="M8 21h8M12 17v4"/>',
+    role_shader: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="12" r="3"/><path d="M8.5 9v3"/><path d="M15 8v8M18 8v8M15 11h-1.5M18 14h1.5"/>',
+    role_tecnico_transmision: '<circle cx="12" cy="10" r="2"/><path d="M12 12l-3 9M12 12l3 9M10 18h4"/><path d="M8 6.5a5 5 0 000 7M16 6.5a5 5 0 010 7M5.2 4a9 9 0 000 12M18.8 4a9 9 0 010 12"/>',
+    role_piloto_dron: '<rect x="3" y="12" width="18" height="8.5" rx="3"/><circle cx="8" cy="16.2" r="1.6"/><circle cx="16" cy="16.2" r="1.6"/><path d="M8 12V7.5M16 12V7.5"/><path d="M5 5h6M13 5h6"/>',
+    role_coordinador_piso: '<path d="M4 14v-2a8 8 0 0116 0v2"/><rect x="2.5" y="13" width="4" height="6" rx="1.5"/><rect x="17.5" y="13" width="4" height="6" rx="1.5"/><path d="M19.5 19c0 1.5-2 2.5-5 2.5"/>',
+    role_runner: '<circle cx="14.5" cy="4" r="2"/><path d="M8.5 21l3-6 3 2.5V21"/><path d="M6.5 11l3.5-3.5 4 1 2.5 3.5 3 .5"/><path d="M11.5 8.5L10 14.5"/><path d="M2 13h3.5M3 16.5h3.5"/>',
+    // Modos en línea y avisos del día
+    online: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/><path d="M5 7.5h14M5 16.5h14"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/>',
+    flag: '<path d="M5 21V3.5"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+    plane: '<path d="M2.5 13.5l19-8-5.5 15-3.5-6z"/><path d="M12.5 14.5l9-9"/>',
+    link: '<path d="M10 14a4.5 4.5 0 006.4 0l3-3a4.5 4.5 0 00-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 00-6.4 0l-3 3a4.5 4.5 0 006.4 6.4l1.2-1.2"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8.3-8 9.5C7.5 20.3 4 17 4 12V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
+    festival: '<path d="M2 21h20"/><path d="M4 21V11h16v10"/><path d="M4 11l3-6M20 11l-3-6M9 11l1-6M15 11l-1-6"/><path d="M9 21v-4h6v4"/>',
+    user_x: '<circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0114 0"/><path d="M17 5l4 4M21 5l-4 4"/>',
+    sad: '<circle cx="12" cy="12" r="9"/><path d="M8.5 16.5a4.5 4.5 0 017 0"/><path d="M9 9.5v.5M15 9.5v.5"/>',
+    x_circle: '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+    trend_down: '<path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
     // Tipos de evento
     misa: '<path d="M12 2v4M10 4h4"/><path d="M7 21V11l5-4 5 4v10"/><path d="M3 21h18"/><path d="M10.5 21v-4a1.5 1.5 0 013 0v4"/>',
     boda: '<circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="M13 5l2-2 2 2-2 2z"/>',
@@ -54,6 +82,13 @@
     concierto: '<path d="M14 3l5 5-7.5 7.5"/><circle cx="7.5" cy="16.5" r="4.5"/><path d="M6 18l3-3"/><path d="M17.5 4.5l2 2"/>',
     ligapro: '<path d="M2 18c2-5 6-7 10-7s8 2 10 7"/><path d="M2 18h20v3H2z"/><path d="M5 11V4M19 11V4"/><path d="M3.5 4h3M17.5 4h3"/>',
     final: '<path d="M7 3h10v5a5 5 0 01-10 0z"/><path d="M7 5H4a3 3 0 003 4M17 5h3a3 3 0 01-3 4"/><path d="M12 13v4M8 21h8l-1-4H9z"/>',
+    boxeo: '<path d="M7 9.5a4.5 4.5 0 014.5-4.5h2A4.5 4.5 0 0118 9.5V14a3 3 0 01-3 3H9.5A2.5 2.5 0 017 14.5z"/><path d="M7 11.5H5.5A1.5 1.5 0 004 13v0a1.5 1.5 0 001.5 1.5H7"/><path d="M9 17v3.5h7V17"/><path d="M11 9.5h4"/>',
+    lucha_libre: '<path d="M5 9c0-4 3-6 7-6s7 2 7 6v4c0 4-3 7-7 7s-7-3-7-7z"/><path d="M8 10.5l3 1.5-3 1.5zM16 10.5l-3 1.5 3 1.5z"/><path d="M10 17h4"/><path d="M12 3v3"/>',
+    funeral: '<path d="M12 2.5v6M9 5h6"/><path d="M5 21l2-9h10l2 9z"/><path d="M3 21h18"/>',
+    lanzamiento_autos: '<path d="M3 15l1.8-4.6A2 2 0 016.7 9h10.6a2 2 0 011.9 1.4L21 15v3H3z"/><path d="M3 15h18"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/><path d="M8 5l1 2M12 4v2.5M16 5l-1 2"/>',
+    irl: '<rect x="7" y="2.5" width="10" height="15" rx="2"/><path d="M11 15h2"/><circle cx="12" cy="8.5" r="2"/><path d="M9 21.5h6M12 17.5v4"/><path d="M19.5 6a5 5 0 010 7M4.5 6a5 5 0 000 7"/>',
+    internacional_unilateral: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/>',
+    internacional_host: '<path d="M7 3h10v5a5 5 0 01-10 0z"/><path d="M7 5H4a3 3 0 003 4M17 5h3a3 3 0 01-3 4"/><path d="M12 13v4M8 21h8l-1-4H9z"/><circle cx="12" cy="7" r="1.5"/>',
     // Interfaz
     home: '<path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>',
     clients: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4"/><path d="M8.5 10h7M8.5 14h7M8.5 18h4"/>',
@@ -373,7 +408,7 @@
       <rect x="${at(0.86, 0.6)[0] + 2}" y="${at(0.86, 0.6)[1] - 19}" width="14" height="5" rx="2.5" fill="${U('cyal')}"/>
       <circle cx="${at(0.98, 0.25)[0] - 6}" cy="${at(0.98, 0.25)[1]}" r="3.4" fill="${U('gmd')}" stroke="#5b6476" stroke-width=".8"/><path d="M${at(0.98, 0.25)[0] - 6} ${at(0.98, 0.25)[1]}v-5" stroke="#8f99aa" stroke-width="1.6" stroke-linecap="round"/>
       ${p.vip ? '<path d="M10 83h100" stroke="#f0b829" stroke-width="1.6"/>' : ''}`,
-    // Laptop con vMix
+    // Laptop con vMax
     laptop: (p) => `${SH(60, 50, 102)}
       <path d="M22 84h76l12 12H10z" fill="${U('al')}"/><path d="M10 96h100v2.5q0 1.5-1.5 1.5h-97q-1.5 0-1.5-1.5z" fill="#6b7487"/>
       ${[0, 1, 2, 3].map((r) => `<path d="M${25 - r * 2.6} ${86.2 + r * 2.4}h${70 + r * 5.2}" stroke="#2a2f3a" stroke-width="1.3" stroke-dasharray="3 1"/>`).join('')}<path d="M50 95.2h20" stroke="#8f99aa" stroke-width="2.4"/>
@@ -611,7 +646,7 @@
   const ITEM_LABEL = (type) => { const it = catalogItem(type); return it ? it.name : ''; };
 
   // Art.item(tipo, tamaño, { subtipo, cat, rarity, label }) → render del equipo con brillo de rareza
-  function item(type, size, opts) {
+  function itemRaw(type, size, opts) {
     const o = opts || {};
     const s = size || 96;
     const r = (o.rarity && RARITIES[RARITY_ALIAS[norm(o.rarity)] || o.rarity]) || rarity(type);
@@ -628,6 +663,18 @@
       <circle cx="60" cy="58" r="58" fill="url(#am-glow-${r.key})"/>${rays}${body}${sparkles}</svg>`;
   }
 
+  // Los dibujos son deterministas: se guardan ya armados (la bodega pinta hasta 90 a la vez)
+  const MEMO_MAX = 600;
+  const memoItem = new Map(), memoAvatar = new Map();
+  const recordar = (m, k, v) => { if (m.size >= MEMO_MAX) m.delete(m.keys().next().value); m.set(k, v); return v; };
+  function item(type, size, opts) {
+    let k;
+    try { k = type + '|' + (size || 96) + '|' + (opts ? JSON.stringify(opts) : '') + '|' + ITEM_LABEL(type); } catch (e) { return itemRaw(type, size, opts); }
+    if (memoItem.has(k)) return memoItem.get(k);
+    const v = itemRaw(type, size, opts);
+    return ensureShared() ? recordar(memoItem, k, v) : v;
+  }
+
   /* =========================================================
      Avatares del personal (dibujados a partir del nombre)
      Art.avatar(nombre | persona, rol, tamaño, { owner, premium })
@@ -638,7 +685,8 @@
   const HAIRS = ['#14151a', '#1f1610', '#2e1d12', '#3d2616', '#5a3a22', '#7a4f2a', '#a8742f'];
   const ROLE_ALIAS = { camarografo: 'cam', camara: 'cam', director: 'dir', vmix: 'dir', sonidista: 'audio', sonido: 'audio', streaming: 'stream', tecnico: 'stream',
     cablero: 'cablero', asistente: 'cablero', boom: 'boom', microfonista: 'boom', replay: 'replay', repeticion: 'replay', graficos: 'graficos', grafica: 'graficos',
-    shader: 'shader', ccu: 'shader', vision: 'shader', dron: 'dron', piloto: 'dron', piloto_dron: 'dron', productor: 'productor', produccion: 'productor' };
+    shader: 'shader', ccu: 'shader', vision: 'shader', dron: 'dron', piloto: 'dron', piloto_dron: 'dron', productor: 'productor', produccion: 'productor',
+    operador_repeticion: 'replay', operador_graficos: 'graficos', tecnico_transmision: 'stream', operador_ptz: 'cam', coordinador_piso: 'productor', runner: 'cablero' };
   const ROLE_TONE = {
     cam: { bg: '#18324f', cloth: ['#2f4f7a', '#3a5f8f', '#24405f'] },
     dir: { bg: '#3a1d27', cloth: ['#2a2d35', '#3b2f45', '#20242c'] },
@@ -654,7 +702,7 @@
   };
   const FEM = /^(andrea|mar[ií]a|gaby|gabriela|daniela|paola|mishell|karla|tania|jessica|vane|vanessa|majo|dom[eé]nica|luc[ií]a|carla|ana|sof[ií]a|valeria|fernanda|camila|micaela|nathaly|evelyn|katherine|estefan[ií]a)\b/i;
 
-  function avatar(seed, role, size, opts) {
+  function avatarRaw(seed, role, size, opts) {
     try {
       let o = opts || {};
       let name = seed;
@@ -771,6 +819,15 @@
      Piezas de escena reutilizables
      ========================================================= */
   // Público en silueta: pocas <path> (una por color), con alturas y anchos variados
+  function avatar(seed, role, size, opts) {
+    const o = opts || {};
+    const obj = seed && typeof seed === 'object';
+    const name = obj ? seed.name : seed;
+    const k = [name, role || (obj ? seed.role : ''), size || 52, !!(o.owner || (obj && seed.owner)), !!(o.premium || (obj && seed.premium))].join('|');
+    if (memoAvatar.has(k)) return memoAvatar.get(k);
+    return recordar(memoAvatar, k, avatarRaw(seed, role, size, opts));
+  }
+
   function crowd(seed, y, n, x0, x1, k, colors, opts) {
     const o = opts || {};
     const r = rng(seed);
@@ -837,7 +894,11 @@
     try {
       const st = s || {};
       const chapter = st.chapter || 0;
-      const stage = st.storyDone ? 3 : chapter >= 4 ? 3 : chapter >= 2 ? 2 : chapter >= 1 ? 1 : 0;
+      // El local que se dibuja es el mismo que cobra la renta (Game.venue): garaje, oficina, estudio o centro
+      let ven = null;
+      try { const g = Gm(); ven = g && g.venue && st.staff ? g.venue(st) : null; } catch (e) { ven = null; }
+      const stage = ven && typeof ven.nivel === 'number' && ven.nivel >= 0 ? Math.min(3, ven.nivel)
+        : st.storyDone ? 3 : chapter >= 4 ? 3 : chapter >= 2 ? 2 : chapter >= 1 ? 1 : 0;
       const equip = Array.isArray(st.equip) ? st.equip : [];
       const has = (t) => equip.some((e) => e && e.type === t);
       const cams = equip.filter((e) => { if (!e) return false; const it = catalogItem(e.type); return it ? it.cat === 'cam' && !['dron4k', 'grua'].includes(e.type) : /^cam_/.test(e.type); });
@@ -884,6 +945,7 @@
           <path d="M100 12V-2" stroke="#8b95a8" stroke-width="2"/><g transform="rotate(-30 100 -6)"><ellipse cx="100" cy="-6" rx="17" ry="6.5" fill="${U('dish')}"/><path d="M100 -6v-9" stroke="#8b95a8" stroke-width="1.5"/><circle cx="100" cy="-15" r="1.8" fill="#8b95a8"/></g>
           <path d="M290 12V-10M280 -2l10 -8 10 8" stroke="#8b95a8" stroke-width="2" fill="none"/><circle cx="290" cy="-12" r="3" fill="#ff3b3b" class="blink"/>`;
       }
+      if (ven && ven.name) { let n = String(ven.name); try { if (root.I18N && root.I18N.TL) n = root.I18N.TL(n); } catch (e) { /* español */ } label = n; }
       const sky = night ? U('night') : U('day');
       const skyDeco = night
         ? `<path d="${[[20, -5], [90, 2], [150, -10], [330, 0], [210, -14], [310, -15], [48, 8], [250, 4], [120, -16], [170, 6], [280, -6]].map(([x, y]) => `M${x} ${y}h1.2v1.2h-1.2z`).join('')}" fill="#e9edf5" opacity=".8"/>
@@ -902,7 +964,7 @@
       if (has('grua')) side.push(`<g transform="translate(332 140)"><path d="M0 0l-6-26 6 0" stroke="#5b6476" stroke-width="2"/><path d="M-30 -10L22 -40" stroke="${U('cyal')}" stroke-width="3" stroke-linecap="round"/><rect x="16" y="-44" width="12" height="8" rx="1.5" fill="${U('al')}"/></g>`);
       const camRow = cams.slice(0, 6).map((e, i) => sceneCam(26 + i * 34, 121, e.type, 0.6)).join('');
       const lamp = `<path d="M346 140V100" stroke="#3a4150" stroke-width="2"/><path d="M346 100h-8" stroke="#3a4150" stroke-width="2"/><circle cx="337" cy="102" r="2.5" fill="${night ? '#ffd27a' : '#8b95a8'}"/>${night ? cone(337, 104, 2, 36, 16, U('poolW')) : ''}`;
-      return `<svg class="hq" viewBox="0 -20 360 170" role="img" aria-label="Tu sede: ${label}${night ? ', de noche' : ', de día'}">
+      return `<svg class="hq" viewBox="0 -20 360 170" role="img" aria-label="${esc(label)}">
       <defs>${inline}${wall}</defs>
       <rect x="0" y="-20" width="360" height="170" fill="${sky}"/>
       ${skyDeco}${hills}
@@ -910,8 +972,8 @@
       ${building}${roof.join('')}
       <rect x="0" y="140" width="360" height="10" fill="${night ? '#1a1f2a' : '#5b6476'}"/><path d="M0 141h360" stroke="${night ? '#2a3242' : '#8f99aa'}" stroke-width="1.5"/><path d="M0 146h360" stroke="${night ? '#2a3242' : '#e9edf5'}" stroke-width="1" stroke-dasharray="10 8" opacity=".5"/>
       ${lamp}${side.join('')}${camRow}${van}
-      <rect x="8" y="-14" width="${(label.length * 6.2 + 16).toFixed(0)}" height="18" rx="9" fill="#0d0f14cc" stroke="#2a3242"/>
-      <text x="16" y="-1.5" font-size="10.5" font-family="${FONT_B}" font-weight="600" fill="#e9edf5">${label}</text>
+      <rect x="8" y="-14" width="${Math.min(344, Math.round(label.length * 6.2 + 16))}" height="18" rx="9" fill="#0d0f14cc" stroke="#2a3242"/>
+      <text x="16" y="-1.5" font-size="10.5" font-family="${FONT_B}" font-weight="600" fill="#e9edf5">${esc(label)}</text>
     </svg>`;
     } catch (e) {
       return '<svg class="hq" viewBox="0 -20 360 170" role="img" aria-label="Tu sede"><rect x="0" y="-20" width="360" height="170" fill="#151b28"/><rect x="70" y="40" width="220" height="100" fill="#2b2f38"/></svg>';
@@ -1233,5 +1295,6 @@
     }
   }
 
-  root.Art = { icon, portrait, hq, scene, item, avatar, rarity, RARITIES, SUBTIPOS, subtipo: (t, o) => { try { return subtipoOf(t, o); } catch (e) { return 'case'; } }, PORTRAIT_NAMES };
+  const hasIcon = (name) => Object.prototype.hasOwnProperty.call(P, name) || Object.prototype.hasOwnProperty.call(ALIAS, name);
+  root.Art = { icon, hasIcon, portrait, hq, scene, item, avatar, rarity, RARITIES, SUBTIPOS, subtipo: (t, o) => { try { return subtipoOf(t, o); } catch (e) { return 'case'; } }, PORTRAIT_NAMES };
 })(typeof window !== 'undefined' ? window : globalThis);

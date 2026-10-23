@@ -21,6 +21,22 @@
   const I = (name, cls) => A.icon(name, cls);
   // Quita el emoji del inicio de los textos de la lógica (ahora hay dibujos)
   const noEmoji = (t) => String(t).replace(/^(\p{Extended_Pictographic}|️|‍|\s)+/u, '');
+  // Textos de la lógica que traen clave y parámetros ({ k, p }): se arman otra vez con G.tx (así salen en el idioma
+  // elegido cuando js/i18n.js trae I18N.juego). Si no traen clave, el texto guardado pasa por TL().
+  const gtx = (o, txt) => {
+    try { if (o && o.k && G.tx) { const t = G.tx(o.k, o.p || undefined); if (typeof t === 'string' && t !== o.k) return TL(t); } } catch (e) { /* abajo */ }
+    return TL(txt !== undefined ? txt : (o && o.text) || '');
+  };
+  function enlazarTraductor() {
+    try { if (G.setTraductor && I18 && I18.juego) G.setTraductor(I18.juego); } catch (e) { /* sin traductor */ }
+  }
+  // Puestos y niveles del personal
+  const normRole = (r) => { try { return G.normRole ? G.normRole(r) : r; } catch (e) { return r; } };
+  const roleIcon = (r) => { const k = normRole(r); return A.hasIcon && A.hasIcon('role_' + k) ? 'role_' + k : ((G.ROLES[k] || {}).icon || 'people'); };
+  const tierOf = (p) => (p && p.tier && G.TIERS && G.TIERS[p.tier] ? p.tier : 'junior');
+  const tierName = (t) => TL((G.TIERS && G.TIERS[t] && G.TIERS[t].name) || t);
+  const tierBadge = (p) => `<span class="lvl lvl-${tierOf(p)}">${esc(tierName(tierOf(p)))}</span>`;
+  const venueName = () => { try { return TL(G.venue ? G.venue(S).name : (G.dailyCostBreakdown ? G.dailyCostBreakdown(S).place : '')); } catch (e) { return ''; } };
 
   /* ---------- Sonido (opcional: si js/sound.js no está, no pasa nada) ---------- */
   const snd = {
@@ -45,8 +61,9 @@
   const INC_GRAVE = /^(luz|internet|falla|robo|senal|senal_irl|cobertura|lluvia|transporte|dron)$/;
 
   /* ---------- Compras de Google Play (solo dentro de la app de Android) ---------- */
-  const GP = window.GooglePlay || null;
-  const enApp = () => { try { return !!(GP && GP.enApp()); } catch (e) { return false; } };
+  // js/googleplay.js llega después (defer): se busca cada vez
+  let GP = window.GooglePlay || null;
+  const enApp = () => { try { GP = GP || window.GooglePlay || null; return !!(GP && GP.enApp()); } catch (e) { return false; } };
   let playOk = false;        // hay Play Billing en este celular
   let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play
 
@@ -76,7 +93,12 @@
   let S = null;            // estado del juego
   let tab = 'inicio';
   let prep = null;         // selección al preparar un evento
-  let afterResult = null;  // capítulo completado pendiente de mostrar
+  let afterResult = null;  // capítulo completado pendiente de mostrar (solo con una lógica sin capCompletados)
+  let VI = null;           // evento en línea que se está jugando (liga / festival): { v, resolver, incidentes, modo }
+  const evS = () => (VI ? VI.v.s : S);   // estado del evento en vivo: la partida o el intento en línea (aparte)
+  let catSel = lsGet('envivo_cat') || 'cam';   // categoría elegida en la tienda de equipos
+  let rolBuscar = '';      // puesto elegido para buscar personal
+  let diaAntes = null;     // dinero antes de descansar (para el resumen del día)
 
   /* ---------- Guardado ---------- */
   function save() {
@@ -185,8 +207,11 @@
       <div class="lbl"><span>${T('duelo.mega_promete')}</span><b class="num">${mega}</b></div><div class="bar mega"><i style="width:${Math.max(0, Math.min(100, mega))}%"></i></div></div>`;
   }
   // Confeti de celebración (DOM liviano, solo transform/opacity)
+  // Celulares modestos (4 núcleos o menos, 2 GB o menos): la mitad de confeti
+  const equipoModesto = (() => { try { return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 2; } catch (e) { return false; } })();
   function confetti(n) {
     if (reduceMotion() || !n) return;
+    if (equipoModesto) n = Math.max(6, Math.round(n / 2));
     const box = document.createElement('div');
     box.className = 'confetti';
     const cols = ['#ff3b3b', '#ffb020', '#4da3ff', '#2ecc71', '#ffd34d', '#b57bff'];
@@ -205,17 +230,20 @@
     const fmt = (v) => (v < 0 ? '-' : '+') + M(Math.abs(v));
     if (reduceMotion()) { el.textContent = fmt(to); return; }
     const t0 = performance.now();
+    let ultimo = null;
     const step = (t) => {
       if (!el.isConnected) return;
       const k = Math.min(1, (t - t0) / (ms || 900));
       const e = 1 - Math.pow(1 - k, 3);
-      el.textContent = fmt(Math.round(to * e));
+      const v = Math.round(to * e);
+      if (v !== ultimo) { ultimo = v; el.textContent = fmt(v); }   // solo si cambió el número
       if (k < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }
 
-  const TILE_COLOR = { misa: 'amber', boda: 'amber', prensa: 'blue', barrial: 'green', graduacion: 'blue', lanzamiento: 'red', concierto: 'red', ligapro: 'green', final: 'amber' };
+  const TILE_COLOR = { misa: 'amber', boda: 'amber', prensa: 'blue', barrial: 'green', graduacion: 'blue', lanzamiento: 'red', concierto: 'red', ligapro: 'green', final: 'amber',
+    boxeo: 'red', lucha_libre: 'red', funeral: '', lanzamiento_autos: 'amber', irl: 'blue', internacional_unilateral: 'blue', internacional_host: 'blue' };
   const tile = (iconName, color) => `<div class="tile ${color ? 't-' + color : ''}">${I(iconName)}</div>`;
   function reqTags(c) {
     const t = [];
@@ -284,11 +312,16 @@
       mb.setAttribute('aria-pressed', mus.muted() ? 'false' : 'true');
     }
     pintarIdiomaBtn();
-    document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
-    document.querySelectorAll('main section').forEach((s) => s.classList.toggle('on', s.id === 'tab-' + tab));
+    // El registro completo se abre desde Inicio (su lugar en la barra lo ocupa "En línea")
+    document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === (tab === 'registro' ? 'inicio' : tab)));
+    // Las pestañas que no se ven quedan vacías (menos nodos en la página); se vuelven a pintar al abrirlas
+    document.querySelectorAll('main section').forEach((s) => { const on = s.id === 'tab-' + tab; s.classList.toggle('on', on); if (!on && s.firstChild) s.textContent = ''; });
     if (Pm && Pm.tickVip(S)) { try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* nada */ } }
     $('vipBadge').hidden = !(Pm && Pm.vip);
-    ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, tienda: renderTienda, registro: renderRegistro })[tab]();
+    const bo = $('badgeO');
+    if (bo) bo.textContent = avisosOnline() || '';
+    if (tab !== 'online' && montado) desmontarOnline();
+    ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, tienda: renderTienda, registro: renderRegistro, online: renderOnline })[tab]();
     if (S.gameOver && !$('overlay').classList.contains('on')) showGameOver();
   }
 
@@ -298,7 +331,7 @@
     let cb = null;
     try { cb = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null; } catch (e) { cb = null; }
     const costBox = cb ? `<div class="costbox"><div class="ci">${I('home')}</div><div class="t">
-        <b style="font-family:inherit">${esc(TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>
+        <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>
         <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}</div>
         ${cb.nextPlace ? `<div class="small" style="color:var(--amber)">${T('inicio.siguiente_local', { n: cb.nextAt, tienes: cb.size, lugar: esc(TL(cb.nextPlace)), m: M(cb.nextRent) })}</div>` : ''}
       </div></div>` : '';
@@ -334,7 +367,8 @@
       ${installCard()}
       ${story}
       <div class="sectitle">${T('inicio.ultimo')}</div>
-      <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(TL(l.text))}</p>`).join('')}</div>
+      <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}
+        <button class="btn sm" data-act="tab" data-tab="registro" style="margin-top:10px">${I('log', 'sm')} ${T('inicio.ver_registro')}</button></div>
       <div class="sectitle">${T('inicio.ayuda')}</div>
       <div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}</div>
       <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
@@ -380,34 +414,97 @@
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
+  /* ---------- Personal ---------- */
+  // Experiencia: eventos nacionales e internacionales trabajados
+  // Nivel (Junior… Internacional) y experiencia: eventos nacionales e internacionales trabajados
+  function expLine(p, conExp) {
+    const nac = typeof p.eventos_nacionales === 'number' ? p.eventos_nacionales : (p.events || 0);
+    const intl = p.eventos_internacionales || 0;
+    return `<div class="exp small">${tierBadge(p)}<span class="skill" title="${esc(T('personal.habilidad'))}" aria-label="${esc(T('personal.habilidad'))} ${p.skill}/5">${starsTxt(p.skill)}</span></div>
+      ${conExp ? `<div class="exp small"><span>${I('flag', 'sm')}${T('personal.nacionales', { n: nac })}</span><span class="${intl ? 'intl' : ''}">${I('globe', 'sm')}${T('personal.internacionales', { n: intl })}</span></div>` : ''}`;
+  }
+  function rolLine(p) {
+    return `<div class="rolrow"><span class="roleic">${I(roleIcon(p.role), 'sm')}</span><span class="rn">${esc(roleName(normRole(p.role)))}</span></div>`;
+  }
   function renderPersonal() {
-    const staff = S.staff.map((p) => `<div class="card">
+    const ord = (p) => (p.owner ? -1 : ((G.ROLES[normRole(p.role)] || {}).orden || 0));
+    const lista = S.staff.slice().sort((a, b) => ord(a) - ord(b) || (b.skill - a.skill));
+    const staff = lista.map((p) => `<div class="card staffc">
       <div class="person">${avatarOf(p, 56)}
-        <div class="grow who"><h3>${esc(TL(p.name))}</h3><div class="small muted">${p.premium ? `<span class="badge-p" style="margin:0 4px 0 0">${T('personal.estrella')}</span>` : ''}${esc(roleName(p.role))} · ${T('inicio.eventos', { n: p.events })}</div></div>
-        <div class="small" style="text-align:right">${T('personal.habilidad')}<br><span class="skill">${starsTxt(p.skill)}</span></div></div>
-      ${p.owner ? `<p class="small muted">${T('personal.eres_tu')}</p>` : `
+        <div class="grow who"><h3>${esc(TL(p.name))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expLine(p, true)}</div></div>
+      ${p.owner ? `<p class="small muted" style="margin:8px 0 0">${T('personal.eres_tu')}</p>` : `
       <div class="small muted" style="margin-top:8px">${T('personal.moral', { n: p.morale })}</div>${condBar(p.morale)}
       <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
         <button class="btn sm" data-act="fire" data-id="${p.id}">${T('personal.despedir')}</button></div>`}
     </div>`).join('');
     const max = maxStaff();
     const lleno = S.staff.length >= max;
-    const cands = S.candidates.map((c) => `<div class="card">
+    const fee = (c) => c.wage * ((BAL().wage && BAL().wage.hireFeeDays) || 2);
+    const cands = S.candidates.map((c) => `<div class="card staffc cand">
       <div class="person">${avatarOf(c, 56)}
-        <div class="grow who"><h3>${esc(TL(c.name))}</h3><div class="small muted">${esc(roleName(c.role))}</div></div>
-        <div class="small" style="text-align:right">${T('personal.habilidad')}<br><span class="skill">${starsTxt(c.skill)}</span></div></div>
+        <div class="grow who"><h3>${esc(TL(c.name))}</h3>${rolLine(c)}${expLine(c, !!c.eventos_internacionales)}</div></div>
       <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(c.wage)}</b>` })}</span>
         ${lleno ? `<button class="btn sm" disabled>${T('personal.equipo_completo', { n: S.staff.length, max })}</button>`
-          : `<button class="btn sm main" data-act="hire" data-id="${c.id}">${T('personal.contratar', { m: M(c.wage * (BAL().wage && BAL().wage.hireFeeDays || 2)) })}</button>`}</div>
+          : `<button class="btn sm main" data-act="hire" data-id="${c.id}" ${S.money < fee(c) ? 'disabled' : ''}>${T('personal.contratar', { m: M(fee(c)) })}</button>`}</div>
     </div>`).join('');
+    // Resumen por puesto (íconos con cuántos tienes de cada uno)
+    const cuenta = {};
+    S.staff.forEach((p) => { const k = normRole(p.role); cuenta[k] = (cuenta[k] || 0) + 1; });
+    const keys = (G.ROLE_KEYS || Object.keys(G.ROLES)).filter((k) => cuenta[k]);
+    const resumenRoles = keys.length ? `<div class="rolesum">${keys.map((k) => `<span class="tag" title="${esc(roleName(k))}">${I(roleIcon(k))}${N(cuenta[k])}</span>`).join('')}</div>` : '';
+    const opciones = (G.ROLE_KEYS || Object.keys(G.ROLES)).map((k) => `<option value="${esc(k)}" ${rolBuscar === k ? 'selected' : ''}>${esc(roleName(k))}</option>`).join('');
     $('tab-personal').innerHTML = `
-      <div class="sectitle">${T('personal.tu_equipo', { n: S.staff.length, max })}</div>${staff}
+      <div class="sectitle">${T('personal.tu_equipo', { n: S.staff.length, max })}</div>
+      ${resumenRoles}${staff}
       <div class="sectitle">${T('personal.candidatos')}</div>
       <p class="small muted">${T('personal.pago_inicial')}</p>
+      ${lleno ? `<div class="redstrip amberstrip" role="status">${I('home', 'sm')}<span>${T('personal.lleno_local', { lugar: esc(venueName()), n: S.staff.length, max })}</span></div>` : ''}
       ${cands || emptyState('people', T('personal.vacio_t'), T('personal.vacio'))}
-      <button class="btn" data-act="search-staff" style="margin-bottom:20px">${I('megaphone')}${T('personal.vacante', { m: M(30) })}</button>`;
+      <div class="card buscar">
+        <label class="field" for="rolBuscar">${T('personal.buscar_puesto')}
+          <select id="rolBuscar" data-act="rol-buscar"><option value="">${T('personal.cualquier_puesto')}</option>${opciones}</select></label>
+        <button class="btn" data-act="search-staff" ${S.money < 30 ? 'disabled' : ''}>${I('megaphone')}${T('personal.vacante', { m: M(30) })}</button>
+      </div><div style="height:12px"></div>`;
   }
 
+  /* ---------- Bodega y tienda de equipos ---------- */
+  // Requisitos de un equipo en corto: puestos con su nombre; equipos con rq.<clave>
+  function rqLabel(k) {
+    const rk = normRole(k);
+    if (G.ROLES[rk]) return roleName(rk);
+    if (I18 && I18.T.has('rq.' + k)) return T('rq.' + k);
+    return String(k).replace(/_/g, ' ');
+  }
+  function qPips(q) {
+    const n = Math.max(0, Math.min(6, q || 0));
+    return `<span class="qp" aria-label="${esc(T('bodega.calidad_n', { n }))}">${[1, 2, 3, 4, 5, 6].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
+  }
+  function categorias() {
+    try { if (G.shopByCategory) return G.shopByCategory(S); } catch (e) { /* abajo */ }
+    // Lógica sin categorías: todo en una lista
+    return [{ key: 'todo', nombre: T('bodega.tienda'), icon: 'box', items: Object.keys(G.CATALOG).filter((k) => !G.CATALOG[k].premium)
+      .map((k) => Object.assign({}, G.CATALOG[k], { key: k, locked: G.CATALOG[k].minRep > S.rep, owned: S.equip.filter((e) => e.type === k).length })) }];
+  }
+  function shopCard(it, llena, maxEq) {
+    const k = it.key;
+    const r = rar(k);
+    const locked = !!it.locked;
+    const owned = it.owned || 0;
+    const rq = (it.requiere || []).map(rqLabel);
+    const ac = (it.acepta || []).map(rqLabel);
+    const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq })
+      : it.alquiler ? T('bodega.reservar', { m: M(it.price) }) : M(it.price);
+    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}">
+      <div class="row between">${rtag(k)}</div>
+      <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${it.alquiler ? `<span class="rent rentov" title="${esc(T('bodega.alquiler_det'))}">${I('clock', 'sm')}${T('bodega.alquiler')}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
+      <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+      <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>
+      ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
+      ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
+      ${locked ? `<div class="lockwhy">${T('bodega.desbloquea', { n: it.minRep })}</div>` : ''}
+      <div class="grow2"></div>
+      <button class="btn ${locked || llena ? '' : 'green'}" data-act="buy" data-k="${esc(k)}" ${locked || llena || S.money < it.price ? 'disabled' : ''}>${label}</button></div>`;
+  }
   function renderBodega() {
     const cons = Object.keys(G.CONSUMABLES).map((k) => {
       const it = G.CONSUMABLES[k];
@@ -424,6 +521,15 @@
       let rc = 0;
       try { rc = G.repairCost(e); } catch (err) { rc = 0; }
       const off = vipBloqueado(e);
+      if (it.alquiler) {
+        return `<div class="card gear rf r-${r.key} rented">
+        <div class="row between">${rtag(e.type)}</div>
+        <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
+        <div class="nm">${esc(TL(e.nick || it.name))}</div>
+        <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
+        <div class="grow2"></div>
+        <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
+      }
       return `<div class="card gear rf r-${r.key} ${e.condition < 40 ? 'worn' : ''}">
         <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
         <div class="art">${itemArt(e.type, 110)}</div>
@@ -437,27 +543,26 @@
     }).join('');
     const maxEq = maxEquip();
     const llena = S.equip.length >= maxEq;
-    const shop = Object.keys(G.CATALOG).filter((k) => !G.CATALOG[k].premium).map((k) => {
-      const it = G.CATALOG[k];
-      const r = rar(k);
-      const locked = it.minRep > S.rep;
-      const owned = S.equip.filter((e) => e.type === k).length;
-      const label = locked ? T('bodega.fama_min', { n: it.minRep }) : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : M(it.price);
-      return `<div class="card gear rf r-${r.key} ${locked ? 'locked' : ''}">
-        <div class="row between">${rtag(k)}</div>
-        <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
-        <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc))}</div><div class="grow2"></div>
-        <button class="btn ${locked || llena ? '' : 'green'}" data-act="buy" data-k="${k}" ${locked || llena || S.money < it.price ? 'disabled' : ''}>
-          ${label}</button></div>`;
-    }).join('');
+    const cats = categorias();
+    let cur = cats.find((c) => c.key === catSel);
+    if (!cur) { cur = cats[0]; catSel = cur ? cur.key : ''; }
+    const chips = cats.length > 1 ? `<div class="catrow" role="tablist" aria-label="${esc(T('bodega.categorias'))}">${cats.map((c) => {
+      return `<button class="catchip ${c.key === catSel ? 'on' : ''}" role="tab" aria-selected="${c.key === catSel}" data-act="cat" data-k="${esc(c.key)}">${I(c.icon || 'box', 'sm')}<span>${esc(TL(c.nombre || c.name || c.key))}</span><b>${N(c.items.length)}</b></button>`;
+    }).join('')}</div>` : '';
+    const shop = cur ? cur.items.map((it) => shopCard(it, llena, maxEq)).join('') : '';
+    const nota = cur && cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
     $('tab-bodega').innerHTML = `
       <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
-      <div class="sectitle">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena', { n: S.equip.length, max: maxEq })}</span>` : ''}</div>
+      <div class="sectitle">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: S.equip.length, max: maxEq })}</span>` : ''}</div>
       ${mine ? `<div class="ggrid">${mine}</div>` : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
       <p class="small muted">${T('bodega.desgaste')}</p>
-      <div class="sectitle">${T('bodega.tienda')}</div><div class="ggrid">${shop}</div><div style="height:20px"></div>`;
+      <div class="sectitle" id="tiendaEq">${T('bodega.tienda')}</div>${chips}
+      ${cur ? `<div class="cathead"><b>${esc(TL(cur.nombre || cur.name || ''))}</b><span class="small muted">${T('bodega.n_equipos', { n: cur.items.length })}</span></div>` : ''}${nota}
+      <div class="ggrid">${shop}</div><div style="height:20px"></div>`;
+    // La categoría elegida queda visible en la fila de categorías
+    const on = document.querySelector('.catrow .catchip.on');
+    if (on && on.parentElement) { try { const row = on.parentElement; row.scrollLeft = Math.max(0, on.offsetLeft - row.clientWidth / 2 + on.clientWidth / 2); } catch (e) { /* nada */ } }
   }
-
 
   /* ---------- Tienda (dinero real y créditos) ---------- */
   const precio = (n) => (I18 ? I18.money(n, { dec: 2 }) : '$' + Number(n).toFixed(2).replace('.', ','));
@@ -507,6 +612,7 @@
           <div class="small muted" style="text-align:right">${esc(E.jugador.nombre)}<br>${esc(E.jugador.email)}</div></div>
         ${vip}
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
+        ${discordBtn('sm')}
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button></div>`;
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
@@ -587,6 +693,7 @@
       if (reg) await Api.registro(email, $('cu-nombre').value.trim(), clave);
       else await Api.entrar(email, clave);
       closeModal();
+      invalidarOnline(); vistaOnline = 'hub';
       snd.play('hire');
       toast(reg ? T('cuenta.creada') : T('cuenta.hola', { nombre: Api.estado.jugador.nombre }));
       await alConectar(true);
@@ -674,6 +781,7 @@
   }
   // Precios de Google Play y compras que quedaron sin confirmar (al abrir el juego y al entrar a la cuenta)
   async function iniciarPlay() {
+    GP = GP || window.GooglePlay || null;
     if (!GP || !Api.disponible || !Api.estado) return;
     try { playOk = !!(await GP.disponible()); } catch (e) { playOk = false; }
     if (playOk) {
@@ -730,8 +838,9 @@
   }
 
   function renderRegistro() {
-    $('tab-registro').innerHTML = `<div class="sectitle">${T('registro.titulo')}</div>
-      <div class="card log">${S.log.map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(TL(l.text))}</p>`).join('')}</div>`;
+    $('tab-registro').innerHTML = `<button class="btn sm" data-act="tab" data-tab="inicio" style="margin-top:4px">← ${T('nav.inicio')}</button>
+      <div class="sectitle">${T('registro.titulo')}</div>
+      <div class="card log">${S.log.map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}</div>`;
   }
 
   /* ---------- Preparar evento ---------- */
@@ -743,94 +852,180 @@
     renderPrep();
   }
 
-  function renderPrep() {
+  // Rango de calidad esperado (la lógica lo da en computeQuality().rango)
+  function rangoDe(q) {
+    const r = q && q.rango;
+    if (r && typeof r.min === 'number' && typeof r.max === 'number') {
+      const min = Math.min(r.min, r.max), max = Math.max(r.min, r.max);
+      const esperado = Math.max(min, Math.min(max, typeof r.esperado === 'number' ? r.esperado : Math.round((min + max) / 2)));
+      // La lógica da el peor y el mejor caso (min/max) y lo esperado. Lo que se muestra es la franja probable:
+      // de la mitad entre el peor caso y lo esperado hasta la mitad entre lo esperado y el mejor caso.
+      const lo = Math.round((min + esperado) / 2), hi = Math.round((esperado + max) / 2);
+      return { min: lo, max: Math.max(lo, hi), peor: min, mejor: max, esperado, imprevistos: r.imprevistos };
+    }
+    return null;
+  }
+  const estrellasDe = (v) => (v >= 85 ? 5 : v >= 70 ? 4 : v >= 55 ? 3 : v >= 40 ? 2 : 1);
+  // Barra con la franja min–max y una marca en lo esperado
+  function barraRango(rg, cls, mega) {
+    const c = (v) => Math.max(0, Math.min(100, v));
+    const tone = rg.esperado < 40 ? 'red' : rg.esperado < 55 ? 'amber' : '';
+    return `<div class="rbar ${tone} ${cls || ''}" aria-hidden="true">${typeof rg.peor === 'number' ? `<em style="left:${c(rg.peor)}%;width:${Math.max(2, c(rg.mejor) - c(rg.peor))}%"></em>` : ''}<i style="left:${c(rg.min)}%;width:${Math.max(2, c(rg.max) - c(rg.min))}%"></i><s style="left:${c(rg.esperado)}%"></s>${typeof mega === 'number' ? `<u style="left:${c(mega)}%"></u>` : ''}</div>`;
+  }
+  // Duelo con MegaVisión con la incertidumbre de los imprevistos
+  function duelRango(rg, mega) {
+    const mejor = typeof rg.mejor === 'number' ? rg.mejor : rg.max;
+    const k = rg.min > mega ? 'ventaja' : mejor <= mega ? 'desventaja' : rg.max <= mega ? 'dificil' : rg.esperado > mega ? 'parejo_arriba' : 'parejo_abajo';
+    const cls = k === 'ventaja' ? 'up' : k === 'desventaja' || k === 'dificil' ? 'down' : '';
+    const c = (v) => Math.max(0, Math.min(100, v));
+    return `<div class="duel ${k === 'ventaja' ? 'won' : ''}">
+      <div class="row between small"><span>${I('rival', 'sm')} ${T('duelo.titulo')}</span><b class="${cls}" style="${cls ? '' : 'color:var(--amber)'}">${T('prep.duelo_' + k)}</b></div>
+      <div class="lbl"><span>${T('duelo.tu_calidad')}</span><b class="num">${rg.min}–${rg.max}</b></div>
+      ${barraRango(rg, 'you', mega)}
+      <div class="lbl"><span>${T('duelo.mega_promete')}</span><b class="num">${mega}</b></div><div class="bar mega"><i style="width:${c(mega)}%"></i></div>
+      <div class="small muted" style="margin-top:4px">${T('prep.duelo_det_' + k)}</div></div>`;
+  }
+  // Cámaras que no se pueden usar (sin lente, sin fibra...) con su motivo
+  function bloqueadosHtml(camP) {
+    const bl = (camP && Array.isArray(camP.bloqueados)) ? camP.bloqueados : [];
+    if (!bl.length) return '';
+    return `<div class="bloq"><div class="pe-hd"><span class="pe-ttl">${T('prep.bloqueados')}</span><span class="pe-sub">${T('prep.bloqueados_n', { n: bl.length })}</span></div>
+      ${bl.map((b) => {
+        const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
+        const it = G.CATALOG[b.tipo] || {};
+        const e = S.equip.find((x) => x.id === b.equipId);
+        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(TL((e && e.nick) || it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div></div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
+      }).join('')}</div>`;
+  }
+  function renderPrep(soloCalculo) {
     const c = S.contracts.find((x) => x.id === prep.id);
     if (!c) { closeModal(); return; }
     const staff = S.staff.filter((p) => prep.staff.has(p.id));
     const equip = S.equip.filter((e) => prep.equip.has(e.id));
     const q = G.computeQuality(S, c, staff, equip);
+    const rg = rangoDe(q);
     const wages = staff.reduce((a, p) => a + wageFor(p, c.diff), 0);
-    const est = q.q >= 85 ? 5 : q.q >= 70 ? 4 : q.q >= 55 ? 3 : q.q >= 40 ? 2 : 1;
+    const est = estrellasDe(rg ? rg.esperado : q.q);
     // Consejo: solo lo que se arregla con equipo o personal
-    const NO_FIX = /^(dificultad|lo que esperan|base\b|experiencia)|cansad|cansancio|desmotivad|[aá]nimo|apoyo/i;
-    const STAFF_FIX = /sin director|sin sonidista|sin t[eé]cnico|sin operador|camar[oó]graf|director|sonidista|t[eé]cnico/i;
-    const worst = q.parts.filter((p) => p[1] < 0 && !NO_FIX.test(p[0])).sort((a, b) => a[1] - b[1])[0];
+    const NO_FIX = /^(dificultad|lo que esperan|base\b|experiencia)|cansad|cansancio|desmotivad|[aá]nimo|apoyo|suerte/i;
+    const STAFF_FIX = /sin director|sin sonidista|sin t[eé]cnico|sin operador|camar[oó]graf|director|sonidista|t[eé]cnico|falta|personal/i;
+    // Con clave (p[2]) se sabe qué es cada parte; si no, se adivina por el texto
+    const K_NO_FIX = /^parte\.(base|experiencia|cansado|animo|dificultad|fama|sensible|suerte|apoyo)/;
+    const K_STAFF = /^parte\.(falta_rol|justo_rol|switcher_sin_director|consola_sin_sonidista|equipo_sin_tecnico|repeticiones_sin_operador|graficos_sin_operador|sin_operador|sin_shader)$/;
+    const noFix = (p) => (p[2] ? K_NO_FIX.test(p[2]) : NO_FIX.test(p[0]));
+    const esPersonal = (p) => (p[2] ? K_STAFF.test(p[2]) : STAFF_FIX.test(p[0]) && !/^Sin (switcher|consola|equipo)/i.test(p[0]));
+    const worst = q.parts.filter((p) => p[1] < 0 && !noFix(p)).sort((a, b) => a[1] - b[1])[0];
+    // Contrato internacional: requisitos con lo que llevas ahora, días y gastos de viaje
+    let reqs = [];
+    if (c.internacional && G.requisitosInternacional) { try { reqs = G.requisitosInternacional(S, c, [...prep.staff], [...prep.equip]); } catch (e) { reqs = []; } }
+    const faltaReq = reqs.find((r) => r.obligatorio && !r.ok);
+    const sinViaje = c.internacional && S.money < (c.travelCost || 0);
     // Sin nadie o sin cámara no se puede salir al aire: en vez del consejo, se dice qué falta
     const listo = staff.length > 0 && equip.some(isCam);
+    const puede = listo && !faltaReq && !sinViaje;
     const tip = !listo ? `<p class="small hint" id="goHint">${I('tip', 'sm')} ${T('prep.falta_gente')}</p>`
-      : worst ? `<p class="small" style="color:var(--amber)">${I('tip', 'sm')} ${T('prep.resta', { que: esc(TL(worst[0])), n: worst[1] })} ${STAFF_FIX.test(worst[0]) && !/^Sin (switcher|consola|equipo)/i.test(worst[0]) ? T('prep.contrata') : T('prep.compralo')}</p>` : '';
-    // Plan del evento (js/plan_evento.js). Con una lógica que todavía no trae crewPlan/cameraPlan,
-    // se dibuja el plano por defecto del tipo de evento con las cámaras elegidas en orden.
+      : faltaReq ? `<p class="small hint" id="goHint">${I('lock', 'sm')} ${T('prep.falta_req', { req: esc(TL(faltaReq.texto)) })}</p>`
+      : sinViaje ? `<p class="small hint" id="goHint">${I('money', 'sm')} ${T('prep.falta_viaje', { m: M(c.travelCost) })}</p>`
+      : worst ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('tip', 'sm')} ${T('prep.resta', { que: esc(TL(worst[0])), n: worst[1] })} ${esPersonal(worst) ? T('prep.contrata') : T('prep.compralo')}</p>` : '';
+    // Plan del evento (js/plan_evento.js): plantilla por rol con semáforo y plano de cámaras
     let crew = null, camP = null;
     try { crew = G.crewPlan ? G.crewPlan(S, c, [...prep.staff], [...prep.equip]) : null; } catch (e) { crew = null; }
-    try { camP = G.cameraPlan ? G.cameraPlan(S, c, [...prep.equip], [...prep.staff]) : null; } catch (e) { camP = null; }
+    try { camP = q.cameraPlan || (G.cameraPlan ? G.cameraPlan(S, c, [...prep.equip], [...prep.staff]) : null); } catch (e) { camP = null; }
     if (!camP && PE && !G.cameraPlan) {
       const camsSel = equip.filter(isCam);
       const pos = PE.posiciones(c.type);
       if (pos.length) camP = { positions: pos.map((p, i) => Object.assign({}, p, { asignado: camsSel[i] ? camsSel[i].id : null })) };
     }
-    const intlHtml = PE ? PE.internacional(c) : '';
-    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + (crew ? PE.personal(crew) : '') : '';
+    const reqVista = reqs.map((r) => ({ texto: TL(r.texto), ok: r.ok, detalle: r.ok ? '' : r.obligatorio ? T('prep.obligatorio') : T('prep.req_resta') }));
+    const intlHtml = PE && c.internacional ? PE.internacional(Object.assign({}, c, { requisitos: reqVista })) : PE ? PE.internacional(c) : '';
+    const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
+    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP);
+    const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
+    const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
+    const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
+    // Partes que cambian con lo que eliges: arriba (#prepCalc), la tabla del detalle (#prepTabla) y la barra fija (#prepPie)
+    const calcHtml = `${intlHtml}
+      <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
+        ${puede ? tip : ''}
+        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div></div>
+      ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}`;
+    const tablaHtml = `${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}
+          ${rg ? `<tr><td>${T('prep.imprevistos_esperados', { n: rg.imprevistos != null ? N(rg.imprevistos) : '?' })}</td><td class="down">${rg.esperado - q.q}</td></tr>
+            <tr><td>${T('prep.peor_mejor')}</td><td>${rg.peor}–${rg.mejor}</td></tr>` : ''}`;
+    const pieHtml = `<div class="row between"><span>${calidadTxt}</span><span>${starsTxt(est)}</span></div>
+        ${barra}
+        ${puede ? '' : tip}
+        <button class="btn main" data-act="go-live" ${puede ? '' : 'disabled aria-describedby="goHint"'}>${I('rec', 'sm')} ${T('prep.al_aire')}</button>`;
+    if (soloCalculo && $('prepCalc') && $('prepPie') && $('prepTabla')) {
+      // Al marcar o desmarcar: solo se rehace lo que depende de la selección (no toda la ventana)
+      $('prepCalc').innerHTML = calcHtml;
+      $('prepTabla').innerHTML = tablaHtml;
+      $('prepPie').innerHTML = pieHtml;
+      return;
+    }
     const staffHtml = S.staff.map((p) => { const w = wageFor(p, c.diff); return `<label class="pick ${prep.staff.has(p.id) ? 'sel' : ''}">
         <input type="checkbox" id="st-${p.id}" data-act="tog-staff" data-id="${p.id}" ${prep.staff.has(p.id) ? 'checked' : ''}>
         ${avatarOf(p, 44)}
-        <div class="grow" style="min-width:0"><b>${esc(TL(p.name))}</b><div class="small muted">${esc(roleName(p.role))} · <span class="skill">${starsTxt(p.skill)}</span></div></div>
-        <span class="num small" style="text-align:right">${M(w)}${w > p.wage ? `<br><span class="muted" style="font-size:10.5px">+${Math.round((w / p.wage - 1) * 100)}%</span>` : ''}</span></label>`; }).join('');
+        <div class="grow" style="min-width:0"><b>${esc(TL(p.name))}</b><div class="small muted pkrol">${I(roleIcon(p.role), 'sm')}<span>${esc(roleName(normRole(p.role)))}</span>${tierBadge(p)}</div></div>
+        <span class="num small" style="text-align:end">${M(w)}${w > p.wage ? `<br><span class="muted" style="font-size:10.5px">+${Math.round((w / p.wage - 1) * 100)}%</span>` : ''}</span></label>`; }).join('');
     const equipHtml = S.equip.map((e) => {
       const it = G.CATALOG[e.type] || { name: e.type };
       const off = vipBloqueado(e);
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(TL(e.nick || it.name))}</b> ${rtag(e.type)}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : condBar(e.condition)}</div>
-        <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${e.condition}%</span></label>`;
+        <div class="grow" style="min-width:0"><b>${esc(TL(e.nick || it.name))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition)}</div>
+        <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
     openModal(`
-      <div class="row between"><div class="row">${tile(c.type, TILE_COLOR[c.type])}<h2>${esc(eventName(c.type))}</h2></div><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      <div class="row between"><div class="row" style="min-width:0">${tile(c.type, TILE_COLOR[c.type] || (c.internacional ? 'blue' : ''))}<h2>${esc(eventName(c.type))}</h2></div><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
       <div class="small muted" style="margin-top:6px">${esc(TL(c.client))} · ${T('prep.paga', { m: `<span class="pay" style="font-size:15px">${M(c.pay)}</span>` })}</div>
       <div style="margin:6px 0 4px">${reqTags(c)}</div>
-      ${intlHtml}
       <button class="btn" data-act="auto">${I('sparkle')}${T('prep.auto')}</button>
+      <div id="prepCalc">${calcHtml}</div>
       <div class="sectitle">${T('prep.quien')}</div>${staffHtml}
       <div class="sectitle">${T('prep.que_equipos')}</div>${equipHtml}
-      <p class="small muted">${T('prep.repuestos', { cables: T('prep.cables', { n: S.stock.cable }), baterias: T('prep.baterias', { n: S.stock.battery }) })}</p>
-      ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
-      <details><summary>${T('prep.como_calidad')}</summary>
-        <table>${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}</table></details>
-      <div class="preview">
-        <div class="row between"><span>${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100</span><span>${starsTxt(est)}</span></div>
-        ${c.rival && typeof c.rivalQuality === 'number' ? duelBars(q.q, c.rivalQuality) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`}
-        ${tip}
-        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b> · ${T('prep.imprevistos')}</div>
-        <button class="btn main" data-act="go-live" ${listo ? '' : 'disabled aria-describedby="goHint"'}>${I('rec', 'sm')} ${T('prep.al_aire')}</button>
-      </div>`);
+      <p class="small muted">${T('prep.repuestos', { cables: T('prep.cables', { n: S.stock.cable || 0 }), baterias: T('prep.baterias', { n: S.stock.battery || 0 }) })}</p>
+      <details><summary>${T('prep.como_calidad')}</summary><table id="prepTabla">${tablaHtml}</table></details>
+      <div class="preview" id="prepPie">${pieHtml}</div>`);
     $('modal').scrollTop = pos;
+  }
+  // "Elegir lo mejor": se marcan las casillas y se rehace solo el cálculo
+  function marcarSeleccion() {
+    document.querySelectorAll('#modal input[data-act="tog-staff"], #modal input[data-act="tog-equip"]').forEach((x) => {
+      const set = x.dataset.act === 'tog-staff' ? prep.staff : prep.equip;
+      x.checked = set.has(Number(x.dataset.id));
+      const l = x.closest('.pick'); if (l) l.classList.toggle('sel', x.checked);
+    });
   }
 
   /* ---------- Evento en vivo ---------- */
+  // Sirve para la partida (S) y para los eventos en línea de la liga y el festival (VI: un estado aparte)
   function liveCams() {
-    const ev = S.currentEvent;
-    return ev ? S.equip.filter((e) => ev.equipIds.includes(e.id) && G.CATALOG[e.type].cat === 'cam').length : 1;
+    const s = evS(), ev = s.currentEvent;
+    return ev ? s.equip.filter((e) => ev.equipIds.includes(e.id) && G.CATALOG[e.type] && G.CATALOG[e.type].cat === 'cam').length : 1;
   }
   function liveGear() {
-    const ev = S.currentEvent;
-    return ev ? S.equip.filter((e) => ev.equipIds.includes(e.id)).map((e) => e.type) : [];
+    const s = evS(), ev = s.currentEvent;
+    return ev ? s.equip.filter((e) => ev.equipIds.includes(e.id)).map((e) => e.type) : [];
   }
   function liveScene(type, key) {
-    const ev = S.currentEvent;
+    const ev = evS().currentEvent;
     const c = ev ? ev.contract : null;
     return A.scene(type, key, liveCams(), false, liveGear(), { client: c ? c.client : '', seed: c ? c.id : 0 });
   }
   function incKey() {
-    const ev = S.currentEvent;
+    const ev = evS().currentEvent;
     return ev && ev.incidents[ev.step] ? ev.incidents[ev.step].key : null;
   }
+  const viTag = () => (VI ? `<span class="tag ${VI.modo === 'festival' ? 'amber' : ''}" style="margin:0">${I(VI.modo === 'festival' ? 'festival' : 'shield')}${T(VI.modo === 'festival' ? 'online.festival' : 'online.liga')}</span>` : '');
 
   function showIncident() {
-    const inc = G.currentIncident(S);
+    const s = evS();
+    const inc = G.currentIncident(s);
     if (!inc) { finish(); return; }
-    const c = S.currentEvent.contract;
+    const c = s.currentEvent.contract;
     const key = incKey();
     const bueno = key === 'epico' || inc.positive === true || inc.bueno === true;   // un momento bueno, no un problema
     snd.play('incident');
@@ -839,34 +1034,45 @@
       if (!bueno && INC_GRAVE.test(key || '')) mus.go('tension');
       else mus.stinger();
     }
+    // Si el imprevisto es de un puesto que llevaste incompleto, se avisa (pega más fuerte)
+    const rolInc = inc.rol && (inc.estadoRol === 'falta' || inc.estadoRol === 'justo')
+      ? `<div class="rolwarn ${inc.estadoRol}">${I(roleIcon(inc.rol), 'sm')}<span>${T(inc.estadoRol === 'falta' ? 'vivo.rol_falta' : 'vivo.rol_justo', { rol: esc(roleName(normRole(inc.rol))) })}</span></div>` : '';
     openModal(`
       ${liveScene(c.type, key)}
-      <div class="row between" style="margin-top:10px"><span class="live"><i></i>${T('vivo.en_vivo')}</span><span class="small muted">${bueno ? T('vivo.momento', { i: inc.n, total: inc.total }) : T('vivo.imprevisto', { i: inc.n, total: inc.total })}</span></div>
+      <div class="row between" style="margin-top:10px"><span class="row" style="gap:6px"><span class="live"><i></i>${T('vivo.en_vivo')}</span>${viTag()}</span><span class="small muted">${bueno ? T('vivo.momento', { i: inc.n, total: inc.total }) : T('vivo.imprevisto', { i: inc.n, total: inc.total })}</span></div>
       <div class="small muted" style="margin-top:8px">${esc(eventName(c.type))} · ${esc(TL(c.client))}</div>
-      <div class="incident">${esc(noEmoji(TL(inc.text)))}</div>
+      <div class="incident">${esc(noEmoji(gtx(inc, inc.text)))}</div>
+      ${rolInc}
       ${inc.choices.map((ch) => `<button class="btn choice" data-act="choose" data-i="${ch.i}" ${ch.ok ? '' : 'disabled'}>
-        ${esc(TL(ch.label))}${ch.ok ? '' : `<small>${T('vivo.no_disponible', { why: esc(TL(ch.why)) })}</small>`}</button>`).join('')}`);
+        ${esc(gtx(ch, ch.label))}${ch.ok ? '' : `<small>${T('vivo.no_disponible', { why: esc(ch.whyK ? gtx({ k: ch.whyK, p: ch.whyP }, ch.why) : TL(ch.why)) })}</small>`}</button>`).join('')}
+      ${VI ? `<button class="btn sm vi-salir" data-act="vi-salir">${T('online.dejar')}</button>` : ''}`);
   }
 
   function choose(i) {
     const key = incKey();
-    const r = G.resolveIncident(S, i);
-    if (!r.ok) { toast(TL(r.msg)); snd.play('error'); return; }
-    save();
+    let r;
+    if (VI) {
+      r = window.EnVivoVivo.elegir(VI.v, i);
+      if (r && r.ok) VI.incidentes.push({ clave: key, q: r.q });
+    } else r = G.resolveIncident(S, i);
+    if (!r || !r.ok) { toast(TL((r && r.msg) || '')); snd.play('error'); return; }
+    if (!VI) save();
     snd.play(r.q >= 0 ? 'good' : 'bad');
     const cls = r.q > 0 ? 'up' : r.q < 0 ? 'down' : '';
-    const more = G.currentIncident(S);
-    const c = S.currentEvent.contract;
+    const s = evS();
+    const more = G.currentIncident(s);
+    const c = s.currentEvent.contract;
     if (r.q >= 0 && mus.actual() === 'tension' && !esFuneral(c.type)) mus.go(temaDeEvento(c.type));
     openModal(`
       ${liveScene(c.type, r.q > 4 ? 'epico' : key === 'luz' && r.q < -10 ? 'luz' : null)}
-      <div style="margin-top:10px"><span class="live"><i></i>${T('vivo.en_vivo')}</span></div>
-      <div class="incident">${esc(TL(r.msg))}</div>
+      <div class="row" style="margin-top:10px;gap:6px"><span class="live"><i></i>${T('vivo.en_vivo')}</span>${viTag()}</div>
+      <div class="incident">${esc(gtx(r, r.msg))}</div>
       <p>${T('vivo.calidad')} <span class="delta ${cls}">${r.q > 0 ? '+' : ''}${r.q}</span></p>
       <button class="btn main" data-act="${more ? 'next-inc' : 'finish'}">${more ? T('comun.continuar') : T('vivo.terminar')}</button>`);
   }
 
   function finish() {
+    if (VI) { terminarIntento(); return; }
     const dia = S.day;
     const caja0 = dia0 && dia0.day === dia && typeof dia0.money === 'number' ? dia0.money : null;
     const ty = S.currentEvent && S.currentEvent.contract ? S.currentEvent.contract.type : '';
@@ -881,8 +1087,47 @@
     showResult(r, caja, true, ty);
   }
 
+  /* ---------- Avisos del día (renuncias, pagos, la rival, cancelaciones…) ---------- */
+  const AV_ICON = { pago: ['money', 'g'], fama: ['trend_down', 'a'], vencidas: ['clock', 'm'], cancelacion: ['x_circle', 'r'], internacional: ['globe', 'b'],
+    rival: ['rival', 'r'], animo: ['sad', 'a'], renuncia: ['user_x', 'r'], sueldo: ['money', 'a'], quiebra: ['bolt', 'r'], capitulo: ['star', 'a'] };
+  const avisosPend = () => (S && Array.isArray(S.avisos) ? S.avisos.filter((a) => a && a.tipo !== 'capitulo') : []);
+  function tomarAvisos() { try { if (G.takeAvisos) G.takeAvisos(S); else S.avisos = []; } catch (e) { S.avisos = []; } save(); }
+  // Una tarjeta por día con sus avisos
+  function avisosHtml(lista) {
+    const dias = [];
+    lista.forEach((a) => { let d = dias.find((x) => x.day === a.day); if (!d) { d = { day: a.day, items: [] }; dias.push(d); } d.items.push(a); });
+    return dias.map((d) => `<div class="daycard">${dias.length > 1 ? `<div class="dh">${T('comun.dia_n', { n: d.day })}</div>` : ''}
+      ${d.items.map((a) => { const ic = AV_ICON[a.tipo] || ['tip', 'm']; return `<div class="av av-${ic[1]}"><span class="avi">${I(ic[0], 'sm')}</span><span class="t">${esc(noEmoji(gtx(a, a.text)))}</span></div>`; }).join('')}</div>`).join('');
+  }
+  function showResumenDia() {
+    const lista = avisosPend();
+    if (!lista.length) { tomarAvisos(); continuar(); return; }
+    const dia = lista[lista.length - 1].day;
+    const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
+    snd.play(malo ? 'bad' : 'good');
+    const caja = diaAntes && typeof diaAntes.money === 'number' ? S.money - diaAntes.money : null;
+    diaAntes = null;
+    openModal(`<div class="story-tag">${T('dia.resumen')}</div><h2>${T('comun.dia_n', { n: dia })}</h2>
+      ${caja !== null ? `<div class="row between small" style="margin:2px 0 0"><span class="muted">${T('dia.caja')}</span><b class="num ${caja >= 0 ? 'up' : 'down'}">${caja >= 0 ? '+' : '-'}${M(Math.abs(caja))}</b></div>
+        <div class="small muted" style="margin-bottom:8px">${T('dia.gastos', { m: M(G.dailyCost ? G.dailyCost(S) : 0) })}</div>` : ''}
+      ${avisosHtml(lista)}
+      <button class="btn main" data-act="close-dia">${T('comun.continuar')}</button>`);
+  }
+  // Qué ventana toca después: el evento en curso, el resumen del día, los capítulos completados y la intro del capítulo
+  const capPend = () => (S && Array.isArray(S.capCompletados) ? S.capCompletados : []);
+  function continuar() {
+    if (VI || !S) return;
+    if ($('overlay').classList.contains('on')) return;
+    if (S.currentEvent) { showIncident(); return; }
+    if (avisosPend().length) { showResumenDia(); return; }
+    if (capPend().length) { showChapterDone(capPend()[0], true); return; }
+    if (showChapterIntro()) return;
+    if (S.gameOver) showGameOver();
+  }
+
   function showResult(r, caja, fresh, ty0) {
-    afterResult = r.chapterDone || null;
+    // Con la lógica nueva los capítulos esperan en S.capCompletados; con una vieja, en r.chapterDone
+    afterResult = !Array.isArray(S.capCompletados) && r.chapterDone ? r.chapterDone : null;
     if (fresh) snd.play('stars', r.stars);
     const ty = r.type || r.contractType || ty0 || '';
     if (esFuneral(ty)) mus.go('funeral');
@@ -895,12 +1140,16 @@
           <div class="lbl"><span>MegaVisión</span><b class="num">${r.rivalQuality}</b></div><div class="bar mega"><i style="width:${r.rivalQuality}%"></i></div></div>`
       : r.duel === 'won' ? `<p class="small up">${I('rival', 'sm')} ${T('res.ganaste_duelo')}</p>` : r.duel === 'lost' ? `<p class="small down">${I('rival', 'sm')} ${T('res.perdiste_duelo')}</p>` : '';
     const later = r.payLater > 0 ? `<div class="paylater">${I('clock', 'sm')} ${T('res.pago_luego', { ahora: M(r.payNow), luego: M(r.payLater), n: r.payLaterDays })}</div>` : '';
+    // Contrato internacional: viaje y riesgo de fama
+    const intl = r.internacional ? `<div class="paylater intl ${r.intlFail ? 'mal' : ''}">${I(r.intlFail ? 'bolt' : 'globe', 'sm')} ${r.intlFail ? T('res.intl_mal') : T('res.intl_ok')}${r.travelDays ? ` · ${T('res.viaje_dias', { n: r.travelDays })}` : ''}</div>` : '';
     // Gastos fijos del día y lo que de verdad cambió en caja (QA-04)
     const gastoDia = G.dailyCost && typeof r.dailyCost === 'number' ? r.dailyCost : null;
     const sgn = (v) => (v > 0 ? '+' : '') + M(v);
     const filasCaja = (gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}</td><td class="down">-${M(gastoDia)}</td></tr>` : '')
       + (typeof caja === 'number' ? `<tr class="caja"><td><b>${T('res.en_caja')}</b></td><td class="${caja >= 0 ? 'up' : 'down'}"><b>${sgn(caja)}</b></td></tr>` : '');
     const riesgo = PE ? PE.resumenRiesgo(r.crewPlan || (r.crew && r.crew.plan), { camaras: r.cameraPlan, tipo: ty, nombreEquipo: eqName }) : '';
+    // Lo que pasó mientras tanto (el evento ocupa el día): pagos, renuncias, la rival…
+    const mientras = fresh || avisosPend().length ? avisosPend() : [];
     openModal(`
       <div class="result-head"><div class="story-tag">${r.stars >= 4 ? T('res.impecable') : r.stars === 3 ? T('res.buen_trabajo') : T('res.terminada')}</div>
       <h2>${esc(noEmoji(TL(r.title)))}</h2></div>
@@ -910,36 +1159,89 @@
       <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       ${duel}
+      ${intl}
       ${riesgo}
       <table style="margin-top:12px">
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
+        ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b></td><td class="${r.net >= 0 ? 'up' : 'down'}"><b>${M(r.net)}</b></td></tr>
         ${filasCaja}
         <tr><td>${T('head.fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(TL(u))).join(' · ')}</p>` : ''}
+      ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
       <details><summary>${T('res.ver_detalle')}</summary>
         <p class="small"><b>${T('res.calidad_inicial', { n: r.base })}</b></p>
-        ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(TL(i.text)))}<br><span class="muted">→ ${esc(TL(x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
+        ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(gtx(i, i.text)))}<br><span class="muted">→ ${esc(gtx(x, x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
       </details>
       <p class="small muted">${T('res.desgaste')}</p>
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
     if (!fresh) return;
     countUp($('resNet'), r.net, 1000);
-    if (r.stars >= 4) confetti(r.stars === 5 ? 70 : 45);
-    else if (r.stars === 3) confetti(16);
+    if (r.stars >= 4) confetti(r.stars === 5 ? 28 : 20);
+    else if (r.stars === 3) confetti(10);
   }
 
-  function showChapterDone(d) {
-    const idx = Math.max(0, G.CHAPTERS.findIndex((c) => c.title === d.title));
+  let capDeCola = false;   // el capítulo que se ve salió de S.capCompletados (se quita al cerrar)
+  function showChapterDone(d, deCola) {
+    capDeCola = !!deCola;
+    const idx = typeof d.chapter === 'number' ? d.chapter : Math.max(0, G.CHAPTERS.findIndex((c) => c.title === d.title));
+    const ch = G.CHAPTERS[idx] || {};
+    // Título y texto en el idioma actual (si la lógica ya los traduce); si no, los que se guardaron
+    const titulo = ch.title && typeof d.chapter === 'number' ? ch.title : d.title;
+    const texto = ch.done && typeof d.chapter === 'number' ? ch.done : d.text;
     snd.play('chapter');
     mus.go('victoria');
-    openModal(`<div class="story-tag">${T('historia.cap_completado')}</div><h2>${esc(TL(d.title))}</h2>
-      ${speaker(charOf(idx), esc(TL(d.text)))}
+    openModal(`<div class="story-tag">${T('historia.cap_completado')}</div><h2>${esc(TL(titulo))}</h2>
+      ${speaker(charOf(idx), esc(TL(texto)))}
       <p>${T('historia.premio')} <span class="pay">${M(d.reward)}</span></p>
       <button class="btn main" data-act="close-story">${T('historia.vamos')}</button>`);
+    if (!reduceMotion()) confetti(24);
+  }
+
+  /* ---------- Eventos en línea (liga y festival): se juegan en un estado aparte con la semilla del servidor ---------- */
+  // Devuelve { decisiones, resultado: { quality, stars, duel, incidentes: [{ clave, q }] } } o null si lo deja para después.
+  async function jugarIntento(intento, modo) {
+    const V = window.EnVivoVivo;
+    if (!V || !intento) { toast(T('online.sin_motor')); return null; }
+    if (VI || (S && S.currentEvent)) { toast(T('online.ocupado')); return null; }
+    try { await V.asegurar(); } catch (e) { toast(TL(e.message)); return null; }
+    let v;
+    try { v = V.crear(G, intento); } catch (e) { toast(TL(e.message)); snd.play('error'); return null; }
+    return new Promise((resolver) => {
+      VI = { v, resolver, incidentes: [], modo: modo || 'liga' };
+      const ty = v.contrato.type;
+      snd.play('live');
+      mus.go(esFuneral(ty) ? 'funeral' : temaDeEvento(ty));
+      showIncident();
+    });
+  }
+  function terminarIntento() {
+    const vi = VI;
+    let out;
+    try { out = window.EnVivoVivo.terminar(vi.v); } catch (e) { toast(TL(e.message)); return; }
+    const r = vi.v.resultado || {};
+    out.resultado.duel = r.duel || null;
+    out.resultado.incidentes = vi.incidentes.slice();
+    vi.salida = out;
+    snd.play('stars', r.stars);
+    mus.go(r.stars >= 4 ? 'victoria' : 'menu');
+    openModal(`<div class="result-head"><div class="story-tag">${viTag()}</div><h2>${T('online.turno_listo')}</h2></div>
+      ${starsBig(r.stars || 1)}
+      <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}</span><b class="num">${r.quality}/100</b></div>
+      <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
+      <p class="small muted">${T('online.servidor_confirma')}</p>
+      <button class="btn main" data-act="vi-enviar">${I('cloud', 'sm')} ${T('online.enviar')}</button>`);
+    if (r.stars >= 4) confetti(20);
+  }
+  function cerrarIntento(conResultado) {
+    const vi = VI;
+    if (!vi) return;
+    VI = null;
+    closeModal(); mus.go('menu'); render();
+    vi.resolver(conResultado ? vi.salida : null);
   }
 
   function showChapterIntro() {
@@ -961,12 +1263,157 @@
       <button class="btn main" data-act="restart">${T('fin.reiniciar')}</button>`);
   }
 
+  /* ---------- En línea: Liga Semanal, Mega Festival, Duelo de Productoras y Desafío del Día ---------- */
+  let vistaOnline = 'hub';
+  let montado = null;   // módulo que está pintado en la pestaña (para no volver a pedirlo en cada render)
+  const MODOS = [
+    { k: 'liga', mod: 'Liga', icon: 'shield', tono: 'blue' },
+    { k: 'festival', mod: 'Festival', icon: 'festival', tono: 'amber' },
+    { k: 'duelos', mod: 'Duelos', icon: 'rival', tono: 'red' },
+    { k: 'desafio', mod: 'Desafio', icon: 'target', tono: 'green' },
+  ];
+  const enLinea = () => Api.disponible === true && Api.logueado();
+  function avisosOnline() {
+    try {
+      if (!enLinea()) return 0;
+      const E = Api.estado || {};
+      return (Number(E.duelos && E.duelos.defensas_nuevas) || 0) + (E.desafio && E.desafio.jugado_hoy === false && Number(E.desafio.restantes) > 0 ? 1 : 0);
+    } catch (e) { return 0; }
+  }
+  function desmontarOnline() {
+    try { if (montado === 'festival' && window.Festival && window.Festival.detener) window.Festival.detener(); } catch (e) { /* nada */ }
+    montado = null;
+  }
+  function invalidarOnline() {
+    ['Liga', 'Duelos', 'Desafio'].forEach((m) => { try { if (window[m] && window[m].invalidar) window[m].invalidar(); } catch (e) { /* nada */ } });
+    desmontarOnline();
+  }
+  function estadoModo(k) {
+    const E = (Api.estado || {});
+    try {
+      if (k === 'duelos' && E.duelos) return `${E.duelos.liga ? esc(TL(E.duelos.liga)) + ' · ' : ''}${T('online.duelos_hoy', { n: Number(E.duelos.restantes) || 0 })}`;
+      if (k === 'desafio' && E.desafio) return E.desafio.jugado_hoy ? T('online.desafio_jugado') : esc(TL(E.desafio.nombre || ''));
+    } catch (e) { /* nada */ }
+    return '';
+  }
+  function hubOnline(activo) {
+    return `<div class="onl-grid">${MODOS.map((m) => {
+      const extra = activo ? estadoModo(m.k) : '';
+      const nuevo = activo && m.k === 'duelos' && Api.estado && Api.estado.duelos && Api.estado.duelos.defensas_nuevas;
+      return `<button class="onl-tile t-${m.tono}" data-act="online" data-k="${m.k}" ${activo ? '' : 'disabled'}>
+        <span class="oi">${I(m.icon)}</span>${nuevo ? `<span class="badge">${N(nuevo)}</span>` : ''}
+        <b>${T('online.' + m.k)}</b><span class="od">${T('online.' + m.k + '_det')}</span>${extra ? `<span class="oe">${extra}</span>` : ''}</button>`;
+    }).join('')}</div>`;
+  }
+  function renderOnline() {
+    const el = $('tab-online');
+    if (!enLinea()) {
+      desmontarOnline();
+      const acceso = Api.disponible === null ? `<p class="small muted">${T('tienda.conectando')}</p>`
+        : Api.disponible ? `<button class="btn main" data-act="cuenta" data-modo="registro">${I('user')}${T('cuenta.crear')}</button>
+            <button class="btn" data-act="cuenta" data-modo="entrar">${T('cuenta.ya_tengo_entrar')}</button>`
+          : `<p class="small muted" style="margin:6px 0 0">${T('online.sin_servidor', { sitio: '<b>juego.tukanec.com</b>' })}</p>`;
+      el.innerHTML = `<div class="sectitle">${T('nav.online')}</div>
+        <div class="card onl-hero"><div class="row" style="align-items:flex-start">${tile('online', 'blue')}<div class="grow"><h3>${T('online.entra')}</h3>
+          <p class="small muted" style="margin:4px 0 0">${T('online.entra_det')}</p></div></div>${acceso}</div>
+        <div class="sectitle">${T('online.modos')}</div>${hubOnline(false)}`;
+      return;
+    }
+    if (vistaOnline === 'hub') {
+      desmontarOnline();
+      const E = Api.estado || {};
+      el.innerHTML = `<div class="sectitle">${T('nav.online')}</div>
+        <div class="card onl-hero"><div class="row">${tile('online', 'blue')}<div class="grow"><h3>${T('online.hola', { nombre: esc((E.jugador && E.jugador.nombre) || '') })}</h3>
+          <p class="small muted" style="margin:2px 0 0">${T('online.hub_det')}</p></div></div></div>
+        ${hubOnline(true)}
+        <div class="sectitle">${T('discord.titulo')}</div>
+        <div class="card"><p class="small muted" style="margin:0">${T('discord.det')}</p>${discordBtn()}</div>`;
+      return;
+    }
+    const m = MODOS.find((x) => x.k === vistaOnline);
+    const cont = $('online-cont');
+    if (montado === vistaOnline && cont && el.contains(cont)) return;   // ya está pintado: el módulo se actualiza solo
+    desmontarOnline();
+    el.innerHTML = `<div class="onl-top"><button class="btn sm" data-act="online" data-k="hub">← ${T('nav.online')}</button><b>${I(m.icon, 'sm')} ${T('online.' + m.k)}</b></div><div id="online-cont"></div>`;
+    const M = window[m.mod];
+    if (!M || !M.render) { $('online-cont').innerHTML = emptyState(m.icon, T('online.no_disponible_t'), T('online.no_disponible')); return; }
+    montado = vistaOnline;
+    try { M.render($('online-cont'), ctxOnline(m.k)); } catch (e) { montado = null; $('online-cont').innerHTML = emptyState(m.icon, T('online.no_disponible_t'), esc(TL(e.message))); }
+  }
+  const sincronizarEntregas = () => { aplicarEntregas(); save(); if (tab !== 'online') render(); };
+  function ctxOnline(k) {
+    const base = { Api, G, A, T, TL, I18N: I18, estado: () => S, toast, ask, openModal, closeModal, snd, sincronizar: sincronizarEntregas };
+    if (k === 'liga') {
+      return { A, estado: () => S, guardar: save, toast, ask,
+        jugarIntento: (it) => jugarIntento(it, 'liga'),
+        abrirAsociaciones: () => { const b = $('chat-btn'); if (b) { b.hidden = false; b.click(); setTimeout(() => { const t = document.querySelector('[data-chat-tab="asociacion"]'); if (t) t.click(); }, 60); } else toast(T('online.no_disponible')); },
+        alCanjear: () => { Api.refrescar().then(() => sincronizarEntregas()).catch(() => {}); } };
+    }
+    if (k === 'festival') {
+      return { A, estado: () => S, vip: !!(Pm && Pm.vip), toast, snd: (n) => snd.play(n),
+        jugarIntento: (seed, contrato, it) => jugarIntento(it || { seed, contrato }, 'festival') };
+    }
+    return base;
+  }
+
+  /* ---------- Discord: código para /vincular (server/INTEGRAR_DISCORD.md) ---------- */
+  let discordOff = false;   // el servidor dijo que el bot no está configurado
+  async function apiPost(ruta, body) {
+    const r = await fetch(ruta, { method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'Accept-Language': (I18 && I18.idioma) || 'es' }, body: JSON.stringify(body || {}) });
+    let j = null;
+    try { j = await r.json(); } catch (e) { j = null; }
+    if (!j || !r.ok || j.ok === false) {
+      const err = new Error(j && j.codigo && I18 && I18.T.has('error.' + j.codigo) ? T('error.' + j.codigo) : (j && j.error ? TL(j.error) : T('err.no_completo')));
+      err.status = r.status; err.codigo = j && j.codigo;
+      throw err;
+    }
+    return j;
+  }
+  function discordBtn(cls) {
+    if (!enLinea() || discordOff) return '';
+    const v = !!(Api.estado && Api.estado.discord_vinculado);
+    return `<button class="btn ${cls || ''} ${v ? '' : 'discord'}" data-act="discord">${I(v ? 'check' : 'link', 'sm')} ${v ? T('discord.vinculado') : T('discord.vincular')}</button>`;
+  }
+  let discordT = null;
+  async function abrirDiscord() {
+    let r;
+    try { r = await apiPost('/api/discord/codigo', {}); } catch (err) {
+      if (err.codigo === 'discord_no_configurado' || err.status === 503 || err.status === 404) { discordOff = true; toast(T('discord.no_disponible')); render(); return; }
+      toast(err.message); snd.play('error'); return;
+    }
+    const fin = Date.now() + (Number(r.segundos) || 600) * 1000;
+    const inv = r.invitacion || (Api.estado && Api.estado.discord_invitacion);
+    const vinc = !!(r.vinculado || (Api.estado && Api.estado.discord_vinculado));
+    openModal(`<div class="row between"><h2>${T('discord.titulo')}</h2><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      <ol class="pasos small">
+        <li>${inv ? T('discord.paso1_link', { link: `<a href="${esc(inv)}" target="_blank" rel="noopener">${T('discord.servidor')}</a>` }) : T('discord.paso1')}</li>
+        <li>${T('discord.paso2')}</li></ol>
+      <div class="dcode num">${esc(r.codigo)}</div>
+      <p class="small muted" style="text-align:center"><code>${esc(r.comando || '/vincular codigo:' + r.codigo)}</code> · ${T('discord.vence')} <span id="dc-t">10:00</span></p>
+      <p class="small muted">${T('discord.seguridad')}</p>
+      <button class="btn main" data-act="discord-copiar" data-k="${esc(r.comando || '/vincular codigo:' + r.codigo)}">${T('discord.copiar')}</button>
+      ${vinc ? `<button class="btn" data-act="discord-quitar">${T('discord.desvincular')}</button>` : ''}`);
+    clearInterval(discordT);
+    discordT = setInterval(() => {
+      const el = $('dc-t');
+      if (!el) { clearInterval(discordT); return; }
+      const sec = Math.max(0, Math.round((fin - Date.now()) / 1000));
+      el.textContent = sec > 0 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : T('discord.vencido');
+    }, 1000);
+  }
+
   /* ---------- Clics ---------- */
   document.addEventListener('click', (e) => {
+    if (!S) return;   // todavía cargando el idioma guardado
     snd.unlock();
     mus.init();
     const nav = e.target.closest('nav button');
-    if (nav) { tab = nav.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); return; }
+    if (nav) {
+      if (VI) return;   // jugando un turno en línea: primero se termina o se deja para después
+      if (nav.dataset.tab === 'online' && tab === 'online' && vistaOnline !== 'hub') { vistaOnline = 'hub'; desmontarOnline(); }
+      tab = nav.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); return;
+    }
     const bm = e.target.closest('#overlay [data-merc]');
     if (bm && window.Mercado && $('merc-cont')) { window.Mercado.clicVentana(ctxMercado(), $('merc-cont'), bm); return; }
     const el = e.target.closest('[data-act]');
@@ -979,9 +1426,9 @@
       case 'soporte': if (window.Soporte) Promise.resolve(window.Soporte.abrir(ctxSoporte())).catch(() => toast(T('err.no_completo'))); break;
       case 'vista-tienda': vistaTienda = el.dataset.k; if (window.Mercado) window.Mercado.invalidar(); render(); break;
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
-      case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
+      case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
-      case 'set-idioma': closeModal(); if (I18) I18.setIdioma(el.dataset.k); snd.play('tap'); break;
+      case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
       case 'comprar': comprar(el.dataset.k); break;
       case 'canjear': canjear(el.dataset.k); break;
       case 'vip-bono': bonoVip(); break;
@@ -990,26 +1437,53 @@
         try { window.PWA.install().then((r) => { if (r === 'accepted') toast(T('pwa.instalado')); render(); }); } catch (err) { toast(T('pwa.no_permite')); }
         break;
       case 'tab': tab = el.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); break;
+      case 'online': vistaOnline = el.dataset.k || 'hub'; snd.play('tap'); desmontarOnline(); render(); window.scrollTo(0, 0); break;
+      case 'discord': abrirDiscord(); break;
+      case 'discord-copiar': {
+        const txt = el.dataset.k || '';
+        try { navigator.clipboard.writeText(txt).then(() => toast(T('discord.copiado'))).catch(() => toast(txt)); } catch (err) { toast(txt); }
+        break;
+      }
+      case 'discord-quitar':
+        apiPost('/api/discord/desvincular', {}).then(() => Api.refrescar()).then(() => { closeModal(); toast(T('discord.desvinculado')); render(); }).catch((err) => toast(err.message));
+        break;
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
-      case 'next-day': G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); showChapterIntro(); break;
-      case 'mkt': act(G.marketing(S, el.dataset.k), 'logo'); break;
-      case 'hire': act(G.hire(S, id), 'hire'); showChapterIntro(); break;
+      case 'next-day': diaAntes = { money: S.money }; G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); continuar(); break;
+      case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
+      case 'mkt': {
+        const visita = el.dataset.k === 'visitar';
+        if (visita) diaAntes = { money: S.money };
+        act(G.marketing(S, el.dataset.k), 'logo');
+        if (visita) continuar();
+        break;
+      }
+      case 'hire': {
+        const r = act(G.hire(S, id), 'hire');
+        // QA: la ventana de "Capítulo completado" siempre aparece (también al contratar o comprar)
+        if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+        break;
+      }
       case 'fire': { const p = S.staff.find((x) => x.id === id); if (p) ask(T('personal.despedir_q', { nombre: esc(TL(p.name)) }), T('personal.despedir_si'), () => act(G.fire(S, id))); break; }
-      case 'search-staff': act(G.searchStaff(S)); break;
-      case 'buy': act(G.buy(S, el.dataset.k), 'buy'); showChapterIntro(); break;
+      case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
+      case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
+      case 'buy': {
+        const r = act(G.buy(S, el.dataset.k), 'buy');
+        if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+        break;
+      }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
       case 'repair': act(G.repair(S, id), 'buy'); break;
       case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(T('bodega.vender_q', { item: esc(itemName(it.type)), m: M(G.sellPrice(it)) }), T('bodega.vender_si'), () => act(G.sell(S, id), 'buy')); break; }
       case 'prep': { snd.play('tap'); const pc = S.contracts.find((x) => x.id === id); if (pc) mus.go(esFuneral(pc.type) ? 'funeral' : 'preparacion'); openPrep(id); break; }
-      case 'auto': { const s = G.suggestLoadout(S, prep.id); prep.staff = new Set(s.staffIds); prep.equip = new Set(s.equipIds); snd.play('tap'); renderPrep(); break; }
+      case 'auto': { const sg = G.suggestLoadout(S, prep.id); prep.staff = new Set(sg.staffIds); prep.equip = new Set(sg.equipIds); snd.play('tap'); marcarSeleccion(); renderPrep(true); break; }
       case 'go-live': {
         const r = G.startEvent(S, prep.id, [...prep.staff], [...prep.equip]);
         if (!r.ok) { toast(TL(r.msg)); snd.play('error'); break; }
         save(); render();
         snd.play('live');
         const ty = S.currentEvent.contract.type;
-        snd.amb(['barrial', 'ligapro', 'final', 'concierto'].includes(ty) ? 'crowd' : 'room');
+        snd.amb(['barrial', 'ligapro', 'final', 'concierto', 'boxeo', 'lucha_libre', 'internacional_host', 'internacional_unilateral'].includes(ty) ? 'crowd' : 'room');
         mus.go(esFuneral(ty) ? 'funeral' : temaDeEvento(ty));
         if (ty === 'final' || ty === 'ligapro') setTimeout(() => mus.stinger(), 900);
         prep = null;
@@ -1019,11 +1493,17 @@
       case 'choose': choose(Number(el.dataset.i)); break;
       case 'next-inc': showIncident(); break;
       case 'finish': finish(); break;
+      case 'vi-salir': cerrarIntento(false); break;
+      case 'vi-enviar': cerrarIntento(true); break;
       case 'after-result':
+        tomarAvisos();   // ya se vieron en el resultado
         if (afterResult) { const d = afterResult; afterResult = null; lsSet(RES_KEY, { chapter: d, ev: S.stats.events }); showChapterDone(d); }
-        else { lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); if (S.gameOver) showGameOver(); }
+        else { lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); continuar(); }
         break;
-      case 'close-story': lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); if (!showChapterIntro() && S.gameOver) showGameOver(); break;
+      case 'close-story':
+        if (capDeCola && Array.isArray(S.capCompletados) && S.capCompletados.length) { S.capCompletados.shift(); save(); }
+        capDeCola = false;
+        lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); continuar(); break;
       case 'new-game': ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { S = G.newGame(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); }); break;
       case 'restart': S = G.newGame(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); break;
     }
@@ -1035,40 +1515,59 @@
 
   document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el && el.id === 'rolBuscar') { rolBuscar = el.value; return; }
     if (!el.dataset || !prep) return;
     const id = Number(el.dataset.id);
-    if (el.dataset.act === 'tog-staff') { el.checked ? prep.staff.add(id) : prep.staff.delete(id); renderPrep(); }
-    if (el.dataset.act === 'tog-equip') { el.checked ? prep.equip.add(id) : prep.equip.delete(id); renderPrep(); }
+    if (el.dataset.act === 'tog-staff' || el.dataset.act === 'tog-equip') {
+      const set = el.dataset.act === 'tog-staff' ? prep.staff : prep.equip;
+      if (el.checked) set.add(id); else set.delete(id);
+      const l = el.closest('.pick'); if (l) l.classList.toggle('sel', el.checked);
+      renderPrep(true);
+    }
   });
 
   /* ---------- Inicio ---------- */
-  // Íconos fijos de la barra de abajo y la cabecera
-  document.querySelectorAll('[data-ico]').forEach((el) => { el.insertAdjacentHTML('afterbegin', I(el.dataset.ico)); });
+  /* ---------- Idiomas: al inicio solo está js/lang/es.js; js/i18n.js carga el resto bajo pedido ---------- */
+  let idiomaPedido = false;   // el aviso "idioma cambiado" solo cuando lo eligió el jugador
+  function elegirIdioma(code) { if (!I18) return; idiomaPedido = true; I18.setIdioma(code); }
+
+  // Textos del juego (nombres, imprevistos, registro) en el idioma elegido: js/i18n.js trae I18N.juego
   if (I18) {
-    I18.aplicar();
     // Al cambiar de idioma se vuelve a pintar todo: textos fijos, pestaña, ventana abierta y chat
     I18.onChange(() => {
+      enlazarTraductor();
       I18.aplicar();
       if (window.Mercado && window.Mercado.invalidar) window.Mercado.invalidar();
+      invalidarOnline();
       if (S) render();
       if (window.Chat && window.Chat.refrescar) { try { window.Chat.refrescar(); } catch (e) { /* nada */ } }
-      toast(T('idioma.cambiado'));
+      if (idiomaPedido && S) toast(T('idioma.cambiado'));
+      idiomaPedido = false;
     });
   }
   try { if (window.PWA) window.PWA.onChange(() => { if (tab === 'inicio') render(); }); } catch (e) { /* sin instalación */ }
-  S = load() || G.newGame();
-  save();
-  render();
-  // Resultado que no se alcanzó a ver (se recargó en esa pantalla): se muestra otra vez
-  const pend = lsGet(RES_KEY);
-  const pendOk = pend && !S.currentEvent && pend.ev === S.stats.events;
-  if (pend && !pendOk) lsSet(RES_KEY, null);
-  if (S.currentEvent) showIncident();       // si cerraste la app en pleno evento, sigue donde quedó
-  else if (pendOk && pend.r) { try { showResult(pend.r, pend.caja, false, pend.ty); } catch (e) { lsSet(RES_KEY, null); closeModal(); showChapterIntro(); } }
-  else if (pendOk && pend.chapter) { try { showChapterDone(pend.chapter); } catch (e) { lsSet(RES_KEY, null); closeModal(); showChapterIntro(); } }
-  else showChapterIntro();
+
+  function arrancar() {
+    enlazarTraductor();
+    if (I18) I18.aplicar();
+    S = load() || G.newGame();
+    save();
+    render();
+    // Resultado que no se alcanzó a ver (se recargó en esa pantalla): se muestra otra vez
+    const pend = lsGet(RES_KEY);
+    const pendOk = pend && !S.currentEvent && pend.ev === S.stats.events;
+    if (pend && !pendOk) lsSet(RES_KEY, null);
+    if (S.currentEvent) showIncident();       // si cerraste la app en pleno evento, sigue donde quedó
+    else if (pendOk && pend.r) { try { showResult(pend.r, pend.caja, false, pend.ty); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
+    else if (pendOk && pend.chapter) { try { showChapterDone(pend.chapter); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
+    else continuar();
+    // La red (tienda, cuenta, chat, Google Play) después de la primera pantalla y de los scripts diferidos
+    const red = () => setTimeout(conectar, 0);
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', red, { once: true }); else red();
+  }
   // Conectar con la tienda (si hay servidor). Si volvemos de un pago aprobado, avisar.
-  (async () => {
+  async function conectar() {
+    GP = GP || window.GooglePlay || null;
     const volvioDePago = /[?&]compra=ok\b/.test(location.search);
     if (volvioDePago) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ } }
     if (window.Api && window.Api.iniciar) await window.Api.iniciar();
@@ -1083,6 +1582,11 @@
     else if (sinLeerSoporte()) toast(T('soporte.nuevas', { n: sinLeerSoporte() }));
     // Google Play (solo en la app de Android): precios y compras que quedaron sin confirmar
     await iniciarPlay();
-  })();
+  }
+  // Íconos fijos de la barra de abajo y la cabecera
+  document.querySelectorAll('[data-ico]').forEach((el) => { el.insertAdjacentHTML('afterbegin', I(el.dataset.ico)); });
+  // Con otro idioma guardado, js/i18n.js trae su diccionario (I18N.listo) y después se pinta, ya en ese idioma
+  if (I18 && I18.listo && typeof I18.listo.then === 'function') I18.listo.then(arrancar, arrancar);
+  else arrancar();
   window.__game = { get state() { return S; } }; // para las pruebas automáticas
 })();

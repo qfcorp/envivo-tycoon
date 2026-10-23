@@ -147,7 +147,7 @@
   /* Nombre del evento por si Game no lo tiene */
   const EV_NAMES = { misa: 'Misa / ceremonia', funeral: 'Funeral en vivo', boda: 'Boda', prensa: 'Rueda de prensa', barrial: 'Partido de liga barrial',
     graduacion: 'Graduación', lanzamiento: 'Lanzamiento de marca', lanzamiento_autos: 'Lanzamiento de autos', concierto: 'Concierto', boxeo: 'Velada de boxeo',
-    lucha_libre: 'Lucha libre', ligapro: 'Partido de LigaPro', final: 'Final de campeonato', irl: 'Stream IRL', internacional_unilateral: 'Unilateral para canal extranjero',
+    lucha_libre: 'Lucha libre', ligapro: 'Partido de LigaPrima', final: 'Final de campeonato', irl: 'Stream IRL', internacional_unilateral: 'Unilateral para canal extranjero',
     internacional_host: 'Producción host internacional' };
   Object.keys(EV_NAMES).forEach((k) => { ES['pe.ev.' + k] = EV_NAMES[k]; });
 

@@ -159,10 +159,10 @@
   @keyframes bob{50%{transform:translateY(-2px)}}
   .beam{animation:sway 3s ease-in-out infinite;transform-origin:top center;transform-box:fill-box}
   @keyframes sway{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
-  .fx-rain path{animation:rain .5s linear infinite}
   @keyframes rain{from{transform:translate(0,-20px)}to{transform:translate(-8px,30px)}}
   .fx-dark{animation:dark 2.2s infinite}
-  @keyframes dark{0%,100%{fill-opacity:.72}8%{fill-opacity:.2}12%{fill-opacity:.72}40%{fill-opacity:.82}}
+  /* Apagón: se anima la opacidad (la compone la GPU), no fill-opacity (repinta el SVG) */
+  @keyframes dark{0%,100%{opacity:.96}8%{opacity:.27}12%{opacity:.96}40%{opacity:1}}
   .fx-spark{animation:spark .35s steps(2) infinite}
   @keyframes spark{50%{opacity:.2}}
   .fx-blink{animation:blink .8s infinite}
@@ -308,7 +308,7 @@
   .bigmoney.up{color:var(--green)} .bigmoney.down{color:var(--red)}
   .paylater{background:#2a2210;border:1px solid #5a4214;color:#ffd78a;border-radius:10px;padding:8px 10px;font-size:13px;margin-top:8px}
   .confetti{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
-  .confetti i{position:absolute;top:-14px;width:8px;height:12px;border-radius:2px;will-change:transform,opacity;animation:cf var(--d,1.8s) cubic-bezier(.2,.6,.4,1) forwards;animation-delay:var(--w,0s)}
+  .confetti i{position:absolute;top:-14px;width:8px;height:12px;border-radius:2px;animation:cf var(--d,1.8s) cubic-bezier(.2,.6,.4,1) forwards;animation-delay:var(--w,0s)}
   @keyframes cf{0%{transform:translate3d(0,0,0) rotate(0);opacity:1}100%{transform:translate3d(var(--x,0),var(--y,90vh),0) rotate(var(--r,540deg));opacity:0}}
 
   /* Tienda */
@@ -361,6 +361,8 @@
   .redstrip{display:flex;align-items:center;gap:8px;background:#3a1519;border:1px solid #ff3b3b;color:#ffd0d0;border-radius:12px;padding:10px 12px;margin:2px 0 12px;font-size:13.5px;font-weight:600}
   .redstrip .ico{color:var(--red);flex:none}
   .redstrip b{color:#fff}
+  .redstrip.amberstrip{background:#2a2210;border-color:#5a4214;color:#ffd78a}
+  .redstrip.amberstrip .ico{color:var(--amber)}
   .btn .badge.sop{margin-inline-start:8px;font-size:11px;padding:1px 7px;vertical-align:1px}
   .hint{color:var(--amber);margin:8px 0 0}
   .planev{margin:12px 0 4px;display:grid;gap:12px}
@@ -370,6 +372,116 @@
   tr.caja td{border-top:1px solid var(--muted)}
   /* Con el botón flotante del chat, que el último botón de cada pestaña no quede debajo */
   body:has(#chat-btn) main{padding-bottom:64px}
+  /* Rendimiento: parpadeos en dos pasos, nada animado detrás de una ventana abierta, tarjetas fuera de pantalla sin pintar */
+  .blink,.fx-blink,.tally,.live i{animation-timing-function:steps(1,end)}
+  body:has(#overlay.on) main *,body:has(#overlay.on) header *{animation-play-state:paused}
+  .gear{content-visibility:auto;contain-intrinsic-size:auto 230px}
+
+  /* ---- v6: tienda por categorías, niveles del personal, rango de calidad, avisos del día, en línea ---- */
+  .catrow{position:relative;display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;margin:0 -16px 10px;padding:2px 16px 4px;scroll-padding:16px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 22px),transparent)}
+  .catrow::-webkit-scrollbar{display:none}
+  .catchip{flex:none;display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 11px 7px 9px;font-size:13px;font-weight:600;white-space:nowrap;color:var(--muted)}
+  .catchip .ico{width:16px;height:16px;margin:0}
+  .catchip b{font-family:var(--f-mono);font-size:10.5px;font-weight:600;color:var(--muted);background:var(--panel2);border-radius:6px;padding:1px 5px}
+  .catchip.on{background:#2a1a1f;border-color:var(--red);color:var(--text)}
+  .catchip.on .ico{color:var(--red)}
+  .catchip.on b{color:var(--text);background:#3a1519}
+  .cathead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px}
+  .cathead b{font-family:var(--f-head);font-size:20px;letter-spacing:.4px}
+  .gear .qrow{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.4px}
+  .qp{display:inline-flex;gap:2px}
+  .qp i{width:7px;height:7px;border-radius:2px;background:var(--line)}
+  .qp i.on{background:var(--rc,var(--amber))}
+  .gear .rq{font-size:11.5px;line-height:1.35;margin-top:5px;color:#ffcf9e;overflow-wrap:anywhere}
+  .gear .rq b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  .gear .rq.ac{color:#9fd2ff}
+  .gear .lockwhy{font-size:11.5px;color:var(--amber);margin-top:6px}
+  .rent{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:#8cc4ff;background:#0f2440;border:1px solid #1c3d66;border-radius:6px;padding:0 6px;line-height:17px;white-space:nowrap}
+  .rent .ico{width:11px;height:11px;margin:0}
+  .gear.rented{border-style:dashed}
+  .gear .rentov{position:absolute;bottom:2px;inset-inline-start:0}
+  .gear.shopc .art .itemart{max-width:96px}
+  .lvl{display:inline-block;font-family:var(--f-head);font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;border-radius:5px;padding:0 6px;line-height:17px;border:1px solid currentColor;white-space:nowrap}
+  .lvl-junior{color:#9aa6bb}
+  .lvl-semi_senior{color:#7fc2ff}
+  .lvl-senior{color:#c39bff}
+  .lvl-internacional{color:#1a1205;background:linear-gradient(90deg,#ffd34d,#f0b829);border-color:#f0b829}
+  .rolrow{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:13.5px;line-height:1.25;min-width:0}
+  .rolrow .rn{color:var(--text);min-width:0;overflow-wrap:anywhere}
+  .roleic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);color:var(--amber);flex:none}
+  .roleic .ico{width:14px;height:14px;margin:0}
+  .exp{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px;color:var(--muted)}
+  .exp > span{display:inline-flex;align-items:center;gap:4px}
+  .exp > .skill{display:inline}
+  .exp .ico{width:13px;height:13px;margin:0}
+  .exp .intl{color:#ffd78a}
+  .rolesum{display:flex;flex-wrap:wrap;gap:0;margin:-2px 0 8px}
+  .rolesum .tag{font-family:var(--f-mono);font-weight:600}
+  .rolesum .tag .ico{width:14px;height:14px;color:var(--amber)}
+  .card.buscar select,.field select{font:inherit;font-size:15px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+  .card.buscar .field{margin-top:0}
+  .pkrol{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  .pkrol .ico{width:13px;height:13px;margin:0;color:var(--amber)}
+  .pkrol .lvl{font-size:10px;line-height:15px;padding:0 4px}
+  .rbar{position:relative;height:10px;background:var(--panel2);border-radius:9px;margin-top:6px;overflow:hidden}
+  .rbar i{position:absolute;top:0;bottom:0;border-radius:9px;background:linear-gradient(90deg,#25b86299,#3fdc82)}
+  .rbar.amber i{background:linear-gradient(90deg,#ffb02099,#ffcf6e)}
+  .rbar.red i{background:linear-gradient(90deg,#ff3b3b99,#ff8f8f)}
+  .rbar em{position:absolute;top:0;bottom:0;border-radius:9px;background:#ffffff14}
+  .rbar s{position:absolute;top:-1px;bottom:-1px;width:3px;margin-left:-1.5px;background:#fff;border-radius:2px;box-shadow:0 0 4px #000}
+  .rbar u{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--red);text-decoration:none}
+  .duel .rbar{height:9px;margin-top:3px}
+  .pronostico{margin-top:4px}
+  .pronostico .duel{margin-top:6px}
+  .duel .rbar.you i{background:linear-gradient(90deg,#25b86288,#3fdc82)}
+  .bloq{background:var(--panel);border:1px solid #5a2026;border-radius:12px;padding:10px}
+  .bq{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+  .bq:nth-child(2){border-top:0}
+  .bq .mini{width:40px;height:40px}
+  .bq b{font-size:13.5px;display:block;overflow-wrap:anywhere}
+  .bq .small{font-size:11.5px;line-height:1.3}
+  .bqr{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:#ffb3b3;background:#3a1519;border:1px solid #5a2026;border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .bqr .ico{width:12px;height:12px;margin:0}
+  .rolwarn{display:flex;align-items:center;gap:8px;font-size:13px;border-radius:10px;padding:8px 10px;margin:-6px 0 6px;background:#2a2210;border:1px solid #5a4214;color:#ffd78a}
+  .rolwarn.falta{background:#3a1519;border-color:#5a2026;color:#ffb3b3}
+  .rolwarn .ico{flex:none;margin:0}
+  .daycard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px 10px;margin:8px 0}
+  .daycard .dh{font-family:var(--f-head);text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-size:13px;padding:6px 0 2px}
+  .av{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.35}
+  .daycard .av:first-child,.daycard .dh + .av{border-top:0}
+  .avi{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--panel);border:1px solid var(--line)}
+  .avi .ico{margin:0;width:15px;height:15px}
+  .av .t{min-width:0;padding-top:4px;overflow-wrap:anywhere}
+  .av-g .avi{color:#7fe0a8;background:#0e2e1d;border-color:#1a4d31}
+  .av-r .avi{color:#ff8f8f;background:#3a1519;border-color:#5a2026}
+  .av-a .avi{color:#ffcf6e;background:#3a2a0d;border-color:#5a4214}
+  .av-b .avi{color:#8cc4ff;background:#0f2440;border-color:#1c3d66}
+  .av-m .avi{color:var(--muted)}
+  .paylater.intl{background:#0f2440;border-color:#1c3d66;color:#bfe0ff}
+  .paylater.intl.mal{background:#3a1519;border-color:#5a2026;color:#ffb3b3}
+  .btn.sm.vi-salir{display:block;margin:14px auto 0;background:none;border-color:transparent;color:var(--muted);text-decoration:underline}
+  .onl-hero{background:radial-gradient(120% 140% at 100% 0%,#0f2440 0%,var(--panel) 60%);border-color:#1c3d66}
+  .onl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .onl-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:start;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-height:138px}
+  .onl-tile .oi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;margin-bottom:4px}
+  .onl-tile b{font-family:var(--f-head);font-size:18px;letter-spacing:.3px;line-height:1.1;overflow-wrap:anywhere}
+  .onl-tile .od{font-size:12px;color:var(--muted);line-height:1.3}
+  .onl-tile .oe{margin-top:auto;padding-top:4px;font-size:11.5px;font-weight:700;color:var(--amber)}
+  .onl-tile .badge{position:absolute;top:10px;inset-inline-end:10px;font-size:11px;padding:1px 6px}
+  .onl-tile.t-blue .oi{background:#0f2440;color:#8cc4ff}.onl-tile.t-blue{border-color:#1c3d66}
+  .onl-tile.t-amber .oi{background:#3a2a0d;color:#ffcf6e}.onl-tile.t-amber{border-color:#5a4214}
+  .onl-tile.t-red .oi{background:#3a1519;color:#ff8f8f}.onl-tile.t-red{border-color:#5a2026}
+  .onl-tile.t-green .oi{background:#0e2e1d;color:#7fe0a8}.onl-tile.t-green{border-color:#1a4d31}
+  .onl-tile:disabled{opacity:.5}
+  .onl-tile:not(:disabled):active{transform:scale(.98)}
+  .onl-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 10px}
+  .onl-top b{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-head);font-size:18px;min-width:0;overflow-wrap:anywhere;text-align:end}
+  .btn.discord{border-color:#5865f2;background:#1d2046}
+  .dcode{font-size:30px;letter-spacing:.14em;text-align:center;padding:12px;margin:8px 0;border:1px dashed var(--line);border-radius:12px;background:var(--panel2)}
+  .pasos{padding-inline-start:20px;margin:6px 0}
+  .pasos li{margin:4px 0}
+  .pasos a{color:var(--blue)}
+  .card .btn.sm + .btn.sm{margin-inline-start:6px}
 </style>
 </head>
 <body>
@@ -389,6 +501,7 @@
   <section id="tab-bodega"></section>
   <section id="tab-tienda"></section>
   <section id="tab-registro"></section>
+  <section id="tab-online"></section>
 </main>
 
 <nav>
@@ -397,35 +510,33 @@
   <button data-tab="personal"><span data-ico="people"></span><em data-i18n="nav.personal">Personal</em></button>
   <button data-tab="bodega"><span data-ico="box"></span><em data-i18n="nav.bodega">Bodega</em></button>
   <button data-tab="tienda"><span data-ico="gem"></span><em data-i18n="nav.tienda">Tienda</em></button>
-  <button data-tab="registro"><span data-ico="log"></span><em data-i18n="nav.registro">Registro</em></button>
+  <button data-tab="online"><span data-ico="online"></span><em data-i18n="nav.online">En línea</em> <b class="badge" id="badgeO"></b></button>
 </nav>
 
 <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
 
 <script src="js/i18n.js"></script>
+<!-- Idiomas: solo el español va al inicio; los demás (js/lang/<código>.js y js/lang/juego/<código>.js) se cargan al elegirlos -->
 <script src="js/lang/es.js"></script>
-<script src="js/lang/en.js"></script>
-<script src="js/lang/pt-BR.js"></script>
-<script src="js/lang/fr.js"></script>
-<script src="js/lang/de.js"></script>
-<script src="js/lang/it.js"></script>
-<script src="js/lang/ru.js"></script>
-<script src="js/lang/tr.js"></script>
-<script src="js/lang/id.js"></script>
-<script src="js/lang/zh-CN.js"></script>
 <script src="js/datos.js"></script>
 <script src="js/logic.js"></script>
 <script src="js/art.js"></script>
 <script src="js/plan_evento.js"></script>
 <script src="js/api.js"></script>
 <script src="js/premium.js"></script>
-<script src="js/mercado.js"></script>
-<script src="js/chat.js"></script>
 <script src="js/sound.js"></script>
-<script src="js/musica.js"></script>
-<script src="js/soporte.js"></script>
-<script src="js/googleplay.js"></script>
 <script src="js/ui.js"></script>
+<!-- No hacen falta para la primera pantalla: se cargan después (ui.js los usa cuando ya están) -->
+<script defer src="js/intento.js"></script>
+<script defer src="js/mercado.js"></script>
+<script defer src="js/chat.js"></script>
+<script defer src="js/liga.js"></script>
+<script defer src="js/festival.js"></script>
+<script defer src="js/duelos.js"></script>
+<script defer src="js/desafio.js"></script>
+<script defer src="js/musica.js"></script>
+<script defer src="js/soporte.js"></script>
+<script defer src="js/googleplay.js"></script>
 </body>
 </html>

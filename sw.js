@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v5';
+const VERSION = 'envivo-v6';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -25,6 +25,11 @@ const SHELL = [
   './js/premium.js',
   './js/mercado.js',
   './js/chat.js',
+  './js/intento.js',    // eventos en línea (copia de server/validador/intento.js)
+  './js/liga.js',       // Liga Semanal
+  './js/festival.js',   // Mega Festival
+  './js/duelos.js',     // Duelo de Productoras
+  './js/desafio.js',    // Desafío del Día
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',
@@ -36,6 +41,16 @@ const SHELL = [
   './js/lang/tr.js',
   './js/lang/id.js',
   './js/lang/zh-CN.js',
+  // Textos del juego por idioma (se cargan al elegir el idioma; aquí quedan para jugar sin internet)
+  './js/lang/juego/en.js',
+  './js/lang/juego/pt-BR.js',
+  './js/lang/juego/fr.js',
+  './js/lang/juego/de.js',
+  './js/lang/juego/it.js',
+  './js/lang/juego/ru.js',
+  './js/lang/juego/tr.js',
+  './js/lang/juego/id.js',
+  './js/lang/juego/zh-CN.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

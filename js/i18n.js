@@ -9,6 +9,17 @@
    - Formatos con Intl: I18N.money(), I18N.num(), I18N.fecha(), I18N.hora().
    - I18N.setIdioma('de') guarda la elección (localStorage 'envivo_lang') y avisa a quien
      se haya suscrito con I18N.onChange(fn) para volver a pintar todo.
+   - Textos del juego (TEXTOS de js/datos.js): cada idioma vive en js/lang/juego/<código>.js y se
+     registra con I18N.registrarJuego(código, dict) (o en window.I18N_JUEGO[código] si carga antes).
+     I18N.juego(clave, params) → texto traducido con {parámetros} y plurales, o null en español o si
+     falta la clave (así la lógica usa el español). Uso: Game.setTraductor(I18N.juego), y otra vez
+     después de cada cambio de idioma para que se rearmen los nombres.
+   - Carga perezosa: la página solo trae js/lang/es.js. I18N.setIdioma('de') carga con <script>
+     js/lang/de.js y js/lang/juego/de.js y recién cuando terminan (bien o mal) cambia el idioma y
+     avisa a onChange; si el diccionario de la interfaz no llegó, se queda en español. Al arrancar,
+     si el idioma guardado/detectado no es español, se muestra español y se avisa cuando llega.
+     Si los diccionarios ya están (build de un solo archivo, pruebas), no se descarga nada.
+     I18N.listo → Promise que se resuelve (con el código del idioma) cuando termina la última carga.
    ========================================================= */
 (function (root) {
   'use strict';
@@ -63,7 +74,8 @@
     return BASE;
   }
 
-  let cur = detectar();
+  const inicial = detectar();
+  let cur = inicial; // en el navegador, si falta el diccionario, arranca en español (ver abajo)
   const listeners = [];
   const cache = { plural: {}, num: {}, money: {} };
   const localeOf = (code) => (info(code) || info(BASE)).locale;
@@ -123,19 +135,46 @@
     });
   }
 
+  // Una clave puede ser { one: '…', other: '…' }: se elige la forma según { n } y el idioma
+  function variante(v, p, code) {
+    if (!v || typeof v !== 'object') return v;
+    const n = p && p.n !== undefined ? Number(p.n) : 0;
+    const cat = pluralCat(n, code);
+    return hasOwn(v, cat) && v[cat] ? v[cat] : (v.other || v.one || Object.keys(v).map((k) => v[k])[0] || '');
+  }
+
   function T(key, p) {
     let code = cur;
     let v = look(cur, key);
     if (v === undefined && cur !== BASE) { v = look(BASE, key); code = BASE; }
     if (v === undefined) return String(key);
-    if (typeof v === 'object') {
-      const n = p && p.n !== undefined ? Number(p.n) : 0;
-      const cat = pluralCat(n, code);
-      v = hasOwn(v, cat) && v[cat] ? v[cat] : (v.other || v.one || Object.keys(v).map((k) => v[k])[0] || '');
-    }
+    if (typeof v === 'object') v = variante(v, p, code);
     return fill(String(v), p);
   }
   T.has = (key) => look(cur, key) !== undefined || look(BASE, key) !== undefined;
+
+  /* ---------- Textos del juego (js/lang/juego/<código>.js) ---------- */
+  const juegoDicts = () => root.I18N_JUEGO || {};
+  function registrarJuego(code, dict) {
+    if (!code || !dict || typeof dict !== 'object') return false;
+    root.I18N_JUEGO = root.I18N_JUEGO || {};
+    root.I18N_JUEGO[code] = Object.assign(root.I18N_JUEGO[code] || {}, dict);
+    return true;
+  }
+  // null = usa el español de TEXTOS (idioma base, clave que falta o texto vacío)
+  function juego(key, p) {
+    if (cur === BASE) return null;
+    const d = juegoDicts()[cur];
+    if (!hasOwn(d, key)) return null;
+    let v = d[key];
+    if (v && typeof v === 'object') v = variante(v, p, cur);
+    if (typeof v !== 'string' || v === '') return null;
+    return fill(v, p);
+  }
+  juego.has = (key, code) => {
+    const d = juegoDicts()[code || cur];
+    return hasOwn(d, key) && !!d[key];
+  };
 
   // Textos que vienen de la lógica del juego o del servidor (en español)
   function TL(text) {
@@ -171,14 +210,70 @@
     base.querySelectorAll('[data-i18n-title]').forEach((n) => { n.setAttribute('title', T(n.getAttribute('data-i18n-title'))); });
   }
 
+  /* ---------- Carga perezosa de diccionarios ---------- */
+  // Carpeta de este archivo (…/js/), para pedir lang/<código>.js aunque la página esté en otra ruta
+  const RAIZ = (() => {
+    try {
+      const s = root.document && root.document.currentScript;
+      if (s && s.src) return s.src.replace(/[^/]*$/, '');
+    } catch (e) { /* sin documento */ }
+    return 'js/';
+  })();
+  const puedeCargar = () => !!(root.document && root.document.createElement && (root.document.head || root.document.documentElement));
+  const tieneUI = (c) => c === BASE || hasOwn(dicts(), c);
+  const tieneJuego = (c) => c === BASE || hasOwn(juegoDicts(), c);
+  const cargas = {}; // url → Promise<boolean>
+  function cargarScript(url) {
+    if (cargas[url]) return cargas[url];
+    cargas[url] = new Promise((res) => {
+      try {
+        const doc = root.document;
+        const s = doc.createElement('script');
+        s.src = url;
+        s.async = true;
+        s.onload = () => res(true);
+        s.onerror = () => { delete cargas[url]; res(false); }; // se puede reintentar más tarde
+        (doc.head || doc.documentElement).appendChild(s);
+      } catch (e) { delete cargas[url]; res(false); }
+    });
+    return cargas[url];
+  }
+  // Trae lo que falte del idioma; resuelve true si quedó el diccionario de la interfaz
+  function asegurar(c) {
+    const p = [];
+    if (!tieneUI(c)) p.push(cargarScript(RAIZ + 'lang/' + c + '.js'));
+    if (!tieneJuego(c)) p.push(cargarScript(RAIZ + 'lang/juego/' + c + '.js'));
+    return Promise.all(p).then(() => tieneUI(c));
+  }
+
+  function aplicarIdioma(c) {
+    if (c === cur) return;
+    cur = c;
+    aplicarHtml();
+    listeners.slice().forEach((fn) => { try { fn(cur); } catch (e) { if (root.console) root.console.error(e); } });
+  }
+
+  let pedido = 0; // la última petición gana
+  let listo = Promise.resolve(cur);
+  function cambiar(c) {
+    const yo = ++pedido;
+    if ((tieneUI(c) && tieneJuego(c)) || !puedeCargar()) {
+      aplicarIdioma(c);
+      listo = Promise.resolve(cur);
+    } else {
+      listo = asegurar(c).then((ok) => {
+        if (yo === pedido) aplicarIdioma(ok ? c : BASE);
+        return cur;
+      });
+    }
+    return listo;
+  }
+
   function setIdioma(code) {
     const c = info(code) ? code : mejor(code);
     if (!c) return false;
     try { if (root.localStorage) root.localStorage.setItem(KEY, c); } catch (e) { /* modo privado */ }
-    if (c === cur) return true;
-    cur = c;
-    aplicarHtml();
-    listeners.slice().forEach((fn) => { try { fn(cur); } catch (e) { if (root.console) root.console.error(e); } });
+    cambiar(c);
     return true;
   }
 
@@ -188,6 +283,11 @@
     return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); };
   }
 
+  // Arranque: si el idioma elegido aún no está cargado, se muestra español y se cambia al llegar
+  if (inicial !== BASE && puedeCargar() && !(tieneUI(inicial) && tieneJuego(inicial))) {
+    cur = BASE;
+    cambiar(inicial);
+  }
   aplicarHtml();
 
   const I18N = {
@@ -195,7 +295,10 @@
     get idioma() { return cur; },
     get locale() { return localeOf(cur); },
     get dir() { return (info(cur) || info(BASE)).dir; },
-    T, TL, setIdioma, onChange, aplicar, mejor, detectar,
+    get listo() { return listo; },
+    // Precarga sin cambiar de idioma: Promise<boolean> (true si quedó el diccionario de la interfaz)
+    cargarIdioma: (code) => { const c = info(code) ? code : mejor(code); return c ? (puedeCargar() ? asegurar(c) : Promise.resolve(tieneUI(c))) : Promise.resolve(false); },
+    T, TL, setIdioma, onChange, aplicar, mejor, detectar, juego, registrarJuego,
     plural: pluralCat, num, money, fecha, hora,
   };
   root.I18N = I18N;
