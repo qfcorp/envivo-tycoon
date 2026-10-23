@@ -1377,6 +1377,113 @@
     if (has('flores')) out.piso += `<g class="hq-cosm hq-flores">${Array.from({ length: 7 }, (_, i) => `<circle cx="${150 + i * 10}" cy="${136 - Math.sin(i / 6 * Math.PI) * 6}" r="3" fill="${['#ffffff', '#f4d0ff', '#ffd27a'][i % 3]}"/>`).join('')}</g>`;
     return out;
   }
+  /* ---------- Vida de la sede: gente, tráfico, luces, ondas, cielo (solo CSS: transform/opacity, lento y calmado) ----------
+     Las clases empiezan con "hqv-". Con "reducir movimiento" no se mueve nada: la gente queda parada en la vereda y lo que
+     solo existe en movimiento (carro, moto, pájaros, estrella fugaz, ondas, sombra en la ventana) queda oculto. */
+  const VIDA_CSS = '.hq .hqv-p{stroke-width:1.9;stroke-linecap:round;animation:hqv-paso .45s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 0}'
+    + '.hq .hqv-br{stroke:#000;stroke-opacity:.35;stroke-width:1.5;stroke-linecap:round}.hq .hqv-humo,.hq .hqv-onda{fill:none;stroke-linecap:round}.hq .hqv-humo{stroke:#e9edf5;stroke-width:.55}.hq .hqv-onda{stroke-width:1.1}.hq .hqv-est{fill:#fff}'
+    + '.hq .hqv-p2{animation-delay:-.45s}'
+    + '@keyframes hqv-paso{from{transform:rotate(24deg)}to{transform:rotate(-24deg)}}'
+    + '.hq .hqv-bob{animation:hqv-bob .45s ease-in-out infinite alternate}@keyframes hqv-bob{to{transform:translateY(-.7px)}}'
+    + '.hq .hqv-ca{animation:hqv-ca 22s linear infinite}'
+    + '@keyframes hqv-ca{0%{transform:translateX(120px) scaleX(-1);opacity:0}4%{opacity:1}46%{transform:translateX(0) scaleX(-1)}47%{transform:translateX(0) scaleX(1)}91%{transform:translateX(120px) scaleX(1);opacity:1}95%,100%{transform:translateX(120px) scaleX(1);opacity:0}}'
+    + '.hq .hqv-cb{animation:hqv-cb 26s linear infinite}'
+    + '@keyframes hqv-cb{0%{transform:translateX(-115px);opacity:0}3%{opacity:1}82%{transform:translateX(155px);opacity:1}86%,100%{transform:translateX(155px);opacity:0}}'
+    + '.hq .hqv-cc{animation:hqv-cc 24s linear infinite}'
+    + '@keyframes hqv-cc{0%{transform:translateX(85px) scaleX(-1);opacity:0}3%{opacity:1}80%,100%{transform:translateX(-185px) scaleX(-1)}}'
+    + '.hq .hqv-auto{opacity:0;animation:hqv-auto 19s linear infinite}'
+    + '@keyframes hqv-auto{0%{transform:translateX(0);opacity:1}30%{transform:translateX(450px);opacity:1}30.1%,100%{transform:translateX(450px);opacity:0}}'
+    + '.hq .hqv-moto{animation:hqv-moto 23s linear -15s infinite}'
+    + '@keyframes hqv-moto{0%{transform:translateX(0);opacity:1}35%{transform:translateX(-460px);opacity:1}35.1%,100%{transform:translateX(-460px);opacity:0}}'
+    + '.hq .hqv-tally{animation:hqv-tally 2.6s ease-in-out infinite}@keyframes hqv-tally{0%,45%{opacity:1}55%,100%{opacity:.2}}'
+    + '.hq .hqv-halo{opacity:0;animation:hqv-halo 4s ease-in-out infinite}@keyframes hqv-halo{50%{opacity:.55}}'
+    + '.hq .hqv-onda{opacity:0;animation:hqv-onda 9s ease-out infinite;transform-box:fill-box;transform-origin:center}'
+    + '@keyframes hqv-onda{0%{transform:scale(.3);opacity:0}4%{opacity:.9}30%,100%{transform:scale(1.6);opacity:0}}'
+    + '.hq .hqv-sil{opacity:0;animation:hqv-sil 15s ease-in-out infinite}@keyframes hqv-sil{0%{transform:translateX(0);opacity:.6}45%,100%{transform:translateX(80px);opacity:.6}}'
+    + '.hq .hqv-humo{opacity:0;animation:hqv-humo 3.6s ease-out infinite}@keyframes hqv-humo{0%{transform:translateY(0);opacity:0}30%{opacity:.75}100%{transform:translateY(-5px);opacity:0}}'
+    + '.hq .hqv-nube{animation:hqv-nube 18s ease-in-out infinite alternate}@keyframes hqv-nube{to{transform:translateX(26px)}}'
+    + '.hq .hqv-aves{opacity:0;animation:hqv-aves 21s linear -6s infinite}'
+    + '@keyframes hqv-aves{0%{transform:translateX(0);opacity:1}45%{transform:translateX(-440px);opacity:1}45.1%,100%{transform:translateX(-440px);opacity:0}}'
+    + '.hq .hqv-ala{animation:hqv-ala .5s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}@keyframes hqv-ala{to{transform:scaleY(.3)}}'
+    + '.hq .hqv-est{animation:hqv-est 5s ease-in-out infinite}@keyframes hqv-est{50%{opacity:.15}}'
+    + '.hq .hqv-fugaz{opacity:0;animation:hqv-fugaz 17s ease-out 4s infinite}@keyframes hqv-fugaz{0%{transform:translate(0,0);opacity:0}1%{opacity:.9}6%,100%{transform:translate(-70px,24px);opacity:0}}'
+    + '.hq .hqv-poste{animation:hqv-poste 11s linear infinite}@keyframes hqv-poste{0%,86%,88%,91%,100%{opacity:1}87%{opacity:.35}90%{opacity:.55}}'
+    + '@media (prefers-reduced-motion:reduce){.hq [class*="hqv-"]{animation:none!important}}';
+  const VIDA_ID = 'art-hq-vida';
+  // Los estilos van UNA vez en la página; sin documento (Node) van dentro del SVG
+  function ensureVidaCss() {
+    try {
+      if (typeof document === 'undefined' || !document.head) return false;
+      if (!document.getElementById(VIDA_ID)) document.head.insertAdjacentHTML('beforeend', `<style id="${VIDA_ID}">${VIDA_CSS}</style>`);
+      return true;
+    } catch (e) { return false; }
+  }
+  // Vitrina de la decoración en cada local (igual que FACHADA en js/decoracion.js) → dónde queda la taza de la cafetera
+  const VITRINA = [[95, 96, 170, 44], [78, 96, 122, 44], [60, 100, 120, 40], [56, 92, 196, 48]];
+  function vidaSede(st, stage, night, u) {
+    let cafe = false;
+    try { const D = root.Decoracion; cafe = !!(D && D.lista && st.decor && D.lista(st).some((x) => x.activo && x.it && x.it.k === 'cafetera')); } catch (e) { cafe = false; }
+    const humo = (x, y, d) => `<path class="hqv-humo" style="animation-delay:${d}s" d="M${x} ${y}q-.9-1.3 0-2.6t0-2.6"/>`;
+    /* Gente: 1 persona → el dueño; 2-3 → + alguien con un case; 4 o más → + alguien con un rollo de cable. Pies en y = 141 */
+    const n = (st.staff || []).length;
+    const cuantos = n <= 1 ? 1 : n <= 3 ? 2 : 3;
+    const persona = (cls, x, delay, ropa, piel, gorra, mano) => `<g transform="translate(${x} 141)"><g class="${cls}" style="animation-delay:${delay}s">`
+      + `<g stroke="${night ? '#3a4560' : '#2a3242'}"><path class="hqv-p" d="M-1-6.6v6"/><path class="hqv-p hqv-p2" d="M1-6.6v6"/></g>`
+      + `<g class="hqv-bob"><rect x="-2.7" y="-13" width="5.4" height="7.2" rx="1.8" fill="${ropa}"/><circle cy="-15.4" r="2.3" fill="${piel}"/>`
+      + `<path d="M-2.4-15.5a2.4 2.4 0 014.8 0z${gorra ? 'M1.8-16h2.3' : ''}" fill="${gorra || '#2a1a14'}" stroke="${gorra || 'none'}" stroke-width=".9"/>${mano}</g></g></g>`;
+    const brazo = (x2, y2) => `<path class="hqv-br" d="M.3-11.6L${x2} ${y2}"/>`;
+    const gente = [
+      // el dueño sale por la puerta, camina un poco y vuelve a entrar (con su café si hay cafetera)
+      persona('hqv-ca', [120, 120, 140, 195][stage], -3, '#d42a30', '#c98a5e', '#14171d',
+        brazo(1.8, -7.6) + (cafe ? `<rect x="1.2" y="-8.8" width="1.9" height="2.3" rx=".3" fill="#e9edf5"/>${humo(2.1, -9.4, 0)}` : '')),
+      // lleva un case hasta la puerta / la unidad móvil
+      persona('hqv-cb', 100, -10, '#2f6fb3', '#8d5a3b', '', brazo(3.4, -8.2) + '<rect x="1" y="-8.4" width="6.6" height="4.8" rx=".6" fill="#2a2e37" stroke="#8b95a8" stroke-width=".5"/><path d="M2.8-8.4v-.8h3v.8" stroke="#8b95a8" stroke-width=".5" fill="none"/>'),
+      // sale con un rollo de cable al hombro
+      persona('hqv-cc', 165, -5, '#2f8f5b', '#e0b48c', '', brazo(1.6, -7.4) + '<circle cx="-1.4" cy="-10.6" r="2.8" fill="none" stroke="#f5a01b" stroke-width="1.1"/>'),
+    ].slice(0, cuantos).join('');
+    /* Tráfico: un taxi amarillo que pasa de vez en cuando y una moto de entregas en sentido contrario */
+    const luz = (x, y, dir) => (night ? `<path d="M${x} ${y}l${dir * 26}-3.5v8z" fill="#ffd27a" opacity=".22"/>` : '');
+    const taxi = `<g transform="translate(-40 0)"><g class="hqv-auto">${luz(14, 142.6, 1)}<path d="M-8 141l3.2-4.4h9.6l4 4.4z" fill="#f5c542"/><path d="M-5.6 140.6l2.4-3.3h3.6v3.3zM1.4 140.6v-3.3h2.8l2.8 3.3z" fill="${night ? '#ffe9a3' : '#bcd8ff'}" opacity="${night ? 0.55 : 0.85}"/>`
+      + `<rect x="-14" y="140.6" width="28" height="6.4" rx="2" fill="#f5c542"/><path d="M-14 143.6h28" stroke="#c68a12" stroke-width=".6"/><rect x="-2" y="135" width="5" height="1.8" rx=".5" fill="${night ? '#fff3c4' : '#14171d'}"/>`
+      + `<circle cx="13" cy="142.4" r="1" fill="#fffbe0"/><circle cx="-13.3" cy="142.4" r=".9" fill="#ff3b3b"/><circle cx="-8" cy="147.2" r="2.3" fill="#111"/><circle cx="8" cy="147.2" r="2.3" fill="#111"/><circle cx="-8" cy="147.2" r=".9" fill="#8b95a8"/><circle cx="8" cy="147.2" r=".9" fill="#8b95a8"/></g></g>`;
+    const moto = `<g transform="translate(410 0)"><g class="hqv-auto hqv-moto">${luz(-5.6, 139.8, -1)}<circle cx="-6" cy="146.8" r="2.4" fill="none" stroke="#111" stroke-width="1.3"/><circle cx="6" cy="146.8" r="2.4" fill="none" stroke="#111" stroke-width="1.3"/>`
+      + `<path d="M-6 146.8l3-4.6h6.5l2.5 4.6M-3 142.2l-1.6-2.8" stroke="#3a4150" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="-5.2" cy="139.6" r=".8" fill="#fffbe0"/>`
+      + `<rect x="4" y="135" width="6" height="5.6" rx=".8" fill="#d42a30"/><path d="M0 141.6l1.6-6.2" stroke="#2a3242" stroke-width="2.2" stroke-linecap="round"/><path d="M1.4 136l-4 2.4" stroke="#2a3242" stroke-width="1.3" stroke-linecap="round"/><circle cx="1.6" cy="133.6" r="2.2" fill="#e9edf5"/><path d="M-.6 133.6h2" stroke="#14171d" stroke-width="1"/></g></g>`;
+    /* Fachada: luz de EN VIVO (tally) y halo del letrero, antena con ondas (estudio y centro), sombra que pasa detrás
+       de una ventana, vapor de la cafetera en la vitrina */
+    const tally = (x, y) => `<rect x="${x - 2.6}" y="${y - 2.6}" width="5.2" height="5.2" rx="1" fill="#14171d"/><circle cx="${x}" cy="${y}" r="5" fill="#ff3b3b" fill-opacity=".2" class="hqv-tally"/><circle cx="${x}" cy="${y}" r="1.7" fill="#ff3b3b" class="hqv-tally"/>`;
+    const halo = (x, y, w, h) => `<rect class="hqv-halo" x="${x - 2}" y="${y - 2}" width="${w + 4}" height="${h + 4}" rx="4" fill="none" stroke="#ff5a5a" stroke-width="1.6"/>`;
+    const ondas = (x, y) => `<g class="hqv-ondas" transform="translate(${x} ${y})" stroke="${night ? '#7fd8ff' : '#e9f6ff'}">${[0, 0.8, 1.6].map((d) => `<path class="hqv-onda" style="animation-delay:${d}s" d="M-6-5a8 8 0 000 10M6-5a8 8 0 010 10"/>`).join('')}</g>`;
+    const vent = [null, [122, 50, 26, 36], [229, 74, 62, 40], [266, 74, 48, 36]][stage];
+    let fachada = [
+      `${tally(191, 51.5)}`,
+      `${tally(282, 52)}${halo(206, 44, 68, 16)}`,
+      `${halo(218, 40, 84, 16)}<path d="M282 20V2M277 9l5-4.4 5 4.4" stroke="#8b95a8" stroke-width="1.6" fill="none"/><circle cx="282" cy="1" r="2" fill="#ff3b3b" class="blink"/>${ondas(282, 1)}`,
+      `${halo(262, 34, 56, 16)}${ondas(290, -12)}`,
+    ][stage];
+    if (vent) {
+      const [x, y, w, h] = vent;
+      fachada += `<clipPath id="${u}v"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath><g clip-path="url(#${u}v)"><g transform="translate(${x - 8} ${y + h})"><path class="hqv-sil" d="M-6 0v-5q0-4.6 6-4.6t6 4.6v5zM0-10.6a3.2 3.2 0 100-6.4 3.2 3.2 0 100 6.4z" fill="${night ? '#3a2a1a' : '#0d0f14'}"/></g></g>`;
+    }
+    if (cafe) {
+      const [x, y, w, h] = VITRINA[stage];
+      let k = h / 80; if (200 * k > w) k = w / 200;
+      const cx = x + (w - 200 * k) / 2 + 21 * k, cy = y + h - 80 * k + 43.6 * k;
+      fachada += `<g class="hqv-vapor">${humo((cx - 0.7).toFixed(1), cy.toFixed(1), 0)}${humo((cx + 0.8).toFixed(1), cy.toFixed(1), 1.8)}</g>`;
+    }
+    /* Cielo: de día pájaros que cruzan; de noche estrellas que titilan y una estrella fugaz de vez en cuando */
+    const cielo = night
+      ? [[172, -9, 4.2, 0], [226, -3, 6, -2], [262, -14, 5, -3.5], [205, 8, 7, -1], [160, 6, 5.5, -4], [305, -12, 4.6, -2.6]].map(([x, y, d, l]) => `<circle class="hqv-est" style="animation-duration:${d}s;animation-delay:${l}s" cx="${x}" cy="${y}" r="1"/>`).join('')
+        + '<path class="hqv-fugaz" d="M240-16l12-4" stroke="#fff" stroke-width="1" stroke-linecap="round"/>'
+      : `<g transform="translate(400 6)"><g class="hqv-aves" stroke="#2a3242" stroke-width=".8" fill="none" stroke-linecap="round"><path class="hqv-ala" d="M-3 0q1.5-1.8 3 0q1.5-1.8 3 0"/><path class="hqv-ala" style="animation-delay:-.25s" d="M6 4.5q1.2-1.4 2.4 0q1.2-1.4 2.4 0"/></g></g>`;
+    const css = ensureVidaCss() ? '' : `<style>${VIDA_CSS}</style>`;
+    return {
+      cielo: `<g class="hq-vida hqv-cielo">${css}${cielo}</g>`,
+      fachada: `<g class="hq-vida hqv-fachada">${fachada}</g>`,
+      gente: `<g class="hq-vida hqv-gente">${gente}</g>`,
+      trafico: `<g class="hq-vida hqv-trafico">${taxi}${moto}</g>`,
+    };
+  }
   function hq(s) {
     try {
       const st = s || {};
@@ -1445,7 +1552,7 @@
         ? `<path d="${[[20, -5], [90, 2], [150, -10], [330, 0], [210, -14], [310, -15], [48, 8], [250, 4], [120, -16], [170, 6], [280, -6]].map(([x, y]) => `M${x} ${y}h1.2v1.2h-1.2z`).join('')}" fill="#e9edf5" opacity=".8"/>
           <circle cx="40" cy="-4" r="1.4" fill="#fff" class="twinkle"/><circle cx="336" cy="-2" r="9" fill="#f4f1d0"/><circle cx="340" cy="-5" r="8" fill="#0b1222"/><circle cx="336" cy="-2" r="20" fill="#f4f1d0" opacity=".06"/>`
         : `<circle cx="330" cy="2" r="12" fill="#ffe9a3"/><circle cx="330" cy="2" r="24" fill="#ffe9a3" opacity=".22"/>
-          ${[[40, -6, 1], [190, -12, 0.8]].map(([x, y, k]) => `<g transform="translate(${x} ${y}) scale(${k})" class="cloud"><path d="M-18 4a8 8 0 018-10 12 12 0 0122-2 9 9 0 018 12z" fill="#fff" opacity=".9"/><path d="M-18 4h38" stroke="#c9dcec" stroke-width="2"/></g>`).join('')}`;
+          ${[[40, -6, 1, 0], [190, -12, 0.8, -7], [258, -2, 0.55, -13]].map(([x, y, k, d]) => `<g transform="translate(${x} ${y}) scale(${k})"><g class="hqv-nube" style="animation-delay:${d}s"><path d="M-18 4a8 8 0 018-10 12 12 0 0122-2 9 9 0 018 12z" fill="#fff" opacity=".9"/><path d="M-18 4h38" stroke="#c9dcec" stroke-width="2"/></g></g>`).join('')}`;
       const hills = night
         ? '<path d="M0 118L40 96 80 110 130 86 180 106 240 82 300 104 360 90V140H0z" fill="#121a2a"/><path d="M0 128L60 112 120 122 200 104 280 120 360 108V140H0z" fill="#0e1422"/>'
         : '<path d="M0 118L40 96 80 110 130 86 180 106 240 82 300 104 360 90V140H0z" fill="#6f8ca6" opacity=".55"/><path d="M0 128L60 112 120 122 200 104 280 120 360 108V140H0z" fill="#4f7a5a" opacity=".6"/>';
@@ -1458,15 +1565,16 @@
       if (has('grua')) side.push(`<g transform="translate(332 140)"><path d="M0 0l-6-26 6 0" stroke="#5b6476" stroke-width="2"/><path d="M-30 -10L22 -40" stroke="${U('cyal')}" stroke-width="3" stroke-linecap="round"/><rect x="16" y="-44" width="12" height="8" rx="1.5" fill="${U('al')}"/></g>`);
       const camRow = cams.slice(0, 6).map((e, i) => sceneCam(26 + i * 34, 121, e.type, 0.6)).join('');
       const cosm = cosmeticosSede(st, roofX, roofY);
-      const lamp = `<path d="M346 140V100" stroke="#3a4150" stroke-width="2"/><path d="M346 100h-8" stroke="#3a4150" stroke-width="2"/><circle cx="337" cy="102" r="2.5" fill="${night ? '#ffd27a' : '#8b95a8'}"/>${night ? cone(337, 104, 2, 36, 16, U('poolW')) : ''}`;
+      const lamp = `<path d="M346 140V100" stroke="#3a4150" stroke-width="2"/><path d="M346 100h-8" stroke="#3a4150" stroke-width="2"/>${night ? `<g class="hqv-poste"><circle cx="337" cy="102" r="2.5" fill="#ffd27a"/>${cone(337, 104, 2, 36, 16, U('poolW'))}</g>` : '<circle cx="337" cy="102" r="2.5" fill="#8b95a8"/>'}`;
+      const vida = vidaSede(st, stage, night, u);
       return `<svg class="hq" viewBox="0 -20 360 170" role="img" aria-label="${esc(label)}">
       <defs>${inline}${wall}</defs>
       <rect x="0" y="-20" width="360" height="170" fill="${sky}"/>
-      ${skyDeco}${hills}
+      ${skyDeco}${vida.cielo}${hills}
       <ellipse cx="180" cy="141" rx="170" ry="5" fill="#000" opacity=".35"/>
-      ${building}${root.Decoracion && root.Decoracion.capa ? root.Decoracion.capa(st, stage) : ''}${roof.join('')}
+      ${building}${root.Decoracion && root.Decoracion.capa ? root.Decoracion.capa(st, stage) : ''}${vida.fachada}${roof.join('')}
       <rect x="0" y="140" width="360" height="10" fill="${night ? '#1a1f2a' : '#5b6476'}"/><path d="M0 141h360" stroke="${night ? '#2a3242' : '#8f99aa'}" stroke-width="1.5"/><path d="M0 146h360" stroke="${night ? '#2a3242' : '#e9edf5'}" stroke-width="1" stroke-dasharray="10 8" opacity=".5"/>
-      ${cosm.cielo}${lamp}${side.join('')}${camRow}${van}${cosm.piso}
+      ${cosm.cielo}${lamp}${side.join('')}${vida.gente}${camRow}${van}${cosm.piso}${vida.trafico}
       <rect x="8" y="-14" width="${Math.min(344, Math.round(label.length * 6.2 + 16))}" height="18" rx="9" fill="#0d0f14cc" stroke="#2a3242"/>
       <text x="16" y="-1.5" font-size="10.5" font-family="${FONT_B}" font-weight="600" fill="#e9edf5">${esc(label)}</text>
     </svg>`;

@@ -108,6 +108,8 @@ console.log('errores.json');
     for (const p of prefijos) {
       if (p === 'falta_') ok(claves.includes('falta_dato'), 'errores.json: falta "falta_dato" para el prefijo falta_<campo>');
       else if (p === 'google_') for (const e of ['pendiente', 'rechazado', 'revertido']) ok(claves.includes('google_' + e), `errores.json: falta "google_${e}" (prefijo google_<estado>)`);
+      else if (p === 'cuenta_') for (const e of ['suspendido', 'baneado', 'borrado']) ok(claves.includes('cuenta_' + e), `errores.json: falta "cuenta_${e}" (prefijo cuenta_<estado>)`);
+      else if (p === 'plan_') for (const e of ['ejecutada', 'cancelada']) ok(claves.includes('plan_' + e), `errores.json: falta "plan_${e}" (prefijo plan_<estado>)`);
       else ok(false, `errores.json: prefijo dinámico nuevo en el servidor: "${p}" (agregar sus textos y este caso a la prueba)`);
     }
     // Los estados de publicación que Mercado::retirar devuelve como código ('codigo' => $p['estado'])
