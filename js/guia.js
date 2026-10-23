@@ -62,7 +62,7 @@
 #guia{position:fixed;inset:0;z-index:25;pointer-events:none;font-family:var(--f-body,system-ui,sans-serif)}
 #guia [hidden]{display:none!important}
 #guia .g-blk{position:fixed;pointer-events:auto;background:transparent;touch-action:pan-y}
-#guia .g-ring{position:fixed;border-radius:14px;pointer-events:none;box-shadow:0 0 0 3px var(--amber,#ffb020),0 0 22px 2px #ffb020aa,0 0 0 200vmax #000000a8;transition:top .18s,left .18s,width .18s,height .18s}
+#guia .g-ring{position:fixed;border-radius:14px;pointer-events:none;box-shadow:0 0 0 3px var(--amber,#ffb020),0 0 22px 2px #ffb020aa,0 0 0 200vmax #000000a8}
 #guia .g-ring::after{content:"";position:absolute;inset:-4px;border-radius:17px;border:3px solid var(--amber,#ffb020);animation:gPulse 1.2s ease-out infinite}
 #guia .g-ring.nudge{animation:gNudge .35s}
 #guia .g-hand{position:fixed;width:58px;height:72px;pointer-events:none;z-index:2;transform-origin:20px 2px;filter:drop-shadow(0 4px 8px #000c)}
@@ -307,7 +307,14 @@
       ultimoPaso = paso;
     } catch (e) { cerrarPorError(e); }
   }
+  // Las ventanas entran con animación (y la tira de js/escena.js mueve lo de abajo): unas lecturas más mientras se acomodan
+  let reps = [];
+  function repasar() {
+    reps.forEach(clearTimeout);
+    reps = [120, 300, 600].map((ms) => setTimeout(() => { if (el && !fin) tick(); }, ms));
+  }
   function pedir() {
+    repasar();
     if (raf) return;
     raf = (root.requestAnimationFrame || ((f) => setTimeout(f, 16)))(() => { raf = 0; tick(); });
   }
@@ -351,6 +358,7 @@
   function cerrar() {
     clearInterval(timer); timer = null;
     clearTimeout(finT); finT = null;
+    reps.forEach(clearTimeout); reps = [];
     if (obs) { try { obs.disconnect(); } catch (e) { /* nada */ } obs = null; }
     try { root.removeEventListener('scroll', alMover, true); root.removeEventListener('resize', alMover); } catch (e) { /* nada */ }
     if (el && el.parentNode) el.parentNode.removeChild(el);
