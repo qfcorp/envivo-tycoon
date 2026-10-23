@@ -183,6 +183,12 @@ function cc_tarjeta(string $titulo, string $valor, string $pie = '', string $id 
 }
 
 function cc_chip(string $texto, string $tipo = ''): string { return '<span class="chip' . ($tipo !== '' ? ' chip-' . e($tipo) : '') . '">' . e($texto) . '</span>'; }
+/** Distintivo del canal en las tablas (la web con tarjeta no lleva distintivo). */
+function cc_chip_canal(array $c): string
+{
+    return match ($c['canal'] ?? '') { 'google_play' => ' ' . cc_chip('Google Play'), 'web_paypal' => ' ' . cc_chip('PayPal'), default => '' };
+}
+
 
 function cc_estado_compra(string $e): string
 {

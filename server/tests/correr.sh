@@ -40,7 +40,7 @@ MAL=0
 while IFS= read -r f; do php -l "$f" > /dev/null 2>&1 || { echo "  FALLA php -l $f"; MAL=1; }; done < <(find "$SRV" -name '*.php')
 while IFS= read -r f; do bash -n "$f" || { echo "  FALLA bash -n $f"; MAL=1; }; done < <(find "$SRV" -name '*.sh')
 check "php -l y bash -n sin errores" 0 "$MAL"
-node --check "$SRV/public/assets/pago.js" && node --check "$SRV/tests/navegador.cjs" && node --check "$SRV/tests/navegador_control.cjs"
+node --check "$SRV/public/assets/pago.js" && node --check "$SRV/public/assets/paypal.js" && node --check "$SRV/tests/navegador.cjs" && node --check "$SRV/tests/navegador_control.cjs"
 check "JavaScript sin errores de sintaxis" 0 "$?"
 check "Vendor CryptoJS y JSEncrypt iguales a los de TuPass (si esta TuPass)" 0 "$( [ -d /home/claude/tupass ] && { cmp -s "$SRV/public/assets/vendor/crypto-js.min.js" /home/claude/tupass/public/assets/vendor/crypto-js.min.js && cmp -s "$SRV/public/assets/vendor/jsencrypt.min.js" /home/claude/tupass/public/assets/vendor/jsencrypt.min.js; echo $?; } || echo 0)"
 check "src/CatalogoJuego.php al dia con js/datos.js (roles, equipos y tipos de evento)" 0 "$(php "$SRV/bin/catalogo_juego.php" --revisar > /dev/null 2>&1; echo $?)"
@@ -131,7 +131,7 @@ check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo r
 
 echo
 echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo, Partida en la nube (versión y dispositivo activo)"
-for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta facturacion visitas errores misiones push buzon edad_servidor; do
+for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta facturacion visitas errores misiones push buzon edad_servidor paypal; do
   # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
   env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
   grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'
@@ -290,7 +290,7 @@ check "El codigo no escribe el pedido a Plux en ningun registro" "0" "$(grep -rn
 AVISOS=$(cat "$TMP/php_errores.log" "$TMP/app.log" "$TMP/sin.log" | grep -ciE "fatal|warning|deprecated|notice|EN VIVO api|EN VIVO pago|EN VIVO admin")
 check "Sin errores ni avisos de PHP" 0 "$AVISOS"; [ "$AVISOS" = 0 ] || cat "$TMP/php_errores.log" "$TMP/app.log" | grep -iE "fatal|warning|deprecated|notice|EN VIVO" | sort | uniq -c | head -10
 check "Plux falso: ninguna llamada sin Basic Auth valida" "0" "$(grep -c '"auth_ok":false' "$FALSO_LOG")"
-SECRETOS=$(grep -rnIE '^[[:space:]]*(PLUX_CLAVE_SECRETA|PLUX_ID_CLIENTE|PLUX_WEBHOOK_CLAVE|ENVIVO_ADMIN_CLAVE_HASH)=[^$ ]' "$SRV" --include='*.php' --include='*.sh' --include='*.ejemplo' --include='*.env' | grep -v '^.*tests/' | grep -viE '=[A-Za-z0-9_]*prueba' )
+SECRETOS=$(grep -rnIE '^[[:space:]]*(PLUX_CLAVE_SECRETA|PLUX_ID_CLIENTE|PLUX_WEBHOOK_CLAVE|ENVIVO_ADMIN_CLAVE_HASH|PAYPAL_CLIENT_ID|PAYPAL_SECRET|PAYPAL_WEBHOOK_ID)=[^$ ]' "$SRV" --include='*.php' --include='*.sh' --include='*.ejemplo' --include='*.env' | grep -v '^.*tests/' | grep -viE '=[A-Za-z0-9_]*prueba' )
 check "Ninguna clave real escrita en el codigo ni en el ejemplo" "" "$SECRETOS"
 
 echo

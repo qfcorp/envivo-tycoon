@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace EnVivo;
 
 /**
- * Compras con dinero real (Pago Plux).
+ * Compras con dinero real (Pago Plux y PayPal en la web, Google Play en la app).
  * - Una compra nace "pendiente" con su valor FIJO del catálogo (total con IVA, subtotal e IVA aparte para la factura).
  * - aprobar() es IDEMPOTENTE y va en UNA transacción: marca "pagado" una sola vez y entrega una sola vez.
  *   Si llega dos veces (pago + aviso de Plux, recargar la página del banco...), la segunda no hace nada.
@@ -51,15 +51,24 @@ final class Compras
      * El precio, los créditos (con el bono de la oferta vigente) se guardan en la compra: lo que se pagó es lo que se entrega,
      * aunque después cambie el precio o termine la oferta.
      */
-    public static function crear(int $jugador, string $producto, ?int $transferencia = null): array
+    public static function crear(int $jugador, string $producto, ?int $transferencia = null, string $metodo = 'tarjeta'): array
     {
         $p = Catalogo::producto($producto);
         if (!$p || (!empty($p['oculto']) && $transferencia === null)) throw new Fallo('Ese producto no existe en la tienda.', 404, ['codigo' => 'no_existe']);
         Ajustes::exigirTiendaAbierta();
-        if (!Plux::configurado()) throw new Fallo('El pago con tarjeta todavía no está disponible. Intenta más tarde.', 503, ['codigo' => 'plux_no_disponible']);
-        return Db::tx(function () use ($jugador, $producto, $p, $transferencia): array {
+        $paypal = $metodo === 'paypal';
+        if ($paypal) {
+            // PayPal (src/PayPal.php): solo en la web, con llaves y desde PAYPAL_MINIMO (la comisión se come las ventas chicas)
+            if (!PayPal::configurado()) throw new Fallo('El pago con PayPal todavía no está disponible. Paga con tarjeta o intenta más tarde.', 503, ['codigo' => 'paypal_no_disponible']);
+            if ($transferencia !== null || !PayPal::permite((float) $p['precio'])) {
+                throw new Fallo('PayPal está disponible para compras desde ' . Http::dinero(PayPal::minimo()) . '. Paga con tarjeta.', 409, ['codigo' => 'paypal_minimo', 'minimo' => PayPal::minimo()]);
+            }
+        } elseif (!Plux::configurado()) {
+            throw new Fallo('El pago con tarjeta todavía no está disponible. Intenta más tarde.', 503, ['codigo' => 'plux_no_disponible']);
+        }
+        return Db::tx(function () use ($jugador, $producto, $p, $transferencia, $paypal): array {
             self::exigirComprable($jugador, $p);
-            return self::insertar($jugador, $p, 'web_plux', $transferencia);
+            return self::insertar($jugador, $p, $paypal ? 'web_paypal' : 'web_plux', $transferencia);
         });
     }
 
@@ -105,7 +114,7 @@ final class Compras
                 [time(), mb_substr($quien, 0, 150), $transaccion, $respuesta, $compraId]);
             $entregada = self::entregarCompra($c);
             if ($entregada) self::emitir('compra_aprobada', ['compra_id' => (int) $c['id'], 'jugador_id' => (int) $c['jugador_id'], 'producto' => (string) $c['producto'],
-                'monto_usd' => round((float) $c['total'], 2), 'canal' => $c['canal'] === 'google_play' ? 'google' : 'plux']);
+                'monto_usd' => round((float) $c['total'], 2), 'canal' => match ($c['canal']) { 'google_play' => 'google', 'web_paypal' => 'paypal', default => 'plux' }]);
             if ($previo === 'rechazado') Db::aviso('pagado_tras_rechazo', 'La compra N° ' . $compraId . ' estaba rechazada y luego llegó como pagada (' . $quien . '): se entregó.', $compraId);
             return [true, $c];
         });
@@ -218,7 +227,7 @@ final class Compras
     /**
      * Abuso de reembolsos (decisión del dueño): un contracargo, o N reembolsos en X días -> la cuenta queda BANEADA.
      * Las reglas están en Ajustes (se cambian en el Centro de Control): abuso_contracargo_banea (1/0),
-     * abuso_reembolsos (2) y abuso_dias (180). Vale para Pago Plux y Google Play. Devuelve true si la baneó ahora.
+     * abuso_reembolsos (2) y abuso_dias (180). Vale para Pago Plux, PayPal y Google Play. Devuelve true si la baneó ahora.
      */
     public static function revisarAbuso(int $jugador, string $tipo, string $quien): bool
     {
@@ -234,7 +243,7 @@ final class Compras
         return true;
     }
 
-    /** Marca rechazada una compra pendiente (aviso RECHAZADO de Plux). */
+    /** Marca rechazada una compra pendiente (aviso RECHAZADO de Plux, PAYMENT.CAPTURE.DENIED de PayPal). */
     public static function rechazar(int $compraId, string $respuesta): bool
     {
         return Db::q("UPDATE compras SET estado = 'rechazado', plux_paso = 'rechazado', plux_respuesta = ? WHERE id = ? AND estado = 'pendiente'", [$respuesta, $compraId])->rowCount() > 0;

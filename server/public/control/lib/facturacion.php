@@ -25,7 +25,7 @@ function cc_fact_filtros(): array
     $f = ['estado' => cc_get('estado') ?: 'activas', 'tipo' => cc_get('tipo'), 'canal' => cc_get('canal'), 'desde' => cc_get('desde'), 'hasta' => cc_get('hasta'), 'q' => cc_get('q')];
     if (!isset(CC_FACT_ESTADOS[$f['estado']])) $f['estado'] = 'activas';
     if (!in_array($f['tipo'], ['factura', 'nota_credito'], true)) $f['tipo'] = '';
-    if (!in_array($f['canal'], ['web_plux', 'google_play'], true)) $f['canal'] = '';
+    if (!in_array($f['canal'], ['web_plux', 'web_paypal', 'google_play'], true)) $f['canal'] = '';
     foreach (['desde', 'hasta'] as $k) if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $f[$k]) || strtotime($f[$k]) === false) $f[$k] = '';
     return $f;
 }
@@ -93,7 +93,7 @@ function cc_t_facturacion(): string
     $h .= '<form method="get" action="' . CC_RUTA . '" class="filtros-form"><input type="hidden" name="t" value="facturacion">'
         . '<label>Estado<select name="estado">' . cc_opciones(CC_FACT_ESTADOS, $f['estado']) . '</select></label>'
         . '<label>Tipo<select name="tipo">' . cc_opciones(['' => 'Facturas y notas de crédito', 'factura' => 'Facturas', 'nota_credito' => 'Notas de crédito'], $f['tipo']) . '</select></label>'
-        . '<label>Canal<select name="canal">' . cc_opciones(['' => 'Todos', 'web_plux' => 'Web (Plux)', 'google_play' => 'Google Play'], $f['canal']) . '</select></label>'
+        . '<label>Canal<select name="canal">' . cc_opciones(['' => 'Todos', 'web_plux' => 'Web (Plux)', 'web_paypal' => 'Web (PayPal)', 'google_play' => 'Google Play'], $f['canal']) . '</select></label>'
         . '<label>Desde<input type="date" name="desde" value="' . e($f['desde']) . '"></label>'
         . '<label>Hasta<input type="date" name="hasta" value="' . e($f['hasta']) . '"></label>'
         . '<label class="ancho">Buscar<input type="search" name="q" value="' . e($f['q']) . '" placeholder="EVF-000123, N° de compra, cédula/RUC, nombre, correo, clave de acceso"></label>'
@@ -118,7 +118,7 @@ function cc_t_facturacion(): string
             e(cc_fecha($x['fecha_venta'])),
             e($x['comprador_identificacion']) . '<br><span class="tenue">' . e($x['comprador_razon_social']) . '</span>',
             e(cc_dinero($x['total'])),
-            e($x['canal'] === 'google_play' ? 'Google Play' : 'Web (Plux)'),
+            e(['google_play' => 'Google Play', 'web_paypal' => 'Web (PayPal)'][$x['canal']] ?? 'Web (Plux)'),
             cc_fact_chip((string) $x['estado']) . ($x['advertencia'] ? ' ' . cc_chip('revisar', 'aviso') : ''),
             ((int) $x['intentos'] > 0 ? (int) $x['intentos'] . ' error(es)' : '') . ($x['ultimo_error'] ? '<br><span class="tenue">' . e(mb_substr((string) $x['ultimo_error'], 0, 120)) . '</span>' : ''),
             $x['clave_acceso'] ? '<code title="' . e($x['clave_acceso']) . '">…' . e(substr((string) $x['clave_acceso'], -12)) . '</code>' : '<span class="tenue">—</span>',

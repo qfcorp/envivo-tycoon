@@ -114,7 +114,7 @@ function cc_ficha_jugador(int $id): string
     $compras = Db::todas('SELECT * FROM compras WHERE jugador_id = ? ORDER BY id DESC LIMIT 50', [$id]);
     $h .= '<section class="panel"><h2>Compras</h2>' . cc_tabla(['N°', 'Fecha', 'Producto', 'Total', 'Estado'], array_map(fn($c) => [
         '<a href="' . e(cc_url(['t' => 'compras', 'id' => $c['id']])) . '">' . (int) $c['id'] . '</a>', e(cc_fecha($c['pagado_en'] ?? $c['creado'])),
-        e(Catalogo::productoCompra((string) $c['producto'])['nombre'] ?? $c['producto']) . ($c['canal'] === 'google_play' ? ' ' . cc_chip('Google Play') : ''),
+        e(Catalogo::productoCompra((string) $c['producto'])['nombre'] ?? $c['producto']) . cc_chip_canal($c),
         cc_dinero($c['total']), cc_estado_compra((string) $c['estado'])], $compras), 'Nunca compró.', 'compras-jugador') . '</section>';
 
     // Libro de créditos

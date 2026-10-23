@@ -30,6 +30,10 @@ input:focus, select:focus { outline: 2px solid var(--ambar); outline-offset: 0; 
 .boton:disabled { opacity: .55; cursor: wait; }
 .boton.grande { width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px; }
 .boton.sec { background: var(--panel2); border: 1px solid var(--borde); color: var(--texto); }
+/* PayPal (pago.php con una compra web_paypal): el amarillo de los botones de PayPal, sin su logo */
+.boton.paypal { background: #ffc439; color: #111; }
+.boton.paypal b { font-style: italic; color: #003087; }
+.boton.paypal b i { color: #0070e0; font-style: italic; }
 .otp { font-size: 1.4rem; letter-spacing: .3em; text-align: center; }
 .aviso { border-radius: 10px; padding: 10px 12px; margin: 12px 0; font-size: .95rem; }
 .aviso:empty { display: none; }

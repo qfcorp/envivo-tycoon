@@ -105,6 +105,6 @@ final class Http
     {
         return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
              . '<meta name="theme-color" content="#0d0f14"><meta name="robots" content="noindex"><title>' . self::e($titulo) . ' · EN VIVO Tycoon</title>'
-             . '<link rel="icon" href="/icons/favicon-32.png"><link rel="stylesheet" href="/pago-assets/estilo.css?v=1"></head><body>';
+             . '<link rel="icon" href="/icons/favicon-32.png"><link rel="stylesheet" href="/pago-assets/estilo.css?v=2"></head><body>';
     }
 }

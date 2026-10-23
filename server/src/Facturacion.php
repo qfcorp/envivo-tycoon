@@ -7,7 +7,7 @@ namespace EnVivo;
  * Facturación electrónica SRI (Ecuador). Desde el 1 de enero de 2026 cada comprobante se transmite y autoriza de inmediato
  * (resolución NAC-DGERCGC25-00000017). El juego NO firma ni manda XML al SRI: lo hace el ERP del dueño (sistema aparte, con
  * su sincronizador del SRI). Aquí queda el puente, del lado del juego:
- *  - Cada compra aprobada (Pago Plux o Google Play) crea una FACTURA "pendiente" con los datos del comprador que eligió en la
+ *  - Cada compra aprobada (Pago Plux, PayPal o Google Play) crea una FACTURA "pendiente" con los datos del comprador que eligió en la
  *    página de pago (titular, otro nombre/RUC o consumidor final), el producto, subtotal, IVA 15 % y total (gancho
  *    compra_aprobada de Ganchos.php; Compras.php no cambia). Google Play no trae datos: consumidor final con el correo de la cuenta.
  *  - Cada reembolso o contracargo crea una NOTA DE CRÉDITO pendiente (gancho compra_revertida) que el ERP recibe cuando la
@@ -173,19 +173,25 @@ final class Facturacion
     }
 
     /** Bloque "Datos para tu factura" de pago.php (sin estilos ni scripts en línea: la CSP solo permite 'self'). */
-    public static function htmlPago(array $compra, array $jugador): string
+    public static function htmlPago(array $compra, array $jugador, bool $paypal = false): string
     {
         $e = [Http::class, 'e'];
         $total = round((float) $compra['total'], 2);
         $tope = self::topeConsumidorFinal();
         $cf = $total <= $tope;
+        // Con PayPal no hay "titular de la tarjeta": consumidor final (marcado, si el valor lo permite) o cédula / RUC
+        $opciones = $paypal
+            ? '<label class="casilla"><input type="radio" name="fact-modo" value="consumidor_final"' . ($cf ? ' checked' : ' disabled') . '> <span>Consumidor final (sin datos)'
+                . ($cf ? '' : ' — solo para compras de hasta ' . $e(Http::dinero($tope))) . '</span></label>'
+              . '<label class="casilla"><input type="radio" name="fact-modo" value="otro"' . ($cf ? '' : ' checked') . '> <span>Con mi cédula, RUC o pasaporte</span></label>'
+            : '<label class="casilla"><input type="radio" name="fact-modo" value="titular" checked> <span>A nombre del titular de la tarjeta (con la cédula de arriba)</span></label>'
+              . '<label class="casilla"><input type="radio" name="fact-modo" value="otro"> <span>A otro nombre o con RUC</span></label>'
+              . '<label class="casilla"><input type="radio" name="fact-modo" value="consumidor_final"' . ($cf ? '' : ' disabled') . '> <span>Consumidor final (sin datos)'
+              . ($cf ? '' : ' — solo para compras de hasta ' . $e(Http::dinero($tope))) . '</span></label>';
         return '<link rel="stylesheet" href="/pago-assets/factura.css?v=1">'
             . '<fieldset class="factura" id="fact-caja" data-tope="' . $e(number_format($tope, 2, '.', '')) . '" data-total="' . $e(number_format($total, 2, '.', '')) . '">'
             . '<legend>Datos para tu factura electrónica</legend>'
-            . '<label class="casilla"><input type="radio" name="fact-modo" value="titular" checked> <span>A nombre del titular de la tarjeta (con la cédula de arriba)</span></label>'
-            . '<label class="casilla"><input type="radio" name="fact-modo" value="otro"> <span>A otro nombre o con RUC</span></label>'
-            . '<label class="casilla"><input type="radio" name="fact-modo" value="consumidor_final"' . ($cf ? '' : ' disabled') . '> <span>Consumidor final (sin datos)'
-            . ($cf ? '' : ' — solo para compras de hasta ' . $e(Http::dinero($tope))) . '</span></label>'
+            . $opciones
             . '<div class="campos" id="fact-otro" hidden>'
             . '<label class="ancho">Cédula, RUC o pasaporte<input id="fact-identificacion" maxlength="20" inputmode="text" autocomplete="off" placeholder="1790012345001"></label>'
             . '<label class="ancho">Nombre o razón social<input id="fact-razon" maxlength="300" autocomplete="organization"></label>'
@@ -224,7 +230,7 @@ final class Facturacion
         $guardado = Db::valor('SELECT datos_json FROM facturacion_datos_compra WHERE compra_id = ?', [$c['id']]);
         $g = is_string($guardado) ? json_decode($guardado, true) : null;
         if (is_array($g) && isset(self::TIPOS_ID[$g['tipo_id'] ?? ''])) return $g + ['advertencia' => null];
-        if (($c['canal'] ?? '') === 'google_play') return $cf($correo) + ['advertencia' => null];
+        if (in_array($c['canal'] ?? '', ['google_play', 'web_paypal'], true)) return $cf($correo) + ['advertencia' => null];   // no traen cédula
         $ced = (string) ($c['comprador_cedula'] ?? '');
         if ($ced !== '') {
             $tipo = self::tipoIdentificacion($ced);
@@ -258,14 +264,17 @@ final class Facturacion
             $adv = trim(($adv ?? '') . ' Consumidor final por más de ' . Http::dinero(self::topeConsumidorFinal()) . ': el SRI pide identificar al comprador.');
         }
         $ahora = self::ahora();
-        $google = ($c['canal'] ?? '') === 'google_play';
+        // Forma de pago del SRI (tabla 24): 19 = tarjeta de crédito (Pago Plux); 20 = "otros con utilización del sistema
+        // financiero" (Google Play y PayPal: el comprador paga a un intermediario que liquida al vendedor por el sistema
+        // financiero; no es tarjeta del comprador procesada por nosotros ni dinero electrónico del Banco Central, código 17).
+        $otrosFinanciero = in_array($c['canal'] ?? '', ['google_play', 'web_paypal'], true);
         Db::q("INSERT OR IGNORE INTO facturas (tipo, compra_id, jugador_id, canal, estado, comprador_tipo_id, comprador_identificacion, comprador_razon_social,
                  comprador_email, comprador_telefono, comprador_direccion, subtotal, iva, total, iva_pct, items_json, forma_pago, advertencia, fecha_venta,
                  creado, actualizado, webhook_estado, webhook_proximo)
                VALUES ('factura', ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [$c['id'], $c['jugador_id'], $c['canal'] ?? 'web_plux', $q['tipo_id'], $q['identificacion'], mb_substr($q['razon_social'], 0, 300),
              $q['email'] ?: null, $q['telefono'] ?: null, $q['direccion'] ?: null, $sub, $iva, $total, Catalogo::IVA * 100,
-             json_encode(self::items($c, $sub, $iva, $total), JSON_UNESCAPED_UNICODE), $google ? '20' : '19', $adv,
+             json_encode(self::items($c, $sub, $iva, $total), JSON_UNESCAPED_UNICODE), $otrosFinanciero ? '20' : '19', $adv,
              (int) ($c['pagado_en'] ?? $ahora), $ahora, $ahora, self::webhookUrl() !== '' ? 'pendiente' : 'no_configurado', $ahora]);
         $id = (int) Db::valor("SELECT id FROM facturas WHERE tipo = 'factura' AND compra_id = ?", [$c['id']]);
         self::evento($id, 'creada', 'Compra N° ' . $c['id'] . ' (' . ($c['canal'] ?? 'web_plux') . ', ' . Http::dinero($total) . ')' . ($adv ? ' · ' . $adv : ''), 'juego');

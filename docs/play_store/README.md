@@ -174,6 +174,8 @@ dirección postal, datos de pago (tarjeta). **Nunca guardamos datos de tarjeta**
 Datos que **solo existen en la web** (no en la app de Play, porque la app usa Google Play Billing): cédula/pasaporte y
 celular del titular de la tarjeta, que pide el formulario de Pago Plux para la factura del SRI. Si la app de Android
 llegara a abrir `pago.php`, habría que declararlos también (Información personal › Otra info / Número de teléfono).
+El pago con **PayPal** (docs/PAYPAL.md) también es **solo web**: la app nunca lo muestra (`js/ui.js` lo oculta dentro de
+la app), así que no cambia este formulario.
 
 > Las filas de **Interacciones con la app**, **Registros de fallas** y **Diagnóstico** describen la analítica y el
 > registro de errores **propios** que otro ayudante está construyendo (pestaña Analítica del Centro de Control). Al
@@ -195,7 +197,8 @@ llegara a abrir `pago.php`, habría que declararlos también (Información perso
 1. ~~Borrado de cuenta~~ **Listo**: botón en el juego (Cuenta → Borrar mi cuenta) y página `borrar-cuenta.html`.
    Falta llenar [CORREO DE SOPORTE] en esa página.
 2. **Pagos en la app de Play.** En la app de Android los bienes digitales se cobran con **Google Play Billing**
-   (`server/src/Google.php` ya lo verifica). La app de Play no debe mostrar ni enlazar el pago con tarjeta de Pago Plux.
+   (`server/src/Google.php` ya lo verifica). La app de Play no debe mostrar ni enlazar el pago con tarjeta de Pago Plux
+   ni el de PayPal (los dos se ocultan dentro de la app; lo prueba `tests/test_paypal.js`).
 3. ~~Capturas sin marcas reales~~ **Listo**: 8 capturas por idioma (10 idiomas) en `assets/promo/screens_<idioma>/01..08.png`,
    sin marcas reales (el generador revisa ~55 marcas). Antes de subir: que un nativo revise los títulos de las capturas que no están en español.
 4. **Datos legales.** Completar [DIRECCIÓN] en los términos y la privacidad (lo demás ya está; ver `docs/LEGAL_REVISION.md`),

@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Compras/Google), Google Play (compras anuladas), seguridad del panel y la auditoría completa (tabla auditoria).
 defined('ENVIVO_CONTROL') || exit;
 
-use EnVivo\{Ajustes, Config, Control, Db, Fallo, Google};
+use EnVivo\{Ajustes, Config, Control, Db, Fallo, Google, Http, PayPal};
 
 function cc_t_ajustes(): string
 {
@@ -47,6 +47,9 @@ function cc_t_ajustes(): string
     }
     $h .= '<div class="acciones">' . cc_boton('ajustes_google', [], 'Revisar compras anuladas ahora', 'btn btn-sec') . cc_boton('ajustes_google_avisos', [], 'Reintentar avisos a Google', 'btn btn-sec') . '</div></section>';
 
+    // PayPal (src/PayPal.php, docs/PAYPAL.md): estado de la configuración (nunca las llaves) y los últimos avisos
+    $h .= cc_paypal_panel();
+
     // Seguridad del panel
     $ips = Config::get('ENVIVO_CONTROL_IPS');
     $h .= '<section class="panel" id="panel-seguridad"><h2>Seguridad del panel</h2><ul class="lista">'
@@ -71,6 +74,31 @@ function cc_t_ajustes(): string
             '<span class="largo">' . e(mb_substr((string) $x['detalle'], 0, 400)) . '</span>', e($x['ip'])], $aud), 'Sin registros.', 'tabla-auditoria')
         . '</section>';
     return $h;
+}
+
+/** Panel de PayPal en Ajustes: ambiente, llaves puestas (sí/no), webhook, mínimo, ventas y los últimos avisos recibidos. */
+function cc_paypal_panel(): string
+{
+    $listo = PayPal::configurado();
+    $prod = PayPal::ambiente() === 'produccion';
+    $h = '<section class="panel" id="panel-paypal"><h2>PayPal (tienda web) ' . ($listo ? cc_chip($prod ? 'producción' : 'sandbox (pruebas)', $prod ? 'ok' : 'aviso') : cc_chip('sin configurar')) . '</h2>'
+        . '<ul class="lista">'
+        . '<li>Llaves (PAYPAL_CLIENT_ID y PAYPAL_SECRET): ' . ($listo ? cc_chip('puestas', 'ok') : cc_chip('faltan', 'mal') . ' <span class="tenue">— sin ellas el botón «Pagar con PayPal» no aparece.</span>') . '</li>'
+        . '<li>Webhook (PAYPAL_WEBHOOK_ID): ' . (PayPal::webhookConfigurado() ? cc_chip('puesto', 'ok') : cc_chip('falta', $listo ? 'mal' : '') . ' <span class="tenue">— sin él, los reembolsos y disputas de PayPal no se revierten solos.</span>')
+        . ' <span class="tenue">Dirección: <code class="largo">' . e(Http::urlBase() . '/api/paypal/webhook') . '</code></span></li>'
+        . '<li>Precio mínimo con PayPal (PAYPAL_MINIMO): <b>' . e(cc_dinero(PayPal::minimo())) . '</b> <span class="tenue">— la comisión en Ecuador es 5,4 % + $0,30 por venta.</span></li>'
+        . '<li>Solo en la web: dentro de la app de Google Play nunca se muestra.</li>';
+    if (Control::columna('compras', 'canal')) {
+        $v = Db::fila("SELECT COUNT(*) AS n, COALESCE(SUM(total), 0) AS t FROM compras WHERE canal = 'web_paypal' AND estado = 'pagado' AND pagado_en >= ?", [time() - 30 * 86400]);
+        $h .= '<li>Ventas con PayPal (30 días): <b>' . (int) $v['n'] . '</b> · ' . e(cc_dinero((float) $v['t'])) . ' · <a href="' . e(cc_url(['t' => 'compras', 'canal' => 'web_paypal', 'estado' => 'todas'])) . '">ver compras</a></li>';
+    }
+    $h .= '</ul>';
+    if (Control::tabla('paypal_eventos')) {
+        $ev = Db::todas('SELECT * FROM paypal_eventos ORDER BY creado DESC LIMIT 20');
+        $h .= '<h3>Últimos avisos de PayPal</h3>' . cc_tabla(['Fecha', 'Evento', 'Resultado', 'Compra'], array_map(fn($x) => [e(cc_fecha($x['creado'])), '<span class="largo">' . e($x['tipo']) . '</span>', e($x['resultado']),
+            $x['compra_id'] ? '<a href="' . e(cc_url(['t' => 'compras', 'id' => $x['compra_id']])) . '">N° ' . (int) $x['compra_id'] . '</a>' : '—'], $ev), 'Todavía no llegó ningún aviso de PayPal.', 'tabla-paypal-eventos');
+    }
+    return $h . '<p class="tenue">Guía para configurarlo: <code>docs/PAYPAL.md</code>.</p></section>';
 }
 
 function cc_a_ajustes(string $accion, string $q): string
