@@ -175,6 +175,7 @@
   const num = (v) => (typeof v === 'number' && isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && isFinite(+v) ? +v : null));
   const G = () => root.Game || {};
   const A = () => root.Art || null;
+  const TLx = (t) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(t) : t; } catch (e) { return t; } };   // textos de la lógica
   const money = (n) => { try { if (G().money) return G().money(n); } catch (e) { /* abajo */ } return '$' + Math.round(n).toLocaleString('es-EC'); };
   const f1 = (n) => Math.round(n * 10) / 10;
   let UID = 0;
@@ -878,7 +879,7 @@
       const covered = list.filter((p) => p.asgName).length;
       const fits = list.filter((p) => p.asgName && p.aj != null);
       const avg = fits.length ? Math.round(fits.reduce((s, p) => s + p.aj, 0) / fits.length * 100) : null;
-      const evName = (() => { const e = (G().EVENT_TYPES || {})[t]; return (e && e.name) || (has('pe.ev.' + t) ? T('pe.ev.' + t) : ''); })();
+      const evName = (() => { const e = (G().EVENT_TYPES || {})[t]; return (e && TLx(e.name)) || (has('pe.ev.' + t) ? T('pe.ev.' + t) : ''); })();
       const head = o.titulo === false ? '' : `<div class="pe-hd"><span class="pe-ttl">${esc(o.titulo || T('pe.cams'))}</span>
         <span class="pe-sub">${evName ? esc(evName) + ' · ' : ''}<b>${esc(T('pe.cubiertas', { a: covered, t: list.length }))}</b>${avg != null ? ' · ' + esc(T('pe.ajuste.medio', { p: avg })) : ''}</span></div>`;
       const ks = new Set(list.map(fitK)); const fs = new Set(list.map((p) => p.spot.f));
@@ -914,7 +915,7 @@
       const gastos = num(x.travelCost != null ? x.travelCost : x.gastosViaje != null ? x.gastosViaje : x.gastos);
       const famaN = num(x.repRisk != null ? x.repRisk : x.famaRiesgo != null ? x.famaRiesgo : x.caidaFama);
       const et = (G().EVENT_TYPES || {})[c.type];
-      const nombre = x.nombre || x.titulo || x.name || (et && et.name) || (has('pe.ev.' + tipoKey(c.type)) ? T('pe.ev.' + tipoKey(c.type)) : '');
+      const nombre = x.nombre || x.titulo || x.name || (et && TLx(et.name)) || (has('pe.ev.' + tipoKey(c.type)) ? T('pe.ev.' + tipoKey(c.type)) : '');
       const reqsSrc = x.requisitos || x.reqs || x.requirements || [];
       const reqs = (Array.isArray(reqsSrc) ? reqsSrc : Object.keys(reqsSrc).map((k) => ({ texto: k, ok: reqsSrc[k] }))).map((r) => {
         if (typeof r === 'string') return { texto: r, ok: undefined };

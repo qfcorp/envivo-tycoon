@@ -14,7 +14,9 @@
   const I18 = window.I18N || null;
   const T = (k, p) => (I18 ? I18.T(k, p) : k);
   const TL = (t) => (I18 ? I18.TL(t) : t);
-  const M = (n) => (I18 ? I18.money(n) : G.money(n));
+  // Dinero: el signo va antes del símbolo ("-$24", no "$-24")
+  const M0 = (n) => (I18 ? I18.money(n) : G.money(n));
+  const M = (n) => { const v = Math.round(Number(n) || 0); return v < 0 ? '-' + M0(-v) : M0(v); };
   const N = (n) => (I18 ? I18.num(n) : String(n));
   const I = (name, cls) => A.icon(name, cls);
   // Quita el emoji del inicio de los textos de la lógica (ahora hay dibujos)
@@ -28,6 +30,48 @@
     muted() { try { return window.Sound ? window.Sound.isMuted() : true; } catch (e) { return true; } },
     toggle() { try { if (window.Sound) window.Sound.setMuted(!window.Sound.isMuted()); } catch (e) { /* sin sonido */ } },
   };
+  /* ---------- Música (opcional: si js/musica.js no está, no pasa nada) ---------- */
+  const mus = {
+    go(t) { try { if (window.Musica) window.Musica.tema(t); } catch (e) { /* sin música */ } },
+    stinger() { try { if (window.Musica) window.Musica.stinger(); } catch (e) { /* sin música */ } },
+    init() { try { if (window.Musica) window.Musica.iniciar(); } catch (e) { /* sin música */ } },
+    muted() { try { return window.Musica ? window.Musica.isMuted() : true; } catch (e) { return true; } },
+    toggle() { try { if (window.Musica) window.Musica.setMuted(!window.Musica.isMuted()); } catch (e) { /* sin música */ } },
+    actual() { try { return window.Musica && window.Musica.temaActual ? window.Musica.temaActual() : null; } catch (e) { return null; } },
+  };
+  const temaDeEvento = (type) => (type === 'concierto' ? 'concierto' : 'en_vivo');
+  const esFuneral = (type) => /funeral|velorio|sepelio/.test(type || '');
+  // Imprevistos graves: la música pasa a tensión. Los demás solo llevan un golpe ("última hora").
+  const INC_GRAVE = /^(luz|internet|falla|robo|senal|senal_irl|cobertura|lluvia|transporte|dron)$/;
+
+  /* ---------- Compras de Google Play (solo dentro de la app de Android) ---------- */
+  const GP = window.GooglePlay || null;
+  const enApp = () => { try { return !!(GP && GP.enApp()); } catch (e) { return false; } };
+  let playOk = false;        // hay Play Billing en este celular
+  let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play
+
+  /* ---------- Límites (de la lógica si los exporta) ---------- */
+  const BAL = () => G.BALANCE || {};
+  const maxStaff = () => BAL().maxStaff || 12;
+  const maxEquip = () => BAL().maxEquip || 30;
+  const bankruptAt = () => (typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300);
+  const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
+
+  /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
+  const RES_KEY = 'envivo_resultado_pendiente'; // resultado que falta ver (si se recarga en esa pantalla)
+  const DIA_KEY = 'envivo_dia_inicio';          // dinero al empezar el día (para "Te quedó en caja")
+  const lsGet = (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sin espacio o modo privado */ } };
+  let dia0 = lsGet(DIA_KEY);
+  function marcarDia() {
+    if (!S) return;
+    if (!dia0 || dia0.day !== S.day || typeof dia0.money !== 'number') { dia0 = { day: S.day, money: S.money }; lsSet(DIA_KEY, dia0); }
+  }
+  function olvidarDia() { dia0 = null; lsSet(DIA_KEY, null); lsSet(RES_KEY, null); }
+
+  /* ---------- Plan del evento (opcional: js/plan_evento.js) ---------- */
+  const PE = window.PlanEvento || null;
+  const eqName = (id) => { const e = S.equip.find((x) => x.id === id); return e ? TL(e.nick || (G.CATALOG[e.type] || {}).name || e.type) : ''; };
 
   let S = null;            // estado del juego
   let tab = 'inicio';
@@ -86,6 +130,10 @@
 
   /* ---------- Idioma ---------- */
   const GLOBO = '<svg class="ico sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>';
+  const svgIco = (body, cls) => `<svg class="ico ${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+  const NOTA = svgIco('<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>', 'sm');
+  const NOTA_OFF = svgIco('<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/><path d="M3 3l18 18"/>', 'sm');
+  const AYUDA = svgIco('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.7"/><path d="M12 17.2v.1"/>');
   function nombreIdioma() {
     if (!I18) return 'Español';
     const i = I18.idiomas.find((x) => x.code === I18.idioma);
@@ -193,10 +241,23 @@
   function bump(id, up) {
     const el = $(id);
     if (!el || reduceMotion()) return;
-    el.classList.remove('bump', 'down'); void el.offsetWidth;
-    el.classList.add('bump'); if (!up) el.classList.add('down');
+    // 'bump-down' y no 'down': la clase global .down pinta el texto de rojo y se quedaba así
+    el.classList.remove('bump', 'bump-down'); void el.offsetWidth;
+    el.classList.add('bump'); if (!up) el.classList.add('bump-down');
+  }
+  /* ---------- Ayuda y soporte (solo con servidor) ---------- */
+  const sinLeerSoporte = () => { try { return Math.max(0, Number(Api.estado && Api.estado.soporte_sin_leer) || 0); } catch (e) { return 0; } };
+  function soporteBtn(extra) {
+    if (!window.Soporte || Api.disponible !== true) return '';
+    const n = sinLeerSoporte();
+    return `<button class="btn ${extra || ''}" data-act="soporte">${AYUDA}${T('soporte.titulo')}${n ? `<span class="badge sop" aria-label="${esc(T('soporte.sin_leer', { n }))}">${N(n)}</span>` : ''}</button>`;
+  }
+  function ctxSoporte() {
+    return { Api, A, estado: () => S, toast, snd, openModal,
+      closeModal: () => { closeModal(); render(); if (Api.disponible && Api.logueado()) Api.refrescar().then(() => render()).catch(() => {}); } };
   }
   function render() {
+    marcarDia();
     $('hMoney').textContent = M(S.money);
     $('hMoney').classList.toggle('neg', S.money < 0);
     $('hRep').textContent = Math.floor(S.rep);
@@ -215,6 +276,13 @@
     $('badgeC').textContent = S.contracts.length || '';
     $('muteBtn').innerHTML = I(snd.muted() ? 'close' : 'sound', 'sm');
     $('muteBtn').setAttribute('aria-label', snd.muted() ? T('head.sonido_on') : T('head.silenciar'));
+    const mb = $('musicBtn');
+    if (mb) {
+      mb.hidden = !window.Musica;
+      mb.innerHTML = mus.muted() ? NOTA_OFF : NOTA;
+      mb.setAttribute('aria-label', mus.muted() ? T('head.musica_on') : T('head.musica_off'));
+      mb.setAttribute('aria-pressed', mus.muted() ? 'false' : 'true');
+    }
     pintarIdiomaBtn();
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
     document.querySelectorAll('main section').forEach((s) => s.classList.toggle('on', s.id === 'tab-' + tab));
@@ -246,14 +314,17 @@
         <p class="small">${T('historia.progreso')} <span class="num">${esc(TL(ch.progress(S)))}</span></p>
         <p class="small muted">${T('historia.premio')} <span class="pay" style="font-size:14px">${M(ch.reward)}</span></p></div>`;
     }
-    $('tab-inicio').innerHTML = `
+    // En rojo: avisar antes de la quiebra
+    const rojo = S.money < 0 && !S.gameOver
+      ? `<div class="redstrip" role="status">${I('bolt', 'sm')}<span>${T('inicio.en_rojo', { m: `<b class="num">${M(bankruptAt())}</b>` })}</span></div>` : '';
+    $('tab-inicio').innerHTML = `${rojo}
       <div class="card hqcard">${A.hq(S)}
         <div class="in">
           <div class="row wrap small">
             <span class="tag">${I('people')}${T('inicio.personas', { n: S.staff.length })}</span>
             <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
             <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
-            <span class="tag">${I('star')}${T('inicio.cinco_estrellas', { n: S.stats.fiveStars })}</span>
+            <span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>
           </div>
           ${costBox}
           <button class="btn main" data-act="tab" data-tab="clientes">${I('clients')}${T('inicio.ver_ofertas', { n: S.contracts.length })}</button>
@@ -265,8 +336,9 @@
       <div class="sectitle">${T('inicio.ultimo')}</div>
       <div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(TL(l.text))}</p>`).join('')}</div>
       <div class="sectitle">${T('inicio.ayuda')}</div>
-      <div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(300) })}</div>
+      <div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}</div>
       <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
+      ${soporteBtn()}
       <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}${T('inicio.nueva')}</button>`;
   }
 
@@ -288,6 +360,7 @@
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}</div>
+        ${PE ? PE.internacional(c) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
@@ -317,15 +390,18 @@
       <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
         <button class="btn sm" data-act="fire" data-id="${p.id}">${T('personal.despedir')}</button></div>`}
     </div>`).join('');
+    const max = maxStaff();
+    const lleno = S.staff.length >= max;
     const cands = S.candidates.map((c) => `<div class="card">
       <div class="person">${avatarOf(c, 56)}
         <div class="grow who"><h3>${esc(TL(c.name))}</h3><div class="small muted">${esc(roleName(c.role))}</div></div>
         <div class="small" style="text-align:right">${T('personal.habilidad')}<br><span class="skill">${starsTxt(c.skill)}</span></div></div>
-      <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_corto', { m: `<b class="num">${M(c.wage)}</b>` })}</span>
-        <button class="btn sm main" data-act="hire" data-id="${c.id}">${T('personal.contratar', { m: M(c.wage * 2) })}</button></div>
+      <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(c.wage)}</b>` })}</span>
+        ${lleno ? `<button class="btn sm" disabled>${T('personal.equipo_completo', { n: S.staff.length, max })}</button>`
+          : `<button class="btn sm main" data-act="hire" data-id="${c.id}">${T('personal.contratar', { m: M(c.wage * (BAL().wage && BAL().wage.hireFeeDays || 2)) })}</button>`}</div>
     </div>`).join('');
     $('tab-personal').innerHTML = `
-      <div class="sectitle">${T('personal.tu_equipo', { n: S.staff.length, max: 12 })}</div>${staff}
+      <div class="sectitle">${T('personal.tu_equipo', { n: S.staff.length, max })}</div>${staff}
       <div class="sectitle">${T('personal.candidatos')}</div>
       <p class="small muted">${T('personal.pago_inicial')}</p>
       ${cands || emptyState('people', T('personal.vacio_t'), T('personal.vacio'))}
@@ -359,21 +435,24 @@
           <button class="btn sm" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${rc > 0 ? M(rc) : T('bodega.nuevo')}</button>
           ${it.premium ? `<button class="btn sm" disabled>${T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
     }).join('');
+    const maxEq = maxEquip();
+    const llena = S.equip.length >= maxEq;
     const shop = Object.keys(G.CATALOG).filter((k) => !G.CATALOG[k].premium).map((k) => {
       const it = G.CATALOG[k];
       const r = rar(k);
       const locked = it.minRep > S.rep;
       const owned = S.equip.filter((e) => e.type === k).length;
+      const label = locked ? T('bodega.fama_min', { n: it.minRep }) : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : M(it.price);
       return `<div class="card gear rf r-${r.key} ${locked ? 'locked' : ''}">
         <div class="row between">${rtag(k)}</div>
         <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
         <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc))}</div><div class="grow2"></div>
-        <button class="btn ${locked ? '' : 'green'}" data-act="buy" data-k="${k}" ${locked || S.money < it.price ? 'disabled' : ''}>
-          ${locked ? T('bodega.fama_min', { n: it.minRep }) : M(it.price)}</button></div>`;
+        <button class="btn ${locked || llena ? '' : 'green'}" data-act="buy" data-k="${k}" ${locked || llena || S.money < it.price ? 'disabled' : ''}>
+          ${label}</button></div>`;
     }).join('');
     $('tab-bodega').innerHTML = `
       <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
-      <div class="sectitle">${T('bodega.tus_equipos', { n: S.equip.length })}</div>
+      <div class="sectitle">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena', { n: S.equip.length, max: maxEq })}</span>` : ''}</div>
       ${mine ? `<div class="ggrid">${mine}</div>` : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
       <p class="small muted">${T('bodega.desgaste')}</p>
       <div class="sectitle">${T('bodega.tienda')}</div><div class="ggrid">${shop}</div><div style="height:20px"></div>`;
@@ -395,14 +474,17 @@
       return;
     }
     if (Api.disponible === null) { el.innerHTML = `<div class="sectitle">${T('nav.tienda')}</div><div class="card muted">${T('tienda.conectando')}</div>`; return; }
+    const app = enApp();   // dentro de la app de Google Play: nada de Plux ni de la tienda web
     if (!Api.disponible || !Api.estado) {
       const vitrina = Object.keys(G.CATALOG).filter((k) => G.CATALOG[k].premium).slice(0, 4).map((k) => {
         const r = rar(k);
         return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div><div class="ds">${esc(TL(G.CATALOG[k].desc || ''))}</div></div>`;
       }).join('');
+      const aviso = app
+        ? `<h3>${T('tienda.sin_conexion_t')}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.sin_conexion')}</p>`
+        : `<h3>${T('tienda.offline_t', { sitio: 'juego.tukanec.com' })}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.offline', { sitio: '<b>juego.tukanec.com</b>' })}</p>`;
       el.innerHTML = `<div class="sectitle">${T('nav.tienda')}</div><div class="card rf r-exclusivo">
-        <div class="prodrow">${itemArt('creditos_700', 72)}<div class="grow"><h3>${T('tienda.offline_t', { sitio: 'juego.tukanec.com' })}</h3>
-        <p class="small muted" style="margin:4px 0 0">${T('tienda.offline', { sitio: '<b>juego.tukanec.com</b>' })}</p></div></div></div>
+        <div class="prodrow">${itemArt('creditos_700', 72)}<div class="grow">${aviso}</div></div></div>
         ${vitrina ? `<div class="sectitle">${T('tienda.exclusivos_eq')}</div><div class="ggrid">${vitrina}</div>` : ''}`;
       return;
     }
@@ -427,16 +509,23 @@
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button></div>`;
     }
-    const prueba = E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
-    const productos = (E.tienda.productos || []).map((p) => {
+    const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
+    // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta
+    const lista = (E.tienda.productos || []).filter((p) => !app || (playOk && preciosPlay[p.id] && p.id !== 'transferencia_cuenta'));
+    const puedePagar = app ? playOk : !!(E.plux && E.plux.disponible);
+    const productos = lista.map((p) => {
       const dest = p.id === 'inicio';
       const hecho = dest && E.inicio_comprado;
+      const valor = app ? esc(preciosPlay[p.id].precio) : precio(p.precio);
       return `<div class="card prod ${dest ? 'dest' : ''} ${p.id === 'vip30' ? 'rf r-vip' : ''}">${dest ? `<span class="ribbon">${T('tienda.oferta_unica')}</span>` : p.id === 'vip30' ? '<span class="ribbon">VIP</span>' : ''}
         <div class="prodrow">${itemArt(p.id, 64)}
           <div class="grow"><h3>${esc(TL(p.nombre))}</h3><div class="small muted">${esc(TL(p.detalle || ''))}</div></div></div>
-        <div class="row between" style="margin-top:10px"><span class="price">${precio(p.precio)}</span>
-          <button class="btn sm main" data-act="comprar" data-k="${esc(p.id)}" ${hecho || !(E.plux && E.plux.disponible) ? 'disabled' : ''}>${hecho ? T('tienda.ya_tienes') : T('tienda.comprar')}</button></div></div>`;
+        <div class="row between" style="margin-top:10px"><span class="price">${valor}</span>
+          <button class="btn sm main" data-act="comprar" data-k="${esc(p.id)}" ${hecho || !puedePagar ? 'disabled' : ''}>${hecho ? T('tienda.ya_tienes') : T('tienda.comprar')}</button></div></div>`;
     }).join('');
+    const sinPago = app
+      ? (playOk ? '' : `<div class="card small muted">${T('tienda.play_no_disp')}</div>`)
+      : (E.plux && E.plux.disponible ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
     const premium = (E.tienda.premium || []).map((p) => {
       const alcanza = log && E.creditos >= p.creditos;
       const esEquipo = !!G.CATALOG[p.id];
@@ -452,11 +541,12 @@
     el.innerHTML = `${log && window.Mercado ? selectorTienda() : ''}
       <div class="sectitle">${T('tienda.tu_cuenta')}</div>${cuenta}
       <div class="sectitle">${T('tienda.comprar')}</div>
-      <p class="small muted">${T('tienda.precios')}</p>${prueba}
+      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : T('tienda.precios')}</p>`}${prueba}
       ${productos}
-      ${E.plux && E.plux.disponible ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`}
+      ${sinPago}
       <div class="sectitle">${T('tienda.exclusivos')}</div>${premium ? `<div class="ggrid">${premium}</div>` : emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))}
       <p class="small muted">${T('tienda.aviso')}</p>
+      ${soporteBtn()}
       <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div>`;
   }
 
@@ -501,6 +591,7 @@
       toast(reg ? T('cuenta.creada') : T('cuenta.hola', { nombre: Api.estado.jugador.nombre }));
       await alConectar(true);
       if (window.Chat) window.Chat.iniciar(ctxChat());
+      restaurarPlay();
     } catch (e) {
       $('cu-error').textContent = TL(e.message); btn.disabled = false; snd.play('error');
     }
@@ -551,7 +642,58 @@
   }
   let eleccion = null;
 
-  async function comprar(id) {
+  // Se llama directo desde el clic: en la app, GooglePlay.comprar() va primero (sin nada esperado antes),
+  // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
+  function comprar(id) {
+    if (enApp()) { comprarPlay(id); return; }
+    comprarWeb(id);
+  }
+  function comprarPlay(id) {
+    if (!GP || !playOk) { toast(T('tienda.play_no_disp')); snd.play('error'); return; }
+    if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
+    let pr;
+    try { pr = GP.comprar(id); } catch (e) { pr = Promise.resolve({ ok: false, estado: 'error' }); }
+    save();
+    Promise.resolve(pr).then(async (r) => {
+      r = r || { ok: false, estado: 'error' };
+      if (r.ok) {
+        snd.play('buy');
+        try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
+        aplicarEntregas(); save(); render();
+        toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : T('tienda.gp_ok'));
+        subirNube();
+        return;
+      }
+      if (r.estado === 'cancelado') return;
+      if (r.estado === 'sesion_requerida') { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
+      if (r.estado === 'pendiente') { toast(T('tienda.gp_pendiente')); return; }
+      const porCodigo = r.codigo && I18 && I18.T.has('error.' + r.codigo) ? T('error.' + r.codigo) : null;
+      toast(porCodigo || (r.estado === 'ocupado' ? T('tienda.gp_ocupado') : r.estado === 'no_disponible' ? T('tienda.play_no_disp') : T('tienda.gp_error')));
+      snd.play('error');
+    }).catch(() => { toast(T('tienda.gp_error')); snd.play('error'); });
+  }
+  // Precios de Google Play y compras que quedaron sin confirmar (al abrir el juego y al entrar a la cuenta)
+  async function iniciarPlay() {
+    if (!GP || !Api.disponible || !Api.estado) return;
+    try { playOk = !!(await GP.disponible()); } catch (e) { playOk = false; }
+    if (playOk) {
+      const ids = ((Api.estado.tienda && Api.estado.tienda.productos) || []).map((p) => p.id);
+      try { (await GP.productos(ids)).forEach((p) => { preciosPlay[p.id] = p; }); } catch (e) { /* sin precios */ }
+    }
+    await restaurarPlay();
+    if (tab === 'tienda') render();
+  }
+  async function restaurarPlay() {
+    if (!GP || !Api.disponible || !Api.logueado()) return;
+    try {
+      const r = await GP.restaurar();
+      if (r && r.entregadas && r.entregadas.length) {
+        await Api.refrescar(); aplicarEntregas(); save(); render(); toast(T('tienda.play_llego')); snd.play('chapter');
+      }
+    } catch (e) { /* se reintenta la próxima vez */ }
+  }
+
+  async function comprarWeb(id) {
     if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
     try {
       save(); await subirNube();
@@ -613,7 +755,22 @@
     const NO_FIX = /^(dificultad|lo que esperan|base\b|experiencia)|cansad|cansancio|desmotivad|[aá]nimo|apoyo/i;
     const STAFF_FIX = /sin director|sin sonidista|sin t[eé]cnico|sin operador|camar[oó]graf|director|sonidista|t[eé]cnico/i;
     const worst = q.parts.filter((p) => p[1] < 0 && !NO_FIX.test(p[0])).sort((a, b) => a[1] - b[1])[0];
-    const tip = worst ? `<p class="small" style="color:var(--amber)">${I('tip', 'sm')} ${T('prep.resta', { que: esc(TL(worst[0])), n: worst[1] })} ${STAFF_FIX.test(worst[0]) && !/^Sin (switcher|consola|equipo)/i.test(worst[0]) ? T('prep.contrata') : T('prep.compralo')}</p>` : '';
+    // Sin nadie o sin cámara no se puede salir al aire: en vez del consejo, se dice qué falta
+    const listo = staff.length > 0 && equip.some(isCam);
+    const tip = !listo ? `<p class="small hint" id="goHint">${I('tip', 'sm')} ${T('prep.falta_gente')}</p>`
+      : worst ? `<p class="small" style="color:var(--amber)">${I('tip', 'sm')} ${T('prep.resta', { que: esc(TL(worst[0])), n: worst[1] })} ${STAFF_FIX.test(worst[0]) && !/^Sin (switcher|consola|equipo)/i.test(worst[0]) ? T('prep.contrata') : T('prep.compralo')}</p>` : '';
+    // Plan del evento (js/plan_evento.js). Con una lógica que todavía no trae crewPlan/cameraPlan,
+    // se dibuja el plano por defecto del tipo de evento con las cámaras elegidas en orden.
+    let crew = null, camP = null;
+    try { crew = G.crewPlan ? G.crewPlan(S, c, [...prep.staff], [...prep.equip]) : null; } catch (e) { crew = null; }
+    try { camP = G.cameraPlan ? G.cameraPlan(S, c, [...prep.equip], [...prep.staff]) : null; } catch (e) { camP = null; }
+    if (!camP && PE && !G.cameraPlan) {
+      const camsSel = equip.filter(isCam);
+      const pos = PE.posiciones(c.type);
+      if (pos.length) camP = { positions: pos.map((p, i) => Object.assign({}, p, { asignado: camsSel[i] ? camsSel[i].id : null })) };
+    }
+    const intlHtml = PE ? PE.internacional(c) : '';
+    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + (crew ? PE.personal(crew) : '') : '';
     const staffHtml = S.staff.map((p) => { const w = wageFor(p, c.diff); return `<label class="pick ${prep.staff.has(p.id) ? 'sel' : ''}">
         <input type="checkbox" id="st-${p.id}" data-act="tog-staff" data-id="${p.id}" ${prep.staff.has(p.id) ? 'checked' : ''}>
         ${avatarOf(p, 44)}
@@ -633,10 +790,12 @@
       <div class="row between"><div class="row">${tile(c.type, TILE_COLOR[c.type])}<h2>${esc(eventName(c.type))}</h2></div><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
       <div class="small muted" style="margin-top:6px">${esc(TL(c.client))} · ${T('prep.paga', { m: `<span class="pay" style="font-size:15px">${M(c.pay)}</span>` })}</div>
       <div style="margin:6px 0 4px">${reqTags(c)}</div>
+      ${intlHtml}
       <button class="btn" data-act="auto">${I('sparkle')}${T('prep.auto')}</button>
       <div class="sectitle">${T('prep.quien')}</div>${staffHtml}
       <div class="sectitle">${T('prep.que_equipos')}</div>${equipHtml}
       <p class="small muted">${T('prep.repuestos', { cables: T('prep.cables', { n: S.stock.cable }), baterias: T('prep.baterias', { n: S.stock.battery }) })}</p>
+      ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
       <details><summary>${T('prep.como_calidad')}</summary>
         <table>${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}</table></details>
       <div class="preview">
@@ -644,7 +803,7 @@
         ${c.rival && typeof c.rivalQuality === 'number' ? duelBars(q.q, c.rivalQuality) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`}
         ${tip}
         <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b> · ${T('prep.imprevistos')}</div>
-        <button class="btn main" data-act="go-live">${I('rec', 'sm')} ${T('prep.al_aire')}</button>
+        <button class="btn main" data-act="go-live" ${listo ? '' : 'disabled aria-describedby="goHint"'}>${I('rec', 'sm')} ${T('prep.al_aire')}</button>
       </div>`);
     $('modal').scrollTop = pos;
   }
@@ -673,11 +832,16 @@
     if (!inc) { finish(); return; }
     const c = S.currentEvent.contract;
     const key = incKey();
+    const bueno = key === 'epico' || inc.positive === true || inc.bueno === true;   // un momento bueno, no un problema
     snd.play('incident');
     setTimeout(() => snd.play(key), 250);
+    if (!esFuneral(c.type)) {
+      if (!bueno && INC_GRAVE.test(key || '')) mus.go('tension');
+      else mus.stinger();
+    }
     openModal(`
       ${liveScene(c.type, key)}
-      <div class="row between" style="margin-top:10px"><span class="live"><i></i>${T('vivo.en_vivo')}</span><span class="small muted">${T('vivo.imprevisto', { i: inc.n, total: inc.total })}</span></div>
+      <div class="row between" style="margin-top:10px"><span class="live"><i></i>${T('vivo.en_vivo')}</span><span class="small muted">${bueno ? T('vivo.momento', { i: inc.n, total: inc.total }) : T('vivo.imprevisto', { i: inc.n, total: inc.total })}</span></div>
       <div class="small muted" style="margin-top:8px">${esc(eventName(c.type))} · ${esc(TL(c.client))}</div>
       <div class="incident">${esc(noEmoji(TL(inc.text)))}</div>
       ${inc.choices.map((ch) => `<button class="btn choice" data-act="choose" data-i="${ch.i}" ${ch.ok ? '' : 'disabled'}>
@@ -693,6 +857,7 @@
     const cls = r.q > 0 ? 'up' : r.q < 0 ? 'down' : '';
     const more = G.currentIncident(S);
     const c = S.currentEvent.contract;
+    if (r.q >= 0 && mus.actual() === 'tension' && !esFuneral(c.type)) mus.go(temaDeEvento(c.type));
     openModal(`
       ${liveScene(c.type, r.q > 4 ? 'epico' : key === 'luz' && r.q < -10 ? 'luz' : null)}
       <div style="margin-top:10px"><span class="live"><i></i>${T('vivo.en_vivo')}</span></div>
@@ -702,13 +867,27 @@
   }
 
   function finish() {
+    const dia = S.day;
+    const caja0 = dia0 && dia0.day === dia && typeof dia0.money === 'number' ? dia0.money : null;
+    const ty = S.currentEvent && S.currentEvent.contract ? S.currentEvent.contract.type : '';
     const f = G.finishEvent(S);
     save();
     snd.amb(null);
     if (!f.ok) { toast(TL(f.msg)); closeModal(); render(); return; }
     const r = f.result;
+    const caja = caja0 === null ? null : S.money - caja0;   // cuánto cambió la caja desde que empezó el día
+    // Si se recarga en esta pantalla, el resultado se vuelve a mostrar (QA-09)
+    lsSet(RES_KEY, { r, ev: S.stats.events, caja, ty });
+    showResult(r, caja, true, ty);
+  }
+
+  function showResult(r, caja, fresh, ty0) {
     afterResult = r.chapterDone || null;
-    snd.play('stars', r.stars);
+    if (fresh) snd.play('stars', r.stars);
+    const ty = r.type || r.contractType || ty0 || '';
+    if (esFuneral(ty)) mus.go('funeral');
+    else if (r.stars >= 4) { mus.go('menu'); mus.go('victoria'); }
+    else mus.go('menu');
     const duel = r.duel && typeof r.rivalQuality === 'number'
       ? `<div class="duel ${r.duel === 'won' ? 'won' : ''}" style="margin-top:10px">
           <div class="row between"><span class="res ${r.duel === 'won' ? 'up' : 'down'}">${I('rival', 'sm')} ${r.duel === 'won' ? T('res.duelo_ganado') : T('res.duelo_perdido')}</span><span class="small muted">${r.duel === 'won' ? T('res.fama_extra') : T('res.perdiste_fama')}</span></div>
@@ -716,29 +895,38 @@
           <div class="lbl"><span>MegaVisión</span><b class="num">${r.rivalQuality}</b></div><div class="bar mega"><i style="width:${r.rivalQuality}%"></i></div></div>`
       : r.duel === 'won' ? `<p class="small up">${I('rival', 'sm')} ${T('res.ganaste_duelo')}</p>` : r.duel === 'lost' ? `<p class="small down">${I('rival', 'sm')} ${T('res.perdiste_duelo')}</p>` : '';
     const later = r.payLater > 0 ? `<div class="paylater">${I('clock', 'sm')} ${T('res.pago_luego', { ahora: M(r.payNow), luego: M(r.payLater), n: r.payLaterDays })}</div>` : '';
+    // Gastos fijos del día y lo que de verdad cambió en caja (QA-04)
+    const gastoDia = G.dailyCost && typeof r.dailyCost === 'number' ? r.dailyCost : null;
+    const sgn = (v) => (v > 0 ? '+' : '') + M(v);
+    const filasCaja = (gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}</td><td class="down">-${M(gastoDia)}</td></tr>` : '')
+      + (typeof caja === 'number' ? `<tr class="caja"><td><b>${T('res.en_caja')}</b></td><td class="${caja >= 0 ? 'up' : 'down'}"><b>${sgn(caja)}</b></td></tr>` : '');
+    const riesgo = PE ? PE.resumenRiesgo(r.crewPlan || (r.crew && r.crew.plan), { camaras: r.cameraPlan, tipo: ty, nombreEquipo: eqName }) : '';
     openModal(`
       <div class="result-head"><div class="story-tag">${r.stars >= 4 ? T('res.impecable') : r.stars === 3 ? T('res.buen_trabajo') : T('res.terminada')}</div>
       <h2>${esc(noEmoji(TL(r.title)))}</h2></div>
       ${starsBig(r.stars)}
-      <div class="bigmoney ${r.net >= 0 ? 'up' : 'down'} num" id="resNet">${r.net >= 0 ? '+' : '-'}${M(0)}</div>
+      <div class="bigmoney ${r.net >= 0 ? 'up' : 'down'} num" id="resNet">${fresh ? (r.net >= 0 ? '+' : '-') + M(0) : (r.net >= 0 ? '+' : '-') + M(Math.abs(r.net))}</div>
       <div class="small muted" style="text-align:center">${T('res.ganancia_evento')}</div>
       <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       ${duel}
+      ${riesgo}
       <table style="margin-top:12px">
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         <tr><td><b>${T('res.ganancia')}</b></td><td class="${r.net >= 0 ? 'up' : 'down'}"><b>${M(r.net)}</b></td></tr>
+        ${filasCaja}
         <tr><td>${T('head.fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
       ${later}
-      ${r.ups.length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(TL(u))).join(' · ')}</p>` : ''}
+      ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(TL(u))).join(' · ')}</p>` : ''}
       <details><summary>${T('res.ver_detalle')}</summary>
         <p class="small"><b>${T('res.calidad_inicial', { n: r.base })}</b></p>
-        ${r.incidents.map((i) => `<p class="small">${esc(noEmoji(TL(i.text)))}<br><span class="muted">→ ${esc(TL(i.result.msg))} (${i.result.q > 0 ? '+' : ''}${i.result.q})</span></p>`).join('')}
+        ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(TL(i.text)))}<br><span class="muted">→ ${esc(TL(x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
       </details>
       <p class="small muted">${T('res.desgaste')}</p>
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
+    if (!fresh) return;
     countUp($('resNet'), r.net, 1000);
     if (r.stars >= 4) confetti(r.stars === 5 ? 70 : 45);
     else if (r.stars === 3) confetti(16);
@@ -747,6 +935,7 @@
   function showChapterDone(d) {
     const idx = Math.max(0, G.CHAPTERS.findIndex((c) => c.title === d.title));
     snd.play('chapter');
+    mus.go('victoria');
     openModal(`<div class="story-tag">${T('historia.cap_completado')}</div><h2>${esc(TL(d.title))}</h2>
       ${speaker(charOf(idx), esc(TL(d.text)))}
       <p>${T('historia.premio')} <span class="pay">${M(d.reward)}</span></p>
@@ -766,16 +955,18 @@
   }
 
   function showGameOver() {
+    mus.go('tension');
     openModal(`<h2>${T('fin.titulo')}</h2>
-      ${speaker('ramiro', T('fin.texto', { m: M(300), dia: S.day, eventos: T('inicio.eventos', { n: S.stats.events }) }))}
+      ${speaker('ramiro', T('fin.texto', { m: M(-bankruptAt()), dia: S.day, eventos: T('inicio.eventos', { n: S.stats.events }) }))}
       <button class="btn main" data-act="restart">${T('fin.reiniciar')}</button>`);
   }
 
   /* ---------- Clics ---------- */
   document.addEventListener('click', (e) => {
     snd.unlock();
+    mus.init();
     const nav = e.target.closest('nav button');
-    if (nav) { tab = nav.dataset.tab; snd.play('tap'); render(); window.scrollTo(0, 0); return; }
+    if (nav) { tab = nav.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); return; }
     const bm = e.target.closest('#overlay [data-merc]');
     if (bm && window.Mercado && $('merc-cont')) { window.Mercado.clicVentana(ctxMercado(), $('merc-cont'), bm); return; }
     const el = e.target.closest('[data-act]');
@@ -784,6 +975,8 @@
     const id = el.dataset.id ? Number(el.dataset.id) : null;
     switch (a) {
       case 'mute': snd.toggle(); render(); break;
+      case 'music': mus.toggle(); mus.init(); render(); break;
+      case 'soporte': if (window.Soporte) Promise.resolve(window.Soporte.abrir(ctxSoporte())).catch(() => toast(T('err.no_completo'))); break;
       case 'vista-tienda': vistaTienda = el.dataset.k; if (window.Mercado) window.Mercado.invalidar(); render(); break;
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
@@ -796,8 +989,8 @@
       case 'install':
         try { window.PWA.install().then((r) => { if (r === 'accepted') toast(T('pwa.instalado')); render(); }); } catch (err) { toast(T('pwa.no_permite')); }
         break;
-      case 'tab': tab = el.dataset.tab; snd.play('tap'); render(); window.scrollTo(0, 0); break;
-      case 'close': closeModal(); render(); break;
+      case 'tab': tab = el.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); break;
+      case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
       case 'next-day': G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); showChapterIntro(); break;
       case 'mkt': act(G.marketing(S, el.dataset.k), 'logo'); break;
@@ -808,14 +1001,18 @@
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
       case 'repair': act(G.repair(S, id), 'buy'); break;
       case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(T('bodega.vender_q', { item: esc(itemName(it.type)), m: M(G.sellPrice(it)) }), T('bodega.vender_si'), () => act(G.sell(S, id), 'buy')); break; }
-      case 'prep': snd.play('tap'); openPrep(id); break;
+      case 'prep': { snd.play('tap'); const pc = S.contracts.find((x) => x.id === id); if (pc) mus.go(esFuneral(pc.type) ? 'funeral' : 'preparacion'); openPrep(id); break; }
       case 'auto': { const s = G.suggestLoadout(S, prep.id); prep.staff = new Set(s.staffIds); prep.equip = new Set(s.equipIds); snd.play('tap'); renderPrep(); break; }
       case 'go-live': {
         const r = G.startEvent(S, prep.id, [...prep.staff], [...prep.equip]);
         if (!r.ok) { toast(TL(r.msg)); snd.play('error'); break; }
         save(); render();
         snd.play('live');
-        snd.amb(['barrial', 'ligapro', 'final', 'concierto'].includes(S.currentEvent.contract.type) ? 'crowd' : 'room');
+        const ty = S.currentEvent.contract.type;
+        snd.amb(['barrial', 'ligapro', 'final', 'concierto'].includes(ty) ? 'crowd' : 'room');
+        mus.go(esFuneral(ty) ? 'funeral' : temaDeEvento(ty));
+        if (ty === 'final' || ty === 'ligapro') setTimeout(() => mus.stinger(), 900);
+        prep = null;
         showIncident();
         break;
       }
@@ -823,12 +1020,12 @@
       case 'next-inc': showIncident(); break;
       case 'finish': finish(); break;
       case 'after-result':
-        if (afterResult) { const d = afterResult; afterResult = null; showChapterDone(d); }
-        else { closeModal(); render(); if (S.gameOver) showGameOver(); }
+        if (afterResult) { const d = afterResult; afterResult = null; lsSet(RES_KEY, { chapter: d, ev: S.stats.events }); showChapterDone(d); }
+        else { lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); if (S.gameOver) showGameOver(); }
         break;
-      case 'close-story': closeModal(); render(); if (!showChapterIntro() && S.gameOver) showGameOver(); break;
-      case 'new-game': ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { S = G.newGame(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; render(); showChapterIntro(); }); break;
-      case 'restart': S = G.newGame(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; render(); showChapterIntro(); break;
+      case 'close-story': lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); if (!showChapterIntro() && S.gameOver) showGameOver(); break;
+      case 'new-game': ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { S = G.newGame(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); }); break;
+      case 'restart': S = G.newGame(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); break;
     }
   });
 
@@ -862,7 +1059,13 @@
   S = load() || G.newGame();
   save();
   render();
+  // Resultado que no se alcanzó a ver (se recargó en esa pantalla): se muestra otra vez
+  const pend = lsGet(RES_KEY);
+  const pendOk = pend && !S.currentEvent && pend.ev === S.stats.events;
+  if (pend && !pendOk) lsSet(RES_KEY, null);
   if (S.currentEvent) showIncident();       // si cerraste la app en pleno evento, sigue donde quedó
+  else if (pendOk && pend.r) { try { showResult(pend.r, pend.caja, false, pend.ty); } catch (e) { lsSet(RES_KEY, null); closeModal(); showChapterIntro(); } }
+  else if (pendOk && pend.chapter) { try { showChapterDone(pend.chapter); } catch (e) { lsSet(RES_KEY, null); closeModal(); showChapterIntro(); } }
   else showChapterIntro();
   // Conectar con la tienda (si hay servidor). Si volvemos de un pago aprobado, avisar.
   (async () => {
@@ -876,7 +1079,10 @@
       if (S.stats.events === 0 && S.day <= 1) await elegirPartida();
       aplicarEntregas(); render();
     }
-    if (volvioDePago) { tab = 'tienda'; render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
+    if (volvioDePago && !enApp()) { tab = 'tienda'; render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
+    else if (sinLeerSoporte()) toast(T('soporte.nuevas', { n: sinLeerSoporte() }));
+    // Google Play (solo en la app de Android): precios y compras que quedaron sin confirmar
+    await iniciarPlay();
   })();
   window.__game = { get state() { return S; } }; // para las pruebas automáticas
 })();

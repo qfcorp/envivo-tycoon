@@ -4,18 +4,22 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v4';
+const VERSION = 'envivo-v5';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
 const SHELL = [
   './',
   './index.html',
+  './js/datos.js',
   './js/logic.js',
   './js/ui.js',
   './js/art.js',
   './js/plan_evento.js', // plan de personal y cámaras (opcional)
   './js/sound.js',      // opcional: si no existe, no rompe la instalación
+  './js/musica.js',     // música de fondo (opcional)
+  './js/soporte.js',    // ayuda y soporte (opcional)
+  './js/googleplay.js', // compras de Google Play dentro de la app de Android (opcional)
   './js/pwa.js',
   './js/api.js',
   './js/premium.js',
@@ -119,9 +123,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin === self.location.origin) {
-    // La tienda, los pagos, el panel y las páginas legales SIEMPRE van al servidor (nunca desde la caché):
-    // así el saldo de créditos y las compras están siempre al día.
-    if (/^\/(api\/|pago\.php|admin\.php|terminos\.html|privacidad\.html)/.test(url.pathname)) return;
+    // La tienda, los pagos, los paneles, el bot y las páginas legales SIEMPRE van al servidor (nunca desde la caché):
+    // así el saldo de créditos y las compras están siempre al día (auditoría A-16).
+    if (/^\/(api\/|pago\.php|pago-assets\/|admin\.php|control(\/|$)|discord(\/|$)|\.well-known\/|terminos\.html|privacidad\.html)/.test(url.pathname)) return;
     event.respondWith(cacheFirstShell(req, event));
   }
 });
