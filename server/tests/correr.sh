@@ -131,7 +131,7 @@ check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo r
 
 echo
 echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo, Partida en la nube (versión y dispositivo activo)"
-for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2; do
+for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta; do
   # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
   env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
   grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'
@@ -249,7 +249,7 @@ NGC
   head -c 100000 /dev/zero | tr '\0' a > "$TMP/grande.txt"
   check "nginx: más de 64 KB a /pago.php -> 413; a /api/ se aceptan (hasta 1 MB, la partida)" "413 401" "$(curl -s -o /dev/null -w '%{http_code}' -X POST --data-binary @"$TMP/grande.txt" "$B/pago.php") $(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'X-Envivo: 1' -H 'Content-Type: application/json' --data-binary @"$TMP/grande.txt" "$B/api/partida")"
   check "nginx: POST /api/registro sin X-Envivo -> 403" "403" "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' "$B/api/registro")"
-  check "nginx: registro con X-Envivo -> 200" "200" "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"email":"nginx@prueba.example","nombre":"Nginx","clave":"ClaveNginx1"}' "$B/api/registro")"
+  check "nginx: registro con X-Envivo -> 200" "200" "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"email":"nginx@prueba.example","nombre":"Nginx","clave":"ClaveNginx1","acepta_terminos":true,"edad_16":true}' "$B/api/registro")"
   check "nginx: el webhook con Basic Auth llega a PHP (clave mala -> 401)" "401" "$(curl -s -o /dev/null -w '%{http_code}' -u plux_aviso:mala -X POST -d '{}' "$B/api/plux/webhook")"
   check "nginx: el webhook con la clave buena -> 422 (estado vacio)" "422" "$(curl -s -o /dev/null -w '%{http_code}' -u "plux_aviso:$HOOK_CLAVE" -X POST -H 'Content-Type: application/json' -d '{"x":1}' "$B/api/plux/webhook")"
   check "nginx: el juego tiene la tienda de Plux disponible" "true" "$(curl -s "$B/api/estado" | php -r '$j = json_decode(stream_get_contents(STDIN), true); echo !empty($j["plux"]["disponible"]) ? "true" : "false";')"

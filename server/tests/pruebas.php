@@ -74,7 +74,7 @@ $nuevo = function (string $nombre = 'Jugador') use ($URL, &$n): array {
     $n++;
     $nav = new Nav($URL, 'j' . $n);
     $email = 'jugador' . $n . '.' . bin2hex(random_bytes(3)) . '@prueba.example';
-    $r = $nav->api('/api/registro', ['email' => $email, 'nombre' => $nombre . ' ' . $n, 'clave' => 'ClaveSegura' . $n]);
+    $r = $nav->api('/api/registro', ['email' => $email, 'nombre' => $nombre . ' ' . $n, 'clave' => 'ClaveSegura' . $n, 'acepta_terminos' => true, 'edad_16' => true]);
     return [$nav, (int) ($r['jugador']['id'] ?? 0), $email, $r, 'ClaveSegura' . $n];
 };
 $ordenar = function (Nav $nav, string $producto): string {
@@ -112,7 +112,7 @@ titulo('Estado sin sesión: forma exacta de API.md');
 $est = $v->apiGet('/api/estado');
 check('GET /api/estado -> 200', 200, $v->http);
 $CLAVES_ESTADO = ['universo', 'aviso_fusion', 'ok', 'logueado', 'jugador', 'creditos', 'vip_hasta', 'vip_activo', 'vip_bono_hoy', 'inicio_comprado', 'entregas', 'tienda', 'plux', 'inventario', 'mercado', 'servidor', 'asociacion', 'perfil',
-    'tarjeta_hasta', 'tarjeta_activa', 'tarjeta_reclamada_hoy', 'cuenta_estado', 'aviso', 'soporte_sin_leer', 'compras_recientes', 'transferencia', 'creditos_retenidos', 'duelos', 'desafio', 'vip_nivel', 'regalos_pendientes', 'pase', 'sede_oficial', 'anuncio', 'mantenimiento', 'discord_vinculado', 'discord_invitacion'];
+    'tarjeta_hasta', 'tarjeta_activa', 'tarjeta_reclamada_hoy', 'cuenta_estado', 'aviso', 'soporte_sin_leer', 'compras_recientes', 'transferencia', 'creditos_retenidos', 'duelos', 'desafio', 'vip_nivel', 'regalos_pendientes', 'pase', 'sede_oficial', 'terminos', 'anuncio', 'mantenimiento', 'discord_vinculado', 'discord_invitacion'];   // terminos: INTEGRAR_CUENTA.md
 check('Claves del estado (API.md + MERCADO.md + SOCIAL.md + SOPORTE.md + tarjeta, cuenta, anuncio, duelos, desafío, Discord)', $CLAVES_ESTADO, array_keys($est));
 check('Sin sesión: inventario [], mercado sin acceso, sin servidor ni asociación', [[], false, 0.05, null, null], [$est['inventario'], $est['mercado']['puede'], $est['mercado']['comision'], $est['servidor'], $est['asociacion']]);
 check('Sin sesión: logueado false, créditos 0, entregas []', [true, false, 0, [], null, false, false, false], [$est['ok'], $est['logueado'], $est['creditos'], $est['entregas'], $est['vip_hasta'], $est['vip_activo'], $est['vip_bono_hoy'], $est['inicio_comprado']]);
@@ -138,7 +138,7 @@ foreach (['/api/registro', '/api/entrar', '/api/salir', '/api/partida', '/api/ga
     $j = $v->api($r, ['email' => 'x@prueba.example', 'clave' => '12345678'], false);
     check("POST $r sin X-Envivo -> 403", [403, false], [$v->http, $j['ok'] ?? null]);
 }
-$v->api('/api/registro', ['email' => 'x@prueba.example', 'nombre' => 'X', 'clave' => '12345678'], false, ['X-Envivo: 0']);
+$v->api('/api/registro', ['email' => 'x@prueba.example', 'nombre' => 'X', 'clave' => '12345678', 'acepta_terminos' => true, 'edad_16' => true], false, ['X-Envivo: 0']);
 check('X-Envivo: 0 tampoco sirve', 403, $v->http);
 check('Nada se creó sin la cabecera', 0, (int) $val("SELECT COUNT(*) FROM jugadores WHERE email = 'x@prueba.example'"));
 $v->api('/api/estado', []);
@@ -147,13 +147,13 @@ check('POST /api/estado -> 405', 405, $v->http);
 // =====================================================================
 titulo('Cuenta: registro, entrar, salir');
 $a = new Nav($URL, 'cuenta');
-$r = $a->api('/api/registro', ['email' => 'corta@prueba.example', 'nombre' => 'Corta', 'clave' => '1234567']);
+$r = $a->api('/api/registro', ['email' => 'corta@prueba.example', 'nombre' => 'Corta', 'clave' => '1234567', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Clave de 7 caracteres -> 400', [400, false], [$a->http, $r['ok'] ?? null]);
-$r = $a->api('/api/registro', ['email' => 'no-es-correo', 'nombre' => 'X', 'clave' => '12345678']);
+$r = $a->api('/api/registro', ['email' => 'no-es-correo', 'nombre' => 'X', 'clave' => '12345678', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Correo inválido -> 400', 400, $a->http);
-$r = $a->api('/api/registro', ['email' => 'sinnombre@prueba.example', 'nombre' => '  ', 'clave' => '12345678']);
+$r = $a->api('/api/registro', ['email' => 'sinnombre@prueba.example', 'nombre' => '  ', 'clave' => '12345678', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Sin nombre -> 400', 400, $a->http);
-$r = $a->api('/api/registro', ['email' => 'Dimi.Tester@Prueba.example', 'nombre' => 'Dimi', 'clave' => 'MiClave2026']);
+$r = $a->api('/api/registro', ['email' => 'Dimi.Tester@Prueba.example', 'nombre' => 'Dimi', 'clave' => 'MiClave2026', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Registro -> 200 con el estado ya logueado', [200, true, true, 'dimi.tester@prueba.example', 'Dimi', 0], [$a->http, $r['ok'] ?? null, $r['logueado'] ?? null, $r['jugador']['email'] ?? null, $r['jugador']['nombre'] ?? null, $r['creditos'] ?? null]);
 check('…mismas claves que /api/estado', array_keys($est), array_keys($r));
 $JA = (int) ($r['jugador']['id'] ?? 0);
@@ -165,7 +165,7 @@ si('…dura 60 días', isset($mm[1]) && abs((int) $mm[1] - 60 * 86400) < 120);
 $tokA = $a->token();
 check('En la base se guarda SOLO el sha256 del token de sesión', [1, 0], [(int) $val('SELECT COUNT(*) FROM sesiones WHERE token_hash = ?', [hash('sha256', $tokA)]), (int) $val('SELECT COUNT(*) FROM sesiones WHERE token_hash = ?', [$tokA])]);
 si('La clave se guarda con bcrypt', str_starts_with((string) $val('SELECT clave_hash FROM jugadores WHERE id = ?', [$JA]), '$2y$'));
-$a->api('/api/registro', ['email' => 'DIMI.tester@prueba.example', 'nombre' => 'Otro', 'clave' => 'OtraClave2026']);
+$a->api('/api/registro', ['email' => 'DIMI.tester@prueba.example', 'nombre' => 'Otro', 'clave' => 'OtraClave2026', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Correo repetido (sin importar mayúsculas) -> 409', 409, $a->http);
 $e2 = $a->apiGet('/api/estado');
 check('GET /api/estado con sesión', [true, $JA], [$e2['logueado'], $e2['jugador']['id'] ?? null]);
@@ -560,7 +560,7 @@ check('…más de 100.000 de una vez -> 400', [false, 400], [$r['ok'], $r['http'
 // =====================================================================
 titulo('Sin credenciales de Plux');
 $s = new Nav($URL_SIN, 'sinplux');
-$r = $s->api('/api/registro', ['email' => 'sinplux@prueba.example', 'nombre' => 'Sin Plux', 'clave' => 'ClaveSinPlux1']);
+$r = $s->api('/api/registro', ['email' => 'sinplux@prueba.example', 'nombre' => 'Sin Plux', 'clave' => 'ClaveSinPlux1', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Estado: plux.disponible false', ['disponible' => false, 'ambiente' => 'sandbox'], $r['plux'] ?? null);
 $s->api('/api/orden', ['producto' => 'creditos_250']);
 check('Orden -> 503', 503, $s->http);

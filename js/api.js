@@ -89,7 +89,7 @@
   };
 
   Api.refrescar = async () => guardarEstado(await req('GET', '/api/estado'));
-  Api.registro = async (email, nombre, clave) => guardarEstado(await req('POST', '/api/registro', { email, nombre, clave }));
+  Api.registro = async (email, nombre, clave, extra) => guardarEstado(await req('POST', '/api/registro', Object.assign({ email, nombre, clave }, extra || {})));   // extra: términos y edad (js/cuenta.js)
   Api.entrar = async (email, clave) => guardarEstado(await req('POST', '/api/entrar', { email, clave }));
   Api.salir = async () => { await req('POST', '/api/salir', {}); return Api.refrescar(); };
   // Partida en la nube con versión (server/src/Partidas.php): `base` = versión de la que partió esta partida y

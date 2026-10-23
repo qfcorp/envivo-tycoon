@@ -1,0 +1,58 @@
+{
+  "_info": "Códigos nuevos del módulo cuenta (server/src/Terminos.php). Mismo formato que docs/traducciones/errores.json: copiar cada idioma y _codigos dentro de errores.json al integrar (server/INTEGRAR_CUENTA.md).",
+  "_codigos": {
+    "terminos_requeridos": "existe · Terminos.php · 400",
+    "edad_requerida": "existe · Terminos.php · 400",
+    "terminos_pendientes": "existe · Terminos.php · 403"
+  },
+  "es": {
+    "terminos_requeridos": "Para seguir debes aceptar los Términos y la Política de privacidad.",
+    "edad_requerida": "Debes tener {edad} años o más para tener una cuenta.",
+    "terminos_pendientes": "Antes de usar el chat acepta los Términos y la Política de privacidad (te lo pedimos una sola vez)."
+  },
+  "en": {
+    "terminos_requeridos": "To continue you must accept the Terms and the Privacy Policy.",
+    "edad_requerida": "You must be {edad} or older to have an account.",
+    "terminos_pendientes": "Before using chat, accept the Terms and the Privacy Policy (we only ask once)."
+  },
+  "pt-BR": {
+    "terminos_requeridos": "Para continuar você precisa aceitar os Termos e a Política de privacidade.",
+    "edad_requerida": "Você precisa ter {edad} anos ou mais para ter uma conta.",
+    "terminos_pendientes": "Antes de usar o chat, aceite os Termos e a Política de privacidade (pedimos só uma vez)."
+  },
+  "fr": {
+    "terminos_requeridos": "Pour continuer, tu dois accepter les Conditions et la Politique de confidentialité.",
+    "edad_requerida": "Tu dois avoir {edad} ans ou plus pour avoir un compte.",
+    "terminos_pendientes": "Avant d'utiliser le chat, accepte les Conditions et la Politique de confidentialité (on ne le demande qu'une fois)."
+  },
+  "de": {
+    "terminos_requeridos": "Um weiterzumachen, musst du die Bedingungen und die Datenschutzerklärung akzeptieren.",
+    "edad_requerida": "Für ein Konto musst du {edad} Jahre oder älter sein.",
+    "terminos_pendientes": "Bevor du den Chat nutzt, akzeptiere die Bedingungen und die Datenschutzerklärung (wir fragen nur einmal)."
+  },
+  "it": {
+    "terminos_requeridos": "Per continuare devi accettare i Termini e l'Informativa sulla privacy.",
+    "edad_requerida": "Per avere un account devi avere {edad} anni o più.",
+    "terminos_pendientes": "Prima di usare la chat, accetta i Termini e l'Informativa sulla privacy (lo chiediamo una sola volta)."
+  },
+  "ru": {
+    "terminos_requeridos": "Чтобы продолжить, прими Условия и Политику конфиденциальности.",
+    "edad_requerida": "Чтобы иметь аккаунт, тебе должно быть {edad} лет или больше.",
+    "terminos_pendientes": "Перед тем как писать в чат, прими Условия и Политику конфиденциальности (спрашиваем один раз)."
+  },
+  "tr": {
+    "terminos_requeridos": "Devam etmek için Şartları ve Gizlilik Politikasını kabul etmelisin.",
+    "edad_requerida": "Hesap için {edad} yaşında veya daha büyük olmalısın.",
+    "terminos_pendientes": "Sohbeti kullanmadan önce Şartları ve Gizlilik Politikasını kabul et (yalnızca bir kez soruyoruz)."
+  },
+  "id": {
+    "terminos_requeridos": "Untuk lanjut kamu harus menerima Ketentuan dan Kebijakan Privasi.",
+    "edad_requerida": "Untuk punya akun kamu harus berusia {edad} tahun atau lebih.",
+    "terminos_pendientes": "Sebelum memakai chat, terima Ketentuan dan Kebijakan Privasi (kami hanya bertanya sekali)."
+  },
+  "zh-CN": {
+    "terminos_requeridos": "要继续，你必须接受条款和隐私政策。",
+    "edad_requerida": "年满 {edad} 岁才能拥有账号。",
+    "terminos_pendientes": "使用聊天前，请接受条款和隐私政策（我们只问一次）。"
+  }
+}

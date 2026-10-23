@@ -323,7 +323,7 @@ check('GET /api/soporte/contacto sin sesión', [200, 'soporte@prueba.example', '
 $r = $anon->get('/api/soporte');
 check('GET /api/soporte sin sesión -> 401 con error y codigo', [401, false, true, 'sesion_requerida'], [$anon->http, $r['ok'] ?? null, is_string($r['error'] ?? null), $r['codigo'] ?? null]);
 $h = new Nav($URL, 'h');
-$reg = $h->post('/api/registro', ['email' => 'http.' . bin2hex(random_bytes(3)) . '@prueba.example', 'nombre' => 'Hugo', 'clave' => 'ClaveSegura99']);
+$reg = $h->post('/api/registro', ['email' => 'http.' . bin2hex(random_bytes(3)) . '@prueba.example', 'nombre' => 'Hugo', 'clave' => 'ClaveSegura99', 'acepta_terminos' => true, 'edad_16' => true]);
 $H = (int) ($reg['jugador']['id'] ?? 0);
 si('Registro por HTTP', $H > 0);
 $r = $h->post('/api/soporte', ['categoria' => 'pago', 'asunto' => 'Prueba HTTP', 'mensaje' => 'Hola soporte', 'diagnostico' => ['version' => '1.4.0']]);
