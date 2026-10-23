@@ -19,6 +19,8 @@ try {
     if ($ruta === '/plux/webhook') api_plux_webhook();
     // El regreso del banco (3DS) es una navegación normal del navegador (GET), no una petición del juego.
     if ($ruta === '/plux/3ds') api_plux_3ds();
+    // Errores del juego (server/INTEGRAR_ERRORES.md): /api/error va ANTES de X-Envivo (sendBeacon no manda cabeceras; revisa el origen él mismo)
+    if (class_exists(\EnVivo\ErroresApi::class) && \EnVivo\ErroresApi::esRuta($ruta)) \EnVivo\ErroresApi::responder($ruta, $metodo);
 
     // Protección simple contra peticiones desde otros sitios (junto con SameSite=Lax de la galleta).
     if ($metodo === 'POST' && ($_SERVER['HTTP_X_ENVIVO'] ?? '') !== '1') Http::error(403, 'Petición no permitida.', [], 'cabecera_requerida');

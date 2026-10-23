@@ -21,6 +21,7 @@ const CC_PESTANAS = [
     'resumen' => 'Resumen', 'jugadores' => 'Jugadores', 'compras' => 'Compras', 'productos' => 'Productos',
     'mercado' => 'Mercado', 'chat' => 'Chat', 'soporte' => 'Soporte', 'ajustes' => 'Ajustes',
     'servidores' => 'Servidores',
+    'errores' => 'Errores',
 ];
 
 function e(mixed $t): string { return Http::e($t === null ? '' : (string) $t); }
@@ -223,6 +224,7 @@ function cc_insignias(): array
         if (Control::tablas('soporte_casos', 'soporte_mensajes')) $o['soporte'] = cc_soporte_conteos()['esperan_respuesta'];
         if (Control::tabla('chat_reportes')) $o['chat'] = (int) Db::valor("SELECT COUNT(DISTINCT mensaje_id) FROM chat_reportes WHERE estado = 'pendiente'");
         if (function_exists('cc_servidores_insignia')) $o['servidores'] = cc_servidores_insignia();
+        if (function_exists('cc_errores_insignia')) $o['errores'] = cc_errores_insignia();
     } catch (\Throwable) {}
     return $o;
 }

@@ -15,7 +15,7 @@ declare(strict_types=1);
 const ENVIVO_CONTROL = true;
 require dirname(__DIR__, 2) . '/src/arranque.php';
 require __DIR__ . '/lib/base.php';
-foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'soporte', 'ajustes', 'servidores'] as $f) require __DIR__ . '/lib/' . $f . '.php';
+foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'soporte', 'ajustes', 'servidores', 'errores'] as $f) require __DIR__ . '/lib/' . $f . '.php';
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 
@@ -60,6 +60,7 @@ try {
         'soporte' => cc_t_soporte(),
         'ajustes' => cc_t_ajustes(),
         'servidores' => cc_t_servidores(),
+        'errores' => cc_t_errores(),
     };
     cc_pagina(CC_PESTANAS[$t], $t, $cuerpo);
 } catch (\Throwable $e) {
@@ -143,6 +144,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'soporte_'), str_starts_with($accion, 'rapida_') => cc_a_soporte($accion, $q),
             str_starts_with($accion, 'ajustes_') => cc_a_ajustes($accion, $q),
             str_starts_with($accion, 'servidores_') => cc_a_servidores($accion, $q),
+            str_starts_with($accion, 'errores_') => cc_a_errores($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);
