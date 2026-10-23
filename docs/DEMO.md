@@ -52,13 +52,15 @@ Dos partes: primero una **partida nueva** (los días 1 a 15, lo que mejor se sie
 | 1–3 | **Clientes** → la **misa** o la **boda** → **Preparar evento** | El **plano de cámaras** (las tomas extra salen en gris como *opcional*) y el **semáforo de personal**. **¡Salir al aire!**, un imprevisto, **Terminar transmisión**. |
 | 3–4 | Pantalla de resultado | Estrellas, pago, sueldos y gastos del día: el número grande es lo que **dejó el evento**; si compraste algo esa mañana, la caja del día sale aparte. |
 | 4–5 | **Personal** y **Bodega** | Contratar un sonidista y un camarógrafo, comprar la segunda cámara: así se pasa al capítulo 2 (día 4 a 15). |
-| 5 | Cambiar a la **partida del capítulo 4**: abrir el mismo enlace con `?demo=cap4` | Pregunta antes de reemplazar la partida. Sale la presentación del capítulo 4 (Germán Vélez, MegaVisión). |
+| 5 | Cambiar a la **partida del capítulo 4**: abrir el enlace **EN VIVO Tycoon Demo** (https://claude.ai/artifact/RVBzdXCEN26juFswBwp9SN) | Pregunta antes de reemplazar la partida. Sale la presentación del capítulo 4 (Germán Vélez, MegaVisión). |
 | 5–7 | **Clientes** → la oferta con la etiqueta **Disputado** → **Preparar** | La calidad que promete MegaVisión contra tu rango esperado. **¡Salir al aire!** y el **duelo** en el resultado. |
 | 7–8 | **Clientes** → la **oferta internacional** | País, pago ×2 o ×3, días de viaje y requisitos (realizador con experiencia internacional). |
 | 8–9 | **Inicio** → botón **Idioma** | Cambia a **English** o **中文**: nombres, registro y la oferta internacional también cambian. Vuelve a **Español**. |
 | 9–10 | **En línea** y **Tienda** | Los 4 modos en línea y los equipos exclusivos. Explica: "esto se activa con el servidor, que ya está listo para instalar". |
 
 ### Partida preparada del capítulo 4 (`?demo=cap4`)
+
+- **Desde el celular, lo más fácil:** abre **EN VIVO Tycoon Demo** → https://claude.ai/artifact/RVBzdXCEN26juFswBwp9SN . La primera vez arranca sola en el capítulo 4 (día 54, $9.560, fama 71); después guarda tu avance como cualquier partida.
 
 - Se abre agregando `?demo=cap4` a la dirección del juego, por ejemplo `https://juego.tukanec.com/?demo=cap4`
   o `index.html?demo=cap4` / `dist/envivo-tycoon.html?demo=cap4` en la computadora.
