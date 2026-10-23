@@ -47,6 +47,12 @@ Todos son **productos únicos** (ninguno es suscripción). Después de crear cad
 | `tarjeta_mensual` | Tarjeta mensual (30 días) | Sí |
 | `vip30` | Pase VIP 30 días | Sí |
 | `refuerzo_camarografo_senior`, `refuerzo_tecnico_internacional`, `alquiler_lente_box`, `seguro_evento`, `equipo_descansado` | Refuerzos | Sí |
+| `pase_premium` ($4.99), `pase_premium_plus` ($9.99) | Pase de Temporada (dura la temporada de 28 días; no es suscripción) | Sí (uno por temporada) |
+| `pack_obra_s` ($1.99), `pack_obra_m` ($4.99), `pack_obra_l` ($9.99) | Packs de obra de la sede oficial (contenido fijo) | Sí |
+| `pase_copa` ($2.99) | Pase de Copa: +5 intentos por día esa semana | Sí |
+| `oferta_vip_s` ($1.99), `oferta_vip_m` ($4.99), `oferta_vip_l` ($9.99), `oferta_campeon` ($4.99), `oferta_sede_5` ($4.99), `oferta_sede_10` ($9.99) | Ofertas por logros (aparecen al subir de nivel VIP, ganar una copa o subir la sede) | Con tope por oferta (lo controla el servidor) |
+
+`estrella_copa` (personal estrella) **no** se crea en Play: se paga solo con créditos dentro del juego.
 
 **No** crees `transferencia_cuenta` (solo se paga en la web). Los precios sugeridos están en `docs/ANDROID_GOOGLE_PLAY.md`
 (sección 6). Si un id no coincide, el servidor responde "Ese producto no existe" y **no** entrega nada.
