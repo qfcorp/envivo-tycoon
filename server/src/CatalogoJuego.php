@@ -523,11 +523,29 @@ final class CatalogoJuego
     'fama' => 4,
     'nombre' => 'Juego de maletas rígidas Pelikano',
   ),
+  'veh_sedan_usado' => 
+  array (
+    'cat' => 'vehicle',
+    'fama' => 2,
+    'nombre' => 'Sedán usado (2009)',
+  ),
   'veh_camioneta_carga' => 
   array (
     'cat' => 'vehicle',
     'fama' => 4,
     'nombre' => 'Camioneta de carga usada',
+  ),
+  'veh_van_pasajeros_usada' => 
+  array (
+    'cat' => 'vehicle',
+    'fama' => 12,
+    'nombre' => 'Van de 12 pasajeros (usada)',
+  ),
+  'veh_furgon_carga' => 
+  array (
+    'cat' => 'vehicle',
+    'fama' => 20,
+    'nombre' => 'Furgón de carga (nuevo)',
   ),
   'veh_sprinto_ob_usada' => 
   array (
