@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v9';
+const VERSION = 'envivo-v10';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -18,6 +18,7 @@ const SHELL = [
   './js/ui.js',
   './js/art.js',
   './js/plan_evento.js', // plan de personal y cámaras (opcional)
+  './js/ayuda.js',      // botones "?" con explicaciones cortas
   './js/sound.js',      // opcional: si no existe, no rompe la instalación
   './js/musica.js',     // música de fondo (opcional)
   './js/soporte.js',    // ayuda y soporte (opcional)
@@ -37,6 +38,7 @@ const SHELL = [
   './js/vip.js',        // nivel VIP 1–10, regalos de asociación y Mecenas
   './js/pase.js',       // Pase de Temporada
   './js/estrellas.js',  // Personal estrella y Pase de Copa
+  './js/guia.js',       // guía "toca aquí" del primer evento
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',

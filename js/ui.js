@@ -19,6 +19,7 @@
   const M = (n) => { const v = Math.round(Number(n) || 0); return v < 0 ? '-' + M0(-v) : M0(v); };
   const N = (n) => (I18 ? I18.num(n) : String(n));
   const I = (name, cls) => A.icon(name, cls);
+  const AY = (k) => (window.Ayuda ? window.Ayuda.btn(k) : '');   // botón "?" (js/ayuda.js)
   // Quita el emoji del inicio de los textos de la lógica (ahora hay dibujos)
   const noEmoji = (t) => String(t).replace(/^(\p{Extended_Pictographic}|️|‍|\s)+/u, '');
   // Textos de la lógica que traen clave y parámetros ({ k, p }): se arman otra vez con G.tx (así salen en el idioma
@@ -382,6 +383,37 @@
     if (tab !== 'online' && montado) desmontarOnline();
     ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, tienda: renderTienda, registro: renderRegistro, online: renderOnline })[tab]();
     if (S.gameOver && !$('overlay').classList.contains('on')) showGameOver();
+    else avisoCuentaTal();
+    flechasFilas();
+  }
+
+  // Filas de categorías que se mueven de lado (tienda de equipos, tienda): flechas ‹ › para quien juega en computadora
+  // (en el celular también ayudan a ver que hay más). Solo se ven si hay más a ese lado.
+  function flechasFilas() {
+    document.querySelectorAll('.catrow').forEach((row) => {
+      if (!row.parentNode || (row.parentElement && row.parentElement.classList.contains('catwrap'))) return;
+      const sl = row.scrollLeft;   // mover la fila al envoltorio la regresa al inicio: se conserva donde estaba
+      const w = document.createElement('div');
+      w.className = 'catwrap';
+      row.parentNode.insertBefore(w, row);
+      w.appendChild(row);
+      row.scrollLeft = sl;
+      const flecha = (dir) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'catflecha ' + (dir < 0 ? 'izq' : 'der');
+        b.setAttribute('aria-label', dir < 0 ? '‹' : '›');
+        b.innerHTML = dir < 0 ? '&#8249;' : '&#8250;';
+        b.addEventListener('click', (e) => { e.stopPropagation(); row.scrollBy({ left: dir * Math.max(140, row.clientWidth * 0.7), behavior: reduceMotion() ? 'auto' : 'smooth' }); snd.play('tap'); });
+        w.appendChild(b);
+        return b;
+      };
+      const izq = flecha(-1), der = flecha(1);
+      const ver = () => { const max = row.scrollWidth - row.clientWidth - 4; izq.hidden = row.scrollLeft <= 4; der.hidden = max <= 0 || row.scrollLeft >= max; };
+      row.addEventListener('scroll', ver, { passive: true });
+      ver();
+      requestAnimationFrame(ver);
+    });
   }
 
   function renderInicio() {
@@ -390,7 +422,7 @@
     let cb = null;
     try { cb = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null; } catch (e) { cb = null; }
     const costBox = cb ? `<div class="costbox"><div class="ci">${I('home')}</div><div class="t">
-        <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>
+        <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>${AY('gastos')}
         <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}</div>
         ${cb.nextPlace ? `<div class="small" style="color:var(--amber)">${T('inicio.siguiente_local', { n: cb.nextAt, tienes: cb.size, lugar: esc(TL(cb.nextPlace)), m: M(cb.nextRent) })}</div>` : ''}
       </div></div>` : '';
@@ -429,6 +461,7 @@
           <button class="btn" data-act="next-day">${I('sleep')}${T('inicio.descansar')} <span class="muted small">(${T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
         </div>
       </div>
+      ${cuentaCard()}
       ${installCard()}
       ${tarjetasInicio()}
       ${story}
@@ -440,6 +473,54 @@
       <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
       ${soporteBtn()}
       <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}${T('inicio.nueva')}</button>`;
+  }
+
+  /* ---------- Aviso de cuenta: sin cuenta, la partida vive SOLO en este celular ----------
+     Tarjeta fija en Inicio (después del tutorial) y una ventana que sale sola 3 veces en todo el juego
+     (al terminar el tutorial, al día 15 y al capítulo 4), nunca durante un evento ni encima de otra ventana. */
+  const sinCuenta = () => !!(Api.disponible && Api.estado && !Api.logueado());
+  const tutorialHecho = () => !!(S.storyDone || S.chapter >= 1);
+  function cuentaCard() {
+    if (!sinCuenta() || !tutorialHecho()) return '';
+    return `<div class="card aviso-cuenta">
+      <div class="prodrow">${tile('cloud', 'amber')}<div class="grow"><h3 style="margin:0">${T('avisoc.t')}</h3>
+        <p class="small muted" style="margin:4px 0 0">${T('avisoc.det', { d: S.day, n: S.stats.events })}</p></div></div>
+      <button class="btn main" data-act="cuenta" data-modo="registro">${I('user')}${T('avisoc.crear')}</button>
+      <button class="btn" data-act="cuenta-info">${I('tip')}${T('avisoc.porque')}</button></div>`;
+  }
+  function avisoCuenta() {
+    const fila = (ic, color, txt) => `<div class="ac-fila"><span style="color:${color}">${I(ic, 'sm')}</span><span>${txt}</span></div>`;
+    const no = [1, 2, 3, 4].map((i) => fila('x_circle', 'var(--red)', T('avisoc.solo' + i))).join('');
+    const si = [1, 2, 3, 4].map((i) => fila('check', 'var(--green)', T('avisoc.con' + i))).join('');
+    openModal(`<div class="row between"><div class="story-tag">${T('avisoc.tag')}</div><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      <h2>${T('avisoc.titulo')}</h2>
+      <div class="ac-hq">${A.hq(S)}</div>
+      <div class="row wrap small" style="margin:8px 0 4px">
+        <span class="tag">${I('calendar')}${T('comun.dia_n', { n: S.day })}</span>
+        <span class="tag">${I('money')}${M(S.money)}</span>
+        <span class="tag">${I('people')}${T('inicio.personas', { n: S.staff.length })}</span>
+        <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
+        <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
+      </div>
+      <h3 class="ac-h" style="color:#ff8f8f">${T('avisoc.solo_t')}</h3>${no}
+      <h3 class="ac-h" style="color:#7fe0a8">${T('avisoc.con_t')}</h3>${si}
+      <p class="small muted" style="margin-top:10px">${T('avisoc.gratis')}</p>
+      <button class="btn main" data-act="cuenta" data-modo="registro">${I('user')}${T('avisoc.crear')}</button>
+      <button class="btn" data-act="cuenta" data-modo="entrar">${T('cuenta.ya_tengo_entrar')}</button>
+      <button class="btn sm" data-act="close" style="margin-top:4px">${T('avisoc.ahora_no')}</button>`);
+  }
+  let avisoTimer = null;
+  const nivelAviso = () => (S.storyDone || S.chapter >= 4 ? 3 : S.day >= 15 ? 2 : 1);
+  function avisoCuentaTal() {
+    if (avisoTimer || tab !== 'inicio' || VI || S.gameOver || !sinCuenta() || !tutorialHecho()) return;
+    const nivel = nivelAviso();
+    if (Number(lsGet('envivo_aviso_cuenta') || 0) >= nivel) return;
+    avisoTimer = setTimeout(() => {
+      avisoTimer = null;
+      if (tab !== 'inicio' || VI || $('overlay').classList.contains('on') || !sinCuenta()) return;
+      lsSet('envivo_aviso_cuenta', nivel);
+      avisoCuenta();
+    }, 1200);
   }
 
   // Botón para instalar como app (solo si el navegador lo permite)
@@ -1459,6 +1540,15 @@
     // Lo que dejó el evento: pago - sueldos - viaje - gastos fijos del día (QA4). Lo que cambió la caja desde la mañana
     // (incluye compras, cobros que llegaron y la parte que se paga después) va aparte, solo si es distinto.
     const gastoDia = G.dailyCost && typeof r.dailyCost === 'number' ? r.dailyCost : null;
+    // De qué son los gastos del día: local, personal y seguro de equipos (solo si cuadra con lo cobrado)
+    const gastoDesg = (() => {
+      try {
+        const b = gastoDia !== null && G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
+        if (!b || b.total !== gastoDia) return '';
+        const pers = (b.staff || 0) + (b.payroll || 0);
+        return [T('inicio.local', { m: M(b.rent) }), pers ? T('inicio.c_personal', { m: M(pers) }) : '', b.equip ? T('inicio.c_seguro', { m: M(b.equip) }) : ''].filter(Boolean).join(' · ');
+      } catch (e) { return ''; }
+    })();
     const neto = r.net - (gastoDia || 0);
     const sgn = (v) => (v > 0 ? '+' : '') + M(v);
     const quebro = !!S.gameOver;
@@ -1478,7 +1568,7 @@
       <div class="bigmoney ${tono} num" id="resNet">${fresh ? (neto >= 0 ? '+' : '-') + M(0) : (neto >= 0 ? '+' : '-') + M(Math.abs(neto))}</div>
       <div class="small muted" style="text-align:center">${gastoDia !== null ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
       ${alerta}
-      <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}</span><b class="num">${r.quality}/100</b></div>
+      <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}${AY('calidad')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       ${duel}
       ${intl}
@@ -1488,10 +1578,10 @@
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
-        ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
-        <tr><td><b>${T('res.ganancia')}</b></td><td class="${tono}"><b>${M(neto)}</b></td></tr>
+        ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
+        <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
-        <tr><td>${T('head.fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
+        <tr><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
@@ -1555,7 +1645,7 @@
     mus.go(r.stars >= 4 ? 'victoria' : 'menu');
     openModal(`<div class="result-head"><div class="story-tag">${viTag()}</div><h2>${T('online.turno_listo')}</h2></div>
       ${starsBig(r.stars || 1)}
-      <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}</span><b class="num">${r.quality}/100</b></div>
+      <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}${AY('calidad')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       <p class="small muted">${T('online.servidor_confirma')}</p>
       <button class="btn main" data-act="vi-enviar">${I('cloud', 'sm')} ${T('online.enviar')}</button>`);
@@ -1794,6 +1884,7 @@
       case 'soporte': if (window.Soporte) Promise.resolve(window.Soporte.abrir(ctxSoporte())).catch(() => toast(T('err.no_completo'))); break;
       case 'vista-tienda': vistaTienda = el.dataset.k; if (window.Mercado) window.Mercado.invalidar(); render(); break;
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
+      case 'cuenta-info': avisoCuenta(); break;
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
@@ -1965,6 +2056,9 @@
     else if (pendOk && pend.r) { try { showResult(pend.r, pend.caja, false, pend.ty); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
     else if (pendOk && pend.chapter) { try { showChapterDone(pend.chapter); } catch (e) { lsSet(RES_KEY, null); closeModal(); continuar(); } }
     else continuar();
+    // Guía del primer evento (js/guia.js, con defer): solo en una partida nueva; si aún no cargó, la toma al cargar
+    const guiaCtx = { estado: () => S, A, tab: () => tab, idioma: () => (I18 ? I18.idioma : 'es') };
+    if (window.Guia) window.Guia.iniciar(guiaCtx); else window.__guiaCtx = guiaCtx;
     // La red (tienda, cuenta, chat, Google Play) después de la primera pantalla y de los scripts diferidos
     const red = () => setTimeout(conectar, 0);
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', red, { once: true }); else red();

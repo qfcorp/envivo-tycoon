@@ -20,7 +20,8 @@
   /* ---------- Textos (español) ---------- */
   const ES = {
     'pe.personal': 'Personal del evento',
-    'pe.col.asig': 'Asig.', 'pe.col.min': 'Mín.', 'pe.col.ideal': 'Ideal',
+    'pe.col.asig': 'Llevas', 'pe.col.min': 'Mínimo', 'pe.col.ideal': 'Ideal',
+    'pe.ley.completo': 'Cubierto', 'pe.ley.justo': 'Puedes ir, con riesgo', 'pe.ley.falta': 'Falta el mínimo',
     'pe.est.falta': 'Falta', 'pe.est.justo': 'Justo', 'pe.est.completo': 'Completo',
     'pe.res.falta': '{n} en falta', 'pe.res.justo': '{n} justo', 'pe.res.completo': '{n} completo',
     'pe.sifalta': 'Si falta: {t}',
@@ -226,7 +227,7 @@
 .pe-sub{font-size:12px;color:var(--muted,#8b95a8)}
 .pe-sub b{color:var(--text,#e9edf5);font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600}
 .pe-box{background:var(--panel,#161a22);border:1px solid var(--line,#2a3242);border-radius:12px;overflow:hidden}
-.pe-ch,.pe-row{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 12px;align-items:center;gap:8px;padding:0 10px}
+.pe-ch,.pe-row{display:grid;grid-template-columns:34px minmax(0,1fr) 114px 12px;align-items:center;gap:8px;padding:0 10px}
 .pe-ch{font-size:10.5px;color:var(--muted,#8b95a8);text-transform:uppercase;letter-spacing:.6px;padding-top:7px;padding-bottom:5px;background:var(--panel2,#1e2430);border-bottom:1px solid var(--line,#2a3242)}
 .pe-ch .pe-cnt i{color:var(--muted,#8b95a8)}
 .pe-row{padding-top:7px;padding-bottom:7px;border-bottom:1px solid var(--line,#2a3242);position:relative}
@@ -260,6 +261,9 @@
 .pe-ft{display:flex;justify-content:space-between;align-items:center;gap:6px 10px;flex-wrap:wrap;padding:8px 10px;background:var(--panel2,#1e2430);border-top:1px solid var(--line,#2a3242);font-size:12.5px}
 .pe-ft b{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:600}
 .pe-save{color:var(--pe-ok)}
+.pe-ley{display:flex;flex-wrap:wrap;gap:4px 12px;padding:6px 10px;font-size:11.5px;color:var(--muted,#8b95a8);border-top:1px solid var(--line,#2a3242)}
+.pe-ley span{display:inline-flex;align-items:center;gap:5px}
+.pe-ley i{width:8px;height:8px;border-radius:50%;background:var(--pe-c);display:inline-block}
 .pe-save small{display:block;color:var(--pe-mid);font-size:11px}
 .pe-empty{padding:10px;font-size:12.5px;color:var(--muted,#8b95a8)}
 
@@ -457,8 +461,9 @@
         ? `<div class="pe-ft"><span>${esc(T('pe.sueldos'))} <b>${money(wages || 0)}</b></span>${save != null && save > 0 && under
           ? `<span class="pe-save">${esc(T('pe.ahorro', { m: money(save) }))}${cnt.falta ? `<small>${esc(T('pe.ahorro.riesgo'))}</small>` : ''}</span>`
           : idealW != null && o.mostrarIdeal ? `<span class="muted">${esc(T('pe.ideal.sueldos', { m: money(idealW) }))}</span>` : ''}</div>` : '';
-      const head = rows.length ? `<div class="pe-ch"><span></span><span></span><span class="pe-cnt"><i>${esc(T('pe.col.asig'))}</i><i>${esc(T('pe.col.min'))}</i><i>${esc(T('pe.col.ideal'))}</i></span><span></span></div>` : '';
-      return `<div class="pe-crew ${esc(o.clase || '')}">${titulo}<div class="pe-box">${head}${body || `<div class="pe-empty">${esc(T('pe.sinroles'))}</div>`}${ft}</div></div>`;
+      const head = rows.length ? `<div class="pe-ch"><span>${root.Ayuda ? root.Ayuda.btn('personal') : ''}</span><span></span><span class="pe-cnt"><i>${esc(T('pe.col.asig'))}</i><i>${esc(T('pe.col.min'))}</i><i>${esc(T('pe.col.ideal'))}</i></span><span></span></div>` : '';
+      const ley = rows.length ? `<div class="pe-ley">${['completo', 'justo', 'falta'].map((k) => `<span class="pe-e-${k}" style="background:none"><i></i>${esc(T('pe.ley.' + k))}</span>`).join('')}</div>` : '';
+      return `<div class="pe-crew ${esc(o.clase || '')}">${titulo}<div class="pe-box">${head}${body || `<div class="pe-empty">${esc(T('pe.sinroles'))}</div>`}${ley}${ft}</div></div>`;
     } catch (e) { return ''; }
   }
 
