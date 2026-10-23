@@ -121,7 +121,9 @@ check('Productos de la tienda (id, precio, créditos, una_vez)', [
     ['creditos_250', 1.99, 250, false], ['creditos_700', 4.99, 700, false], ['creditos_1500', 9.99, 1500, false], ['creditos_3200', 19.99, 3200, false],
     ['bienvenida', 0.99, 150, true], ['inicio', 2.99, 200, true], ['tarjeta_mensual', 4.99, 0, false], ['vip30', 9.99, 0, false]]
     // Packs de obra: solo si está la Sede oficial (src/SedeOficial.php). Pase de temporada, pase de copa y ofertas VIP tienen su propia pantalla.
-    + (is_file(dirname(__DIR__) . '/src/SedeOficial.php') ? [8 => ['pack_obra_s', 1.99, 0, false], 9 => ['pack_obra_m', 4.99, 0, false], 10 => ['pack_obra_l', 9.99, 0, false]] : []),
+    + (is_file(dirname(__DIR__) . '/src/SedeOficial.php') ? [8 => ['pack_obra_s', 1.99, 0, false], 9 => ['pack_obra_m', 4.99, 0, false], 10 => ['pack_obra_l', 9.99, 0, false]] : [])
+    // Impulsos (server/INTEGRAR_MONETIZACION2.md): equipo de obra extra, Fondo de crecimiento y Tarjeta semanal
+    + (is_file(dirname(__DIR__) . '/src/Impulsos.php') ? [11 => ['equipo_obra_2', 2.99, 0, true], 12 => ['fondo_crecimiento', 19.99, 0, true], 13 => ['tarjeta_semanal', 1.99, 0, false]] : []),
     array_map(fn($p) => [$p['id'], $p['precio'], $p['creditos'], $p['una_vez']], $est['tienda']['productos']));
 si('Cada producto trae nombre y detalle', array_reduce($est['tienda']['productos'], fn($c, $p) => $c && is_string($p['nombre']) && $p['nombre'] !== '' && is_string($p['detalle']) && $p['detalle'] !== '', true));
 check('Exclusivos con créditos (id, créditos, vip, tipo)', [['generador', 250, false, 'equipo'], ['kit_reparacion', 60, false, 'consumo'], ['caja_chica', 120, false, 'consumo'], ['estrella', 300, false, 'consumo'], ['dron4k', 450, false, 'equipo'], ['grua', 650, false, 'equipo'], ['unidad_movil', 900, false, 'equipo'], ['vip_cam8k', 800, true, 'vip'], ['vip_switcher', 1000, true, 'vip'], ['vip_satelital', 700, true, 'vip'],
