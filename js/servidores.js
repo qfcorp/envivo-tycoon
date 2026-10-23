@@ -491,7 +491,7 @@
       <div class="srv-top"><div class="srv-tile">${icoServidor()}</div>
         <div class="grow"><div class="srv-lbl">${esc(T('tu_servidor'))}</div>
           <div class="srv-nom">${esc(nombre)}${universo ? `<span class="srv-uni"><span class="srv-sep"> · </span>${esc(universo)}</span>` : ''}</div></div>
-        ${badge}</div>${extra}</div>`;
+        ${badge}</div>${extra}${root.EdadServidor && root.EdadServidor.boton ? root.EdadServidor.boton() : ''}</div>`;
   }
 
   const cerrarIco = (ctx) => { try { if (ctx && ctx.I) return ctx.I('close', 'sm'); } catch (e) { /* abajo */ } return svg('<path d="M6 6l12 12M18 6L6 18"/>', 'ico sm', 18); };

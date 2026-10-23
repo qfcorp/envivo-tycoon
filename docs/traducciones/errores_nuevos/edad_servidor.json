@@ -1,0 +1,16 @@
+{
+  "_info": "Códigos de error nuevos del módulo edad_servidor (server/src/EdadServidor.php). Mismo formato que docs/traducciones/errores.json: { idioma: { codigo: texto } }; el coordinador los copia ahí. Los {marcadores} salen de los datos extra de la respuesta.",
+  "_codigos": {
+    "edad_servidor": "existe · EdadServidor.php (api.php revisarRuta y Copas::registrarEquipo / iniciarIntento) · 403 · extra: desbloqueo (duelos|festival|copa), dia (día del servidor en que se abre), faltan_dias, abre (ISO). El texto en español del servidor ya dice 'Se abre el día 7 del servidor (en 3 días).'; js/edad_servidor.js arma la versión traducida con cuenta regresiva."
+  },
+  "es": { "edad_servidor": "Todavía no se abre en tu servidor: llega el día {dia} del servidor." },
+  "en": { "edad_servidor": "Not open on your server yet: it arrives on server day {dia}." },
+  "pt-BR": { "edad_servidor": "Ainda não abriu no seu servidor: chega no dia {dia} do servidor." },
+  "fr": { "edad_servidor": "Pas encore ouvert sur ton serveur : ça arrive le jour {dia} du serveur." },
+  "de": { "edad_servidor": "Auf deinem Server noch nicht offen: kommt an Server-Tag {dia}." },
+  "it": { "edad_servidor": "Non è ancora aperto sul tuo server: arriva il giorno {dia} del server." },
+  "ru": { "edad_servidor": "На твоём сервере ещё не открыто: появится на {dia}-й день сервера." },
+  "tr": { "edad_servidor": "Sunucunda henüz açılmadı: sunucunun {dia}. gününde geliyor." },
+  "id": { "edad_servidor": "Belum terbuka di servermu: hadir pada hari ke-{dia} server." },
+  "zh-CN": { "edad_servidor": "你的服务器尚未开放：将于服务器第{dia}天开放。" }
+}
