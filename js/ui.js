@@ -71,7 +71,9 @@
   const BAL = () => G.BALANCE || {};
   const maxStaff = () => BAL().maxStaff || 12;
   const maxEquip = () => BAL().maxEquip || 30;
-  const bankruptAt = () => (typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300);
+  // Límite de quiebra: crece con los gastos diarios (G.bankruptLimit); con una lógica vieja, el fijo
+  const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
+  const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
   const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
 
   /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
@@ -88,7 +90,10 @@
 
   /* ---------- Plan del evento (opcional: js/plan_evento.js) ---------- */
   const PE = window.PlanEvento || null;
-  const eqName = (id) => { const e = S.equip.find((x) => x.id === id); return e ? TL(e.nick || (G.CATALOG[e.type] || {}).name || e.type) : ''; };
+  // Nombres que se muestran: el dueño y la cámara de Don Ramiro salen de su clave (cambian con el idioma)
+  const nmP = (p) => { try { if (p && p.owner && G.staffName) return TL(G.staffName(p)); } catch (e) { /* abajo */ } return TL((p && p.name) || ''); };
+  const nmE = (e) => { try { if (e && e.starter && G.equipName) return TL(G.equipName(e)); } catch (err) { /* abajo */ } return e ? TL(e.nick || (G.CATALOG[e.type] || {}).name || e.type) : ''; };
+  const eqName = (id) => nmE(S.equip.find((x) => x.id === id));
 
   let S = null;            // estado del juego
   let tab = 'inicio';
@@ -348,8 +353,14 @@
         <p class="small muted">${T('historia.premio')} <span class="pay" style="font-size:14px">${M(ch.reward)}</span></p></div>`;
     }
     // En rojo: avisar antes de la quiebra
-    const rojo = S.money < 0 && !S.gameOver
-      ? `<div class="redstrip" role="status">${I('bolt', 'sm')}<span>${T('inicio.en_rojo', { m: `<b class="num">${M(bankruptAt())}</b>` })}</span></div>` : '';
+    // Con la lógica nueva: bajo el límite (días de gracia) o si los gastos de mañana te dejan bajo el límite
+    const bk = bkInfo();
+    const strip = (txt) => `<div class="redstrip" role="status">${I('bolt', 'sm')}<span>${txt}</span></div>`;
+    const lim = `<b class="num">${M(bankruptAt())}</b>`;
+    const rojo = S.gameOver ? ''
+      : bk && bk.enPeligro ? strip(T('inicio.peligro', { m: lim, n: bk.graceLeft }))
+      : bk && bk.mananaPeligro ? strip(T('inicio.manana_peligro', { g: `<b class="num">${M(G.dailyCost(S))}</b>`, m: lim }))
+      : S.money < 0 ? strip(T('inicio.en_rojo', { m: lim })) : '';
     $('tab-inicio').innerHTML = `${rojo}
       <div class="card hqcard">${A.hq(S)}
         <div class="in">
@@ -357,7 +368,7 @@
             <span class="tag">${I('people')}${T('inicio.personas', { n: S.staff.length })}</span>
             <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
             <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
-            <span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>
+            ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
           </div>
           ${costBox}
           <button class="btn main" data-act="tab" data-tab="clientes">${I('clients')}${T('inicio.ver_ofertas', { n: S.contracts.length })}</button>
@@ -387,6 +398,11 @@
     return '';
   }
 
+  // Contrato internacional en la tarjeta: requisitos armados de nuevo (en el idioma actual) con todo tu personal y equipo
+  function intlVista(c) {
+    if (!c || !c.internacional || !G.requisitosInternacional) return c;
+    try { return Object.assign({}, c, { requisitos: G.requisitosInternacional(S, c, S.staff.map((p) => p.id), S.equip.map((e) => e.id)).map((r) => Object.assign({}, r, { texto: TL(r.texto) })) }); } catch (e) { return c; }
+  }
   function renderClientes() {
     const cards = S.contracts.map((c) => {
       return `<div class="card">
@@ -394,7 +410,7 @@
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}</div>
-        ${PE ? PE.internacional(c) : ''}
+        ${PE ? PE.internacional(intlVista(c)) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
@@ -431,7 +447,7 @@
     const lista = S.staff.slice().sort((a, b) => ord(a) - ord(b) || (b.skill - a.skill));
     const staff = lista.map((p) => `<div class="card staffc">
       <div class="person">${avatarOf(p, 56)}
-        <div class="grow who"><h3>${esc(TL(p.name))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expLine(p, true)}</div></div>
+        <div class="grow who"><h3>${esc(nmP(p))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expLine(p, true)}</div></div>
       ${p.owner ? `<p class="small muted" style="margin:8px 0 0">${T('personal.eres_tu')}</p>` : `
       <div class="small muted" style="margin-top:8px">${T('personal.moral', { n: p.morale })}</div>${condBar(p.morale)}
       <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
@@ -525,7 +541,7 @@
         return `<div class="card gear rf r-${r.key} rented">
         <div class="row between">${rtag(e.type)}</div>
         <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
-        <div class="nm">${esc(TL(e.nick || it.name))}</div>
+        <div class="nm">${esc(nmE(e))}</div>
         <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
         <div class="grow2"></div>
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
@@ -533,7 +549,7 @@
       return `<div class="card gear rf r-${r.key} ${e.condition < 40 ? 'worn' : ''}">
         <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
         <div class="art">${itemArt(e.type, 110)}</div>
-        <div class="nm">${esc(TL(e.nick || it.name))}</div>
+        <div class="nm">${esc(nmE(e))}</div>
         ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
@@ -894,7 +910,7 @@
         const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
         const it = G.CATALOG[b.tipo] || {};
         const e = S.equip.find((x) => x.id === b.equipId);
-        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(TL((e && e.nick) || it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div></div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
+        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div></div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
       }).join('')}</div>`;
   }
   function renderPrep(soloCalculo) {
@@ -966,7 +982,7 @@
     const staffHtml = S.staff.map((p) => { const w = wageFor(p, c.diff); return `<label class="pick ${prep.staff.has(p.id) ? 'sel' : ''}">
         <input type="checkbox" id="st-${p.id}" data-act="tog-staff" data-id="${p.id}" ${prep.staff.has(p.id) ? 'checked' : ''}>
         ${avatarOf(p, 44)}
-        <div class="grow" style="min-width:0"><b>${esc(TL(p.name))}</b><div class="small muted pkrol">${I(roleIcon(p.role), 'sm')}<span>${esc(roleName(normRole(p.role)))}</span>${tierBadge(p)}</div></div>
+        <div class="grow" style="min-width:0"><b>${esc(nmP(p))}</b><div class="small muted pkrol">${I(roleIcon(p.role), 'sm')}<span>${esc(roleName(normRole(p.role)))}</span>${tierBadge(p)}</div></div>
         <span class="num small" style="text-align:end">${M(w)}${w > p.wage ? `<br><span class="muted" style="font-size:10.5px">+${Math.round((w / p.wage - 1) * 100)}%</span>` : ''}</span></label>`; }).join('');
     const equipHtml = S.equip.map((e) => {
       const it = G.CATALOG[e.type] || { name: e.type };
@@ -974,7 +990,7 @@
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(TL(e.nick || it.name))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
@@ -1089,7 +1105,7 @@
 
   /* ---------- Avisos del día (renuncias, pagos, la rival, cancelaciones…) ---------- */
   const AV_ICON = { pago: ['money', 'g'], fama: ['trend_down', 'a'], vencidas: ['clock', 'm'], cancelacion: ['x_circle', 'r'], internacional: ['globe', 'b'],
-    rival: ['rival', 'r'], animo: ['sad', 'a'], renuncia: ['user_x', 'r'], sueldo: ['money', 'a'], quiebra: ['bolt', 'r'], capitulo: ['star', 'a'] };
+    rival: ['rival', 'r'], animo: ['sad', 'a'], renuncia: ['user_x', 'r'], sueldo: ['money', 'a'], quiebra: ['bolt', 'r'], quiebra_aviso: ['bolt', 'r'], capitulo: ['star', 'a'] };
   const avisosPend = () => (S && Array.isArray(S.avisos) ? S.avisos.filter((a) => a && a.tipo !== 'capitulo') : []);
   function tomarAvisos() { try { if (G.takeAvisos) G.takeAvisos(S); else S.avisos = []; } catch (e) { S.avisos = []; } save(); }
   // Una tarjeta por día con sus avisos
@@ -1142,11 +1158,18 @@
     const later = r.payLater > 0 ? `<div class="paylater">${I('clock', 'sm')} ${T('res.pago_luego', { ahora: M(r.payNow), luego: M(r.payLater), n: r.payLaterDays })}</div>` : '';
     // Contrato internacional: viaje y riesgo de fama
     const intl = r.internacional ? `<div class="paylater intl ${r.intlFail ? 'mal' : ''}">${I(r.intlFail ? 'bolt' : 'globe', 'sm')} ${r.intlFail ? T('res.intl_mal') : T('res.intl_ok')}${r.travelDays ? ` · ${T('res.viaje_dias', { n: r.travelDays })}` : ''}</div>` : '';
-    // Gastos fijos del día y lo que de verdad cambió en caja (QA-04)
+    // Lo que dejó el evento: pago - sueldos - viaje - gastos fijos del día (QA4). Lo que cambió la caja desde la mañana
+    // (incluye compras, cobros que llegaron y la parte que se paga después) va aparte, solo si es distinto.
     const gastoDia = G.dailyCost && typeof r.dailyCost === 'number' ? r.dailyCost : null;
+    const neto = r.net - (gastoDia || 0);
     const sgn = (v) => (v > 0 ? '+' : '') + M(v);
-    const filasCaja = (gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}</td><td class="down">-${M(gastoDia)}</td></tr>` : '')
-      + (typeof caja === 'number' ? `<tr class="caja"><td><b>${T('res.en_caja')}</b></td><td class="${caja >= 0 ? 'up' : 'down'}"><b>${sgn(caja)}</b></td></tr>` : '');
+    const quebro = !!S.gameOver;
+    const bk = quebro ? null : bkInfo();
+    const tono = neto >= 0 && !quebro ? 'up' : 'down';
+    const filaCaja = typeof caja === 'number' && caja !== neto
+      ? `<tr class="caja"><td>${T('res.caja_hoy')}</td><td class="${caja >= 0 ? 'up' : 'down'}">${sgn(caja)}</td></tr>` : '';
+    const alerta = quebro ? `<div class="redstrip" role="alert" style="margin-top:10px">${I('bolt', 'sm')}<span>${T('res.quebraste')}</span></div>`
+      : bk && bk.enPeligro ? `<div class="redstrip" role="alert" style="margin-top:10px">${I('bolt', 'sm')}<span>${T('res.peligro', { m: `<b class="num">${M(bankruptAt())}</b>`, n: bk.graceLeft })}</span></div>` : '';
     const riesgo = PE ? PE.resumenRiesgo(r.crewPlan || (r.crew && r.crew.plan), { camaras: r.cameraPlan, tipo: ty, nombreEquipo: eqName }) : '';
     // Lo que pasó mientras tanto (el evento ocupa el día): pagos, renuncias, la rival…
     const mientras = fresh || avisosPend().length ? avisosPend() : [];
@@ -1154,8 +1177,9 @@
       <div class="result-head"><div class="story-tag">${r.stars >= 4 ? T('res.impecable') : r.stars === 3 ? T('res.buen_trabajo') : T('res.terminada')}</div>
       <h2>${esc(noEmoji(TL(r.title)))}</h2></div>
       ${starsBig(r.stars)}
-      <div class="bigmoney ${r.net >= 0 ? 'up' : 'down'} num" id="resNet">${fresh ? (r.net >= 0 ? '+' : '-') + M(0) : (r.net >= 0 ? '+' : '-') + M(Math.abs(r.net))}</div>
-      <div class="small muted" style="text-align:center">${T('res.ganancia_evento')}</div>
+      <div class="bigmoney ${tono} num" id="resNet">${fresh ? (neto >= 0 ? '+' : '-') + M(0) : (neto >= 0 ? '+' : '-') + M(Math.abs(neto))}</div>
+      <div class="small muted" style="text-align:center">${gastoDia !== null ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
+      ${alerta}
       <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
       ${duel}
@@ -1165,12 +1189,13 @@
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
-        <tr><td><b>${T('res.ganancia')}</b></td><td class="${r.net >= 0 ? 'up' : 'down'}"><b>${M(r.net)}</b></td></tr>
-        ${filasCaja}
+        ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
+        <tr><td><b>${T('res.ganancia')}</b></td><td class="${tono}"><b>${M(neto)}</b></td></tr>
+        ${filaCaja}
         <tr><td>${T('head.fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
       ${later}
-      ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(TL(u))).join(' · ')}</p>` : ''}
+      ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
       <details><summary>${T('res.ver_detalle')}</summary>
         <p class="small"><b>${T('res.calidad_inicial', { n: r.base })}</b></p>
@@ -1179,7 +1204,8 @@
       <p class="small muted">${T('res.desgaste')}</p>
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
     if (!fresh) return;
-    countUp($('resNet'), r.net, 1000);
+    countUp($('resNet'), neto, 1000);
+    if (quebro) return;
     if (r.stars >= 4) confetti(r.stars === 5 ? 28 : 20);
     else if (r.stars === 3) confetti(10);
   }
@@ -1256,10 +1282,25 @@
     return true;
   }
 
+  // Consejo de Don Ramiro según cómo quebraste (no el mismo para todos)
+  function consejoQuiebra() {
+    const ev = (S.stats && S.stats.events) || 0;
+    const rs = Array.isArray(S.recentStars) ? S.recentStars : [];
+    const prom = rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : 3;
+    const lr = S.lastResult || {};
+    const difUlt = (G.EVENT_TYPES[lr.type] || {}).diff || 0;
+    let dc = 0;
+    try { dc = G.dailyCost(S); } catch (e) { dc = 0; }
+    if (ev < 15) return T('fin.tip.temprano');
+    if (lr.stars && lr.stars <= 2 && difUlt >= 3) return T('fin.tip.grande');
+    if (prom < 2.3) return T('fin.tip.calidad');
+    if (dc >= 90) return T('fin.tip.gastos', { m: M(dc) });
+    return T('fin.tip.temprano');
+  }
   function showGameOver() {
     mus.go('tension');
     openModal(`<h2>${T('fin.titulo')}</h2>
-      ${speaker('ramiro', T('fin.texto', { m: M(-bankruptAt()), dia: S.day, eventos: T('inicio.eventos', { n: S.stats.events }) }))}
+      ${speaker('ramiro', T('fin.texto', { m: M(-bankruptAt()), dia: S.day, eventos: T('inicio.eventos', { n: S.stats.events }) }) + ' ' + consejoQuiebra())}
       <button class="btn main" data-act="restart">${T('fin.reiniciar')}</button>`);
   }
 
@@ -1449,6 +1490,7 @@
         break;
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
+      case 'demo-no': confirmCb = null; closeModal(); render(); continuar(); break;
       case 'next-day': diaAntes = { money: S.money }; G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); continuar(); break;
       case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
       case 'mkt': {
@@ -1464,7 +1506,7 @@
         if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
         break;
       }
-      case 'fire': { const p = S.staff.find((x) => x.id === id); if (p) ask(T('personal.despedir_q', { nombre: esc(TL(p.name)) }), T('personal.despedir_si'), () => act(G.fire(S, id))); break; }
+      case 'fire': { const p = S.staff.find((x) => x.id === id); if (p) ask(T('personal.despedir_q', { nombre: esc(nmP(p)) }), T('personal.despedir_si'), () => act(G.fire(S, id))); break; }
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {
@@ -1547,12 +1589,40 @@
   }
   try { if (window.PWA) window.PWA.onChange(() => { if (tab === 'inicio') render(); }); } catch (e) { /* sin instalación */ }
 
+  /* Partida de demostración: ?demo=cap4 (ver docs/DEMO.md). Nunca pisa una partida sin preguntar. */
+  function demoPedido() {
+    try {
+      const m = /[?&]demo=([\w-]+)/.exec(location.search || '');
+      if (!m) return null;
+      // Se quita de la dirección para que recargar no lo vuelva a pedir
+      const q = location.search.replace(/([?&])demo=[\w-]+&?/, '$1').replace(/[?&]$/, '');
+      history.replaceState(null, '', location.pathname + q + location.hash);
+      return m[1];
+    } catch (e) { return null; }
+  }
+  function cargarDemo(kind) {
+    let d = null;
+    try { d = G.demoGame ? G.demoGame(kind) : null; } catch (e) { d = null; }
+    if (!d) { toast(T('err.no_completo')); continuar(); return; }
+    S = d; olvidarDia(); save(); tab = 'inicio'; prep = null;
+    closeModal(); mus.go('menu'); render(); toast(T('demo.listo')); continuar();
+  }
+  function pedirDemo(kind) {
+    const hay = S && ((S.stats && S.stats.events > 0) || S.day > 1);
+    if (!hay) { cargarDemo(kind); return; }
+    confirmCb = () => cargarDemo(kind);
+    openModal(`<div class="story-tag">${T('demo.titulo')}</div><h2>${T('comun.seguro')}</h2><p>${T('demo.texto', { dia: S.day })}</p>
+      <button class="btn main" data-act="confirm-yes">${T('demo.si')}</button>
+      <button class="btn" data-act="demo-no">${T('comun.cancelar')}</button>`);
+  }
   function arrancar() {
     enlazarTraductor();
     if (I18) I18.aplicar();
     S = load() || G.newGame();
     save();
     render();
+    const demo = G.demoGame ? demoPedido() : null;
+    if (demo) { pedirDemo(demo); const red0 = () => setTimeout(conectar, 0); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', red0, { once: true }); else red0(); return; }
     // Resultado que no se alcanzó a ver (se recargó en esa pantalla): se muestra otra vez
     const pend = lsGet(RES_KEY);
     const pendOk = pend && !S.currentEvent && pend.ev === S.stats.events;

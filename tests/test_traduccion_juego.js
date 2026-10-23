@@ -34,7 +34,9 @@ const SOLO_MARCA = [
   'item.ups.nombre',
 ];
 // Tecnicismos que se dicen igual (PTZ, Steadicam, Junior, Senior) y coincidencias reales de cada idioma
-const IGUAL_TODOS = ['pos.prensa.abierta_ptz.ideal', 'pos.internacional_host.comcam.ideal', 'pos.concierto.steadicam.ideal', 'nivel.junior', 'nivel.senior'];
+const IGUAL_TODOS = ['pos.prensa.abierta_ptz.ideal', 'pos.internacional_host.comcam.ideal', 'pos.concierto.steadicam.ideal', 'nivel.junior', 'nivel.senior',
+  // Nombres de países que se escriben igual en varios idiomas
+  'pais.argentina', 'pais.chile', 'pais.colombia', 'pais.mexico', 'pais.estados_unidos', 'pais.peru'];
 const IGUAL_IDIOMA = {
   en: ['cat.switcher', 'item.sop_gimbal_dgi_rz4_pro.nombre'],
   'pt-BR': ['nivel.internacional', 'cap.0.prog', 'req.box2', 'req.bonding'],

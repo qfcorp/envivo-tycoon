@@ -50,6 +50,12 @@
     s.log.unshift({ day: s.day, text });
     if (s.log.length > 80) s.log.length = 80;
   }
+  // Textos con clave (TEXTOS de js/datos.js): se guardan con k / p para que el registro cambie con el idioma
+  const tx = (k, p) => (G.tx ? G.tx(k, p) : k);
+  function anotarK(s, k, p) {
+    s.log.unshift({ day: s.day, text: tx(k, p), k, p: p || null });
+    if (s.log.length > 80) s.log.length = 80;
+  }
   function nuevoId(s) { s.idc = (s.idc || 0) + 1; return s.idc; }
   const esPremium = (type) => !!(G.CATALOG[type] && G.CATALOG[type].premium);
 
@@ -70,12 +76,12 @@
   const buyOriginal = G.buy;
   const sellOriginal = G.sell;
   G.buy = function (s, type) {
-    if (esPremium(type)) return { ok: false, msg: 'Este equipo es exclusivo: se consigue en la Tienda con créditos.' };
+    if (esPremium(type)) return { ok: false, msg: tx('msg.exclusivo_tienda') };
     return buyOriginal(s, type);
   };
   G.sell = function (s, id) {
     const e = s.equip.find((x) => x.id === id);
-    if (e && esPremium(e.type)) return { ok: false, msg: 'Los equipos exclusivos no se pueden vender.' };
+    if (e && esPremium(e.type)) return { ok: false, msg: tx('msg.exclusivo_no_vender') };
     return sellOriginal(s, id);
   };
   const sellPriceOriginal = G.sellPrice;
@@ -83,14 +89,16 @@
   G.repairCost = costoReparar;
   G.repair = function (s, id) {
     const e = s.equip.find((x) => x.id === id);
-    if (!e) return { ok: false, msg: 'No existe.' };
+    if (!e) return { ok: false, msg: tx('msg.no_existe') };
     const cost = costoReparar(e);
-    if (cost <= 0) return { ok: false, msg: 'Está como nuevo.' };
-    if (s.money < cost) return { ok: false, msg: `Reparar cuesta ${G.money(cost)}.` };
+    if (cost <= 0) return { ok: false, msg: tx('msg.como_nuevo') };
+    if (s.money < cost) return { ok: false, msg: tx('msg.reparar_cuesta', { monto: G.money(cost) }) };
     s.money -= cost;
     e.condition = 100;
-    anotar(s, `Reparaste ${G.CATALOG[e.type].name} (${G.money(cost)})${vipActivo ? ' con descuento VIP' : ''}.`);
-    return { ok: true, msg: 'Quedó como nuevo.' };
+    // El nombre va con su clave (si la tiene) para que el registro se traduzca
+    const item = G.TEXTOS && G.TEXTOS['item.' + e.type + '.nombre'] ? { k: 'item.' + e.type + '.nombre' } : G.CATALOG[e.type].name;
+    anotarK(s, vipActivo ? 'log.reparaste_vip' : 'log.reparaste', { item, monto: G.money(cost) });
+    return { ok: true, msg: tx('msg.quedo_nuevo') };
   };
 
   /* ---------- Equipos VIP: guardados si el VIP no está activo ---------- */

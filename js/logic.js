@@ -65,7 +65,10 @@
      ========================================================= */
   const BALANCE = {
     start: { money: 1500, rep: 5 },
-    bankruptAt: -300,            // si el dinero baja de esto, quiebras
+    bankruptAt: -300,            // límite de deuda de una productora chica (ver bankruptLimit: crece con los gastos diarios)
+    // Quiebra: el límite es -(máx(300, gastos diarios × perDailyCost)); cuentan los cobros pendientes que llegan pronto
+    // y hay unos días de gracia en rojo (con aviso) antes de quebrar.
+    bankrupt: { perDailyCost: 3, pendingDays: 4, graceDays: 2 },
     tutorialEvents: 3,           // los 3 primeros eventos son suaves (1 imprevisto, sin sorpresas)
     maxContracts: 7,
     maxStaff: 12,                // personas en la productora (contándote a ti)
@@ -74,14 +77,14 @@
     // Gastos fijos de cada día (ver dailyCost)
     daily: {
       // Local según el tamaño (personas + equipos, sin contar alquileres): [tamaño mínimo, costo por día, clave del nombre]
-      rent: [[0, 20, 'sede.garaje'], [15, 60, 'sede.oficina'], [23, 120, 'sede.estudio'], [31, 200, 'sede.centro']],
+      rent: [[0, 20, 'sede.garaje'], [15, 55, 'sede.oficina'], [23, 100, 'sede.estudio'], [31, 160, 'sede.centro']],
       perStaff: 5,               // por cada persona contratada (sin contarte a ti)
       equipShare: 0.002,         // seguro y bodega: 0,2% del valor de tus equipos cada día
       payrollShare: 0.03,        // parte del sueldo de cada persona que se paga aunque no haya evento
     },
     // Personal: sueldo = base del nivel × peso del rol + (habilidad - 1) × perSkill + azar
     wage: { perSkill: 5, random: 8, raisePerLevel: 10, hireFeeDays: 2,
-            perDiff: 0.15 },     // en eventos grandes el personal cobra más: +15% por punto de dificultad sobre 1
+            perDiff: 0.1 },      // en eventos grandes el personal cobra más: +10% por punto de dificultad sobre 1
     skillUp: [0, 4, 7, 11, 16],  // eventos para pasar del nivel 1 al 2, del 2 al 3, etc.
     // Ascensos de nivel: eventos trabajados y habilidad mínima
     promote: { semi_senior: { events: 15, skill: 2 }, senior: { events: 45, skill: 3 }, internacional: { intl: 3, skill: 4 }, wageShare: 0.35 },
@@ -97,9 +100,10 @@
     worn: 40,                    // con menos de esto, el equipo puede fallar en vivo
     // Calidad del evento
     stars: [85, 70, 55, 40],     // calidad mínima para 5, 4, 3 y 2 estrellas
-    starsPay: [0, 0.4, 0.7, 1.0, 1.1, 1.25],
-    starsPayBig: [0, 0.2, 0.5, 1.0, 1.1, 1.25], // dificultad 3 o más: un evento grande mal hecho casi no se cobra
+    starsPay: [0, 0.1, 0.7, 1.0, 1.15, 1.3],
+    starsPayBig: [0, 0.15, 0.5, 1.0, 1.15, 1.35], // dificultad 3 o más: un evento grande mal hecho casi no se cobra
     bigFrom: 3,
+    learn: { events: 10, pay1: 0.4 },   // los primeros 10 eventos: 1 estrella en un evento chico paga como antes (40%)
     starsRep: [0, -5, -0.5, 2, 4, 6],
     diffPenalty: [0, 4, 8, 32, 42, 44], // puntos que resta la dificultad 1..5 del evento
     quality: {
@@ -124,13 +128,18 @@
     expectPerRep: 0.16,          // cuanto más famoso eres, más te exige el cliente: -(fama * (esto + expectSmall * (5 - dificultad))) puntos
     expectSmall: 0.05,           // a una productora famosa no le perdonan nada en un evento chico
     // Las ofertas de la historia vienen con apoyo del personaje (escenario, fibra, luz del estadio...)
-    storySupport: { lanzamiento: 2, ligapro: 3, final: 2 },
+    storySupport: { lanzamiento: 14, ligapro: 10, final: 10 },
+    expectStoryCap: 4,           // en las ofertas de la historia, lo que exige tu fama resta como mucho esto
     luck: [-2, 2],               // "suerte del día": entre -(a + b * dif) y +(a + b * dif) puntos (más en eventos grandes)
     // Imprevistos
     incidents: { byDiff: [1, 1, 1, 2, 3, 3], extraChance: 0.35, max: 5, severityPerDiff: 0.15,
                  skillBase: 0.3, skillPer: 0.12 }, // imprevistos de habilidad: éxito = base + (nivel + bono del nivel) * per
     // Clientes
-    payRepBonus: 180,            // pago * (1 + fama / payRepBonus)
+    // Pago: precio × factor de fama × (1 + perDiff × (dificultad - 1)). Factor de fama: repMin con 0 de fama, 1 con repFull
+    // (la fama inicial) y después 1 + (fama - repFull) / repBonus
+    pay: { repMin: 0.85, repFull: 5, repBonus: 180, perDiff: 0 },
+    // Confianza de los clientes: si tus últimos eventos salen casi todos con 1 estrella, pagan menos y llaman menos
+    trust: { last: 6, minEvents: 10, badAvg: 1.6, payMul: 0.5 },
     latePay: { chance: 0.25, minDiff: 2, share: 0.5, days: 3 },
     cancelChance: 0.05,          // un cliente cancela una oferta pendiente
     // Fama
@@ -139,6 +148,7 @@
     rival: {
       fromChapter: 3,            // capítulo 4 (se cuenta desde 0)
       contestedChance: 0.2, payBoost: 1.3, diffBoost: 1,
+      contestedChapter: 0.4,     // en el capítulo 4 (el de la rival) MegaVisión pelea más contratos
       stealChance: 0.15,
       // calidad de MegaVisión = base + capítulo * perChapter + dificultad * perDiff + azar (entre spread)
       quality: { base: 38, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95 },
@@ -167,7 +177,18 @@
   /* ---------- Textos ---------- */
   const TEXTOS = D.TEXTOS;
   let traductor = null;
+  // Un parámetro puede ser otro texto con clave: { k, p } (se arma en el idioma actual)
+  function subParams(p) {
+    if (!p || typeof p !== 'object') return p;
+    let out = null;
+    Object.keys(p).forEach((x) => {
+      const v = p[x];
+      if (v && typeof v === 'object' && typeof v.k === 'string') { out = out || Object.assign({}, p); out[x] = tx(v.k, v.p || undefined); }
+    });
+    return out || p;
+  }
   function tx(key, p) {
+    p = subParams(p);
     let t = null;
     if (traductor) { try { t = traductor(key, p); } catch (e) { t = null; } }
     if (typeof t !== 'string') t = Object.prototype.hasOwnProperty.call(TEXTOS, key) ? TEXTOS[key] : key;
@@ -252,7 +273,7 @@
     {
       character: 'marca',
       target: 'lanzamiento',
-      offer: { first: 3, every: 6 },
+      offer: { first: 3, every: 5 },
       check: (s) => good(s, 'lanzamiento') >= 2,
       progress: (s) => tx('cap.2.prog', { n: Math.min(good(s, 'lanzamiento'), 2) }),
       reward: 1500,
@@ -291,6 +312,18 @@
   /* ---------- Ayudantes ---------- */
   function countCat(s, cat) { return s.equip.filter((e) => CATALOG[e.type] && CATALOG[e.type].cat === cat).length; }
   function nextId(s) { s.idc = (s.idc || 0) + 1; return s.idc; }
+  /* Nombres que se muestran: el dueño y la cámara de Don Ramiro se arman con su clave (así cambian con el idioma,
+     también en partidas viejas que guardaron el nombre en español). Para los parámetros de los textos se usa
+     nm(p): el dueño va como { k } (tx lo traduce al armar el texto, también después en la pantalla). */
+  function nombrePersona(p) { return p && p.owner ? tx('persona.duenio') : (p && p.name) || ''; }
+  const nm = (p) => (p && p.owner ? { k: 'persona.duenio' } : (p && p.name) || '');
+  const itemP = (type) => (Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + type + '.nombre') ? { k: 'item.' + type + '.nombre' } : (CATALOG[type] || {}).name || type);
+  function equipName(e) { return e && e.starter ? tx('equipo.camara_ramiro') : e ? (e.nick || itemOf(e).name) : ''; }
+  /* País de un contrato internacional: clave pais.<slug> (si existe) para traducirlo */
+  const paisSlug = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const paisKey = (t) => { const k = 'pais.' + paisSlug(t); return Object.prototype.hasOwnProperty.call(TEXTOS, k) ? k : null; };
+  function paisNombre(c) { const k = c && (c.paisK || paisKey(c.pais)); return k ? tx(k) : (c && c.pais) || ''; }
+  const paisP = (c) => { const k = c && (c.paisK || paisKey(c.pais)); return k ? { k } : (c && c.pais) || ''; };
   function log(s, key, p) {
     s.log.unshift({ day: s.day, text: tx(key, p), k: key, p: p || null });
     if (s.log.length > 80) s.log.length = 80;
@@ -365,6 +398,28 @@
     return Math.round(t.base * r.wageMul + (skill - 1) * BALANCE.wage.perSkill);
   }
 
+  /* Cuánto paga un cliente según tu fama y el tamaño del evento:
+     con poca fama (menos de la inicial) pagan menos; los eventos grandes pagan más por punto de dificultad */
+  function payFactor(s, diff) {
+    const P = BALANCE.pay;
+    const rep = s.rep || 0;
+    const f = rep >= P.repFull ? 1 + (rep - P.repFull) / P.repBonus : P.repMin + (1 - P.repMin) * rep / P.repFull;
+    return f * (1 + P.perDiff * Math.max(0, (diff || 1) - 1)) * (badStreak(s) ? BALANCE.trust.payMul : 1);
+  }
+  /* Tus últimos eventos salieron casi todos con 1 estrella: los clientes desconfían */
+  function badStreak(s) {
+    const T = BALANCE.trust, r = s.recentStars;
+    if (!Array.isArray(r) || r.length < T.last || (s.stats && s.stats.events) < T.minEvents) return false;
+    return r.reduce((a, b) => a + b, 0) / r.length < T.badAvg;
+  }
+  /* Parte del pago que cobras según las estrellas (los eventos grandes mal hechos casi no se cobran) */
+  function payMult(c, stars, s) {
+    const m = (c.diff >= BALANCE.bigFrom ? BALANCE.starsPayBig : STARS_PAY)[clamp(stars, 0, 5)];
+    // Mientras aprendes (primeros eventos), un evento chico con 1 estrella todavía se cobra un poco más
+    if (stars === 1 && s && s.stats && s.stats.events < BALANCE.learn.events && c.diff < BALANCE.bigFrom) return Math.max(m, BALANCE.learn.pay1);
+    return m;
+  }
+
   /* Calidad que promete MegaVisión en un contrato disputado (sube con el capítulo y la dificultad) */
   function rivalQualityFor(s, c) {
     const r = BALANCE.rival.quality;
@@ -406,7 +461,7 @@
     };
     s.staff.push({ id: nextId(s), name: tx('persona.duenio'), role: 'camarografo', tier: 'semi_senior', skill: 2, wage: 0, morale: 100, events: 0,
       eventos_nacionales: 0, eventos_internacionales: 0, owner: true });
-    s.equip.push({ id: nextId(s), type: 'cam_basic', condition: 75, nick: tx('equipo.camara_ramiro') });
+    s.equip.push({ id: nextId(s), type: 'cam_basic', condition: 75, nick: tx('equipo.camara_ramiro'), starter: true });
     // Las 3 primeras ofertas son fáciles: sin transmisión por internet
     ['misa', 'boda', 'misa'].forEach((k) => { const c = addContract(s, k); c.stream = false; c.outdoor = false; c.cams = 1; c.daysLeft = 4; });
     refreshCandidates(s);
@@ -453,7 +508,7 @@
       stream: chance(s, t.stream),
       outdoor: chance(s, t.outdoor),
       diff: t.diff,
-      pay: Math.round(randInt(s, t.pay[0], t.pay[1]) * (1 + s.rep / BALANCE.payRepBonus) * (payBoost || 1) / 10) * 10,
+      pay: Math.round(randInt(s, t.pay[0], t.pay[1]) * payFactor(s, t.diff) * (payBoost || 1) / 10) * 10,
       daysLeft: randInt(s, 2, 4),
       rival: false, // true = "disputado": MegaVisión también lo quiere
       story: !!opts.story, // true = oferta de la historia (la pide el capítulo)
@@ -461,7 +516,8 @@
     if (c.story) c.daysLeft = randInt(s, 4, 5);
     // Disputado: MegaVisión también lo quiere, así que el cliente exige más (dificultad +1) y paga más
     const R = BALANCE.rival;
-    if (!c.story && !opts.noRival && t.diff >= 2 && rivalActive(s) && chance(s, R.contestedChance)) {
+    const pc = !s.storyDone && s.chapter === R.fromChapter ? R.contestedChapter : R.contestedChance;
+    if (!c.story && !opts.noRival && t.diff >= 2 && rivalActive(s) && (opts.rival || chance(s, pc))) {
       c.rival = true;
       c.diff = Math.min(5, c.diff + R.diffBoost);
       c.pay = Math.round(c.pay * R.payBoost / 10) * 10;
@@ -518,12 +574,13 @@
       type: K.type,
       client: opt[0],
       pais: opt[1],
+      paisK: paisKey(opt[1]) || undefined,
       cams: randInt(s, t.cams[0], t.cams[1]),
       audio: t.audio,
       stream: true,
       outdoor: chance(s, t.outdoor),
       diff: Math.min(5, t.diff + (K.diffBoost || 0)),
-      pay: Math.round(randInt(s, ref.pay[0], ref.pay[1]) * K.mult * (1 + s.rep / BALANCE.payRepBonus) / 10) * 10,
+      pay: Math.round(randInt(s, ref.pay[0], ref.pay[1]) * K.mult * payFactor(s, ref.diff) / 10) * 10,
       daysLeft: BALANCE.intl.daysLeft,
       rival: false,
       story: false,
@@ -537,7 +594,7 @@
     c.travelCost = Math.round(c.pay * K.travelShare / 10) * 10;
     c.requisitos = requisitosInternacional(s, c, s.staff.map((p) => p.id), s.equip.map((e) => e.id));
     s.contracts.push(c);
-    aviso(s, 'internacional', 'log.intl_oferta', { cliente: c.client, pais: c.pais, monto: money(c.pay) });
+    aviso(s, 'internacional', 'log.intl_oferta', { cliente: c.client, pais: paisP(c), monto: money(c.pay) });
     return c;
   }
   function intlTick(s) {
@@ -684,9 +741,9 @@
     s.money -= fee;
     s.candidates.splice(i, 1);
     s.staff.push(c);
-    log(s, 'log.contrataste', { nombre: c.name, rol: ROLES[c.role].name, nivel: TIERS[c.tier].name, monto: money(fee) });
+    log(s, 'log.contrataste', { nombre: c.name, rol: { k: 'rol.' + normRole(c.role) + '.nombre' }, nivel: { k: 'nivel.' + (c.tier || 'junior') }, monto: money(fee) });
     const chapterDone = checkChapter(s);
-    return { ok: true, msg: tx('msg.se_unio', { nombre: c.name }), chapterDone };
+    return { ok: true, msg: tx('msg.se_unio', { nombre: nm(c) }), chapterDone };
   }
 
   function fire(s, staffId) {
@@ -694,8 +751,8 @@
     if (i < 0 || s.staff[i].owner) return { ok: false, msg: tx('msg.no_se_puede') };
     const p = s.staff[i];
     s.staff.splice(i, 1);
-    log(s, 'log.despediste', { nombre: p.name });
-    return { ok: true, msg: tx('msg.despediste', { nombre: p.name }) };
+    log(s, 'log.despediste', { nombre: nm(p) });
+    return { ok: true, msg: tx('msg.despediste', { nombre: nm(p) }) };
   }
 
   function searchStaff(s, role) {
@@ -722,7 +779,7 @@
     if (s.equip.length >= BALANCE.maxEquip) return { ok: false, msg: tx('msg.bodega_llena') };
     s.money -= it.price;
     s.equip.push({ id: nextId(s), type, condition: 100 });
-    log(s, it.alquiler ? 'log.alquilaste' : 'log.compraste', { item: it.name, monto: money(it.price) });
+    log(s, it.alquiler ? 'log.alquilaste' : 'log.compraste', { item: itemP(type), monto: money(it.price) });
     const chapterDone = checkChapter(s);
     return { ok: true, msg: tx(it.alquiler ? 'msg.alquilaste' : 'msg.compraste', { item: it.name }), chapterDone };
   }
@@ -745,7 +802,7 @@
     if (s.money < cost) return { ok: false, msg: tx('msg.reparar_cuesta', { monto: money(cost) }) };
     s.money -= cost;
     e.condition = 100;
-    log(s, 'log.reparaste', { item: itemOf(e).name, monto: money(cost) });
+    log(s, 'log.reparaste', { item: itemP(e.type), monto: money(cost) });
     return { ok: true, msg: tx('msg.quedo_nuevo') };
   }
 
@@ -756,7 +813,7 @@
     const p = sellPrice(e);
     s.money += p;
     s.equip.splice(i, 1);
-    log(s, itemOf(e).alquiler ? 'log.cancelaste_alquiler' : 'log.vendiste', { item: itemOf(e).name, monto: money(p) });
+    log(s, itemOf(e).alquiler ? 'log.cancelaste_alquiler' : 'log.vendiste', { item: itemP(e.type), monto: money(p) });
     return { ok: true, msg: tx('msg.vendido', { monto: money(p) }) };
   }
 
@@ -787,7 +844,8 @@
     s.contracts = s.contracts.filter((c) => c.daysLeft > 0);
     if (!opts.travel) {
       // Nuevas ofertas según la fama
-      const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 ? 1 : 0);
+      // (con muy poca fama, por hacer mal los eventos, los clientes dejan de buscarte)
+      const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 && !badStreak(s) ? 1 : 0);
       for (let i = 0; i < n; i++) addContract(s);
       // A veces un cliente cancela (nunca las ofertas de la historia ni las internacionales)
       const cancelable = s.contracts.filter((c) => !c.story && !c.internacional);
@@ -815,12 +873,12 @@
     const rested = s.lastWorkDay !== s.day && !opts.travel;
     s.staff.forEach((p) => { if (!p.owner) p.morale = clamp(p.morale + (p.morale < 60 ? 2 : 0) + (rested ? BALANCE.morale.rest : 0), 0, 100); });
     s.staff.forEach((p) => {
-      if (!p.owner && p.morale < 30 && (p.avisoMoral || -99) < s.day - 3) { p.avisoMoral = s.day; aviso(s, 'animo', 'log.animo_bajo', { nombre: p.name, n: p.morale }); }
+      if (!p.owner && p.morale < 30 && (p.avisoMoral || -99) < s.day - 3) { p.avisoMoral = s.day; aviso(s, 'animo', 'log.animo_bajo', { nombre: nm(p), n: p.morale }); }
     });
     const quitter = s.staff.find((p) => !p.owner && p.morale < 20 && chance(s, 0.4));
     if (quitter) {
       s.staff = s.staff.filter((p) => p !== quitter);
-      aviso(s, 'renuncia', 'log.renuncio', { nombre: quitter.name });
+      aviso(s, 'renuncia', 'log.renuncio', { nombre: nm(quitter) });
     }
     // El personal pide aumento: si no se lo das, se desmotiva
     const R = BALANCE.raise;
@@ -830,18 +888,47 @@
       const more = Math.max(5, Math.round(p.wage * R.pct));
       if (p.morale >= 50) {
         p.wage += more;
-        aviso(s, 'sueldo', 'log.aumento', { nombre: p.name, monto: money(p.wage) });
+        aviso(s, 'sueldo', 'log.aumento', { nombre: nm(p), monto: money(p.wage) });
       } else {
         hired.forEach((x) => { x.morale = clamp(x.morale - 12, 0, 100); });
         p.wage += more;
-        aviso(s, 'sueldo', 'log.reclamo', { nombre: p.name, monto: money(p.wage) });
+        aviso(s, 'sueldo', 'log.reclamo', { nombre: nm(p), monto: money(p.wage) });
       }
     }
     if (s.day % 3 === 1) refreshCandidates(s);
-    if (s.money < BALANCE.bankruptAt) {
-      s.gameOver = true;
-      aviso(s, 'quiebra', 'log.quiebra', { monto: money(-BALANCE.bankruptAt) });
-    }
+    // Quiebra: cuentan los cobros que llegan pronto y hay días de gracia en rojo (con aviso cada día)
+    const bk = bankruptInfo(s);
+    if (bk.enPeligro) {
+      s.redDays = (s.redDays || 0) + 1;
+      if (s.redDays > BALANCE.bankrupt.graceDays) {
+        s.gameOver = true;
+        aviso(s, 'quiebra', 'log.quiebra', { monto: money(-bk.limit) });
+      } else {
+        const left = BALANCE.bankrupt.graceDays - s.redDays + 1;
+        aviso(s, 'quiebra_aviso', left > 1 ? 'log.quiebra_aviso' : 'log.quiebra_aviso1', { monto: money(-bk.limit), n: left });
+      }
+    } else s.redDays = 0;
+  }
+
+  /* Límite de quiebra: crece con los gastos diarios (una productora grande aguanta más deuda) */
+  function bankruptLimit(s) {
+    return -Math.max(-BALANCE.bankruptAt, Math.round(BALANCE.bankrupt.perDailyCost * dailyCost(s)));
+  }
+  /* Estado de la caja frente a la quiebra:
+     { limit, pending (cobros que llegan en los próximos días), efectivo (caja + esos cobros), enPeligro,
+       redDays (días seguidos en peligro), graceLeft (días que quedan antes de quebrar),
+       manana (caja después de los gastos de mañana + cobros que llegan mañana), mananaPeligro } */
+  function bankruptInfo(s) {
+    const B = BALANCE.bankrupt;
+    const limit = bankruptLimit(s);
+    const pend = (s.pending || []);
+    const pending = pend.filter((p) => p.day <= s.day + B.pendingDays).reduce((a, p) => a + p.amount, 0);
+    const efectivo = s.money + pending;
+    const manana = s.money - dailyCost(s) + pend.filter((p) => p.day <= s.day + 1).reduce((a, p) => a + p.amount, 0);
+    const mananaEfectivo = s.money - dailyCost(s) + pend.filter((p) => p.day <= s.day + 1 + B.pendingDays).reduce((a, p) => a + p.amount, 0);
+    const redDays = s.redDays || 0;
+    return { limit, pending, efectivo, enPeligro: efectivo < limit, redDays,
+      graceLeft: Math.max(0, B.graceDays - redDays + 1), manana, mananaPeligro: mananaEfectivo < limit };
   }
 
   /* =========================================================
@@ -924,7 +1011,7 @@
       roles.push({
         key, nombre: ROLES[key].name, desc: ROLES[key].desc, si_falta: ROLES[key].siFalta,
         min: rq[0], ideal: rq[1], asignados: a,
-        personas: people.map((p) => ({ id: p.id, name: p.name, skill: p.skill, tier: p.tier || 'junior', owner: !!p.owner })),
+        personas: people.map((p) => ({ id: p.id, name: nombrePersona(p), skill: p.skill, tier: p.tier || 'junior', owner: !!p.owner })),
         estado, riesgo: roleRisk(estado, best || (dobleRol ? staff.find((p) => p.owner) : null)), dobleRol, sueldo,
       });
     });
@@ -1058,7 +1145,7 @@
       else if (r.needs === 'operador_ptz') { if (ptzCap > 0) ptzCap--; else operado = false; }
       if (isSystem(r.it)) sysCams++;
       usados.push(r.e.id); if (r.lens) usados.push(r.lens.id);
-      return Object.assign(o, { asignado: r.e.type, equipId: r.e.id, equipo: r.e.nick || r.it.name, lente: r.lens ? r.lens.type : null,
+      return Object.assign(o, { asignado: r.e.type, equipId: r.e.id, equipo: equipName(r.e), lente: r.lens ? r.lens.type : null,
         q: r.effQ, cond: r.cond, fit: r2(fit), ajuste: r2(fit * (operado ? 1 : 0.5)), operado, box: r.box });
     });
     const req = out.filter((p) => !p.opcional);
@@ -1186,7 +1273,9 @@
     q += add('parte.dificultad', -BALANCE.diffPenalty[clamp(diff, 1, 5)], { n: diff });
     const sup = contract.story ? (BALANCE.storySupport[contract.type] || 0) : 0;
     if (sup) q += add(STORY_SUPPORT_KEY[contract.type] || 'parte.apoyo', sup);
-    const ex = -Math.round((s.rep || 0) * (BALANCE.expectPerRep + BALANCE.expectSmall * (5 - clamp(diff, 1, 5))));
+    let ex = -Math.round((s.rep || 0) * (BALANCE.expectPerRep + BALANCE.expectSmall * (5 - clamp(diff, 1, 5))));
+    // En las ofertas de la historia el cliente te buscó a ti: la fama casi no suma exigencia (si no, ser famoso lo haría más difícil)
+    if (contract.story) ex = Math.max(ex, -BALANCE.expectStoryCap);
     if (ex) q += add('parte.fama', ex);
     if (t.sensible) parts.push([tx('parte.sensible'), 0, 'parte.sensible']);
     const qq = clamp(Math.round(q), 0, 100);
@@ -1325,7 +1414,7 @@
       text: (ev, x) => ['inc.cable_pisado.t', { cam: x.cam }],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'cablero') ? null : NEED('need.rol', { rol: ROLES.cablero.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'cablero'), (p) => R(-1, 'inc.cable_pisado.r0', { nombre: p.name }), (p) => R(-6, 'inc.cable_pisado.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'cablero'), (p) => R(-1, 'inc.cable_pisado.r0', { nombre: nm(p) }), (p) => R(-6, 'inc.cable_pisado.r1', { nombre: nm(p) })) },
         { need: (s) => (s.stock.cable > 0 ? null : NEED('need.cable')), run: (s) => { s.stock.cable--; return R(-4, 'inc.cable_pisado.r2'); } },
         { run: () => R(-11, 'inc.cable_pisado.r3') },
       ],
@@ -1360,7 +1449,7 @@
       text: () => ['inc.senal_irl.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'tecnico_transmision') ? null : NEED('need.rol', { rol: ROLES.tecnico_transmision.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'tecnico_transmision'), (p) => R(1, 'inc.senal_irl.r0', { nombre: p.name }), (p) => R(-7, 'inc.senal_irl.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'tecnico_transmision'), (p) => R(1, 'inc.senal_irl.r0', { nombre: nm(p) }), (p) => R(-7, 'inc.senal_irl.r1', { nombre: nm(p) })) },
         { run: () => R(-8, 'inc.senal_irl.r2') },
       ],
     },
@@ -1404,7 +1493,7 @@
       weight: () => 2.5,
       when: (s, ev) => ev.staff.some((p) => normRole(p.role) === 'camarografo' && !p.owner),
       setup: (s, ev) => ({ who: pick(s, ev.staff.filter((p) => normRole(p.role) === 'camarografo' && !p.owner)).id }),
-      text: (ev, x) => ['inc.tarde.t', { nombre: (ev.staff.find((p) => p.id === x.who) || { name: tx('persona.tu_camarografo') }).name }],
+      text: (ev, x) => ['inc.tarde.t', { nombre: x.who && ev.staff.find((p) => p.id === x.who) ? nm(ev.staff.find((p) => p.id === x.who)) : { k: 'persona.tu_camarografo' } }],
       choices: [
         { run: () => R(-6, 'inc.tarde.r0') },
         { run: (s) => { const r = rnd(s); return r < 0.15 ? R(2, 'inc.tarde.r4') : r < 0.5 ? R(-2, 'inc.tarde.r1') : R(-8, 'inc.tarde.r2'); } },
@@ -1422,7 +1511,7 @@
       text: () => ['inc.acople.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'sonidista') ? null : NEED('need.rol', { rol: ROLES.sonidista.name })),
-          run: (s, ev) => { const p = bestRole(ev, 'sonidista'); return R(Math.round(-8 + (p.skill + tierBonus(p)) * 1.8), 'inc.acople.r0', { nombre: p.name }); } },
+          run: (s, ev) => { const p = bestRole(ev, 'sonidista'); return R(Math.round(-8 + (p.skill + tierBonus(p)) * 1.8), 'inc.acople.r0', { nombre: nm(p) }); } },
         { run: () => R(-6, 'inc.acople.r1') },
         { run: () => R(-14, 'inc.acople.r2') },
       ],
@@ -1434,7 +1523,7 @@
       text: () => ['inc.entrevista.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'microfonista') ? null : NEED('need.rol', { rol: ROLES.microfonista.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'microfonista'), (p) => R(3, 'inc.entrevista.r0', { nombre: p.name }), (p) => R(-4, 'inc.entrevista.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'microfonista'), (p) => R(3, 'inc.entrevista.r0', { nombre: nm(p) }), (p) => R(-4, 'inc.entrevista.r1', { nombre: nm(p) })) },
         { need: (s, ev) => (hasCat(ev, 'mics') ? null : NEED('need.mics')), run: () => R(-4, 'inc.entrevista.r2') },
         { run: () => R(-10, 'inc.entrevista.r3') },
       ],
@@ -1457,9 +1546,9 @@
       text: () => ['inc.logo.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'operador_graficos') && hasGfxGear(ev.equip) ? null : NEED('need.graficos')),
-          run: (s, ev) => { const p = bestRole(ev, 'operador_graficos'); return p.skill + tierBonus(p) >= 2.5 ? R(6, 'inc.logo.r0', { nombre: p.name }) : R(-2, 'inc.logo.r1', { nombre: p.name }); } },
+          run: (s, ev) => { const p = bestRole(ev, 'operador_graficos'); return p.skill + tierBonus(p) >= 2.5 ? R(6, 'inc.logo.r0', { nombre: nm(p) }) : R(-2, 'inc.logo.r1', { nombre: nm(p) }); } },
         { need: (s, ev) => (bestRole(ev, 'director') && hasCat(ev, 'switcher') ? null : NEED('need.director_switcher')),
-          run: (s, ev) => { const p = bestRole(ev, 'director'); return p.skill >= 3 ? R(4, 'inc.logo.r2', { nombre: p.name }) : R(-3, 'inc.logo.r3', { nombre: p.name }); } },
+          run: (s, ev) => { const p = bestRole(ev, 'director'); return p.skill >= 3 ? R(4, 'inc.logo.r2', { nombre: nm(p) }) : R(-3, 'inc.logo.r3', { nombre: nm(p) }); } },
         { run: (s) => (chance(s, 0.4) ? R(3, 'inc.logo.r5') : R(-8, 'inc.logo.r6')) },
       ],
     },
@@ -1470,7 +1559,7 @@
       text: (ev) => [isRing(ev) ? 'inc.marcador.t.ring' : 'inc.marcador.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'operador_graficos') && hasGfxGear(ev.equip) ? null : NEED('need.graficos')),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_graficos'), (p) => R(1, 'inc.marcador.r0', { nombre: p.name }), (p) => R(-5, 'inc.marcador.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_graficos'), (p) => R(1, 'inc.marcador.r0', { nombre: nm(p) }), (p) => R(-5, 'inc.marcador.r1', { nombre: nm(p) })) },
         { run: () => R(-9, 'inc.marcador.r2') },
       ],
     },
@@ -1508,7 +1597,7 @@
       text: (ev) => [isRing(ev) ? 'inc.sin_repeticion.t.ring' : 'inc.sin_repeticion.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'operador_repeticion') && hasReplayGear(ev.equip) ? null : NEED('need.operador_repeticion')),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_repeticion'), (p) => R(4, 'inc.sin_repeticion.r0', { nombre: p.name }), (p) => R(-3, 'inc.sin_repeticion.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_repeticion'), (p) => R(4, 'inc.sin_repeticion.r0', { nombre: nm(p) }), (p) => R(-3, 'inc.sin_repeticion.r1', { nombre: nm(p) })) },
         { need: (s, ev) => (bestRole(ev, 'director') && hasCat(ev, 'switcher') ? null : NEED('need.director_switcher')), run: () => R(-4, 'inc.sin_repeticion.r2') },
         { run: () => R(-10, 'inc.sin_repeticion.r3') },
       ],
@@ -1520,9 +1609,9 @@
       text: () => ['inc.colores.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'shader') ? null : NEED('need.rol', { rol: ROLES.shader.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'shader'), (p) => R(1, 'inc.colores.r0', { nombre: p.name }), (p) => R(-4, 'inc.colores.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'shader'), (p) => R(1, 'inc.colores.r0', { nombre: nm(p) }), (p) => R(-4, 'inc.colores.r1', { nombre: nm(p) })) },
         { need: (s, ev) => (bestRole(ev, 'director') ? null : NEED('need.rol', { rol: ROLES.director.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'director'), (p) => R(-3, 'inc.colores.r2', { nombre: p.name }), (p) => R(-8, 'inc.colores.r3', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'director'), (p) => R(-3, 'inc.colores.r2', { nombre: nm(p) }), (p) => R(-8, 'inc.colores.r3', { nombre: nm(p) })) },
         { run: () => R(-10, 'inc.colores.r4') },
       ],
     },
@@ -1533,7 +1622,7 @@
       text: () => ['inc.ptz_fija.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'operador_ptz') ? null : NEED('need.rol', { rol: ROLES.operador_ptz.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_ptz'), (p) => R(1, 'inc.ptz_fija.r0', { nombre: p.name }), (p) => R(-5, 'inc.ptz_fija.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'operador_ptz'), (p) => R(1, 'inc.ptz_fija.r0', { nombre: nm(p) }), (p) => R(-5, 'inc.ptz_fija.r1', { nombre: nm(p) })) },
         { run: () => R(-7, 'inc.ptz_fija.r2') },
       ],
     },
@@ -1543,11 +1632,11 @@
       when: (s, ev) => ev.equip.some((e) => CLASE[itemOf(e).subtipo] === 'dron') && !!bestRole(ev, 'piloto_dron'),
       text: () => ['inc.dron.t'],
       choices: [
-        { run: (s, ev) => skillCheck(s, bestRole(ev, 'piloto_dron'), (p) => R(4, 'inc.dron.r0', { nombre: p.name }), (p) => {
+        { run: (s, ev) => skillCheck(s, bestRole(ev, 'piloto_dron'), (p) => R(4, 'inc.dron.r0', { nombre: nm(p) }), (p) => {
           const d = ev.equip.find((e) => CLASE[itemOf(e).subtipo] === 'dron');
           const real = d && s.equip.find((e) => e.id === d.id);
           if (real) real.condition = clamp(real.condition - 35, 1, 100);
-          return R(-9, 'inc.dron.r1', { nombre: p.name });
+          return R(-9, 'inc.dron.r1', { nombre: nm(p) });
         }) },
         { run: () => R(-2, 'inc.dron.r2') },
       ],
@@ -1559,7 +1648,7 @@
       text: () => ['inc.entrada.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'coordinador_piso') ? null : NEED('need.rol', { rol: ROLES.coordinador_piso.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'coordinador_piso'), (p) => R(2, 'inc.entrada.r0', { nombre: p.name }), (p) => R(-5, 'inc.entrada.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'coordinador_piso'), (p) => R(2, 'inc.entrada.r0', { nombre: nm(p) }), (p) => R(-5, 'inc.entrada.r1', { nombre: nm(p) })) },
         { run: () => R(-8, 'inc.entrada.r2') },
       ],
     },
@@ -1569,7 +1658,7 @@
       when: (s, ev) => ev.contract.diff >= 2,
       text: () => ['inc.pieza.t'],
       choices: [
-        { need: (s, ev) => (bestRole(ev, 'runner') ? null : NEED('need.rol', { rol: ROLES.runner.name })), run: (s, ev) => R(-1, 'inc.pieza.r0', { nombre: bestRole(ev, 'runner').name }) },
+        { need: (s, ev) => (bestRole(ev, 'runner') ? null : NEED('need.rol', { rol: ROLES.runner.name })), run: (s, ev) => R(-1, 'inc.pieza.r0', { nombre: nm(bestRole(ev, 'runner')) }) },
         { need: (s) => (s.money >= 40 ? null : NEED('need.dinero', { monto: money(40) })), run: (s) => { s.money -= 40; return R(-5, 'inc.pieza.r1'); } },
         { run: () => R(-8, 'inc.pieza.r2') },
       ],
@@ -1628,7 +1717,7 @@
       text: () => ['inc.senal.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'tecnico_transmision') ? null : NEED('need.rol', { rol: ROLES.tecnico_transmision.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'tecnico_transmision'), (p) => R(2, 'inc.senal.r0', { nombre: p.name }), (p) => R(-10, 'inc.senal.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'tecnico_transmision'), (p) => R(2, 'inc.senal.r0', { nombre: nm(p) }), (p) => R(-10, 'inc.senal.r1', { nombre: nm(p) })) },
         { run: () => R(-9, 'inc.senal.r2') },
       ],
     },
@@ -1639,9 +1728,9 @@
       text: () => ['inc.guion.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'productor') ? null : NEED('need.rol', { rol: ROLES.productor.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'productor'), (p) => R(3, 'inc.guion.r0', { nombre: p.name }), (p) => R(-7, 'inc.guion.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'productor'), (p) => R(3, 'inc.guion.r0', { nombre: nm(p) }), (p) => R(-7, 'inc.guion.r1', { nombre: nm(p) })) },
         { need: (s, ev) => (bestRole(ev, 'director') ? null : NEED('need.rol', { rol: ROLES.director.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'director'), (p) => R(2, 'inc.guion.r2', { nombre: p.name }), (p) => R(-9, 'inc.guion.r3', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'director'), (p) => R(2, 'inc.guion.r2', { nombre: nm(p) }), (p) => R(-9, 'inc.guion.r3', { nombre: nm(p) })) },
         { run: () => R(-8, 'inc.guion.r4') },
       ],
     },
@@ -1652,7 +1741,7 @@
       text: () => ['inc.multitud.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'camarografo') ? null : NEED('need.rol', { rol: ROLES.camarografo.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'camarografo'), (p) => R(2, 'inc.multitud.r0', { nombre: p.name }), (p) => R(-9, 'inc.multitud.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'camarografo'), (p) => R(2, 'inc.multitud.r0', { nombre: nm(p) }), (p) => R(-9, 'inc.multitud.r1', { nombre: nm(p) })) },
         { run: (s) => { const r = rnd(s); return r < 0.15 ? R(2, 'inc.multitud.r4') : r < 0.4 ? R(-3, 'inc.multitud.r2') : R(-10, 'inc.multitud.r3'); } },
       ],
     },
@@ -1666,7 +1755,7 @@
           const p = bestRole(ev, 'camarografo');
           if (!p) return R(-4, 'inc.vip.r0');
           const lv = p.skill + tierBonus(p);
-          return R(Math.round((lv - 2) * 3), lv >= 3 ? 'inc.vip.r1' : 'inc.vip.r2', { nombre: p.name });
+          return R(Math.round((lv - 2) * 3), lv >= 3 ? 'inc.vip.r1' : 'inc.vip.r2', { nombre: nm(p) });
         } },
         { run: () => R(-2, 'inc.vip.r3') },
       ],
@@ -1678,7 +1767,7 @@
       text: () => ['inc.ring.t'],
       choices: [
         { need: (s, ev) => (bestRole(ev, 'cablero') ? null : NEED('need.rol', { rol: ROLES.cablero.name })),
-          run: (s, ev) => skillCheck(s, bestRole(ev, 'cablero'), (p) => R(4, 'inc.ring.r0', { nombre: p.name }), (p) => R(-4, 'inc.ring.r1', { nombre: p.name })) },
+          run: (s, ev) => skillCheck(s, bestRole(ev, 'cablero'), (p) => R(4, 'inc.ring.r0', { nombre: nm(p) }), (p) => R(-4, 'inc.ring.r1', { nombre: nm(p) })) },
         { run: () => R(-7, 'inc.ring.r2') },
       ],
     },
@@ -1760,7 +1849,7 @@
     if (contract.internacional && contract.travelCost) {
       s.money -= contract.travelCost;
       ev.travelCost = contract.travelCost;
-      log(s, 'log.intl_viaje', { monto: money(contract.travelCost), pais: contract.pais });
+      log(s, 'log.intl_viaje', { monto: money(contract.travelCost), pais: paisP(contract) });
     }
     // Elegir imprevistos
     const view = { contract: ev.contract, staff, equip };
@@ -1858,6 +1947,8 @@
     return { ok: true, q: r.q, msg: r.msg, k: r.k, p: r.p };
   }
 
+  /* Subidas de habilidad y ascensos: { k, p, text } (la pantalla los vuelve a armar en el idioma elegido) */
+  const upTxt = (k, p) => ({ k, p, text: tx(k, p), toString() { return this.text; } });
   /* Experiencia y ascensos de nivel después de un evento */
   function gainExperience(s, p, intl, ups) {
     if (intl) p.eventos_internacionales = (p.eventos_internacionales || 0) + 1;
@@ -1874,8 +1965,8 @@
     if (!p.owner) {
       const r = ROLES[normRole(p.role)] || ROLES.camarografo;
       p.wage += Math.round((TIERS[next].base - TIERS[cur].base) * r.wageMul * P.wageShare);
-      ups.push(tx('up.nivel', { nombre: p.name, nivel: TIERS[next].name, monto: money(p.wage) }));
-    } else ups.push(tx('up.nivel_duenio', { nombre: p.name, nivel: TIERS[next].name }));
+      ups.push(upTxt('up.nivel', { nombre: p.name, nivel: { k: 'nivel.' + next }, monto: money(p.wage) }));
+    } else ups.push(upTxt('up.nivel_duenio', { nivel: { k: 'nivel.' + next } }));
   }
 
   function finishEvent(s) {
@@ -1888,7 +1979,7 @@
     const quality = clamp(ev.base + ev.deltas.reduce((a, b) => a + b, 0), 0, 100);
     const B = BALANCE.stars;
     const stars = quality >= B[0] ? 5 : quality >= B[1] ? 4 : quality >= B[2] ? 3 : quality >= B[3] ? 2 : 1;
-    const pay = Math.round(c.pay * (c.diff >= BALANCE.bigFrom ? BALANCE.starsPayBig : STARS_PAY)[stars]);
+    const pay = Math.round(c.pay * payMult(c, stars, s));
     const repRaw = STARS_REP[stars] * (0.5 + c.diff * 0.15);
     // Cuanta más fama tienes, más cuesta seguir subiendo
     let repDelta = Math.round(repRaw > 0 ? repRaw * (1 - s.rep / 130) : repRaw);
@@ -1938,11 +2029,12 @@
         p.skill++;
         p.xp = 0;
         if (!p.owner) p.wage += BALANCE.wage.raisePerLevel;
-        ups.push(p.owner ? tx('up.habilidad_duenio', { nombre: p.name, n: p.skill }) : tx('up.habilidad', { nombre: p.name, n: p.skill, monto: money(p.wage) }));
+        ups.push(p.owner ? upTxt('up.habilidad_duenio', { n: p.skill }) : upTxt('up.habilidad', { nombre: p.name, n: p.skill, monto: money(p.wage) }));
       }
       gainExperience(s, p, !!c.internacional, ups);
     });
     s.stats.events++;
+    s.recentStars = (Array.isArray(s.recentStars) ? s.recentStars : []).concat([stars]).slice(-BALANCE.trust.last);
     if (stars === 5) s.stats.fiveStars++;
     s.stats.earned += pay;
     s.stats.best[c.type] = Math.max(s.stats.best[c.type] || 0, stars);
@@ -1969,21 +2061,23 @@
       crewPlan: ev.crewPlan || null, cameraPlan: ev.cameraPlan || null,
       internacional: !!c.internacional, travelCost: ev.travelCost || 0, travelDays: c.internacional ? (c.travelDays || 0) : 0, intlFail,
     };
-    log(s, 'log.resultado', { estrellas: '⭐'.repeat(stars), evento: t.name, cliente: c.client, monto: money(payNow),
-      despues: payLater ? tx('log.resultado_despues', { monto: money(payLater), n: laterDays }) : '', sueldos: money(ev.wages), fama: (repDelta >= 0 ? '+' : '') + repDelta });
+    log(s, 'log.resultado', { estrellas: '⭐'.repeat(stars), evento: { k: 'ev.' + c.type }, cliente: c.client, monto: money(payNow),
+      despues: payLater ? { k: 'log.resultado_despues', p: { monto: money(payLater), n: laterDays } } : '', sueldos: money(ev.wages), fama: (repDelta >= 0 ? '+' : '') + repDelta });
     if (payLater) log(s, 'log.pago_mitad', { cliente: c.client, n: laterDays });
-    ups.forEach((u) => log(s, 'log.subio', { texto: u }));
+    ups.forEach((u) => log(s, 'log.subio', { texto: { k: u.k, p: u.p } }));
     if (intlFail) log(s, 'log.intl_fallo', { cliente: c.client, n: c.repRisk || 10 });
-    else if (c.internacional) log(s, 'log.intl_ok', { cliente: c.client, pais: c.pais });
-    if (duel === 'won') log(s, 'log.duelo_ganado', { q: quality, rq: rivalQuality, n: BALANCE.rival.winRep, frase: tx(pick(s, D.TAUNTS.duelWin)) });
-    if (duel === 'lost') log(s, 'log.duelo_perdido', { q: quality, rq: rivalQuality, n: BALANCE.rival.loseRep, frase: tx(pick(s, D.TAUNTS.duelLose)) });
+    else if (c.internacional) log(s, 'log.intl_ok', { cliente: c.client, pais: paisP(c) });
+    if (duel === 'won') log(s, 'log.duelo_ganado', { q: quality, rq: rivalQuality, n: BALANCE.rival.winRep, frase: { k: pick(s, D.TAUNTS.duelWin) } });
+    if (duel === 'lost') log(s, 'log.duelo_perdido', { q: quality, rq: rivalQuality, n: BALANCE.rival.loseRep, frase: { k: pick(s, D.TAUNTS.duelLose) } });
     storyMilestone(s, c.type, stars, duel);
     s.currentEvent = null;
     s.lastResult = result;
+    // El premio del capítulo entra antes de pasar el día (así cuenta para la caja frente a la quiebra)
+    result.chapterDone = checkChapter(s);
     nextDay(s);
     // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
-    for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: c.pais || '' }); nextDay(s, { travel: true }); }
-    result.chapterDone = checkChapter(s);
+    for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+    if (!result.chapterDone) result.chapterDone = checkChapter(s);
     result.avisos = (s.avisos || []).slice(Math.min(avisos0, (s.avisos || []).length));
     return { ok: true, result };
   }
@@ -1994,7 +2088,7 @@
     const ch = CHAPTERS[s.chapter];
     if (!ch || !ch.check(s)) return null;
     s.money += ch.reward;
-    aviso(s, 'capitulo', 'log.capitulo', { titulo: tx('cap.' + s.chapter + '.title'), texto: tx('cap.' + s.chapter + '.done') });
+    aviso(s, 'capitulo', 'log.capitulo', { titulo: { k: 'cap.' + s.chapter + '.title' }, texto: { k: 'cap.' + s.chapter + '.done' } });
     const done = { chapter: s.chapter, title: ch.title, text: ch.done, reward: ch.reward, day: s.day };
     if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
     s.capCompletados.push(done);
@@ -2070,6 +2164,10 @@
       (s.candidates || []).forEach(migrateStaff);
       s.equip = (s.equip || []).filter((e) => e && typeof e.type === 'string');
       s.equip.forEach((e) => { if (D.ITEM_ALIAS[e.type]) e.type = D.ITEM_ALIAS[e.type]; });
+      // La cámara de Don Ramiro (partidas de antes de la marca starter): el nombre se arma con su clave al mostrarla
+      s.equip.forEach((e) => { if (e.nick && !e.starter && (e.nick === TEXTOS['equipo.camara_ramiro'] || (e.id === 2 && e.type === 'cam_basic'))) e.starter = true; });
+      if (typeof s.redDays !== 'number') s.redDays = 0;
+      if (!Array.isArray(s.recentStars)) s.recentStars = [];
       if (typeof s.intlNext !== 'number') s.intlNext = 0;
       if (!Array.isArray(s.avisos)) s.avisos = [];
       if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
@@ -2082,6 +2180,81 @@
       s.v = SAVE_VERSION;
       return s;
     } catch (e) { return null; }
+  }
+
+  /* ---------- Partida de demostración (?demo=cap4) ----------
+     Se arma jugando con las mismas reglas (un bot sencillo compra, contrata y cubre eventos) hasta llegar al
+     capítulo 4; después se agregan con las funciones de la lógica un contrato disputado por MegaVisión y una
+     oferta internacional para mostrarlos. Siempre sale igual (semilla fija). */
+  const DEMO_COMPRAS = ['audio_basic', 'cam_basic', 'switch_basic', 'encoder', 'mics', 'sop_tripode_basico', 'router4g', 'raincover', 'ups',
+    'cam_pro', 'audio_pro', 'sop_tripode_basico', 'cam_cine', 'ic_hollyband_solidkom_c2', 'gfx_kasparcg_pc', 'sw_vmax_pro_pc', 'enc_kilovista_p3', 'cam_cine'];
+  function demoTurn(s) {
+    const dc = dailyCost(s);
+    if (s.stock.cable < 2 && s.money > 300) buyConsumable(s, 'cable', 1);
+    s.equip.filter((e) => e.condition < 45).forEach((e) => { if (s.money > repairCost(e) + 400) repair(s, e.id); });
+    const owned = {};
+    s.equip.forEach((e) => { owned[e.type] = (owned[e.type] || 0) + 1; });
+    const want = {};
+    for (const k of DEMO_COMPRAS) {
+      want[k] = (want[k] || 0) + 1;
+      if ((owned[k] || 0) >= want[k]) continue;
+      const it = CATALOG[k];
+      if (it.minRep <= s.rep && s.money > it.price + 900 + 6 * dc) buy(s, k);
+      break;
+    }
+    const cams = countCat(s, 'cam');
+    const need = { camarografo: Math.min(cams - 1, s.rep < 10 ? 1 : 2), director: cams >= 2 ? 1 : 0, sonidista: 1, tecnico_transmision: countCat(s, 'encoder') ? 1 : 0,
+      cablero: cams >= 3 ? 1 : 0, coordinador_piso: s.rep >= 12 ? 1 : 0, productor: s.rep >= 14 ? 1 : 0, operador_graficos: countCat(s, 'graphics') ? 1 : 0 };
+    s.candidates.slice().sort((a, b) => b.skill - a.skill).forEach((c) => {
+      const r = normRole(c.role);
+      const have = s.staff.filter((p) => !p.owner && normRole(p.role) === r).length;
+      if (have < (need[r] || 0) && c.tier !== 'internacional' && s.staff.length < 10 && s.money > c.wage * 2 + 500 + 3 * dc) hire(s, c.id);
+    });
+    if (s.contracts.length < 2 && s.money > 600) marketing(s, 'redes');
+    let best = null;
+    s.contracts.forEach((c) => {
+      if (c.internacional) return;
+      const lo = suggestLoadout(s, c.id);
+      const staff = s.staff.filter((p) => lo.staffIds.includes(p.id));
+      const equip = s.equip.filter((e) => lo.equipIds.includes(e.id));
+      if (!equip.some((e) => itemOf(e).cat === 'cam')) return;
+      const cq = computeQuality(s, c, staff, equip);
+      const q = cq.rango.esperado, B = BALANCE.stars;
+      const st = q >= B[0] ? 5 : q >= B[1] ? 4 : q >= B[2] ? 3 : q >= B[3] ? 2 : 1;
+      const net = c.pay * payMult(c, st, s) - staff.reduce((a, p) => a + eventWage(p, c.diff), 0);
+      if (net <= 0 && !c.story) return;
+      if (c.rival && q < c.rivalQuality + 8) return;
+      const score = net * (c.story ? 2 : 1) * (st >= 3 ? 1 : 0.4);
+      if (!best || score > best.score) best = { c, lo, score };
+    });
+    if (!best) { nextDay(s); return; }
+    startEvent(s, best.c.id, best.lo.staffIds, best.lo.equipIds);
+    let inc, guard = 0;
+    while ((inc = currentIncident(s)) && guard++ < 10) resolveIncident(s, inc.choices.find((x) => x.ok).i);
+    finishEvent(s);
+  }
+  function demoGame(kind, seed) {
+    if (kind !== 'cap4') return null;
+    const s = newGame(seed === undefined ? 56 : seed);
+    for (let i = 0; i < 400 && !s.gameOver && !s.storyDone && s.chapter < 3; i++) demoTurn(s);
+    if (s.gameOver || s.chapter !== 3) return null;
+    // Lo que se quiere mostrar: un duelo con MegaVisión y una oferta internacional
+    s.contracts = s.contracts.filter((c) => !c.internacional).slice(0, BALANCE.maxContracts - 3);
+    // El duelo: de varias ofertas disputadas posibles se queda la que mejor se puede pelear con lo que tienes
+    const cands = ['lucha_libre', 'graduacion', 'barrial', 'boxeo'].filter((k) => EVENT_TYPES[k].minRep <= s.rep)
+      .map((k) => addContract(s, k, 1, { rival: true })).filter(Boolean).map((c) => {
+        const lo = suggestLoadout(s, c.id);
+        const q = computeQuality(s, c, s.staff.filter((p) => lo.staffIds.includes(p.id)), s.equip.filter((e) => lo.equipIds.includes(e.id))).rango.esperado;
+        return { c, m: q - c.rivalQuality };
+      }).sort((x, y) => y.m - x.m);
+    cands.slice(1).forEach((x) => { s.contracts = s.contracts.filter((c) => c !== x.c); });
+    const kinds = intlEligible(s);
+    addIntlContract(s, kinds.length ? null : 'regional');
+    s.intlNext = s.day + BALANCE.intl.every[0];
+    s.avisos = []; s.capCompletados = []; s.lastResult = null;
+    s.chapterSeen = s.chapter - 1; // se muestra la presentación del capítulo 4
+    s.demo = kind;
+    return s;
   }
 
   aplicarTextos();
@@ -2097,6 +2270,7 @@
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
     takeAvisos, takeChapterDone, venue, venueName, qualityRange,
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
+    staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.Game = API;

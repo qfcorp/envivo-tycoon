@@ -33,7 +33,7 @@
     'pe.cams': 'Plan de cámaras', 'pe.cubiertas': '{a}/{t} cubiertas', 'pe.ajuste.medio': 'ajuste {p}%',
     'pe.leg.ok': 'Ideal', 'pe.leg.mid': 'Sirve', 'pe.leg.bad': 'No es la ideal', 'pe.leg.off': 'Vacía', 'pe.leg.na': 'Asignada',
     'pe.forma.fija': 'Fija', 'pe.forma.mano': 'Al hombro', 'pe.forma.robot': 'Robótica', 'pe.forma.aerea': 'Aérea',
-    'pe.vacia': 'Sin cámara', 'pe.idealp': 'Ideal: {t}', 'pe.ajuste': 'Ajuste {p}%', 'pe.tocar': 'Toca una cámara para ver cuál va',
+    'pe.vacia': 'Sin cámara', 'pe.opcional': 'Opcional', 'pe.idealp': 'Ideal: {t}', 'pe.ajuste': 'Ajuste {p}%', 'pe.tocar': 'Toca una cámara para ver cuál va',
     'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
 
     'pe.intl': 'Contrato internacional', 'pe.intl.pago': '×{m} pago', 'pe.intl.dias': '{n} días de viaje', 'pe.intl.dia': '1 día de viaje',
@@ -176,7 +176,12 @@
   const G = () => root.Game || {};
   const A = () => root.Art || null;
   const TLx = (t) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(t) : t; } catch (e) { return t; } };   // textos de la lógica
-  const money = (n) => { try { if (G().money) return G().money(n); } catch (e) { /* abajo */ } return '$' + Math.round(n).toLocaleString('es-EC'); };
+  // Dinero en el formato del idioma elegido (I18N.money); sin js/i18n.js, el de la lógica
+  const money = (n) => {
+    try { if (root.I18N && root.I18N.money) { const v = Math.round(Number(n) || 0); return v < 0 ? '-' + root.I18N.money(-v) : root.I18N.money(v); } } catch (e) { /* abajo */ }
+    try { if (G().money) return G().money(n); } catch (e) { /* abajo */ }
+    return '$' + Math.round(n).toLocaleString('es-EC');
+  };
   const f1 = (n) => Math.round(n * 10) / 10;
   let UID = 0;
 
@@ -263,7 +268,8 @@
 .pe-vl{font-size:7px;font-weight:600;letter-spacing:.7px;fill:#ffffff66}
 .pe-vl.pe-dk{fill:#00000080}
 .pe-cam{cursor:pointer;outline:none}
-.pe-k-ok{--pe-c:var(--pe-ok)}.pe-k-mid{--pe-c:var(--pe-mid)}.pe-k-bad{--pe-c:var(--pe-bad)}.pe-k-off{--pe-c:var(--pe-off)}.pe-k-na{--pe-c:var(--pe-na)}
+.pe-k-ok{--pe-c:var(--pe-ok)}.pe-k-mid{--pe-c:var(--pe-mid)}.pe-k-bad{--pe-c:var(--pe-bad)}.pe-k-off{--pe-c:var(--pe-off)}.pe-k-opt{--pe-c:var(--pe-off)}.pe-k-na{--pe-c:var(--pe-na)}
+.pe-k-opt .pe-cone{fill-opacity:.03;stroke-dasharray:2 2;stroke-opacity:.3}.pe-k-opt .pe-dot{stroke-dasharray:2.2 1.6;opacity:.6}.pe-k-opt .pe-n{border-style:dashed;opacity:.7}
 .pe-cone{fill:var(--pe-c);fill-opacity:.2;stroke:var(--pe-c);stroke-opacity:.5;stroke-width:.6}
 .pe-k-off .pe-cone{fill-opacity:.05;stroke-dasharray:2 2;stroke-opacity:.45}
 .pe-trav,.pe-arm{fill:none;stroke:var(--pe-c);stroke-width:1.2;stroke-linecap:round}
@@ -291,9 +297,10 @@
 .pe-n{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 10.5px "JetBrains Mono",ui-monospace,monospace;color:var(--pe-c);border:1.6px solid var(--pe-c);background:#0b0e14}
 .pe-k-off .pe-n{border-style:dashed}
 .pe-clt{min-width:0}
-.pe-clt span{display:block;font-size:12.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pe-clt small{display:block;font-size:11px;color:var(--muted,#8b95a8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-clt span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:12.5px;line-height:1.25;overflow:hidden;overflow-wrap:anywhere}
+.pe-clt small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:11px;line-height:1.3;color:var(--muted,#8b95a8);overflow:hidden;overflow-wrap:anywhere}
 .pe-k-off .pe-clt small{color:var(--pe-bad)}
+.pe-k-opt .pe-clt small{color:var(--pe-off)}
 .pe-fit{display:grid;gap:2px;justify-items:end;font:600 10.5px "JetBrains Mono",ui-monospace,monospace;color:var(--pe-c)}
 .pe-fit u{display:block;width:44px;height:4px;border-radius:2px;background:#262b36;overflow:hidden;text-decoration:none}
 .pe-fit u i{display:block;height:100%;background:var(--pe-c)}
@@ -798,7 +805,9 @@
     try { if (o && o.nombreEquipo) { const r = o.nombreEquipo(a); if (r) return r; } } catch (e) { /* abajo */ }
     return String(a);
   }
-  const fitK = (p) => (!p.asgName ? 'off' : p.aj == null ? 'na' : p.aj >= 0.8 ? 'ok' : p.aj >= 0.5 ? 'mid' : 'bad');
+  // 'opt' = toma extra (opcional) sin cámara: en gris, no cuenta como que falta
+  const fitK = (p) => (!p.asgName ? (p.opcional ? 'opt' : 'off') : p.aj == null ? 'na' : p.aj >= 0.8 ? 'ok' : p.aj >= 0.5 ? 'mid' : 'bad');
+  const vacioTxt = (p) => (p.opcional ? T('pe.opcional') : T('pe.vacia'));
 
   // Asigna cada posición a un punto del dibujo
   function placeAll(list, v) {
@@ -836,7 +845,7 @@
 
   function marker(p) {
     const s = p.spot, [x, y] = s.at, k = fitK(p);
-    const info = `${T('pe.cam.n', { n: p.n })} · ${p.nombre} — ${p.asgName || T('pe.vacia')}${p.aj != null && p.asgName ? ' · ' + T('pe.ajuste', { p: Math.round(p.aj * 100) }) : ''}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
+    const info = `${T('pe.cam.n', { n: p.n })} · ${p.nombre} — ${p.asgName || vacioTxt(p)}${p.aj != null && p.asgName ? ' · ' + T('pe.ajuste', { p: Math.round(p.aj * 100) }) : ''}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
     let g = `<g class="pe-cam pe-k-${k}" data-pe-cam="${p.n}" tabindex="0" role="button" aria-label="${esc(info)}"><title>${esc(info)}</title>`;
     if (s.wires) g += `<path class="pe-wire" d="${s.wires.map((w) => `M${w[0]} ${w[1]}L${x} ${y}`).join('')}"/>`;
     if (s.arm) g += `<path class="pe-arm" d="M${s.arm[0]} ${s.arm[1]}L${x} ${y}"/>`;
@@ -859,7 +868,7 @@
   }
 
   const shapeIco = (f) => `<svg width="12" height="12" viewBox="-7 -7 14 14" aria-hidden="true">${f === 'aerea' ? '<rect x="-4.3" y="-4.3" width="8.6" height="8.6" rx="1.5" transform="rotate(45)" fill="none" stroke="currentColor" stroke-width="1.6"/>' : f === 'robot' ? '<rect x="-5" y="-5" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>' : f === 'mano' ? '<circle r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M-7 6.2H7" stroke="currentColor" stroke-dasharray="2 1.5"/>' : '<circle r="5" fill="none" stroke="currentColor" stroke-width="1.6"/>'}</svg>`;
-  const colorIco = (k) => `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" class="pe-k-${k}"><circle cx="5" cy="5" r="4" style="fill:var(--pe-c)"${k === 'off' ? ' fill-opacity=".35"' : ''}/></svg>`;
+  const colorIco = (k) => `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" class="pe-k-${k}"><circle cx="5" cy="5" r="4" style="fill:var(--pe-c)"${k === 'off' || k === 'opt' ? ' fill-opacity=".35"' : ''}/></svg>`;
 
   function camaras(plan, tipoEvento, opts) {
     ensureCss(); bindTap();
@@ -876,20 +885,22 @@
         ${(BG[v] || bgSalon)(u, vr)}
         ${cables ? `<path class="pe-cable" d="${cables}"/>` : ''}${control(vr)}
         ${list.map(marker).join('')}</svg>`;
-      const covered = list.filter((p) => p.asgName).length;
+      // Solo las posiciones obligatorias cuentan para "cubiertas" (las tomas extra son opcionales)
+      const reqList = list.filter((p) => !p.opcional);
+      const covered = reqList.filter((p) => p.asgName).length;
       const fits = list.filter((p) => p.asgName && p.aj != null);
       const avg = fits.length ? Math.round(fits.reduce((s, p) => s + p.aj, 0) / fits.length * 100) : null;
       const evName = (() => { const e = (G().EVENT_TYPES || {})[t]; return (e && TLx(e.name)) || (has('pe.ev.' + t) ? T('pe.ev.' + t) : ''); })();
       const head = o.titulo === false ? '' : `<div class="pe-hd"><span class="pe-ttl">${esc(o.titulo || T('pe.cams'))}</span>
-        <span class="pe-sub">${evName ? esc(evName) + ' · ' : ''}<b>${esc(T('pe.cubiertas', { a: covered, t: list.length }))}</b>${avg != null ? ' · ' + esc(T('pe.ajuste.medio', { p: avg })) : ''}</span></div>`;
+        <span class="pe-sub">${evName ? esc(evName) + ' · ' : ''}<b>${esc(T('pe.cubiertas', { a: covered, t: reqList.length }))}</b>${avg != null ? ' · ' + esc(T('pe.ajuste.medio', { p: avg })) : ''}</span></div>`;
       const ks = new Set(list.map(fitK)); const fs = new Set(list.map((p) => p.spot.f));
-      const legend = `<div class="pe-leg">${['ok', 'mid', 'bad', 'na', 'off'].filter((k) => k !== 'na' || ks.has('na')).map((k) => `<span>${colorIco(k)}${esc(T('pe.leg.' + k))}</span>`).join('')}
+      const legend = `<div class="pe-leg">${['ok', 'mid', 'bad', 'na', 'off', 'opt'].filter((k) => (k !== 'na' && k !== 'opt') || ks.has(k)).map((k) => `<span>${colorIco(k)}${esc(k === 'opt' ? T('pe.opcional') : T('pe.leg.' + k))}</span>`).join('')}
         <span class="pe-sep"></span>${['fija', 'mano', 'robot', 'aerea'].filter((f) => fs.has(f)).map((f) => `<span>${shapeIco(f)}${esc(T('pe.forma.' + f))}</span>`).join('')}</div>`;
       const rowsHtml = o.lista === false ? '' : `<div class="pe-cl">${list.map((p) => {
         const k = fitK(p);
-        const info = `${T('pe.cam.n', { n: p.n })} · ${p.asgName || T('pe.vacia')}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
+        const info = `${T('pe.cam.n', { n: p.n })} · ${p.asgName || vacioTxt(p)}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
         return `<div class="pe-clr pe-k-${k}" data-pe-cam="${p.n}" data-pe-info="${esc(info)}"><b class="pe-n">${p.n}</b>
-          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || T('pe.vacia'))}${p.ideal && (k !== 'ok') ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</small></div>
+          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${p.ideal && (k !== 'ok') ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</small></div>
           <span class="pe-fit">${p.asgName && p.aj != null ? `${Math.round(p.aj * 100)}%<u><i style="width:${Math.round(p.aj * 100)}%"></i></u>` : p.asgName ? '' : '—'}</span></div>`;
       }).join('')}</div>`;
       return `<div class="pe-cams ${esc(o.clase || '')}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${legend}<div class="pe-det" aria-live="polite"></div>${rowsHtml}</div></div>`;
@@ -909,7 +920,9 @@
       if (!esInternacional(c)) return '';
       const o = opts || {};
       const x = c.internacional && typeof c.internacional === 'object' ? Object.assign({}, c, c.internacional) : c.intl && typeof c.intl === 'object' ? Object.assign({}, c, c.intl) : c;
-      const pais = x.pais || x.country || x.lugar || x.ciudad || '';
+      // País traducido (clave pais.* de la lógica) si se puede
+      let pais = x.pais || x.country || x.lugar || x.ciudad || '';
+      try { if (c.pais && G().paisNombre) pais = G().paisNombre(c) || pais; } catch (e) { /* español */ }
       const mult = num(x.mult != null ? x.mult : x.payMult != null ? x.payMult : x.pago_multiplicador != null ? x.pago_multiplicador : x.multiplicador);
       const dias = num(x.travelDays != null ? x.travelDays : x.diasViaje != null ? x.diasViaje : x.dias_viaje != null ? x.dias_viaje : x.viaje);
       const gastos = num(x.travelCost != null ? x.travelCost : x.gastosViaje != null ? x.gastosViaje : x.gastos);

@@ -43,16 +43,36 @@ Abre este enlace: **https://claude.ai/artifact/3Sr6tCaVc7Yg3DyYfpPq47**
 
 ## Guion de 10 minutos
 
+Dos partes: primero una **partida nueva** (los días 1 a 15, lo que mejor se siente del juego) y después la
+**partida preparada del capítulo 4** con `?demo=cap4` (la rival, los duelos y una oferta internacional).
+
 | Minuto | Qué tocar | Qué mostrar |
 |---|---|---|
-| 0–1 | Abrir el enlace → **Inicio** | La sede (garaje), dinero, fama, capítulo de la historia y el consejo de qué falta. |
-| 1–4 | **Clientes** → elige una oferta → **Preparar evento** | Si tu partida tiene 20 de fama o más, elige la **Velada de boxeo**; si es nueva, la **boda** sirve igual. Muestra el **plano de cámaras** (cada posición con la cámara ideal) y el **semáforo de personal** por puesto. Toca **Elegir lo mejor automáticamente** y mira la **Calidad esperada**. |
-| 4–6 | **¡Salir al aire!** | La escena **EN VIVO**. Llega un **imprevisto**: lee las opciones en voz alta y elige una; la calidad sube o baja. **Terminar transmisión**. |
-| 6–7 | Pantalla de resultado → **Ver detalle** | Estrellas, pago del cliente, sueldos y ganancia. Después, el **Resumen del día**. |
-| 7–8 | **Bodega** → baja a la tienda de equipos | La **fila de categorías** (cámaras, lentes, switchers...), marcas parodia y equipos que se gastan. |
-| 8–9 | **Personal** | Niveles **Junior a Internacional**, sueldos, ánimo y **Buscar personal para el puesto**. |
-| 9–9:30 | **Inicio** → botón **Idioma** | Cambia a **English** o **中文**, muestra una pantalla y vuelve a **Español**. |
-| 9:30–10 | **En línea** y **Tienda** | Los 4 modos en línea y los equipos exclusivos. Explica: "esto se activa con el servidor, que ya está listo para instalar". |
+| 0–1 | Abrir el enlace con una **partida nueva** → **Inicio** | La sede (garaje), dinero, fama, capítulo 1 con Don Ramiro y el consejo de qué falta. |
+| 1–3 | **Clientes** → la **misa** o la **boda** → **Preparar evento** | El **plano de cámaras** (las tomas extra salen en gris como *opcional*) y el **semáforo de personal**. **¡Salir al aire!**, un imprevisto, **Terminar transmisión**. |
+| 3–4 | Pantalla de resultado | Estrellas, pago, sueldos y gastos del día: el número grande es lo que **dejó el evento**; si compraste algo esa mañana, la caja del día sale aparte. |
+| 4–5 | **Personal** y **Bodega** | Contratar un sonidista y un camarógrafo, comprar la segunda cámara: así se pasa al capítulo 2 (día 4 a 15). |
+| 5 | Cambiar a la **partida del capítulo 4**: abrir el mismo enlace con `?demo=cap4` | Pregunta antes de reemplazar la partida. Sale la presentación del capítulo 4 (Germán Vélez, MegaVisión). |
+| 5–7 | **Clientes** → la oferta con la etiqueta **Disputado** → **Preparar** | La calidad que promete MegaVisión contra tu rango esperado. **¡Salir al aire!** y el **duelo** en el resultado. |
+| 7–8 | **Clientes** → la **oferta internacional** | País, pago ×2 o ×3, días de viaje y requisitos (realizador con experiencia internacional). |
+| 8–9 | **Inicio** → botón **Idioma** | Cambia a **English** o **中文**: nombres, registro y la oferta internacional también cambian. Vuelve a **Español**. |
+| 9–10 | **En línea** y **Tienda** | Los 4 modos en línea y los equipos exclusivos. Explica: "esto se activa con el servidor, que ya está listo para instalar". |
+
+### Partida preparada del capítulo 4 (`?demo=cap4`)
+
+- Se abre agregando `?demo=cap4` a la dirección del juego, por ejemplo `https://juego.tukanec.com/?demo=cap4`
+  o `index.html?demo=cap4` / `dist/envivo-tycoon.html?demo=cap4` en la computadora.
+- **Si ya hay una partida guardada, pregunta antes** ("Partida de demostración: ¿seguro?", con el día de tu partida).
+  Si cancelas, tu partida queda igual. Si aceptas, se reemplaza (no se puede recuperar).
+- La partida **no está hecha a mano**: la lógica del juego juega sola con una semilla fija (compra, contrata y cubre
+  eventos con las reglas normales) hasta llegar al capítulo 4, y luego agrega con sus propias funciones un contrato
+  **disputado por MegaVisión** y una **oferta internacional**. Siempre sale igual: día 54, unos $9.500, fama 71,
+  10 personas, 18 equipos, un **duelo** en una graduación (MegaVisión promete 52; tu equipo espera ~71) y una
+  **velada de boxeo para StreamRing USA** (Estados Unidos). La oferta internacional pide un realizador con experiencia
+  internacional: sirve para mostrar los requisitos, no para jugarla.
+- El parámetro se quita de la dirección al cargar: recargar no vuelve a preguntar.
+- El enlace de claude.ai puede no pasarle `?demo=cap4` al juego; para la segunda parte del demo usa el archivo
+  `dist/envivo-tycoon.html?demo=cap4` o el juego en el VPS.
 
 **Si preguntan por la plata:** la tienda vende créditos, Pase VIP y paquetes; Plux está en modo de pruebas hasta que
 certifique el dominio. En la app de Google Play se cobra con Google.
@@ -80,7 +100,7 @@ certifique el dominio. En la app de Google Play se cobra con Google.
 - **Pagos en modo de pruebas** hasta la certificación de Plux. La app de Android todavía no está en Google Play.
 - **Páginas legales** con espacios en blanco (RUC, correo, dirección) y sin revisión de abogado.
 - **Francés y ruso** mezclan el trato formal y el informal (menús con "vous/вы", historia con "tu/ты"): hay que unificarlo.
-- **Balance** medido con un bot; falta probar con jugadores reales si el inicio sin contratar personal y el capítulo 4 se sienten justos.
+- **Balance** ajustado después del QA4 (capítulo 3 sin muro, quiebra con aviso y días de gracia, trabajar mal ya no rinde): medido con un bot y una simulación de jugador; falta confirmarlo con jugadores reales.
 - **Todavía no existen:** Productor del Año, Switcher en Vivo (minijuego), Pase de Temporada, Copas internacionales
   servidor contra servidor, Gran Licitación en coalición, cadenas internacionales y la historia propia de la productora rival.
 - **Orden de la casa:** borrar la rama de respaldo `wip-dificultad` de GitHub cuando todo esté en `main`.

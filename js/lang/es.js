@@ -261,7 +261,7 @@
 
     // Fin de partida
     'fin.titulo': 'Quebraste',
-    'fin.texto': 'Las deudas pasaron de {m}. Llegaste al día {dia} con {eventos} cubiertos. No te rindas: no compres equipo caro muy pronto y lleva repuestos.',
+    "fin.texto": "Las deudas pasaron de {m}. Llegaste al día {dia} con {eventos} cubiertos.",
     'fin.reiniciar': 'Empezar de nuevo',
 
     // Mercado entre jugadores
@@ -541,6 +541,21 @@
     "vivo.momento": "Momento en vivo {i} de {total}",
     "res.gastos_dia": "Gastos del día",
     "res.en_caja": "Te quedó en caja",
+    "demo.listo": "Partida de demostración: capítulo 4",
+    "demo.si": "Cargar la demostración",
+    "demo.texto": "Esto carga una partida preparada en el capítulo 4 (la rival, duelos y una oferta internacional). Tu partida actual (día {dia}) se reemplaza y no se puede recuperar.",
+    "demo.titulo": "Partida de demostración",
+    "pe.opcional": "Opcional",
+    "res.peligro": {"one": "Quedaste bajo el límite de deuda ({m}). Tienes {n} día para recuperarte o quiebras.", "other": "Quedaste bajo el límite de deuda ({m}). Tienes {n} días para recuperarte o quiebras."},
+    "res.quebraste": "Con este resultado y los gastos del día, las deudas pasaron el límite: quebraste.",
+    "res.caja_hoy": "Caja hoy (incluye compras)",
+    "res.neto_evento": "ganancia del evento (con los gastos del día)",
+    "inicio.manana_peligro": "Ojo: con los gastos de mañana ({g}) quedarás bajo el límite de deuda ({m}). Toma un evento que pague o vende algo.",
+    "inicio.peligro": {"one": "¡Peligro! Estás bajo el límite de deuda ({m}), contando lo que te deben. Te queda {n} día para recuperarte o quiebras.", "other": "¡Peligro! Estás bajo el límite de deuda ({m}), contando lo que te deben. Te quedan {n} días para recuperarte o quiebras."},
+    "fin.tip.grande": "Un evento grande mal hecho casi no se cobra y los sueldos son altos. Toma los grandes solo cuando el pronóstico dé 3 estrellas o más, y guarda caja para los gastos de varios días.",
+    "fin.tip.calidad": "Tus últimos eventos salieron con muy pocas estrellas y casi no se cobraron, pero los sueldos sí se pagan. Lleva el personal y las cámaras que pide cada evento antes de salir al aire.",
+    "fin.tip.gastos": "Tus gastos fijos llegaron a {m} al día. Con tanta gente y tanto equipo necesitas eventos seguidos que paguen bien: despide a quien no usas y vende lo que sobra.",
+    "fin.tip.temprano": "No te rindas: no compres equipo caro muy pronto y lleva repuestos.",
     "tienda.play_precios": "Pagos procesados por Google Play.",
     "tienda.play_no_disp": "Las compras no están disponibles en este dispositivo.",
     "tienda.play_llego": "¡Tu compra de Google Play llegó!",

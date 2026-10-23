@@ -178,6 +178,7 @@ const starsByChapter = G.CHAPTERS.map(() => []).concat([[]]); // índice NCH = m
 let storyWins = 0, bankrupt = 0, daysToWin = [], chapterReached = new Array(NCH + 1).fill(0);
 const chapterDays = G.CHAPTERS.map(() => []);
 let rivalSeen = 0, rivalEarly = 0, duelsWon = 0, duelsLost = 0;
+const bankruptAt = []; // cuándo quiebra el bot
 for (let g = 0; g < GAMES; g++) {
   const s = G.newGame(SEED + g);
   validState(s, `partida ${g} inicio`);
@@ -205,7 +206,7 @@ for (let g = 0; g < GAMES; g++) {
   const copy = G.deserialize(G.serialize(s));
   check(copy && copy.money === s.money && copy.day === s.day, `partida ${g}: guardar/cargar no coincide`);
   if (winDay) { storyWins++; daysToWin.push(winDay); }
-  if (s.gameOver) bankrupt++;
+  if (s.gameOver) { bankrupt++; bankruptAt.push({ day: s.day, ch: s.storyDone ? NCH : s.chapter, ev: s.stats.events }); }
   duelsWon += s.stats.duels.won; duelsLost += s.stats.duels.lost;
   chapterReached[s.storyDone ? NCH : s.chapter]++;
 }
@@ -324,6 +325,73 @@ check(G.deserialize('{"v":99}') === null, 'deserialize debería rechazar versió
   check(G.eventWage({ wage: 100 }, 1) === 100 && G.eventWage({ wage: 100 }, 5) > 100, 'el sueldo debería subir en eventos grandes');
 })();
 
+
+/* ---------- QA4: quiebra con aviso, textos traducibles, partida de demostración ---------- */
+(function () {
+  // Quiebra: cuentan los cobros que llegan pronto (no quiebras si el cliente te debe lo suficiente)
+  const a = G.newGame(21); a.stats.events = 20;
+  a.money = G.bankruptLimit(a) - 50; a.pending = [{ day: a.day + 2, amount: 900, client: 'Debe' }];
+  G.nextDay(a);
+  check(!a.gameOver && a.redDays === 0, `con un cobro pendiente grande no deberías quebrar (${a.money}, ${a.redDays})`);
+  // Sin cobros: días de gracia con aviso, y recién después la quiebra
+  const b = G.newGame(22); b.stats.events = 20; G.takeAvisos(b);
+  b.money = G.bankruptLimit(b) - 400;
+  G.nextDay(b);
+  const av1 = G.takeAvisos(b);
+  check(!b.gameOver && av1.some((x) => x.tipo === 'quiebra_aviso' && x.k === 'log.quiebra_aviso' && x.p.n === 2), 'primer día bajo el límite: aviso con 2 días de gracia');
+  check(G.bankruptInfo(b).enPeligro && G.bankruptInfo(b).graceLeft === 2, 'bankruptInfo: en peligro con 2 días');
+  G.nextDay(b);
+  check(!b.gameOver && G.takeAvisos(b).some((x) => x.k === 'log.quiebra_aviso1'), 'segundo día: último aviso');
+  G.nextDay(b);
+  check(b.gameOver && G.takeAvisos(b).some((x) => x.tipo === 'quiebra'), 'tercer día bajo el límite: quiebra');
+  // Si te recuperas, el contador vuelve a 0
+  const c = G.newGame(23); c.stats.events = 20; c.money = G.bankruptLimit(c) - 100; G.nextDay(c);
+  check(c.redDays === 1, 'redDays cuenta los días en peligro'); c.money = 2000; G.nextDay(c);
+  check(c.redDays === 0 && !c.gameOver, 'al salir del rojo se reinician los días de gracia');
+  // El límite crece con los gastos diarios
+  const big = G.newGame(24);
+  for (let i = 0; i < 9; i++) big.staff.push({ id: 700 + i, name: 'X', role: 'camarografo', tier: 'senior', skill: 3, wage: 120, morale: 80, events: 0 });
+  for (let i = 0; i < 18; i++) big.equip.push({ id: 750 + i, type: 'cam_cine', condition: 100 });
+  check(G.bankruptLimit(big) < G.bankruptLimit(G.newGame(1)) && G.bankruptLimit(G.newGame(1)) === G.BALANCE.bankruptAt, `el límite de quiebra debería crecer con los gastos (${G.bankruptLimit(big)})`);
+  // 1 estrella paga poco (salvo mientras aprendes) y una racha de 1 estrella baja los pagos
+  const p = G.newGame(25); const k = { diff: 1 };
+  check(G.payMult(k, 1, p) === G.BALANCE.learn.pay1 && G.payMult(k, 3, p) === 1, 'mientras aprendes, 1 estrella paga como antes');
+  p.stats.events = 30;
+  check(G.payMult(k, 1, p) <= 0.15 && G.payMult({ diff: 4 }, 1, p) <= 0.15, `1 estrella debería pagar poco (${G.payMult(k, 1, p)})`);
+  const f0 = G.payFactor(p, 1); p.recentStars = [1, 1, 1, 1, 1, 1];
+  check(G.payFactor(p, 1) < f0 * 0.7, 'una racha de eventos con 1 estrella baja lo que pagan los clientes');
+  p.recentStars = []; p.rep = 0;
+  check(G.payFactor(p, 1) < G.payFactor(G.newGame(1), 1), 'con 0 de fama pagan menos que al empezar');
+  // Las ofertas de la historia: la fama casi no suma exigencia
+  const h = G.newGame(26); h.rep = 90; h.stats.events = 40;
+  const so = G.addContract(h, 'lanzamiento', 1, { story: true }), no = G.addContract(h, 'lanzamiento');
+  const fama = (q) => (q.parts.find((x) => x[2] === 'parte.fama') || [0, 0])[1];
+  check(fama(G.computeQuality(h, so, h.staff, h.equip)) >= -G.BALANCE.expectStoryCap && fama(G.computeQuality(h, no, h.staff, h.equip)) < -15,
+    'en la historia la fama no debería restar más de expectStoryCap');
+  // Nombres del dueño y de la cámara de Don Ramiro: salen de su clave (también en partidas viejas)
+  const n = G.newGame(27);
+  check(n.equip[0].starter === true && G.equipName(n.equip[0]) === G.TEXTOS['equipo.camara_ramiro'] && G.staffName(n.staff[0]) === G.TEXTOS['persona.duenio'], 'nombres del dueño y de la cámara inicial');
+  const viejo = JSON.parse(G.serialize(n)); delete viejo.equip[0].starter; viejo.staff[0].name = 'Tú (dueño)';
+  const nv = G.deserialize(JSON.stringify(viejo));
+  check(nv && nv.equip[0].starter === true, 'deserialize marca la cámara de Don Ramiro de una partida vieja');
+  G.setTraductor((key) => (key === 'persona.duenio' ? 'You (owner)' : key === 'equipo.camara_ramiro' ? "Don Ramiro's camera" : key === 'up.habilidad_duenio' ? 'You reached skill {n}' : null));
+  check(G.staffName(nv.staff[0]) === 'You (owner)' && G.equipName(nv.equip[0]) === "Don Ramiro's camera", 'los nombres cambian con el idioma');
+  check(G.tx('log.subio', { texto: { k: 'up.habilidad_duenio', p: { n: 3 } } }) === G.TEXTOS['log.subio'].replace('{texto}', 'You reached skill 3'), 'un parámetro con clave se traduce al armar el texto');
+  G.setTraductor(null);
+  check(!/\{|oferta\(s\)/.test(G.tx('log.vencieron', { n: 1 })), 'vencieron: sin "oferta(s)"');
+  check(G.paisNombre({ pais: 'España' }) === G.TEXTOS['pais.espana'], 'país con clave');
+  // Partida de demostración: capítulo 4 con duelo y oferta internacional, armada con las reglas
+  const d = G.demoGame('cap4');
+  check(d && d.chapter === 3 && !d.gameOver && d.contracts.some((x) => x.rival && typeof x.rivalQuality === 'number') && d.contracts.some((x) => x.internacional),
+    'demo cap4: capítulo 4 con un duelo y una oferta internacional');
+  if (d) {
+    validState(d, 'demo');
+    check(d.staff.length >= 7 && d.equip.length >= 10 && d.money > 1500 && d.contracts.length <= G.BALANCE.maxContracts, `demo cap4: personal, equipos y dinero razonables (${d.staff.length}, ${d.equip.length}, ${d.money})`);
+    const dd = G.deserialize(G.serialize(d));
+    check(dd && dd.chapter === 3 && dd.money === d.money, 'demo cap4: se guarda y se carga');
+    check(JSON.stringify(G.demoGame('cap4')) === JSON.stringify(d), 'demo cap4: siempre sale igual');
+  }
+})();
 
 /* ---------- Sistemas realistas ---------- */
 // Arma una productora completa para probar un evento con o sin parte del personal
@@ -558,6 +626,7 @@ const median = (a) => { const b = a.slice().sort((x, y) => x - y); return b.leng
 const medians = chapterDays.map(median);
 console.log(`Partidas simuladas: ${GAMES} (máx ${MAX_DAYS} días cada una)`);
 console.log(`Terminaron la historia: ${storyWins} · Quebraron: ${bankrupt}`);
+if (bankruptAt.length) console.log('  Quiebras por capítulo (1..6, 7=modo libre):', G.CHAPTERS.map((c, i) => i).concat([NCH]).map((i) => `${i + 1}:${bankruptAt.filter((b) => b.ch === i).length}`).join(' '), '· día mediano', median(bankruptAt.map((b) => b.day)));
 console.log('Capítulo alcanzado (1..6, 7=ganó):', chapterReached.map((n, i) => `${i + 1}:${n}`).join(' '));
 if (daysToWin.length) console.log(`Días para ganar: mínimo ${daysToWin[0]}, mediana ${daysToWin[Math.floor(daysToWin.length / 2)]}, máximo ${daysToWin[daysToWin.length - 1]}`);
 console.log('Día mediano en que se completa cada capítulo:');
@@ -571,17 +640,47 @@ starsByChapter.forEach((a, i) => console.log(`  ${(i < NCH ? G.CHAPTERS[i].title
 const lateStars = avg([].concat(...starsByChapter.slice(2, NCH)));
 console.log(`  Capítulos 3 a 6 juntos: ${lateStars.toFixed(2)}⭐`);
 
+// Economía (QA4): trabajar mal no debe rendir más que armar una productora de verdad
+// "Solo, siempre 1 estrella": el dueño solo con la cámara inicial toma la oferta que más paga y elige siempre lo peor
+function soloTurn(s) {
+  const own = s.staff.find((p) => p.owner), cam = s.equip[0];
+  const c = s.contracts.filter((x) => !x.internacional).sort((x, y) => y.pay - x.pay)[0];
+  if (!c || !G.startEvent(s, c.id, [own.id], [cam.id]).ok) { G.nextDay(s); return; }
+  let inc, guard = 0;
+  while ((inc = G.currentIncident(s)) && guard++ < 10) { const en = inc.choices.filter((x) => x.ok); G.resolveIncident(s, en[en.length - 1].i); }
+  G.finishEvent(s);
+}
+const ECO = 60;
+const cashAt = (turn, seed, days) => {
+  const s = G.newGame(seed); const out = {};
+  while (s.day <= days && !s.gameOver) { turn(s); if ([30, 45, 60, 90, 120].includes(s.day)) out[s.day] = out[s.day] === undefined ? s.money : out[s.day]; }
+  out.fin = s.money; out.over = s.gameOver; out.stars = s.stats.events ? s.stats.fiveStars : 0;
+  return out;
+};
+const soloRuns = [], botRuns = [];
+for (let g = 0; g < ECO; g++) { soloRuns.push(cashAt(soloTurn, 9000 + g, 60)); botRuns.push(cashAt(botTurn, 9000 + g, 120)); }
+const medOf = (runs, k) => median(runs.map((r) => (typeof r[k] === 'number' ? r[k] : r.over ? -1000 : r.fin)));
+const soloEnd = medOf(soloRuns, 'fin'), bot60 = medOf(botRuns, 60), bot30 = medOf(botRuns, 30), bot90 = medOf(botRuns, 90), bot120 = medOf(botRuns, 120);
+console.log(`Economía (${ECO} partidas): solo con 1 estrella, caja al día 60 ${soloEnd} · productora del bot: día 30 ${bot30}, día 60 ${bot60}, día 90 ${bot90}, día 120 ${bot120}`);
+check(soloEnd < bot60, `trabajar solo y mal (caja ${soloEnd}) no debería ganarle a una productora de verdad a los 60 días (${bot60})`);
+check(soloEnd < G.BALANCE.start.money * 2.5, `solo con 1 estrella no debería multiplicar la caja (${soloEnd})`);
+check(bot60 > G.BALANCE.start.money && bot90 > bot30 && bot120 > bot60, `una productora que trabaja bien debería crecer en caja (${bot30} → ${bot60} → ${bot90} → ${bot120})`);
+
 // Metas de dificultad (el juego gratis debe exigir, pero se puede terminar sin pagar)
 const bankRate = bankrupt / GAMES, winRate = storyWins / GAMES;
-const MIN_GAP = [0, 10, 10, 15, 15, 15];
+// Ni muy rápido ni un muro (QA4: el capítulo 3 era un muro para jugadores reales): días entre capítulos
+const MIN_GAP = [0, 10, 12, 15, 15, 15];
+const MAX_GAP = [10, 25, 22, 28, 30, 32];
 medians.forEach((m, i) => {
   check(Number.isFinite(m), `capítulo ${i + 1}: sin mediana`);
   if (i > 0) check(m - medians[i - 1] >= MIN_GAP[i], `capítulo ${i + 1}: llega muy rápido tras el anterior (+${m - medians[i - 1]} días, mínimo ${MIN_GAP[i]})`);
+  if (i > 0) check(m - medians[i - 1] <= MAX_GAP[i], `capítulo ${i + 1}: es un muro (+${m - medians[i - 1]} días, máximo ${MAX_GAP[i]})`);
 });
 check(medians[0] <= 10, `capítulo 1 debería ser rápido (mediana ${medians[0]})`);
-check(medians[NCH - 1] >= 150 && medians[NCH - 1] <= 220, `la historia debería durar ~150-220 días (mediana ${medians[NCH - 1]})`);
-check(bankRate >= 0.06 && bankRate <= 0.15, `quiebras fuera de rango (6-15%): ${(bankRate * 100).toFixed(1)}%`);
-check(winRate >= 0.60 && winRate <= 0.85, `historia completada fuera de rango (60-85%): ${(winRate * 100).toFixed(1)}%`);
+// El bot juega mejor que una persona (QA4: una persona cuidadosa tarda más): para el bot, ~90-150 días
+check(medians[NCH - 1] >= 90 && medians[NCH - 1] <= 150, `la historia debería durar ~90-150 días para el bot (mediana ${medians[NCH - 1]})`);
+check(bankRate >= 0.04 && bankRate <= 0.11, `quiebras fuera de rango (~5-10%): ${(bankRate * 100).toFixed(1)}%`);
+check(winRate >= 0.85, `historia completada fuera de rango (85% o más): ${(winRate * 100).toFixed(1)}%`);
 check(duelLoss >= 0.25, `el bot pierde muy pocos duelos (${(duelLoss * 100).toFixed(1)}%, mínimo 25%)`);
 for (let i = 2; i < NCH; i++) {
   const a = avg(starsByChapter[i]);
