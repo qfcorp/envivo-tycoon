@@ -5,7 +5,7 @@
 
 ## Nombre de la app
 
-EN VIVO Tycoon
+EN VIVO Tycoon: Production TV
 
 ## Descripción breve
 

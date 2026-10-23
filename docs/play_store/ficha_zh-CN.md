@@ -5,7 +5,7 @@
 
 ## Nombre de la app
 
-EN VIVO Tycoon
+EN VIVO Tycoon: 电视制作公司
 
 ## Descripción breve
 

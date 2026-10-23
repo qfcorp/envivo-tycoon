@@ -34,7 +34,10 @@ Cambios hechos en las fichas (23 oct 2026), **iguales en los 10 idiomas**:
 
 `node tests/test_traducciones.js` pasa (límites, sin marcas reales, compras opcionales mencionadas, tabla del README).
 
-### Nombre de la app (decisión pendiente de Dimitry)
+### Nombre de la app (DECIDIDO por Dimitry el 23-oct-2026: **EN VIVO Tycoon: Productora TV**)
+- Ya está puesto en las 10 fichas, traducido ("TV Producer", "Produtora TV", "TV-Produktion"…). El ícono del celular sigue diciendo "EN VIVO".
+
+Notas de la decisión:
 - Hoy: **EN VIVO Tycoon** (14/30). Corto y de marca, pero "EN VIVO" es una palabra muy común y la búsqueda
   "en vivo" está llena de apps de TV y fútbol.
 - Opción con más ASO (permitida por Google: descriptiva, sin "mejor", sin emojis): **"EN VIVO Tycoon: Productora TV"**

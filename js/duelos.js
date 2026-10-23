@@ -262,7 +262,7 @@
     const rivales = D.rivales.map((v) => `<div class="card dl-rival"><div class="dl-av">${avatar(ctx, v.nombre, 'director', 44)}</div>
         <div class="grow"><h3>${v.siglas ? `<span class="muted">[${esc(v.siglas)}]</span> ` : ''}${esc(v.nombre)}${v.vip ? ' ⭐' : ''}</h3>
           <div class="dl-mini">${esc(v.liga)} · <span class="num">${num(v.rating)}</span> · ${esc(T('duelo.poder', { n: v.poder }))}${v.retos_hoy ? ' · ' + esc(T('duelo.retado_max', { n: v.retos_hoy })) : ''}</div></div>
-        <button class="btn sm main" data-dl="retar" data-id="${v.id}" ${!eq || !c.restantes || D.abierto || v.retos_hoy >= D.reglas.max_par_dia ? 'disabled' : ''}>${A.icon('rival', 'sm')} ${esc(T('duelo.retar'))}</button></div>`).join('');
+        ${window.Visitas ? window.Visitas.boton(v.id) : ''}<button class="btn sm main" data-dl="retar" data-id="${v.id}" ${!eq || !c.restantes || D.abierto || v.retos_hoy >= D.reglas.max_par_dia ? 'disabled' : ''}>${A.icon('rival', 'sm')} ${esc(T('duelo.retar'))}</button></div>`).join('');
     const abierto = D.abierto;
     return `
       <div class="card dl-hero"><div class="row between"><div><div class="small muted">${esc(D.temporada.nombre)}</div>
@@ -291,7 +291,7 @@
       <div class="card">${D.ranking.map((x) => `<div class="dl-rank ${x.yo ? 'yo' : ''}"><span class="n">${x.puesto}</span><span class="nm">${esc(x.nombre)}</span><span class="num">${num(x.rating)}</span></div>`).join('') || `<p class="small muted">${esc(T('duelo.sin_historial'))}</p>`}</div>
       <div class="sectitle">${esc(T('duelo.historial'))}</div>
       <div class="card">${D.historial.map((d) => { const [k, t] = resultadoDe(d); return `<div class="dl-hist"><span class="dl-res ${k}"></span>
-          <div class="grow"><b>${esc(t)}</b> <span class="muted">${esc(T('duelo.vs'))} ${esc(d.rival.nombre)}</span>
+          <div class="grow"><b>${esc(t)}</b> <span class="muted">${esc(T('duelo.vs'))} ${esc(d.rival.nombre)}</span>${window.Visitas ? ' ' + window.Visitas.boton(d.rival.id) : ''}
           <div class="dl-mini">${esc(d.contrato.client)} · ${d.calidad_mia === null ? '—' : d.calidad_mia} : ${d.calidad_rival === null ? '—' : d.calidad_rival}</div></div>
           <span class="num ${d.cambio < 0 ? 'neg' : ''}">${d.cambio > 0 ? '+' : ''}${d.cambio}</span></div>`; }).join('') || `<p class="small muted">${esc(T('duelo.sin_historial'))}</p>`}</div>`;
   }

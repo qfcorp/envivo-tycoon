@@ -911,7 +911,7 @@
 
   function tarjetaTop(d) {
     const l = (d.top_aportantes || []).slice(0, 10);
-    const filas = l.map((r, i) => `<div class="${r.yo ? 'yo' : ''}"><span class="p p${i + 1}">${i + 1}</span>${r.siglas ? `<span class="s">${esc(r.siglas)}</span>` : ''}<span class="n">${esc(r.alias)}${r.yo ? ' (' + esc(T('tu')) + ')' : ''}</span><span class="v">${esc(T('puntos', { n: num(r.puntos) }))}</span></div>`).join('');
+    const filas = l.map((r, i) => `<div class="${r.yo ? 'yo' : ''}"><span class="p p${i + 1}">${i + 1}</span>${r.siglas ? `<span class="s">${esc(r.siglas)}</span>` : ''}<span class="n">${esc(r.alias)}${r.yo ? ' (' + esc(T('tu')) + ')' : ''}</span><span class="v">${esc(T('puntos', { n: num(r.puntos) }))}</span>${!r.yo && r.jugador_id && window.Visitas ? window.Visitas.boton(r.jugador_id) : ''}</div>`).join('');
     return `<div class="card" data-copa="top"><h3>${esc(T('top'))}</h3><div class="cp-rank">${filas || `<p class="small muted" style="margin:0">${esc(T('top_vacio'))}</p>`}</div></div>`;
   }
 

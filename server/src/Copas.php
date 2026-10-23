@@ -1075,7 +1075,7 @@ final class Copas
                      'intentos_hoy' => (int) Db::valor('SELECT COUNT(*) FROM copa_intentos WHERE jugador_id = ? AND creado >= ?', [$j, (new \DateTimeImmutable('@' . self::ahora()))->setTimezone(self::zona())->setTime(0, 0)->getTimestamp()]),
                      'intentos_max' => self::intentosMax($j, $cid), 'trofeos' => $trofeos,
                      'premios' => array_map(fn($p) => ['clave' => $p['clave'], 'entregado' => Db::iso((int) $p['entregado'])], Db::todas('SELECT * FROM copa_premios WHERE copa_id = ? AND jugador_id = ? ORDER BY clave', [$cid, $j]))],
-            'top_aportantes' => array_map(fn($a) => ['alias' => Social::nombrePublico($a['alias'], $a['nombre']), 'siglas' => $a['siglas'], 'puntos' => (int) $a['puntos']], array_slice($ap, 0, 10)),
+            'top_aportantes' => array_map(fn($a) => ['jugador_id' => (int) $a['jugador_id'], 'alias' => Social::nombrePublico($a['alias'], $a['nombre']), 'siglas' => $a['siglas'], 'puntos' => (int) $a['puntos']], array_slice($ap, 0, 10)),
             'historial' => $hist,
         ];
     }

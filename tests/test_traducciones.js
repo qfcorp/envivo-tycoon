@@ -173,7 +173,7 @@ for (const code of IDIOMAS) {
   for (const s of Object.values(SECCIONES)) ok(typeof f[s] === 'string' && f[s] !== '', `${p}: falta la sección "## ${s}"`);
   const n = f[SECCIONES.nombre] || '', b = f[SECCIONES.breve] || '', c = f[SECCIONES.completa] || '', v = f[SECCIONES.novedades] || '';
   medidas[code] = { nombre: largo(n), breve: largo(b), completa: largo(c), novedades: largo(v) };
-  ok(n === 'EN VIVO Tycoon', `${p}: el nombre debe ser "EN VIVO Tycoon" (es "${n}")`);
+  ok(n.startsWith('EN VIVO Tycoon: ') && n.length > 16, `${p}: el nombre debe ser "EN VIVO Tycoon: <Productora TV en el idioma>" (es "${n}")`);
   ok(!b.includes('\n'), `${p}: la descripción breve debe ser una sola línea`);
   for (const [k, lim] of Object.entries(LIMITES)) ok(medidas[code][k] <= lim, `${p}: ${k} tiene ${medidas[code][k]} caracteres (máximo ${lim})`);
   const minimo = code === 'zh-CN' ? 700 : 1500;   // el chino usa ~1/3 de caracteres para el mismo texto

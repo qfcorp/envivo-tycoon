@@ -37,7 +37,7 @@ Archivos de este módulo (solo estos se tocaron):
 1. **Capturas (`assets/promo/src/capturar.js` y `componer.js`)**: `capturar.js` ya no funciona con la pantalla v6
    (TimeoutError: espera un botón que queda desactivado). Hay que actualizar los selectores, agregar las capturas
    `plan de cámaras` y `En línea`, y dejar las 8 de `docs/play_store/ASO_Y_CAPTURAS.md` §3 en ese orden.
-   **Bloqueante para publicar:** la captura 01 actual dice "Partido de **LigaPro**" (marca real).
+   **Bloqueante para publicar:** la captura 01 actual dice "Partido de **Liga-Pro**" (nombre de una liga real, sin guion).
 2. **Analítica (Centro de Control)**: para `docs/LANZAMIENTO_LIMITADO.md` §8 hacen falta, por cohorte (semana de
    instalación) y país: D1/D7/D30, embudo del primer evento y de capítulos, cuentas creadas, conversión a pago (día 1/7/30),
    ARPDAU/ARPPU, ingresos por producto, canjes por código de regalo con D7 y pagadores de esos jugadores, invitaciones

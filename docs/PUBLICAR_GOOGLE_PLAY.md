@@ -5,7 +5,7 @@ Cuando un paso necesita más detalle, te manda a la guía larga `docs/ANDROID_GO
 `docs/play_store/README.md` (formularios). Revisado el **23 oct 2026** con las reglas de Google vigentes (fuentes al final).
 
 - 📱 = en tu celular Android · 🖥️ = en tu PC con Windows (qfone) · 🌐 = en el navegador · 🐙 = en GitHub · ☁️ = en el VPS
-- Datos fijos de la app: nombre **EN VIVO Tycoon** · paquete **`com.tukanec.envivo`** (no se cambia nunca) ·
+- Datos fijos de la app: nombre en la tienda **EN VIVO Tycoon: Productora TV** (ícono del celular: "EN VIVO") · paquete **`com.tukanec.envivo`** (no se cambia nunca) ·
   web **https://juego.tukanec.com** · cuenta de Play Console **personal** (dimitryfierro@gmail.com).
 
 > **Tiempo total aproximado:** 1 tarde para los pasos 1 a 11; luego **14 días** de prueba cerrada (pasos 12 a 14);
@@ -85,7 +85,7 @@ El repositorio ya trae el robot `.github/workflows/android.yml`. Una sola vez, g
 > Si un día cambias de camino (PC ↔ GitHub), usa siempre un `version_code` mayor que el último subido.
 
 ### Paso 4 · 🌐 Crear la app en Play Console
-Play Console → **Crear app** → Nombre `EN VIVO Tycoon` · Idioma predeterminado **Español (Latinoamérica) – es-419** ·
+Play Console → **Crear app** → Nombre `EN VIVO Tycoon: Productora TV` · Idioma predeterminado **Español (Latinoamérica) – es-419** ·
 **Juego** · **Gratis** → marca las declaraciones → **Crear app**.
 ⚠️ "Gratis" no se puede cambiar a "de pago" después (y está bien: se gana con compras dentro del juego).
 

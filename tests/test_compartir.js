@@ -19,6 +19,8 @@ function bien(c, msg) { if (c) { bien_++; console.log('✅', msg); } else { fall
 /* ---------- Integración (las mismas líneas que server/INTEGRAR_COMPARTIR.md) ---------- */
 function reemplazar(txt, ancla, nuevo, que) {
   if (txt.includes(nuevo)) return txt;   // ya integrada en el archivo real: se prueba tal cual
+  const clave = nuevo.split('\n').find((l) => /Compartir/.test(l));
+  if (clave && txt.includes(clave.trim())) return txt;   // integrada junto a otras líneas (p. ej. el botón de Discord)
   if (!txt.includes(ancla)) throw new Error('No se encontró la línea de integración en ' + que + ': ' + ancla.slice(0, 80));
   return txt.replace(ancla, () => nuevo);
 }

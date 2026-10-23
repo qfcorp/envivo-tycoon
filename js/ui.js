@@ -662,6 +662,7 @@
     servidores: ['globe', 'inicio.pl.servidores'], decoracion: ['planta', 'inicio.pl.decoracion'], copa: ['crown', 'inicio.pl.copa'], vip: ['vip', 'inicio.pl.vip'],
     pase: ['star', 'inicio.pl.pase'], estrellas: ['sparkle', 'inicio.pl.estrellas'], historia: ['flag', 'historia.tag'],
     flota: ['unidad_movil', 'inicio.pl.flota'],
+    visitas: ['home', 'inicio.pl.visitas'],
     ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
   };
   function plFirma(html) {
@@ -1430,6 +1431,7 @@
         ${vip}
         <p class="small muted">${I('cloud', 'sm')} ${nubeEstado === 'error' ? T('tienda.nube_error') : T('tienda.nube_ok')}</p>
         ${discordBtn('sm')}${unirseDiscordBtn('sm')}
+        ${window.Visitas ? window.Visitas.ajusteCuenta() : ''}
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
     }
     const prueba = !app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '';
