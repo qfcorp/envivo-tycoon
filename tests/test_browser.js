@@ -145,10 +145,14 @@ const { chromium } = require('playwright');
     await p2.click('nav button[data-tab="personal"]');
     await p2.locator('[data-act="hire"]:not([disabled])').first().click();
     const cap = p2.locator('#overlay.on [data-act="close-story"]');
+    await cap.first().waitFor({ timeout: 10000 }).catch(() => {});
     if (!(await cap.count())) fail('al contratar se completó el capítulo pero no apareció "Capítulo completado"');
     await p2.reload({ waitUntil: 'domcontentloaded' });
-    await p2.waitForTimeout(300);
-    if (!(await p2.locator('#overlay.on [data-act="close-story"]').count())) fail('"Capítulo completado" no volvió a aparecer al recargar');
+    await p2.waitForSelector('#overlay.on [data-act="close-story"]', { timeout: 10000 }).catch(() => {});
+    if (!(await p2.locator('#overlay.on [data-act="close-story"]').count())) {
+      const diag = await p2.evaluate(() => ({ ov: (document.querySelector('#overlay.on') || {}).innerText || '(sin ventana)', pend: (window.__game && window.__game.state && window.__game.state.capCompletados) || null, ls: Object.keys(localStorage) }));
+      fail('"Capítulo completado" no volvió a aparecer al recargar: ' + JSON.stringify(diag).slice(0, 600));
+    }
     await p2.locator('#overlay.on [data-act="close-story"]').click();
     const quedan = await p2.evaluate(() => (window.__game.state.capCompletados || []).length);
     if (quedan) fail('el capítulo visto sigue pendiente');

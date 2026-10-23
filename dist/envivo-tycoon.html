@@ -31904,12 +31904,13 @@
   const esc = (t) => String(t === undefined || t === null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const num = (n) => Number(n || 0).toLocaleString((root.I18N && root.I18N.idioma) || 'es-EC');
 
-  /* Lo que el servidor deja llevar (server/src/Festival.php: EQUIPOS_JUEGO y EQUIPOS_SERVIDOR). */
-  const MAX_TIPO = { cam_basic: 4, cam_pro: 4, cam_cine: 4, switch_basic: 1, switch_pro: 1, audio_basic: 1, audio_pro: 1, mics: 2, encoder: 1, router4g: 1, ups: 1, raincover: 1,
-    dron4k: 9, grua: 9, vip_cam8k: 9, unidad_movil: 9, vip_switcher: 9, generador: 9, vip_satelital: 9 };
-  const CAT = { cam_basic: 'cam', cam_pro: 'cam', cam_cine: 'cam', dron4k: 'cam', grua: 'cam', vip_cam8k: 'cam', switch_basic: 'switcher', switch_pro: 'switcher',
-    unidad_movil: 'switcher', vip_switcher: 'switcher', audio_basic: 'audio', audio_pro: 'audio', mics: 'mics', encoder: 'encoder', router4g: 'internet',
-    vip_satelital: 'internet', ups: 'power', generador: 'power', raincover: 'rain' };
+  /* Lo que el servidor deja llevar (server/src/Festival.php: equipoJuego() y EQUIPOS_SERVIDOR).
+     Equipos del juego: todo el catálogo (js/datos.js); máximo por tipo según su categoría (lo que no está: 1) y fama mínima. */
+  const MAX_CAT = { cam: 4, lens: 4, support: 4, wireless: 4, mics: 4, cable: 2, power: 2, rain: 2 };
+  const SRV_CAT = { dron4k: 'cam', grua: 'cam', vip_cam8k: 'cam', unidad_movil: 'switcher', vip_switcher: 'switcher', generador: 'power', vip_satelital: 'internet' };
+  const itemDe = (t) => { const G = root.Game; return (G && G.CATALOG && G.CATALOG[t]) || null; };
+  const CAT = new Proxy({}, { get: (o, t) => SRV_CAT[t] || (itemDe(t) || {}).cat });
+  const MAX_TIPO = new Proxy({}, { get: (o, t) => (SRV_CAT[t] ? 9 : itemDe(t) ? (MAX_CAT[itemDe(t).cat] || 1) : 0) });
   const SERVIDOR = ['dron4k', 'grua', 'vip_cam8k', 'unidad_movil', 'vip_switcher', 'generador', 'vip_satelital'];
   // Posiciones de los 6 escenarios en el mapa (viewBox 360x240)
   const POS = { 1: [180, 50], 2: [64, 92], 3: [296, 92], 4: [74, 176], 5: [286, 176], 6: [180, 128] };
@@ -32045,13 +32046,14 @@
     const G = root.Game || {};
     const topes = (d.yo && d.yo.topes) || { habilidad_max: 5, personas_max: 8, equipos_max: 12 };
     const vip = !!(st.ctx.vip || (d.yo && d.yo.vip));
+    const fama = Number(topes.fama !== undefined ? topes.fama : (s.rep || 0)) || 0;
     const staff = (s.staff || []).filter((p) => p && p.role && (p.premium || (p.skill || 1) <= topes.habilidad_max))
       .sort((a, b) => (b.skill || 1) - (a.skill || 1)).slice(0, topes.personas_max)
       .map((p) => { const o = { role: p.role, skill: Math.max(1, Math.min(5, p.skill | 0 || 1)) }; if (p.owner) o.owner = true; if (p.name) o.name = String(p.name).slice(0, 40); return o; });
     const q = (t) => ((G.CATALOG && G.CATALOG[t] && G.CATALOG[t].q) || 1);
     const cuenta = {};
     const equip = [];
-    (s.equip || []).filter((e) => e && MAX_TIPO[e.type] && (e.condition === undefined || e.condition >= 40) && (!SERVIDOR.includes(e.type) || e.srvId !== undefined) && (vip || !/^vip_/.test(e.type)))
+    (s.equip || []).filter((e) => e && MAX_TIPO[e.type] && (SRV_CAT[e.type] || ((itemDe(e.type) || {}).minRep || 0) <= fama) && (e.condition === undefined || e.condition >= 40) && (!SERVIDOR.includes(e.type) || e.srvId !== undefined) && (vip || !/^vip_/.test(e.type)))
       .sort((a, b) => (CAT[a.type] === 'cam' ? 0 : 1) - (CAT[b.type] === 'cam' ? 0 : 1) || q(b.type) - q(a.type))
       .forEach((e) => {
         if (equip.length >= topes.equipos_max) return;
