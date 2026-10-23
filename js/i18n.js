@@ -17,7 +17,7 @@
    - Carga perezosa: la página solo trae js/lang/es.js. I18N.setIdioma('de') carga con <script>
      js/lang/de.js y js/lang/juego/de.js y recién cuando terminan (bien o mal) cambia el idioma y
      avisa a onChange; si el diccionario de la interfaz no llegó, se queda en español. Al arrancar,
-     si el idioma guardado/detectado no es español, se muestra español y se avisa cuando llega.
+     si el idioma guardado (o pedido con ?lang=) no es español, se muestra español y se avisa cuando llega.
      Si los diccionarios ya están (build de un solo archivo, pruebas), no se descarga nada.
      I18N.listo → Promise que se resuelve (con el código del idioma) cuando termina la última carga.
    ========================================================= */
@@ -65,12 +65,8 @@
       const g = root.localStorage && root.localStorage.getItem(KEY);
       if (g && info(g)) return g;
     } catch (e) { /* modo privado */ }
-    // 3) idioma del navegador
-    try {
-      const nav = root.navigator;
-      const lista = nav ? (nav.languages && nav.languages.length ? nav.languages : [nav.language]) : [];
-      for (const l of lista) { const c = mejor(l); if (c) return c; }
-    } catch (e) { /* nada */ }
+    // 3) siempre español (decisión de Dimitry, 2026-10-23: NO se toma el idioma del celular/navegador;
+    //    el jugador cambia de idioma solo si quiere, con el botón 🌐 de arriba)
     return BASE;
   }
 
