@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Comande sua produtora de eventos ao vivo: da garagem à final no estádio.
+Comande sua produtora de eventos: câmeras e transmissão ao vivo num tycoon
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Seis capítulos com personagens próprios. A MegaVisión, produtora rival, vai d
 ★ JOGUE COM OUTRAS PRODUTORAS
 • Mercado entre jogadores para comprar e vender equipamentos com créditos (abre depois da sua primeira compra; créditos não podem ser trocados por dinheiro real).
 • Alianças de até 20 produtoras e chat moderado, com botões para denunciar e bloquear.
-• Em breve: eventos online, ligas semanais e desafios entre produtoras.
+• Eventos online: Liga Semanal, Desafio do Dia, Mega Festival e Duelo de Produtoras.
 
 ★ GRÁTIS PARA JOGAR
-O jogo é gratuito para baixar e a história completa pode ser jogada sem pagar. Tem compras opcionais no app: pacotes de créditos, uma oferta de boas-vindas e um pacote inicial (uma vez cada), reforços temporários, um Cartão mensal e um Passe VIP de 30 dias. Nada é renovado automaticamente. Sem anúncios.
+O jogo é gratuito para baixar e a história completa pode ser jogada sem pagar. Tem compras opcionais no app: pacotes de créditos, ofertas únicas (boas-vindas, pacote inicial e ofertas por conquistas), reforços temporários, um Cartão mensal e passes por tempo limitado (como o Passe VIP de 30 dias). Tudo mostra o conteúdo antes da compra e nada é renovado automaticamente. Sem anúncios.
 
 ★ FUNCIONA OFFLINE
 O modo história funciona sem conexão e seu jogo é salvo sozinho. Crie uma conta se quiser salvar na nuvem, fazer compras ou jogar com outras produtoras.

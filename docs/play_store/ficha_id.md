@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Kelola rumah produksi siaran langsung: dari garasi ke final di stadion.
+Kelola rumah produksi acara: kamera dan siaran langsung dalam game tycoon
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Enam bab dengan tokoh-tokohnya sendiri. MegaVisión, rumah produksi saingan, aka
 ★ MAIN BERSAMA RUMAH PRODUKSI LAIN
 • Pasar antarpemain untuk membeli dan menjual peralatan dengan kredit (terbuka setelah pembelian pertamamu; kredit tidak bisa ditukar dengan uang sungguhan).
 • Aliansi hingga 20 rumah produksi dan chat yang dimoderasi, dengan tombol laporkan dan blokir.
-• Segera hadir: acara online, liga mingguan, dan tantangan antar rumah produksi.
+• Acara online: Liga Mingguan, Tantangan Harian, Mega Festival, dan Duel Rumah Produksi.
 
 ★ GRATIS DIMAINKAN
-Game ini gratis diunduh dan seluruh ceritanya bisa dimainkan tanpa membayar. Tersedia pembelian opsional dalam aplikasi: paket kredit, penawaran sambutan dan paket pemula (masing-masing sekali), bala bantuan sementara, Kartu Bulanan, dan VIP Pass 30 hari. Tidak ada yang diperpanjang otomatis. Tanpa iklan.
+Game ini gratis diunduh dan seluruh ceritanya bisa dimainkan tanpa membayar. Tersedia pembelian opsional dalam aplikasi: paket kredit, penawaran sekali beli (sambutan, paket pemula, dan penawaran pencapaian), bala bantuan sementara, Kartu Bulanan, dan pass berjangka waktu (seperti VIP Pass 30 hari). Isi setiap item terlihat sebelum dibeli dan tidak ada yang diperpanjang otomatis. Tanpa iklan.
 
 ★ BISA DIMAINKAN OFFLINE
 Mode cerita berjalan tanpa koneksi dan permainanmu tersimpan otomatis. Buat akun jika ingin menyimpan di cloud, berbelanja, atau bermain dengan rumah produksi lain.

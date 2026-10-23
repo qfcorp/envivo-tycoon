@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Canlı yayın prodüksiyon şirketini yönet: garajdan stadyumdaki finale!
+Etkinlik prodüksiyon şirketini yönet: kameralar ve canlı yayın, tycoon oyunu
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Kendi karakterleri olan altı bölüm. Rakip şirket MegaVisión en iyi sözleş
 ★ DİĞER ŞİRKETLERLE OYNA
 • Kredilerle ekipman alıp satabileceğin oyuncular arası pazar (ilk satın alımından sonra açılır; krediler gerçek paraya çevrilemez).
 • 20 şirkete kadar ittifaklar ve şikâyet etme ile engelleme düğmeleri olan moderasyonlu sohbet.
-• Yakında: çevrim içi etkinlikler, haftalık ligler ve şirketler arası meydan okumalar.
+• Çevrim içi etkinlikler: Haftalık Lig, Günün Görevi, Mega Festival ve Yapımcı Düellosu.
 
 ★ ÜCRETSİZ OYNA
-Oyun ücretsiz indirilir ve hikâyenin tamamı ödeme yapmadan oynanabilir. İsteğe bağlı uygulama içi satın alımlar içerir: kredi paketleri, hoş geldin teklifi ve başlangıç paketi (her biri yalnızca bir kez), geçici takviyeler, Aylık Kart ve 30 günlük VIP Geçiş. Hiçbiri kendiliğinden yenilenmez. Reklam yok.
+Oyun ücretsiz indirilir ve hikâyenin tamamı ödeme yapmadan oynanabilir. İsteğe bağlı uygulama içi satın alımlar içerir: kredi paketleri, tek seferlik teklifler (hoş geldin, başlangıç paketi ve başarı teklifleri), geçici takviyeler, Aylık Kart ve süreli geçişler (örneğin 30 günlük VIP Geçiş). Her ürün içeriğini satın almadan önce gösterir ve hiçbiri kendiliğinden yenilenmez. Reklam yok.
 
 ★ İNTERNETSİZ ÇALIŞIR
 Hikâye modu bağlantı olmadan oynanır ve oyunun kendiliğinden kaydedilir. Bulutta kaydetmek, satın alım yapmak veya diğer şirketlerle oynamak istersen bir hesap oluştur.

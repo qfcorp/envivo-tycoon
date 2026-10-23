@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Leite deine Live-Produktionsfirma: von der Garage bis zum Finale im Stadion.
+Leite deine Eventproduktion: Kameras und Livestreams in einem Tycoon-Spiel
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Sechs Kapitel mit eigenen Figuren. MegaVisión, die Konkurrenzfirma, kämpft mit
 ★ SPIEL MIT ANDEREN FIRMEN
 • Spielermarkt zum Kaufen und Verkaufen von Technik mit Credits (öffnet nach deinem ersten Kauf; Credits können nicht in echtes Geld getauscht werden).
 • Allianzen mit bis zu 20 Firmen und moderierter Chat mit Melde- und Blockier-Button.
-• Bald: Online-Events, Wochenligen und Herausforderungen zwischen Firmen.
+• Online-Events: Wochenliga, Tageschallenge, Mega-Festival und Produktionsduell.
 
 ★ KOSTENLOS SPIELBAR
-Das Spiel ist kostenlos und die ganze Geschichte lässt sich ohne Bezahlen spielen. Es gibt optionale In-App-Käufe: Credit-Pakete, ein Willkommensangebot und ein Startpaket (je nur einmal), zeitlich begrenzte Verstärkungen, eine Monatskarte und einen 30-Tage-VIP-Pass. Nichts verlängert sich automatisch. Keine Werbung.
+Das Spiel ist kostenlos und die ganze Geschichte lässt sich ohne Bezahlen spielen. Es gibt optionale In-App-Käufe: Credit-Pakete, einmalige Angebote (Willkommensangebot, Startpaket und Erfolgsangebote), zeitlich begrenzte Verstärkungen, eine Monatskarte und befristete Pässe (wie den 30-Tage-VIP-Pass). Jeder Artikel zeigt seinen Inhalt vor dem Kauf und nichts verlängert sich automatisch. Keine Werbung.
 
 ★ FUNKTIONIERT OFFLINE
 Der Story-Modus läuft ohne Verbindung und dein Spielstand wird automatisch gespeichert. Erstelle ein Konto, wenn du in der Cloud speichern, einkaufen oder mit anderen Firmen spielen willst.
