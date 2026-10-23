@@ -39,3 +39,15 @@ Todo con sesión; POST con cabecera `X-Envivo: 1`.
 ## Coaliciones (eventos multialianza)
 - Tabla `coaliciones` (id, evento_id, nombre) y `coalicion_miembros` (coalicion_id, asociacion_id), máx. 4 asociaciones.
   Canal de chat `coalicion:<id>` activo solo durante el evento.
+
+## Copas internacionales (servidor contra servidor)
+Diseño en el documento "Eventos en línea entre productoras" (sección Copas internacionales).
+- Tablas `copas` (id, torneo_key, nombre, temporada, fase 'inscripcion'|'preparacion'|'emparejamiento'|'batalla'|'cerrada', fechas),
+  `copa_selecciones` (copa_id, servidor_id, capitan_jugador_id, puntos), `copa_aportes` (copa_id, jugador_id, asociacion_id, puntos, fuente, creado),
+  `copa_llaves` (copa_id, ronda, servidor_a, servidor_b, ganador).
+- Torneos con nombres inventados (nunca nombres, siglas ni logos reales): Copa Planeta de Balompié (FGB), Copa de los Libertadores
+  del Sur (CSC), Liga Estelar de Clubes (UEC), Mundial de Aro y Tablero (FMA), Juegos de los Cinco Continentes, Gran Premio Fórmula Veloz,
+  La Pelea del Siglo, El Gran Tazón.
+- Los puntos de preparación vienen de intentos de evento validados por el servidor (semilla + repetición de la jugada; ver
+  "Reglas para que nadie haga trampa"). El servidor ganador recibe un contrato internacional especial para todos sus jugadores.
+- Canal de chat `seleccion:<copa_id>:<servidor_id>` durante la copa.
