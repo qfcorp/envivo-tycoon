@@ -99,7 +99,7 @@ sudo bash /var/www/envivo/server/deploy/actualizar.sh
 
 1. **Certificación de Pago Plux:** pedirle a Plux que apruebe el sitio **juego.tukanec.com** con tus credenciales.
    Mientras no lo aprueben, se queda en `PLUX_AMBIENTE=sandbox`.
-2. **Páginas legales:** completar en `server/public/terminos.html` y `privacidad.html` el RUC, el correo y el WhatsApp de soporte,
+2. **Páginas legales:** completar en `server/public/terminos.html` y `privacidad.html` el RUC y el correo de soporte (sin WhatsApp),
    y que un abogado las revise.
 3. **Nombres de marcas y torneos:** que el abogado revise también la lista de nombres cambiados.
 4. **Facturación electrónica (SRI):** el panel ya guarda los datos del comprador para facturar cada venta.

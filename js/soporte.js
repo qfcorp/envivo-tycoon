@@ -52,9 +52,8 @@
   }
 
   function bloqueContacto() {
-    if (!contacto || (!contacto.whatsapp && !contacto.correo)) return '';
+    if (!contacto || !contacto.correo) return '';
     return `<div class="card small"><b>${esc(T('soporte.contacto'))}</b>
-      ${contacto.whatsapp ? `<p style="margin:6px 0">WhatsApp: <span class="num" style="user-select:all">${esc(contacto.whatsapp)}</span></p>` : ''}
       ${contacto.correo ? `<p style="margin:6px 0">Correo: <span style="user-select:all">${esc(contacto.correo)}</span></p>` : ''}
       ${contacto.horario ? `<p class="muted" style="margin:6px 0">${esc(T('soporte.horario', { horario: contacto.horario }))}</p>` : ''}</div>`;
   }

@@ -14,8 +14,9 @@ Todo con sesión (salvo `GET /api/soporte/contacto`); POST con cabecera `X-Enviv
 - `POST /api/soporte/responder` `{ caso_id, mensaje }` → reabre si estaba respondido.
 - `POST /api/soporte/leido` `{ caso_id }`.
 - `/api/estado` agrega `soporte_sin_leer` (número de respuestas de soporte no leídas) y `compras_recientes` (las últimas 10 compras del jugador: `{ id, producto, total, estado, creado }`) para elegir la compra en el formulario.
-- `GET /api/soporte/contacto` (público) → `{ whatsapp, correo, horario }` desde la configuración
-  (`SOPORTE_WHATSAPP`, `SOPORTE_CORREO`, `SOPORTE_HORARIO` en /etc/envivo/config.env; vacíos si no están).
+- `GET /api/soporte/contacto` (público) → `{ correo, horario }` desde la configuración
+  (`SOPORTE_CORREO`, `SOPORTE_HORARIO` en /etc/envivo/config.env; vacíos si no están). **Sin WhatsApp** (decisión del dueño:
+  el soporte es solo por el juego y por correo; el correo se crea más adelante).
 
 ## Centro de Control
 - Bandeja de casos por estado y categoría, con el jugador, su última compra y el diagnóstico.
