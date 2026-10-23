@@ -1,0 +1,2018 @@
+{
+  "_leeme": [
+    "Diseño completo del servidor de Discord oficial de EN VIVO Tycoon. Lo lee configurar_servidor.js.",
+    "Se puede editar a mano (nombres, temas, colores) y volver a correr el script: actualiza lo que cambió y no borra nada.",
+    "Claves: cada rol y canal tiene una 'clave' fija; el script la usa para encontrarlo. No cambies las claves, sí los nombres.",
+    "Permisos: '@everyone' o la clave de un rol -> { permitir: [...], denegar: [...] }. Lo que pongas en un canal reemplaza, para ese rol, lo que diga su categoría.",
+    "Para agregar un servidor del juego (Servidor 2 · Guayaquil): agrega una línea en servidores_del_juego.lista y vuelve a correr el script.",
+    "Para poner el correo de soporte cuando exista: llena juego.correo_soporte (o la variable SOPORTE_CORREO) y vuelve a correr el script; los mensajes se actualizan solos.",
+    "AutoMod: Discord permite máximo 6 reglas de palabras; el diseño usa 5 para dejarte 1 libre para crear a mano."
+  ],
+  "version": 1,
+  "juego": {
+    "nombre": "EN VIVO Tycoon",
+    "web": "https://juego.tukanec.com",
+    "correo_soporte": "",
+    "empresa": "QF Producciones (Ecuador)"
+  },
+  "textos_correo_pendiente": {
+    "es": "el correo de soporte que aparece en el juego (sección Soporte)",
+    "en": "the support email shown in the game (Support section)",
+    "pt-BR": "o e-mail de suporte que aparece no jogo (seção Suporte)",
+    "fr": "l'adresse e-mail du support indiquée dans le jeu (section Support)",
+    "de": "die Support-E-Mail, die im Spiel angezeigt wird (Bereich Support)",
+    "it": "l'email di supporto indicata nel gioco (sezione Supporto)",
+    "ru": "адрес поддержки, указанный в игре (раздел «Поддержка»)",
+    "tr": "oyunda gösterilen destek e-postası (Destek bölümü)",
+    "id": "email dukungan yang tertera di dalam game (bagian Dukungan)",
+    "zh-CN": "游戏内显示的客服邮箱（“客服”页面）"
+  },
+  "servidor_discord": {
+    "nombre_sugerido": "EN VIVO Tycoon · Oficial",
+    "descripcion": "Comunidad oficial de EN VIVO Tycoon: el juego de productoras de transmisiones en vivo. Noticias, eventos, asociaciones, soporte y sugerencias.",
+    "nivel_verificacion": 2,
+    "filtro_contenido_explicito": 2,
+    "notificaciones_por_defecto": 1,
+    "idioma_principal": "es-419",
+    "asignar_admin_al_dueno": true
+  },
+  "permisos_everyone": [
+    "VIEW_CHANNEL",
+    "CREATE_INSTANT_INVITE",
+    "CHANGE_NICKNAME",
+    "SEND_MESSAGES",
+    "SEND_MESSAGES_IN_THREADS",
+    "CREATE_PUBLIC_THREADS",
+    "EMBED_LINKS",
+    "ATTACH_FILES",
+    "ADD_REACTIONS",
+    "USE_EXTERNAL_EMOJIS",
+    "USE_EXTERNAL_STICKERS",
+    "READ_MESSAGE_HISTORY",
+    "USE_APPLICATION_COMMANDS",
+    "SEND_VOICE_MESSAGES",
+    "CONNECT",
+    "SPEAK",
+    "STREAM",
+    "USE_VAD",
+    "REQUEST_TO_SPEAK",
+    "USE_EMBEDDED_ACTIVITIES",
+    "USE_SOUNDBOARD"
+  ],
+  "roles": [
+    {
+      "clave": "admin",
+      "nombre": "Admin QF",
+      "color": "#ff3b3b",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [
+        "ADMINISTRATOR"
+      ],
+      "para": "Dueño y equipo de QF Producciones. Máximo 2 o 3 personas, todas con verificación en dos pasos."
+    },
+    {
+      "clave": "mod",
+      "nombre": "Moderador",
+      "color": "#4da3ff",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [
+        "KICK_MEMBERS",
+        "BAN_MEMBERS",
+        "MODERATE_MEMBERS",
+        "MANAGE_MESSAGES",
+        "MANAGE_THREADS",
+        "MANAGE_NICKNAMES",
+        "VIEW_AUDIT_LOG",
+        "MUTE_MEMBERS",
+        "DEAFEN_MEMBERS",
+        "MOVE_MEMBERS",
+        "MANAGE_EVENTS",
+        "CREATE_EVENTS",
+        "PRIORITY_SPEAKER",
+        "VIEW_GUILD_INSIGHTS"
+      ],
+      "para": "Moderadores de la comunidad (voluntarios de confianza o staff)."
+    },
+    {
+      "clave": "soporte",
+      "nombre": "Soporte",
+      "color": "#2ecc71",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [
+        "MANAGE_THREADS",
+        "MANAGE_MESSAGES"
+      ],
+      "para": "Equipo que responde dudas y pasa los casos al soporte del juego. Nunca pide contraseñas."
+    },
+    {
+      "clave": "bots",
+      "nombre": "Bots",
+      "color": "#8b95a8",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Etiqueta para los bots oficiales (EN VIVO Bot, bot de vincular)."
+    },
+    {
+      "clave": "creador",
+      "nombre": "Creador de contenido",
+      "color": "#b06cff",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Streamers y youtubers aprobados por el staff."
+    },
+    {
+      "clave": "vip",
+      "nombre": "VIP",
+      "color": "#ffb020",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Jugadores con Pase VIP activo (lo da el bot de vincular)."
+    },
+    {
+      "clave": "comprador",
+      "nombre": "Comprador verificado",
+      "color": "#ffd479",
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Jugadores que compraron créditos alguna vez (lo da el bot de vincular). Pueden abrir temas en el mercado, igual que en el juego."
+    },
+    {
+      "clave": "presidente",
+      "nombre": "Presidente de asociación",
+      "color": "#ff8a3d",
+      "separado": true,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Presidentes de una asociación del juego (lo da el bot de vincular)."
+    },
+    {
+      "clave": "verificado",
+      "nombre": "Jugador verificado",
+      "color": "#9ad0ff",
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Vinculó su cuenta del juego con /vincular. Puede reclutar, opinar en el mercado y publicar guías."
+    },
+    {
+      "clave": "avisos-eventos",
+      "nombre": "🔔 Avisos de eventos",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Quiere que le avisen cuando empieza un evento en línea (solo el staff puede mencionarlo)."
+    },
+    {
+      "clave": "avisos-novedades",
+      "nombre": "🔔 Novedades del juego",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "para": "Quiere que le avisen de actualizaciones y mantenimientos."
+    },
+    {
+      "clave": "es",
+      "nombre": "🌐 Español",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "en",
+      "nombre": "🌐 English",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "pt-BR",
+      "nombre": "🌐 Português",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "fr",
+      "nombre": "🌐 Français",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "de",
+      "nombre": "🌐 Deutsch",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "it",
+      "nombre": "🌐 Italiano",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "ru",
+      "nombre": "🌐 Русский",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "tr",
+      "nombre": "🌐 Türkçe",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "id",
+      "nombre": "🌐 Bahasa Indonesia",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    },
+    {
+      "clave": "zh-CN",
+      "nombre": "🌐 中文",
+      "color": null,
+      "separado": false,
+      "mencionable": false,
+      "permisos": [],
+      "grupo": "idioma"
+    }
+  ],
+  "servidores_del_juego": {
+    "_nota": "Un rol y un canal por cada servidor del juego. Los roles se ponen debajo de 'Jugador verificado'.",
+    "roles_despues_de": "verificado",
+    "categoria": "servidores",
+    "plantilla_rol": "Servidor {N} · {CIUDAD}",
+    "plantilla_canal": "🏙️┃servidor-{N}-{ciudad}",
+    "plantilla_tema": "Productoras del Servidor {N} · {CIUDAD}: conócete con tu servidor, busca socios para tu asociación y prepara la Liga Semanal, el Mega Festival y las Copas internacionales. Sin vender ni comprar con dinero real.",
+    "color": "#5d6b82",
+    "lista": [
+      {
+        "numero": 1,
+        "ciudad": "Quito"
+      }
+    ],
+    "plantilla_etiqueta": "S{N} · {CIUDAD}"
+  },
+  "comunidad": {
+    "canal_reglas": "reglas",
+    "canal_avisos_discord": "avisos-de-discord",
+    "canal_alertas_seguridad": "automod-alertas"
+  },
+  "categorias": [
+    {
+      "clave": "info",
+      "nombre": "📌 INFORMACIÓN",
+      "permisos": {
+        "@everyone": {
+          "denegar": [
+            "SEND_MESSAGES",
+            "SEND_MESSAGES_IN_THREADS",
+            "CREATE_PUBLIC_THREADS",
+            "CREATE_PRIVATE_THREADS",
+            "SEND_POLLS"
+          ]
+        },
+        "mod": {
+          "permitir": [
+            "SEND_MESSAGES",
+            "SEND_MESSAGES_IN_THREADS"
+          ]
+        }
+      },
+      "canales": [
+        {
+          "clave": "bienvenida",
+          "nombre": "👋┃bienvenida",
+          "tipo": "texto",
+          "tema": "Bienvenida a la comunidad oficial de EN VIVO Tycoon · Welcome · Boas-vindas. Empieza por las reglas y elige tu idioma en «Canales y roles»."
+        },
+        {
+          "clave": "reglas",
+          "nombre": "📜┃reglas",
+          "tipo": "texto",
+          "tema": "Reglas de la comunidad (español, English, português). Al quedarte en el servidor las aceptas."
+        },
+        {
+          "clave": "anuncios",
+          "nombre": "📢┃anuncios",
+          "tipo": "anuncios",
+          "tema": "Anuncios oficiales de QF Producciones sobre EN VIVO Tycoon. Puedes seguir este canal desde tu propio servidor.",
+          "permisos": {
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS",
+                "MENTION_EVERYONE"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "novedades",
+          "nombre": "🆕┃novedades-del-juego",
+          "tipo": "anuncios",
+          "tema": "Actualizaciones, notas de versión, equipos nuevos y cambios de balance.",
+          "permisos": {
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS",
+                "MENTION_EVERYONE"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "eventos-en-curso",
+          "nombre": "🎪┃eventos-en-curso",
+          "tipo": "anuncios",
+          "tema": "Eventos en línea activos: Liga Semanal, Mega Festival, Desafío del Día, Duelos, Copas internacionales y Desafío de Cadenas. Horas en hora de Ecuador (UTC-5).",
+          "permisos": {
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS",
+                "MENTION_EVERYONE"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "estado-servidor",
+          "nombre": "🟢┃estado-del-servidor",
+          "tipo": "anuncios",
+          "tema": "Mantenimientos, caídas y estado de los servidores del juego. Si aquí no dice nada, el juego está funcionando normal.",
+          "permisos": {
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS",
+                "MENTION_EVERYONE"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "faq",
+          "nombre": "❓┃preguntas-frecuentes",
+          "tipo": "texto",
+          "tema": "Respuestas rápidas: soporte, pagos, VIP, mercado, asociaciones, servidores y cómo vincular tu cuenta."
+        },
+        {
+          "clave": "vincular",
+          "nombre": "🔗┃vincular-cuenta",
+          "tipo": "texto",
+          "lento": 30,
+          "tema": "Escribe /vincular con el código que te da el juego para recibir tus roles (Jugador verificado, tu servidor, VIP...). Nunca escribas tu contraseña.",
+          "permisos": {
+            "@everyone": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "USE_APPLICATION_COMMANDS"
+              ],
+              "denegar": [
+                "SEND_MESSAGES_IN_THREADS",
+                "CREATE_PUBLIC_THREADS",
+                "CREATE_PRIVATE_THREADS",
+                "ATTACH_FILES",
+                "EMBED_LINKS",
+                "SEND_POLLS"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "clave": "ayuda",
+      "nombre": "🛟 SOPORTE Y OPINIONES",
+      "permisos": {},
+      "canales": [
+        {
+          "clave": "soporte",
+          "nombre": "🛟┃soporte",
+          "tipo": "foro",
+          "lento": 600,
+          "lento_hilos": 5,
+          "requiere_etiqueta": true,
+          "orden": "actividad",
+          "vista": "lista",
+          "tema": "El soporte oficial es SOLO dentro del juego (sección Soporte) y por correo. Aquí la comunidad y el equipo de Soporte orientan dudas generales.\n\n⚠️ El staff NUNCA te pedirá tu contraseña, códigos ni datos de tarjeta, y nunca te escribirá primero por privado para «arreglar» tu cuenta.\n\nPara pagos, compras que no llegaron o problemas con tu cuenta: abre un caso en el juego (así vemos tu compra de forma segura).\n\nAl publicar: elige una etiqueta, explica qué pasa y en qué servidor juegas. No publiques correos, teléfonos ni capturas con datos de pago.",
+          "etiquetas": [
+            {
+              "nombre": "Pagos y compras",
+              "emoji": "💳"
+            },
+            {
+              "nombre": "Cuenta y acceso",
+              "emoji": "🔐"
+            },
+            {
+              "nombre": "Vincular Discord",
+              "emoji": "🔗"
+            },
+            {
+              "nombre": "Cómo se juega",
+              "emoji": "🎮"
+            },
+            {
+              "nombre": "Otro",
+              "emoji": "❔"
+            },
+            {
+              "nombre": "Pasado al juego",
+              "emoji": "📨",
+              "solo_staff": true
+            },
+            {
+              "nombre": "Respondido",
+              "emoji": "✅",
+              "solo_staff": true
+            }
+          ]
+        },
+        {
+          "clave": "errores",
+          "nombre": "🐞┃reporte-de-errores",
+          "tipo": "foro",
+          "lento": 300,
+          "lento_hilos": 5,
+          "requiere_etiqueta": true,
+          "orden": "actividad",
+          "vista": "lista",
+          "reaccion": "👀",
+          "tema": "Un error por publicación. Antes de publicar, busca si ya existe (lupa arriba) y súmate con un 👀.\n\nCopia esta plantilla:\n**Qué pasó:**\n**Pasos para que vuelva a pasar:** 1. 2. 3.\n**Qué esperabas que pasara:**\n**Dispositivo y sistema** (Android, iPhone, PC) **y navegador o app:**\n**Servidor del juego:**\n**Día de juego / capítulo:**\n**Captura o video:**\n\nNunca publiques tu correo, contraseña ni datos de pago. Si el error es con un pago, abre además un caso en el juego (sección Soporte).",
+          "etiquetas": [
+            {
+              "nombre": "Android",
+              "emoji": "📱"
+            },
+            {
+              "nombre": "iPhone",
+              "emoji": "🍎"
+            },
+            {
+              "nombre": "PC / Web",
+              "emoji": "💻"
+            },
+            {
+              "nombre": "Se cierra o congela",
+              "emoji": "💥"
+            },
+            {
+              "nombre": "Gráficos",
+              "emoji": "🎨"
+            },
+            {
+              "nombre": "Sonido",
+              "emoji": "🔊"
+            },
+            {
+              "nombre": "Tienda y pagos",
+              "emoji": "💳"
+            },
+            {
+              "nombre": "En línea",
+              "emoji": "🛰️"
+            },
+            {
+              "nombre": "Traducción",
+              "emoji": "🌐"
+            },
+            {
+              "nombre": "Revisando",
+              "emoji": "🔎",
+              "solo_staff": true
+            },
+            {
+              "nombre": "En arreglo",
+              "emoji": "🛠️",
+              "solo_staff": true
+            },
+            {
+              "nombre": "Arreglado",
+              "emoji": "✅",
+              "solo_staff": true
+            },
+            {
+              "nombre": "Duplicado",
+              "emoji": "♻️",
+              "solo_staff": true
+            },
+            {
+              "nombre": "Faltan datos",
+              "emoji": "❔",
+              "solo_staff": true
+            },
+            {
+              "nombre": "No es un error",
+              "emoji": "🚫",
+              "solo_staff": true
+            }
+          ]
+        },
+        {
+          "clave": "sugerencias",
+          "nombre": "💡┃sugerencias",
+          "tipo": "foro",
+          "lento": 1800,
+          "lento_hilos": 5,
+          "requiere_etiqueta": true,
+          "orden": "actividad",
+          "vista": "lista",
+          "reaccion": "👍",
+          "tema": "Una idea por publicación. Busca si ya la propusieron y vota con 👍 en vez de repetirla.\n\nExplica: **qué propones**, **por qué mejora el juego** y **para quién** (jugadores nuevos, asociaciones, VIP...).\n\nEl staff marca el estado con etiquetas: En votación, Planeada, Lanzada o No por ahora. Las ideas con más 👍 se revisan cada martes.",
+          "etiquetas": [
+            {
+              "nombre": "Jugabilidad",
+              "emoji": "🎮"
+            },
+            {
+              "nombre": "Equipos",
+              "emoji": "🎥"
+            },
+            {
+              "nombre": "Personal",
+              "emoji": "👷"
+            },
+            {
+              "nombre": "Eventos en línea",
+              "emoji": "🏆"
+            },
+            {
+              "nombre": "Asociaciones",
+              "emoji": "🤝"
+            },
+            {
+              "nombre": "Mercado y tienda",
+              "emoji": "🛒"
+            },
+            {
+              "nombre": "Diseño y sonido",
+              "emoji": "🎨"
+            },
+            {
+              "nombre": "Idiomas",
+              "emoji": "🌐"
+            },
+            {
+              "nombre": "En votación",
+              "emoji": "🗳️",
+              "solo_staff": true
+            },
+            {
+              "nombre": "Planeada",
+              "emoji": "📝",
+              "solo_staff": true
+            },
+            {
+              "nombre": "Lanzada",
+              "emoji": "🚀",
+              "solo_staff": true
+            },
+            {
+              "nombre": "No por ahora",
+              "emoji": "💤",
+              "solo_staff": true
+            }
+          ]
+        },
+        {
+          "clave": "ayuda-jugadores",
+          "nombre": "🤝┃ayuda-entre-jugadores",
+          "tipo": "texto",
+          "lento": 5,
+          "tema": "Preguntas de jugador a jugador: qué equipo comprar, cómo pasar un capítulo, cómo ganarle a MegaVisión. Sé amable con quien empieza."
+        }
+      ]
+    },
+    {
+      "clave": "comunidad",
+      "nombre": "💬 COMUNIDAD",
+      "permisos": {},
+      "canales": [
+        {
+          "clave": "general-es",
+          "nombre": "💬┃general-español",
+          "tipo": "texto",
+          "lento": 3,
+          "tema": "Charla general en español. Respeto, nada de spam ni ventas con dinero real."
+        },
+        {
+          "clave": "general-en",
+          "nombre": "💬┃general-english",
+          "tipo": "texto",
+          "lento": 3,
+          "tema": "General chat in English. Be respectful: no spam and no real-money trading."
+        },
+        {
+          "clave": "general-pt",
+          "nombre": "💬┃general-português",
+          "tipo": "texto",
+          "lento": 3,
+          "tema": "Conversa geral em português. Respeito sempre: sem spam e sem vendas com dinheiro real."
+        },
+        {
+          "clave": "capturas",
+          "nombre": "📸┃capturas-y-clips",
+          "tipo": "texto",
+          "lento": 30,
+          "tema": "Presume tu productora: capturas de tu sede, tus mejores eventos y clips de tus transmisiones. Una publicación cada 30 segundos.",
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "SEND_POLLS"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "creadores",
+          "nombre": "🎬┃creadores-de-contenido",
+          "tipo": "texto",
+          "lento": 60,
+          "tema": "Videos, guías y directos de los Creadores de contenido. ¿Haces contenido del juego? Pide el rol al staff en #soporte. Todos pueden comentar en los hilos.",
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "SEND_MESSAGES",
+                "CREATE_PUBLIC_THREADS",
+                "SEND_POLLS"
+              ]
+            },
+            "creador": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "CREATE_PUBLIC_THREADS",
+                "EMBED_LINKS",
+                "ATTACH_FILES"
+              ]
+            },
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "CREATE_PUBLIC_THREADS"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "fuera-de-tema",
+          "nombre": "🎲┃fuera-de-tema",
+          "tipo": "texto",
+          "lento": 5,
+          "tema": "De todo un poco: fútbol, música, transmisiones de verdad. Las mismas reglas de siempre."
+        },
+        {
+          "clave": "comandos-bot",
+          "nombre": "🤖┃comandos-bot",
+          "tipo": "texto",
+          "lento": 5,
+          "tema": "Usa aquí los comandos de los bots para no llenar los chats."
+        }
+      ]
+    },
+    {
+      "clave": "productoras",
+      "nombre": "🎥 PRODUCTORAS",
+      "permisos": {},
+      "canales": [
+        {
+          "clave": "eventos-ligas",
+          "nombre": "🏆┃eventos-y-ligas",
+          "tipo": "texto",
+          "lento": 5,
+          "tema": "Conversa sobre la Liga Semanal, el Mega Festival, los Duelos, el Desafío Técnico del Día, las Copas internacionales y el Desafío de Cadenas. Los anuncios oficiales van en #eventos-en-curso."
+        },
+        {
+          "clave": "reclutamiento",
+          "nombre": "🛡️┃reclutamiento-de-asociaciones",
+          "tipo": "foro",
+          "lento": 21600,
+          "lento_hilos": 10,
+          "requiere_etiqueta": true,
+          "orden": "actividad",
+          "vista": "lista",
+          "tema": "Busca asociación o recluta productoras. Una publicación cada 6 horas; para publicar, vincula tu cuenta (/vincular).\n\nPlantilla para reclutar:\n**Asociación y siglas:**\n**Servidor del juego:**\n**Idioma:**\n**Miembros (de 20):**\n**Qué pedimos** (fama mínima, actividad, horario):\n**En qué eventos jugamos** (Liga Semanal, Mega Festival, Gran Licitación):\n**Cómo unirse:** el nombre de la asociación para buscarla en el juego.\n\nNo pongas enlaces a otros servidores de Discord, teléfonos ni grupos externos.",
+          "etiquetas": [
+            {
+              "nombre": "Recluta",
+              "emoji": "📣"
+            },
+            {
+              "nombre": "Busco asociación",
+              "emoji": "🔎"
+            },
+            {
+              "nombre": "Español",
+              "emoji": "🇪🇸"
+            },
+            {
+              "nombre": "English",
+              "emoji": "🇬🇧"
+            },
+            {
+              "nombre": "Português",
+              "emoji": "🇧🇷"
+            },
+            {
+              "nombre": "Otro idioma",
+              "emoji": "🌍"
+            },
+            {
+              "nombre": "Activa a diario",
+              "emoji": "🔥"
+            },
+            {
+              "nombre": "Casual",
+              "emoji": "🌙"
+            },
+            {
+              "nombre": "Cerrada",
+              "emoji": "🔒",
+              "solo_staff": true
+            }
+          ],
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "SEND_MESSAGES"
+              ]
+            },
+            "verificado": {
+              "permitir": [
+                "SEND_MESSAGES"
+              ]
+            },
+            "presidente": {
+              "permitir": [
+                "SEND_MESSAGES"
+              ]
+            },
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES"
+              ]
+            }
+          },
+          "etiquetas_servidores_despues_de": 2
+        },
+        {
+          "clave": "mercado",
+          "nombre": "🛒┃mercado",
+          "tipo": "foro",
+          "lento": 3600,
+          "lento_hilos": 10,
+          "requiere_etiqueta": true,
+          "orden": "actividad",
+          "vista": "lista",
+          "tema": "Solo para CONVERSAR del mercado del juego: precios, qué equipo conviene, ofertas que viste. Las compras y ventas se hacen SOLO dentro del juego.\n\n🚫 Prohibido comprar, vender o cambiar créditos, equipos o cuentas por dinero real, PayPal, recargas o regalos. Es la estafa más común y se sanciona con expulsión.\n🔁 Las cuentas solo se pasan con la transferencia oficial del juego.\n🙅 Nadie del staff hace de «intermediario».\n\nPueden abrir temas los Compradores verificados y VIP (igual que el mercado del juego); los Jugadores verificados pueden responder.",
+          "etiquetas": [
+            {
+              "nombre": "Precios",
+              "emoji": "💬"
+            },
+            {
+              "nombre": "Cámaras y lentes",
+              "emoji": "🎥"
+            },
+            {
+              "nombre": "Audio",
+              "emoji": "🎚️"
+            },
+            {
+              "nombre": "Transmisión",
+              "emoji": "📡"
+            },
+            {
+              "nombre": "Unidades móviles",
+              "emoji": "🚐"
+            },
+            {
+              "nombre": "Equipos VIP",
+              "emoji": "💎"
+            },
+            {
+              "nombre": "Dudas del mercado",
+              "emoji": "❓"
+            },
+            {
+              "nombre": "Aviso del staff",
+              "emoji": "📌",
+              "solo_staff": true
+            }
+          ],
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS"
+              ]
+            },
+            "verificado": {
+              "permitir": [
+                "SEND_MESSAGES_IN_THREADS"
+              ]
+            },
+            "comprador": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS"
+              ]
+            },
+            "vip": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS"
+              ]
+            },
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES",
+                "SEND_MESSAGES_IN_THREADS"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "guias",
+          "nombre": "🎓┃guias-y-consejos",
+          "tipo": "foro",
+          "lento": 3600,
+          "lento_hilos": 5,
+          "requiere_etiqueta": true,
+          "orden": "actividad",
+          "vista": "lista",
+          "reaccion": "⭐",
+          "tema": "Guías de la comunidad: primeros días, qué equipo comprar, cómo armar tu personal, cómo pasar cada capítulo y ganar duelos. Pueden publicar los Jugadores verificados y Creadores; todos pueden comentar. Sin trucos que rompan el juego.",
+          "etiquetas": [
+            {
+              "nombre": "Principiantes",
+              "emoji": "🐣"
+            },
+            {
+              "nombre": "Equipos",
+              "emoji": "🎥"
+            },
+            {
+              "nombre": "Personal",
+              "emoji": "👷"
+            },
+            {
+              "nombre": "Historia",
+              "emoji": "📖"
+            },
+            {
+              "nombre": "Eventos en línea",
+              "emoji": "🏆"
+            },
+            {
+              "nombre": "Asociaciones",
+              "emoji": "🤝"
+            },
+            {
+              "nombre": "Guía destacada",
+              "emoji": "⭐",
+              "solo_staff": true
+            }
+          ],
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "SEND_MESSAGES"
+              ]
+            },
+            "verificado": {
+              "permitir": [
+                "SEND_MESSAGES"
+              ]
+            },
+            "creador": {
+              "permitir": [
+                "SEND_MESSAGES"
+              ]
+            },
+            "mod": {
+              "permitir": [
+                "SEND_MESSAGES"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "sala-vip",
+          "nombre": "💎┃sala-vip",
+          "tipo": "texto",
+          "lento": 3,
+          "tema": "Sala de los jugadores con Pase VIP activo. Gracias por apoyar el juego.",
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "VIEW_CHANNEL"
+              ]
+            },
+            "vip": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            },
+            "mod": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            },
+            "soporte": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "clave": "servidores",
+      "nombre": "🌎 SERVIDORES DEL JUEGO",
+      "permisos": {
+        "@everyone": {
+          "denegar": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "mod": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "soporte": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        }
+      },
+      "canales": []
+    },
+    {
+      "clave": "idiomas",
+      "nombre": "🌐 IDIOMAS",
+      "permisos": {
+        "@everyone": {
+          "denegar": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "mod": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "soporte": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        }
+      },
+      "canales": [
+        {
+          "clave": "idioma-fr",
+          "nombre": "🇫🇷┃français",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "fr",
+          "tema": "Discussion en français sur EN VIVO Tycoon. Respect, pas de spam ni de vente contre de l'argent réel.",
+          "permisos": {
+            "fr": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "idioma-de",
+          "nombre": "🇩🇪┃deutsch",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "de",
+          "tema": "Deutscher Chat zu EN VIVO Tycoon. Respektvoll bleiben, kein Spam und kein Handel mit echtem Geld.",
+          "permisos": {
+            "de": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "idioma-it",
+          "nombre": "🇮🇹┃italiano",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "it",
+          "tema": "Chat in italiano su EN VIVO Tycoon. Rispetto, niente spam e niente vendite con soldi veri.",
+          "permisos": {
+            "it": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "idioma-ru",
+          "nombre": "🇷🇺┃русский",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "ru",
+          "tema": "Чат на русском об EN VIVO Tycoon. Уважение, без спама и без торговли за реальные деньги.",
+          "permisos": {
+            "ru": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "idioma-tr",
+          "nombre": "🇹🇷┃türkçe",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "tr",
+          "tema": "EN VIVO Tycoon Türkçe sohbet. Saygılı olun; spam ve gerçek parayla ticaret yasak.",
+          "permisos": {
+            "tr": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "idioma-id",
+          "nombre": "🇮🇩┃bahasa-indonesia",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "id",
+          "tema": "Obrolan berbahasa Indonesia tentang EN VIVO Tycoon. Saling menghormati, tanpa spam dan tanpa jual beli dengan uang asli.",
+          "permisos": {
+            "id": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "idioma-zh",
+          "nombre": "🇨🇳┃中文",
+          "tipo": "texto",
+          "lento": 3,
+          "idioma": "zh-CN",
+          "tema": "EN VIVO Tycoon 中文交流频道。请互相尊重，禁止刷屏，禁止真钱交易。",
+          "permisos": {
+            "zh-CN": {
+              "permitir": [
+                "VIEW_CHANNEL"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "clave": "voz",
+      "nombre": "🔊 VOZ Y EN VIVO",
+      "permisos": {},
+      "canales": [
+        {
+          "clave": "voz-sala",
+          "nombre": "🎙️ Sala de productoras",
+          "tipo": "voz"
+        },
+        {
+          "clave": "voz-asoc-1",
+          "nombre": "🤝 Asociaciones 1",
+          "tipo": "voz",
+          "limite_usuarios": 20
+        },
+        {
+          "clave": "voz-asoc-2",
+          "nombre": "🤝 Asociaciones 2",
+          "tipo": "voz",
+          "limite_usuarios": 20
+        },
+        {
+          "clave": "escenario",
+          "nombre": "🎤 Escenario EN VIVO",
+          "tipo": "escenario",
+          "permisos": {
+            "mod": {
+              "permitir": [
+                "MANAGE_CHANNELS",
+                "MUTE_MEMBERS",
+                "MOVE_MEMBERS"
+              ]
+            }
+          }
+        },
+        {
+          "clave": "voz-vip",
+          "nombre": "💎 Sala VIP",
+          "tipo": "voz",
+          "limite_usuarios": 15,
+          "permisos": {
+            "@everyone": {
+              "denegar": [
+                "CONNECT"
+              ]
+            },
+            "vip": {
+              "permitir": [
+                "CONNECT"
+              ]
+            },
+            "mod": {
+              "permitir": [
+                "CONNECT"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "clave": "staff",
+      "nombre": "🛡️ STAFF",
+      "permisos": {
+        "@everyone": {
+          "denegar": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "mod": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "soporte": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        },
+        "bots": {
+          "permitir": [
+            "VIEW_CHANNEL"
+          ]
+        }
+      },
+      "canales": [
+        {
+          "clave": "staff-general",
+          "nombre": "🛡️┃staff-general",
+          "tipo": "texto",
+          "tema": "Coordinación del staff. Lo que se dice aquí no sale de aquí."
+        },
+        {
+          "clave": "automod-alertas",
+          "nombre": "🚨┃automod-alertas",
+          "tipo": "texto",
+          "tema": "Alertas automáticas de AutoMod y de seguridad de Discord. Revisar al menos 2 veces al día."
+        },
+        {
+          "clave": "registro-moderacion",
+          "nombre": "📋┃registro-moderacion",
+          "tipo": "texto",
+          "tema": "Anota cada sanción: usuario (ID), qué hizo, enlace al mensaje, sanción y quién la puso."
+        },
+        {
+          "clave": "soporte-interno",
+          "nombre": "📨┃soporte-interno",
+          "tipo": "texto",
+          "tema": "Casos que hay que pasar al soporte del juego (pagos, cuentas). Nunca pegues datos de pago ni contraseñas."
+        },
+        {
+          "clave": "avisos-de-discord",
+          "nombre": "🧾┃avisos-de-discord",
+          "tipo": "texto",
+          "tema": "Aquí Discord publica avisos para los administradores de servidores Comunidad."
+        },
+        {
+          "clave": "voz-staff",
+          "nombre": "🔒 Staff",
+          "tipo": "voz"
+        }
+      ]
+    }
+  ],
+  "onboarding": {
+    "modo": 0,
+    "canales_por_defecto": [
+      "bienvenida",
+      "reglas",
+      "anuncios",
+      "novedades",
+      "eventos-en-curso",
+      "estado-servidor",
+      "faq",
+      "vincular",
+      "general-es",
+      "general-en",
+      "general-pt",
+      "ayuda-jugadores",
+      "capturas",
+      "eventos-ligas",
+      "errores",
+      "soporte"
+    ],
+    "preguntas": [
+      {
+        "clave": "idioma",
+        "titulo": "Idioma · Language · Língua",
+        "tipo": "opcion_multiple",
+        "una_sola": false,
+        "obligatoria": true,
+        "antes_de_entrar": true,
+        "opciones": [
+          {
+            "titulo": "Español",
+            "descripcion": "Chat y avisos en español",
+            "emoji": "🇪🇸",
+            "roles": [
+              "es"
+            ],
+            "canales": [
+              "general-es"
+            ]
+          },
+          {
+            "titulo": "English",
+            "descripcion": "Chat and news in English",
+            "emoji": "🇬🇧",
+            "roles": [
+              "en"
+            ],
+            "canales": [
+              "general-en"
+            ]
+          },
+          {
+            "titulo": "Português (Brasil)",
+            "descripcion": "Conversa e avisos em português",
+            "emoji": "🇧🇷",
+            "roles": [
+              "pt-BR"
+            ],
+            "canales": [
+              "general-pt"
+            ]
+          },
+          {
+            "titulo": "Français",
+            "descripcion": "Salon en français",
+            "emoji": "🇫🇷",
+            "roles": [
+              "fr"
+            ]
+          },
+          {
+            "titulo": "Deutsch",
+            "descripcion": "Deutscher Kanal",
+            "emoji": "🇩🇪",
+            "roles": [
+              "de"
+            ]
+          },
+          {
+            "titulo": "Italiano",
+            "descripcion": "Canale in italiano",
+            "emoji": "🇮🇹",
+            "roles": [
+              "it"
+            ]
+          },
+          {
+            "titulo": "Русский",
+            "descripcion": "Канал на русском",
+            "emoji": "🇷🇺",
+            "roles": [
+              "ru"
+            ]
+          },
+          {
+            "titulo": "Türkçe",
+            "descripcion": "Türkçe kanal",
+            "emoji": "🇹🇷",
+            "roles": [
+              "tr"
+            ]
+          },
+          {
+            "titulo": "Bahasa Indonesia",
+            "descripcion": "Kanal berbahasa Indonesia",
+            "emoji": "🇮🇩",
+            "roles": [
+              "id"
+            ]
+          },
+          {
+            "titulo": "中文（简体）",
+            "descripcion": "中文频道",
+            "emoji": "🇨🇳",
+            "roles": [
+              "zh-CN"
+            ]
+          }
+        ]
+      },
+      {
+        "clave": "servidor",
+        "titulo": "¿En qué servidor del juego estás? · Which game server?",
+        "tipo": "opcion_multiple",
+        "una_sola": false,
+        "obligatoria": false,
+        "antes_de_entrar": true,
+        "opciones_desde_servidores": true,
+        "opciones": []
+      },
+      {
+        "clave": "intereses",
+        "titulo": "¿Qué te interesa? · What are you into?",
+        "tipo": "opcion_multiple",
+        "una_sola": false,
+        "obligatoria": false,
+        "antes_de_entrar": true,
+        "opciones": [
+          {
+            "titulo": "Avisos de eventos",
+            "descripcion": "Te mencionamos cuando empieza un evento en línea",
+            "emoji": "🔔",
+            "roles": [
+              "avisos-eventos"
+            ],
+            "canales": [
+              "eventos-en-curso"
+            ]
+          },
+          {
+            "titulo": "Novedades y mantenimientos",
+            "descripcion": "Te avisamos de actualizaciones del juego",
+            "emoji": "🆕",
+            "roles": [
+              "avisos-novedades"
+            ],
+            "canales": [
+              "novedades",
+              "estado-servidor"
+            ]
+          },
+          {
+            "titulo": "Buscar o reclutar asociación",
+            "descripcion": "Foro de reclutamiento",
+            "emoji": "🛡️",
+            "canales": [
+              "reclutamiento"
+            ]
+          },
+          {
+            "titulo": "Mercado y equipos",
+            "descripcion": "Precios y equipos (solo conversación)",
+            "emoji": "🛒",
+            "canales": [
+              "mercado"
+            ]
+          },
+          {
+            "titulo": "Guías y consejos",
+            "descripcion": "Aprende y comparte estrategias",
+            "emoji": "🎓",
+            "canales": [
+              "guias"
+            ]
+          },
+          {
+            "titulo": "Crear contenido",
+            "descripcion": "Streams y videos del juego",
+            "emoji": "🎬",
+            "canales": [
+              "creadores"
+            ]
+          },
+          {
+            "titulo": "Probar y sugerir",
+            "descripcion": "Reportar errores y proponer ideas",
+            "emoji": "💡",
+            "canales": [
+              "errores",
+              "sugerencias"
+            ]
+          },
+          {
+            "titulo": "Voz y escenario",
+            "descripcion": "Salas de voz y charlas en vivo con el equipo",
+            "emoji": "🎙️",
+            "canales": [
+              "voz-sala",
+              "escenario"
+            ]
+          }
+        ]
+      }
+    ],
+    "plantilla_opcion_servidor": {
+      "titulo": "Servidor {N} · {CIUDAD}",
+      "descripcion": "Canal de las productoras del Servidor {N}",
+      "emoji": "🏙️"
+    },
+    "opcion_sin_servidor": {
+      "titulo": "Todavía no juego",
+      "descripcion": "Solo quiero conocer la comunidad",
+      "emoji": "👀",
+      "canales": [
+        "faq"
+      ]
+    }
+  },
+  "automod": [
+    {
+      "nombre": "EN VIVO · Invitaciones y enlaces de estafa",
+      "tipo": "palabras",
+      "regex": [
+        "(?i)(discord\\.gg|discord(app)?\\.com/invite|dsc\\.gg|invite\\.gg|discord\\.me|disboard\\.org)/\\S+",
+        "(?i)d[i1l!|]+[s5$]+[ck]+[o0]+r+[dt]+[\\w\\-]*\\.(gift|gifts|ru|xyz|click|link|shop|site|top|online|info|pw|cc|cfd|sbs)\\b",
+        "(?i)st[e3]a?m\\s*c[o0]m+[uv]n[i1l]t[yi]\\.(ru|xyz|gift|site|link|top|com\\.[a-z]{2})",
+        "(?i)\\b(bit\\.ly|tinyurl\\.com|cutt\\.ly|is\\.gd|shorturl\\.at|rb\\.gy|t\\.ly|tiny\\.cc|ow\\.ly|grabify\\.link|iplogger\\.(org|com|ru))/\\S*",
+        "(?i)https?://\\S+\\.(exe|scr|bat|msi|apk|cmd|ps1)\\b"
+      ],
+      "acciones": {
+        "bloquear": "🚫 Bloqueado: no se permiten invitaciones ni enlaces sospechosos. / Blocked: no invites or suspicious links.",
+        "alertar": true,
+        "silenciar_segundos": 600
+      },
+      "exentos_roles": [
+        "admin",
+        "mod",
+        "bots"
+      ],
+      "exentos_canales": []
+    },
+    {
+      "nombre": "EN VIVO · Estafas y dinero real",
+      "tipo": "palabras",
+      "palabras": [
+        "nitro gratis",
+        "nitro grátis",
+        "free nitro",
+        "nitro free",
+        "regalo nitro",
+        "nitro giveaway",
+        "steam gratis",
+        "vendo cuenta",
+        "vendo mi cuenta",
+        "vendo cuentas",
+        "compro cuenta",
+        "compro cuentas",
+        "vendo conta",
+        "compro conta",
+        "selling account",
+        "selling my account",
+        "sell my account",
+        "buying accounts",
+        "vendo créditos",
+        "vendo creditos",
+        "compro créditos",
+        "compro creditos",
+        "selling credits",
+        "buying credits",
+        "créditos baratos",
+        "creditos baratos",
+        "cheap credits",
+        "recarga barata",
+        "recargas baratas",
+        "créditos por paypal",
+        "creditos por paypal",
+        "credits for paypal",
+        "te paso los créditos",
+        "pásame tu contraseña",
+        "pasame tu contraseña",
+        "pasame tu contrasena",
+        "dame tu contraseña",
+        "dame tu contrasena",
+        "manda tu contraseña",
+        "pasame tu clave",
+        "dame tu clave",
+        "send me your password",
+        "give me your password",
+        "me passa sua senha",
+        "manda sua senha",
+        "passa a senha",
+        "escríbeme al privado para comprar",
+        "dm me to buy",
+        "dm to buy",
+        "créditos infinitos",
+        "creditos infinitos",
+        "unlimited credits",
+        "generador de créditos",
+        "generador de creditos",
+        "gerador de créditos",
+        "credits generator",
+        "hack de créditos",
+        "hack de creditos",
+        "credit hack",
+        "duplicar créditos",
+        "duplicar creditos",
+        "mod apk",
+        "apk mod",
+        "crypto giveaway",
+        "double your money",
+        "airdrop gratis"
+      ],
+      "acciones": {
+        "bloquear": "🚫 Prohibido vender o comprar con dinero real, pedir contraseñas o estafar. Lee #reglas. / No real-money trading or scams.",
+        "alertar": true
+      },
+      "exentos_roles": [
+        "admin",
+        "mod"
+      ],
+      "exentos_canales": []
+    },
+    {
+      "nombre": "EN VIVO · Teléfonos y correos",
+      "tipo": "palabras",
+      "regex": [
+        "(?i)[a-z0-9._%+\\-]+\\s*(@|\\(at\\)|\\[at\\]|\\barroba\\b)\\s*[a-z0-9\\-]+\\s*(\\.|\\bpunto\\b|\\bdot\\b)\\s*[a-z]{2,}",
+        "\\b0[2-9](?:[\\s.\\-]?\\d){7,8}\\b",
+        "\\+\\s?\\d{1,3}(?:[\\s.\\-()]*\\d){7,12}",
+        "(?i)\\b(wa\\.me|api\\.whatsapp\\.com|chat\\.whatsapp\\.com|t\\.me|telegram\\.me)/\\S+"
+      ],
+      "acciones": {
+        "bloquear": "🚫 Por tu seguridad no compartas teléfonos, correos ni grupos externos. / For your safety, don't share phone numbers or emails.",
+        "alertar": true
+      },
+      "exentos_roles": [
+        "admin",
+        "mod",
+        "soporte",
+        "bots"
+      ],
+      "exentos_canales": [
+        "staff-general",
+        "soporte-interno",
+        "registro-moderacion"
+      ]
+    },
+    {
+      "nombre": "EN VIVO · Groserías (español, inglés y portugués)",
+      "tipo": "palabras",
+      "palabras": [
+        "*verga*",
+        "v3rga*",
+        "puta",
+        "putas",
+        "puto",
+        "putos",
+        "put4",
+        "put0",
+        "putamadre",
+        "puta madre",
+        "putazo",
+        "*hijueputa*",
+        "hijuep*",
+        "hijo de puta",
+        "hija de puta",
+        "hijos de puta",
+        "hdp",
+        "chucha",
+        "chuchas",
+        "chuchatumadre",
+        "chucha tu madre",
+        "chuchesumadre",
+        "chuchetumadre",
+        "conchatumadre",
+        "conchetumadre",
+        "conchesumadre",
+        "ctm",
+        "mierda",
+        "mierdas",
+        "mierdero",
+        "cabrón",
+        "cabron*",
+        "cabrona",
+        "cojudo",
+        "cojuda",
+        "cojudos",
+        "cojudas",
+        "pendej*",
+        "marica",
+        "maricas",
+        "maricón",
+        "maricon",
+        "maricones",
+        "maricona",
+        "huevón",
+        "huevon",
+        "huevona",
+        "huevones",
+        "guevón",
+        "guevon",
+        "güevón",
+        "webón",
+        "webon",
+        "weón",
+        "weon",
+        "mamahuevo*",
+        "mamaguevo*",
+        "malparid*",
+        "culero",
+        "culera",
+        "culo",
+        "culos",
+        "gonorrea",
+        "puñeta",
+        "puñetero",
+        "puneta",
+        "follar",
+        "jódete",
+        "jodete",
+        "chingada",
+        "chinga tu madre",
+        "sidoso",
+        "sidosa",
+        "mátate",
+        "matate",
+        "suicídate",
+        "suicidate",
+        "retrasado mental",
+        "mongólico",
+        "mongolico",
+        "kys",
+        "kill yourself",
+        "kill urself",
+        "neck yourself",
+        "go die",
+        "se mata",
+        "vai se matar",
+        "filho da puta",
+        "filha da puta",
+        "fdp",
+        "vai se foder",
+        "vai tomar no cu",
+        "tomar no cu",
+        "arrombado",
+        "arrombada",
+        "caralho",
+        "buceta",
+        "viado",
+        "viadinho",
+        "cuzão",
+        "cuzao"
+      ],
+      "acciones": {
+        "bloquear": "🚫 Ese lenguaje no está permitido aquí. Lee #reglas. / That language isn't allowed here. / Linguagem não permitida.",
+        "alertar": true
+      },
+      "exentos_roles": [],
+      "exentos_canales": []
+    },
+    {
+      "nombre": "EN VIVO · Avisar a moderadores (no bloquea)",
+      "tipo": "palabras",
+      "palabras": [
+        "contraseña",
+        "contrasena",
+        "password",
+        "senha",
+        "estafa*",
+        "estafador*",
+        "scam*",
+        "me robaron",
+        "me hackearon",
+        "hackeado",
+        "hackeada",
+        "hacked",
+        "imbécil",
+        "imbecil",
+        "estúpido",
+        "estupido",
+        "estúpida",
+        "estupida",
+        "idiota",
+        "tarado",
+        "tarada",
+        "longo",
+        "pija",
+        "pajero",
+        "nazi*",
+        "pinga",
+        "zorra"
+      ],
+      "acciones": {
+        "alertar": true
+      },
+      "exentos_roles": [
+        "admin",
+        "mod",
+        "soporte"
+      ],
+      "exentos_canales": [
+        "staff-general",
+        "soporte-interno",
+        "registro-moderacion",
+        "automod-alertas"
+      ]
+    },
+    {
+      "nombre": "EN VIVO · Lista de Discord (inglés)",
+      "tipo": "lista_discord",
+      "listas": [
+        "groserias",
+        "sexual",
+        "insultos"
+      ],
+      "permitidas": [
+        "shot",
+        "shoot",
+        "kill",
+        "killer"
+      ],
+      "acciones": {
+        "bloquear": "🚫 That language isn't allowed here. / Ese lenguaje no está permitido aquí.",
+        "alertar": false
+      },
+      "exentos_roles": [],
+      "exentos_canales": []
+    },
+    {
+      "nombre": "EN VIVO · Spam",
+      "tipo": "spam",
+      "acciones": {
+        "bloquear": "🚫 Tu mensaje parece spam. / Your message looks like spam.",
+        "alertar": true
+      },
+      "exentos_roles": [
+        "admin",
+        "mod",
+        "bots"
+      ],
+      "exentos_canales": []
+    },
+    {
+      "nombre": "EN VIVO · Demasiadas menciones",
+      "tipo": "menciones",
+      "limite_menciones": 5,
+      "proteccion_raid": true,
+      "acciones": {
+        "bloquear": "🚫 Demasiadas menciones en un mensaje. / Too many mentions.",
+        "alertar": true,
+        "silenciar_segundos": 600
+      },
+      "exentos_roles": [
+        "admin",
+        "mod",
+        "bots"
+      ],
+      "exentos_canales": []
+    }
+  ],
+  "mensajes": [
+    {
+      "ref": "bienvenida-es",
+      "canal": "bienvenida",
+      "archivo": "mensajes/es/bienvenida.md",
+      "idioma": "es",
+      "color": "#ff3b3b",
+      "fijar": true
+    },
+    {
+      "ref": "bienvenida-en",
+      "canal": "bienvenida",
+      "archivo": "mensajes/en/bienvenida.md",
+      "idioma": "en",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "bienvenida-pt-BR",
+      "canal": "bienvenida",
+      "archivo": "mensajes/pt-BR/bienvenida.md",
+      "idioma": "pt-BR",
+      "color": "#2ecc71",
+      "fijar": true
+    },
+    {
+      "ref": "reglas-es",
+      "canal": "reglas",
+      "archivo": "mensajes/es/reglas.md",
+      "idioma": "es",
+      "color": "#ff3b3b",
+      "fijar": true
+    },
+    {
+      "ref": "reglas-en",
+      "canal": "reglas",
+      "archivo": "mensajes/en/reglas.md",
+      "idioma": "en",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "reglas-pt-BR",
+      "canal": "reglas",
+      "archivo": "mensajes/pt-BR/reglas.md",
+      "idioma": "pt-BR",
+      "color": "#2ecc71",
+      "fijar": true
+    },
+    {
+      "ref": "faq-es",
+      "canal": "faq",
+      "archivo": "mensajes/es/preguntas-frecuentes.md",
+      "idioma": "es",
+      "color": "#ffb020",
+      "fijar": true
+    },
+    {
+      "ref": "faq-en",
+      "canal": "faq",
+      "archivo": "mensajes/en/preguntas-frecuentes.md",
+      "idioma": "en",
+      "color": "#ffb020",
+      "fijar": true
+    },
+    {
+      "ref": "faq-pt-BR",
+      "canal": "faq",
+      "archivo": "mensajes/pt-BR/preguntas-frecuentes.md",
+      "idioma": "pt-BR",
+      "color": "#ffb020",
+      "fijar": true
+    },
+    {
+      "ref": "vincular-es",
+      "canal": "vincular",
+      "archivo": "mensajes/es/vincular-cuenta.md",
+      "idioma": "es",
+      "color": "#9ad0ff",
+      "fijar": true
+    },
+    {
+      "ref": "vincular-en",
+      "canal": "vincular",
+      "archivo": "mensajes/en/vincular-cuenta.md",
+      "idioma": "en",
+      "color": "#9ad0ff",
+      "fijar": true
+    },
+    {
+      "ref": "vincular-pt-BR",
+      "canal": "vincular",
+      "archivo": "mensajes/pt-BR/vincular-cuenta.md",
+      "idioma": "pt-BR",
+      "color": "#9ad0ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-fr",
+      "canal": "idioma-fr",
+      "archivo": "mensajes/fr/resumen.md",
+      "idioma": "fr",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-de",
+      "canal": "idioma-de",
+      "archivo": "mensajes/de/resumen.md",
+      "idioma": "de",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-it",
+      "canal": "idioma-it",
+      "archivo": "mensajes/it/resumen.md",
+      "idioma": "it",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-ru",
+      "canal": "idioma-ru",
+      "archivo": "mensajes/ru/resumen.md",
+      "idioma": "ru",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-tr",
+      "canal": "idioma-tr",
+      "archivo": "mensajes/tr/resumen.md",
+      "idioma": "tr",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-id",
+      "canal": "idioma-id",
+      "archivo": "mensajes/id/resumen.md",
+      "idioma": "id",
+      "color": "#4da3ff",
+      "fijar": true
+    },
+    {
+      "ref": "resumen-zh-CN",
+      "canal": "idioma-zh",
+      "archivo": "mensajes/zh-CN/resumen.md",
+      "idioma": "zh-CN",
+      "color": "#4da3ff",
+      "fijar": true
+    }
+  ],
+  "plantillas_sin_publicar": {
+    "_nota": "No las publica el script. Se copian y pegan cuando toca (ver docs/DISCORD.md).",
+    "anuncio_lanzamiento": [
+      "mensajes/es/anuncio-lanzamiento.md",
+      "mensajes/en/anuncio-lanzamiento.md",
+      "mensajes/pt-BR/anuncio-lanzamiento.md",
+      "mensajes/fr/anuncio-lanzamiento.md",
+      "mensajes/de/anuncio-lanzamiento.md",
+      "mensajes/it/anuncio-lanzamiento.md",
+      "mensajes/ru/anuncio-lanzamiento.md",
+      "mensajes/tr/anuncio-lanzamiento.md",
+      "mensajes/id/anuncio-lanzamiento.md",
+      "mensajes/zh-CN/anuncio-lanzamiento.md"
+    ],
+    "eventos": [
+      "mensajes/es/plantillas-eventos.md",
+      "mensajes/en/plantillas-eventos.md",
+      "mensajes/pt-BR/plantillas-eventos.md"
+    ]
+  },
+  "reglas_para_verificacion": {
+    "_nota": "Versión corta para pegar en Ajustes del servidor → Configuración de seguridad → Protección contra MD y spam → «Los miembros deben aceptar las reglas» (Rules Screening, hasta 16 reglas). Ver docs/DISCORD.md, paso 5.",
+    "es": [
+      "Respeto ante todo: sin insultos, acoso, racismo, discriminación ni amenazas.",
+      "Nada de spam, cadenas ni invitaciones a otros servidores.",
+      "Prohibido comprar, vender o cambiar créditos, equipos o cuentas por dinero real. Las cuentas solo se pasan con la transferencia oficial del juego.",
+      "Nunca compartas tu contraseña, códigos ni datos de pago. El staff jamás te los pedirá.",
+      "No publiques datos personales tuyos ni de otros (teléfonos, correos, direcciones).",
+      "Contenido apto para todo público: muchos jugadores son menores de edad.",
+      "Nada de trampas, hacks, APK modificadas ni abusar de errores: repórtalos.",
+      "El soporte oficial es solo dentro del juego y por correo. Sigue las indicaciones del staff."
+    ],
+    "en": [
+      "Respect first: no insults, harassment, racism, discrimination or threats.",
+      "No spam, chain messages or invites to other servers.",
+      "No buying, selling or trading credits, gear or accounts for real money. Accounts can only move through the game's official transfer.",
+      "Never share your password, codes or payment details. Staff will never ask for them.",
+      "Don't post personal data, yours or anyone else's (phone numbers, emails, addresses).",
+      "Keep it family-friendly: many players are minors.",
+      "No cheats, hacks, modded APKs or bug abuse: report bugs instead.",
+      "Official support is only in-game and by email. Follow staff instructions."
+    ],
+    "pt-BR": [
+      "Respeito acima de tudo: sem insultos, assédio, racismo, discriminação ou ameaças.",
+      "Sem spam, correntes ou convites para outros servidores.",
+      "Proibido comprar, vender ou trocar créditos, equipamentos ou contas por dinheiro real. Contas só mudam de dono pela transferência oficial do jogo.",
+      "Nunca compartilhe sua senha, códigos ou dados de pagamento. A equipe nunca vai pedir.",
+      "Não publique dados pessoais seus ou de outras pessoas (telefones, e-mails, endereços).",
+      "Conteúdo para todas as idades: muitos jogadores são menores.",
+      "Sem trapaças, hacks, APKs modificados ou abuso de bugs: reporte-os.",
+      "O suporte oficial é só dentro do jogo e por e-mail. Siga as orientações da equipe."
+    ]
+  }
+}

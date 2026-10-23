@@ -1,0 +1,7 @@
+# Secretos: el token del bot va SOLO aquí (o en variables de entorno), nunca en GitHub
+.env
+.env.*
+!.env.ejemplo
+# IDs de lo que creó el script (no es secreto, pero es de tu servidor)
+.estado.json
+node_modules/

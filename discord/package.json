@@ -1,0 +1,14 @@
+{
+  "name": "envivo-discord",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Configura el servidor oficial de Discord de EN VIVO Tycoon (roles, canales, foros, AutoMod, Onboarding y mensajes).",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "configurar": "node configurar_servidor.js",
+    "simular": "node configurar_servidor.js --simular",
+    "test": "node test.js"
+  },
+  "license": "UNLICENSED"
+}
