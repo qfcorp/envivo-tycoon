@@ -1,10 +1,9 @@
 <!doctype html>
 <!--
-  IMPORTANTE: BORRADOR DE TRADUCCIÓN (zh-CN) de la política de privacidad (server/public/privacidad.html).
-  La versión en español es la única oficial y prevalece. Debe revisarla un abogado en Ecuador antes del lanzamiento
-  (Ley Orgánica de Protección de Datos Personales y su reglamento), y conviene que un traductor nativo revise el texto. Reemplazar los marcadores
-  [RUC], [CORREO DE SOPORTE], [DIRECCIÓN] y [FECHA] con los datos reales (los mismos que en la versión en español).
-  Contacto de soporte: solo «Ayuda y soporte» dentro del juego y el correo.
+  IMPORTANTE: TRADUCCIÓN DE CONVENIENCIA (zh-CN) de server/public/privacidad.html. La versión en español es la única oficial y prevalece.
+  Debe revisarla un abogado en Ecuador antes del lanzamiento (docs/LEGAL_REVISION.md) y conviene que un traductor nativo revise el texto.
+  Único dato pendiente del dueño: [DIRECCIÓN] (el mismo que en la versión en español).
+  Contacto de soporte: solo «Ayuda y soporte» dentro del juego y el correo soporte@tukanec.com.
 -->
 <html lang="zh-CN">
 <head>
@@ -13,7 +12,7 @@
 <meta name="theme-color" content="#0d0f14">
 <title>隐私政策 · EN VIVO Tycoon</title>
 <link rel="icon" href="/icons/favicon-32.png">
-<link rel="stylesheet" href="/pago-assets/estilo.css?v=1">
+<link rel="stylesheet" href="/pago-assets/estilo.css?v=2">
 <link rel="alternate" hreflang="es" href="/privacidad.html">
 </head>
 <body>
@@ -21,56 +20,105 @@
   <div class="marca">EN VIVO <b>Tycoon</b></div>
   <div class="aviso aviso-info" id="aviso-traduccion" role="note"><b>本译文仅供参考。</b>本中文文本旨在帮助你理解文件内容。唯一具有法律效力的是西班牙语版本，如有任何差异或疑问，以西班牙语版本为准。<b>草稿：</b>发布前必须由律师审核。 <a href="/privacidad.html" hreflang="es" lang="es">阅读西班牙语正式版本</a>.</div>
   <h1>隐私政策</h1>
-  <p class="tenue">最后更新：[FECHA]</p>
+  <p class="tenue">最后更新：2026年10月23日</p>
 
-  <h2>1. 数据控制者</h2>
-  <p>QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES)，RUC（厄瓜多尔税号）[RUC]，地址：[DIRECCIÓN]，厄瓜多尔。联系方式：[CORREO DE SOPORTE]
-  或游戏内的“帮助与客服”。我们依据厄瓜多尔<b>《个人数据保护组织法》</b>（Ley Orgánica de Protección de Datos Personales）处理你的数据。</p>
+  <h2>1. 你的数据由谁负责</h2>
+  <p><b>QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES)</b>，RUC（厄瓜多尔税号）1793135099001，地址：<mark class="falta">[DIRECCIÓN]</mark>，厄瓜多尔。数据相关事宜联系方式：游戏内的“帮助与支持”或 <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a>。我们依照厄瓜多尔《<b>个人数据保护组织法</b>》（Ley Orgánica de Protección de Datos Personales，LOPDP）及其实施条例处理你的数据。</p>
 
-  <h2>2. 我们保存哪些数据</h2>
+  <h2>2. 我们处理哪些数据</h2>
   <ul>
-    <li><b>你的账号：</b>邮箱、名字和密码（以加密方式保存，任何人包括我们都无法读取）。</li>
-    <li><b>你的游戏：</b>你保存到云端的游戏进度、积分、已收到的物品以及 VIP 通行证。</li>
-    <li><b>你的购买：</b>商品、金额、日期，以及你付款时填写的持卡人信息（姓名、身份证件号码、邮箱和手机号），
-      我们需要这些信息来开具电子发票（SRI）。</li>
-    <li><b>社区：</b>你的制作公司公开名称、所在联盟、聊天消息（30 天后删除）、举报和
-      屏蔽记录，以及你在市场上的挂单和交易。</li>
-    <li><b>客服：</b>你通过“帮助与客服”发送给我们的工单，以及游戏附带的一份简短技术诊断（版本、语言、
-      屏幕尺寸、游戏天数），不含你的银行卡信息和密码。</li>
-    <li><b>安全：</b>你登录时使用的 IP 地址和浏览器，用于保护你的账号并防止欺诈（例如限制密码尝试次数）。</li>
+    <li><b>你的账号：</b>邮箱、姓名、玩家编号、昵称和游戏服务器，以及你的密码（以任何人、包括我们都无法读取的方式保存）。</li>
+    <li><b>你的游戏进度：</b>你在云端保存的进度、点券、已获得的内容、VIP 和月卡。</li>
+    <li><b>网页购买（Pago Plux）：</b>商品、金额、日期、交易号，以及你付款时填写的持卡人信息（姓名、身份证或护照号码、邮箱和手机号），开具电子发票（SRI）需要这些信息。</li>
+    <li><b>Android 应用内购买（Google Play）：</b>商品、日期、订单号，以及 Google 提供给我们用于核实的购买凭证。</li>
+    <li><b>社区：</b>你的制作公司公开名称、你的联盟、聊天消息、举报和屏蔽记录，以及你在市场上的上架和销售记录。</li>
+    <li><b>Discord（可选）：</b>如果你将账号与 Discord 绑定，我们会保存你的 Discord 用户编号、用户名以及机器人给你的身份组。我们不会收到你的 Discord 密码或消息。</li>
+    <li><b>支持：</b>你发给我们的工单，以及一份简短的技术诊断（版本、语言、屏幕尺寸、游戏内天数）。</li>
+    <li><b>统计和错误报告：</b>游戏本身会记录你使用了哪些部分（例如玩过的活动或打开的界面）以及发生的错误（错误信息、版本、浏览器或设备类型）。这些数据只发送到我们的服务器：<b>我们不使用其他公司的分析或广告工具</b>。</li>
+    <li><b>安全：</b>你登录时使用的 IP 地址和浏览器、密码尝试记录以及重要操作日志（购买、账号变更），用于保护你的账号并防止欺诈。</li>
+    <li><b>通知（如果你开启）：</b>你的浏览器或手机为接收提醒而提供给我们的订阅地址。这不是你的电话号码。</li>
   </ul>
+  <p>我们不会要求提供敏感数据（健康、宗教等）。请不要在聊天或支持工单中填写这些信息。</p>
 
   <h2>3. 你的银行卡信息：我们不保存</h2>
-  <p>付款由 <b>Pago Plux</b> 处理。你的银行卡信息（卡号、有效期和 CVV）在浏览器中加密，并以加密形式发送至
-  Pago Plux。<b>我们看不到、不保存，也不会将其写入任何日志。</b>我们只从 Plux 接收付款结果及其
-  交易编号。</p>
+  <p>在网页上，付款由 <b>Pago Plux</b> 处理：你的卡信息（卡号、有效期和 CVV）在浏览器中加密后以加密形式发送给 Pago Plux。在 Android 应用中由 Google Play 收款。<b>我们看不到、不保存，也不记录你的银行卡信息。</b>我们只会收到付款结果和交易号。</p>
 
-  <h2>4. 我们用这些数据做什么</h2>
+  <h2>4. 我们为何使用你的数据以及法律依据</h2>
+  <p>我们只依据 LOPDP（第 7 条）允许的法律依据之一处理你的数据：</p>
   <ul>
-    <li>让你访问账号并保存你的游戏。</li>
-    <li>处理和发放你的购买，并开具发票。</li>
-    <li>为你提供客服支持并回复你的消息。</li>
-    <li>保护游戏免受作弊和欺诈。</li>
+    <li><b>提供账号、保存进度、聊天、市场和支持：</b>为履行你接受条款时订立的合同。</li>
+    <li><b>处理并交付你的购买：</b>为履行合同。</li>
+    <li><b>开具发票并保存购买数据：</b>法定义务（厄瓜多尔税务规定）。</li>
+    <li><b>安全、防欺诈和聊天管理：</b>我们保护玩家和游戏的正当利益。</li>
+    <li><b>游戏自身的统计和错误报告：</b>我们修复问题、改进游戏的正当利益。你可以提出反对（第 9 条）。</li>
+    <li><b>绑定 Discord 和接收通知：</b>基于你的同意，你在开启时给予同意，并可随时撤回。</li>
+    <li><b>邮件：</b>我们会发邮件帮你找回密码，并发送有关账号或购买的通知（合同）。未经你的同意，我们不会通过邮件向你发送广告。</li>
   </ul>
-  <p>我们不会出售你的数据。我们只会与 Pago Plux（用于付款）、SRI（用于发票）共享，以及在主管机关
-  依法要求时提供。</p>
 
-  <h2>5. 存放位置与保存期限</h2>
-  <p>数据保存在我们的服务器上。会话 Cookie 有效期为 60 天，仅用于让你不必每次
-  都输入密码。购买数据按厄瓜多尔税务规定的期限保存；其余数据在你的账号存在期间保存。</p>
+  <h2>5. 我们与谁共享你的数据</h2>
+  <p><b>我们不出售你的数据，也不将其用于广告。</b>我们只与以下各方共享：</p>
+  <ul>
+    <li><b>Pago Plux</b>，用于处理网页付款。</li>
+    <li><b>Google</b>，用于应用内购买（Google Play Billing）。此外，游戏从 Google Fonts 加载字体，因此加载时 Google 会收到你的 IP 地址和浏览器信息。</li>
+    <li><b>Discord</b>，仅在你绑定账号时。</li>
+    <li><b>OVHcloud</b>，向我们出租游戏运行所用服务器的公司；它只代表我们保存数据。</li>
+    <li>你的浏览器或手机的通知服务（例如 Google、Apple、Mozilla 或 Microsoft），仅在你开启通知时。</li>
+    <li>我们用于发送邮件的服务商（例如找回密码的邮件）。</li>
+    <li><b>SRI</b>（用于开具发票）以及依法提出要求的主管机关。</li>
+  </ul>
 
-  <h2>6. 你的权利</h2>
-  <p>你可以随时要求我们<b>查看、更正或删除</b>你的数据，或<b>删除你的账号</b>，也可以反对我们使用这些数据或要求
-  数据可携带。请用你账号的邮箱发送邮件至 [CORREO DE SOPORTE]。删除账号后，你的游戏进度、积分和已购内容都将丢失。
-  我们只会保留法律要求我们保存的账单数据。</p>
+  <h2>6. 数据存放位置与跨境传输</h2>
+  <p>游戏运行在<b>位于厄瓜多尔境外的 OVHcloud 服务器</b>上（OVHcloud 在厄瓜多尔没有数据中心；其数据中心位于欧洲、北美和亚太地区）。我们在厄瓜多尔的自有服务器上保存一份加密备份。Google 和 Discord 在其自己的服务器上处理所收到的数据，主要位于美国。这属于<b>跨境数据传输</b>（LOPDP 第 55 至 57 条）。我们仅为提供服务而进行传输，所用服务商均签有数据保护合同，并使用加密连接（HTTPS）和加密备份。你可以通过支持邮箱向我们了解这些保障措施的更多信息。</p>
 
-  <h2>7. 未成年人</h2>
-  <p>如果你是未成年人，请在父母或监护人的同意下使用本游戏。他们可以要求我们查看或删除你的数据。</p>
+  <h2>7. 我们保存数据多长时间</h2>
+  <ul>
+    <li><b>账号、进度、市场和支持：</b>在你的账号存在期间保存。删除账号后会立即删除或匿名化。</li>
+    <li><b>聊天消息：</b>30 天后自动删除（连同相关举报）。</li>
+    <li><b>会话：</b>会话 Cookie 有效期 60 天；过期会话每天删除。密码尝试记录 24 小时后删除。</li>
+    <li><b>购买和发票：</b>按厄瓜多尔税务规定保存 7 年，即使你删除账号也是如此（仅保存购买和发票数据）。</li>
+    <li><b>安全日志：</b>在你的账号存在期间保存；删除账号后，我们会从该日志中移除你的 IP 地址。</li>
+    <li><b>统计和错误报告：</b>与你的玩家编号关联最多保存 90 天；之后只保留无法识别你的汇总数据。</li>
+    <li><b>Discord 绑定和通知：</b>直到你关闭它们或删除账号。</li>
+    <li><b>备份：</b>会自动轮换；已删除的数据最迟 6 个月内从备份中消失。</li>
+  </ul>
 
-  <h2>8. 变更</h2>
-  <p>如果我们修改本政策，会在游戏内通知你。</p>
+  <h2>8. 你的权利</h2>
+  <p>你有权：</p>
+  <ul>
+    <li><b>访问：</b>了解我们持有你的哪些数据，并索取副本。</li>
+    <li><b>更正：</b>更正错误或不完整的数据。</li>
+    <li><b>删除：</b>要求我们删除你的数据或账号。</li>
+    <li><b>反对：</b>要求我们不将你的数据用于某些用途，例如统计。</li>
+    <li><b>可携带：</b>以常见文件格式（JSON）获取你的数据。</li>
+    <li><b>暂停处理</b>，以及<b>不受仅由自动化方式作出的决定约束</b>（见第 10 条）。</li>
+    <li>随时<b>撤回同意</b>（Discord、通知），且不影响此前已进行的处理。</li>
+  </ul>
 
-  <p class="pie"><a href="/">← 返回游戏</a> · <a href="/terminos_zh-CN.html">购买条款与条件</a></p>
+  <h2>9. 如何行使权利和提出投诉</h2>
+  <p>请通过“帮助与支持”或发邮件至 <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a> 联系我们，最好使用你账号的邮箱。免费。我们<b>最迟在 15 天内答复</b>。我们可能会请你确认你是账号所有者。如需<b>删除账号</b>，可以在游戏中自行操作（<b>账号 → 删除我的账号</b>），也可以不打开游戏申请删除：见<a href="/borrar-cuenta_zh-CN.html">如何删除你的账号</a>。如果我们在 15 天内没有答复或你不满意，可以向厄瓜多尔<b>个人数据保护监管局</b>（Superintendencia de Protección de Datos Personales，<a href="https://servicios.spdp.gob.ec/denuncia">servicios.spdp.gob.ec/denuncia</a>）投诉。如果你住在哥伦比亚，也可以向Superintendencia de Industria y Comercio 投诉；如果你住在秘鲁，可以向 Autoridad Nacional de Protección de Datos Personales 投诉。</p>
+
+  <h2>10. 自动化决定</h2>
+  <p>部分保护措施是自动的：聊天过滤器会拦截某些词语；如果对已收到的购买发生拒付或多次退款，账号会被自动暂停或封禁。我们始终会告知原因，你可以要求<b>我们团队中的工作人员复核该决定</b>。</p>
+
+  <h2>11. 安全与数据泄露通知</h2>
+  <p>我们使用加密连接（HTTPS）、以单向加密方式保存的密码、不以明文保存的会话代码、受限的管理后台访问权限以及加密备份。如果发生数据泄露或安全事件，我们会最迟在 5 天内通知个人数据保护监管局；如果对你有风险，我们会最迟在 3 天内通知你，说明发生了什么以及你可以采取的措施（LOPDP 第 43 条和第 46 条）。</p>
+
+  <h2>12. 未成年人</h2>
+  <p>本游戏面向<b>年满 16 岁</b>的人。如果你 16 或 17 岁，可以自行同意使用你的数据（LOPDP 允许从15 岁起这样做，第 21 条），但购买需要获得父母或法定监护人的许可。如果我们得知某个账号属于未满 16岁的人，我们会删除该账号。父母或法定监护人可以联系我们查看或删除其子女的数据。</p>
+
+  <h2>13. Cookie 和设备上的存储</h2>
+  <p>我们只使用<b>一个 Cookie</b>，即会话 Cookie：有效期 60 天，仅用于让你不必每次都输入密码，且其他网站无法读取。游戏还会在你的设备上（浏览器本地存储）保存你的游戏进度、语言、声音设置以及你是否已看过新手引导。<b>我们不使用广告或跟踪 Cookie。</b>如果你清除浏览器数据，未保存到云端的进度将会丢失。</p>
+
+  <h2>14. 通知</h2>
+  <p>只有在<b>你开启</b>通知后我们才会发送（你的浏览器或手机会请求许可）。通知用于游戏提醒，例如活动或VIP 到期。你可以随时在游戏中或浏览器、手机的设置中关闭通知。</p>
+
+  <h2>15. 聊天与管理</h2>
+  <p>频道中的其他玩家可以看到聊天消息。如果有人举报某条消息，我们的团队会结合上下文进行审核。只有你能看到自己的屏蔽玩家列表。消息会在 30 天后删除。</p>
+
+  <h2>16. 本政策的变更</h2>
+  <p>如果我们修改本政策，会在游戏中通知你。如果变更需要你的同意，我们会再次征求你的同意。</p>
+
+  <p class="pie"><a href="/">← 返回游戏</a> · <a href="/terminos_zh-CN.html">条款与条件</a> · <a href="/borrar-cuenta_zh-CN.html">删除你的账号</a></p>
 </main>
 </body>
 </html>

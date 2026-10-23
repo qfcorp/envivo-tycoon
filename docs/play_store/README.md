@@ -63,7 +63,10 @@ la ficha habla de "fútbol profesional" y "switchers" en general.
 - URL: `https://juego.tukanec.com/privacidad.html` (versión oficial en español).
 - Las traducciones de conveniencia están en `docs/traducciones/legal/privacidad_<idioma>.html`; si se publican, van
   en `/privacidad_<idioma>.html` (los enlaces internos de esas páginas ya apuntan ahí).
-- ⚠️ Antes de enviar: llenar [RUC], [DIRECCIÓN], [CORREO DE SOPORTE] y [FECHA] y que la revise un abogado.
+- ⚠️ Antes de enviar: llenar [DIRECCIÓN] (RUC, correo soporte@tukanec.com y fecha ya están) y que la revise un abogado
+  (lista en `docs/LEGAL_REVISION.md`).
+- Enlace web para eliminar la cuenta (Seguridad de los datos): `https://juego.tukanec.com/borrar-cuenta.html` (explica cómo
+  pedirlo sin la app, por correo a soporte@tukanec.com).
 
 ### 2.2 Acceso a la app
 - "Toda la funcionalidad está disponible sin acceso especial": **No**, porque la tienda, el mercado y el chat
@@ -95,7 +98,8 @@ la ficha habla de "fútbol profesional" y "switchers" en general.
   y **"Compras integradas"**.
 
 ### 2.5 Público objetivo y contenido
-- Edades: marcar **13-15, 16-17 y 18 o más**. **No** marcar menores de 13 (así no aplica el programa de Familias).
+- Edades: marcar solo **16-17 y 18 o más** (decisión del dueño: el juego es para 16+, ver términos §2 y privacidad §12).
+  **No** marcar menores de 16 (así no aplica el programa de Familias).
 - "¿Puede atraer a niños sin querer?": **No** (tema de oficio profesional, sin personajes infantiles). Si Google lo
   marca igual, habría que reforzar el chat para menores.
 - La tienda ya avisa: "Si eres menor de 18, pide permiso a tus padres antes de comprar" (`tienda.aviso` en `js/lang/`)
@@ -105,8 +109,9 @@ la ficha habla de "fútbol profesional" y "switchers" en general.
 Preguntas generales:
 - ¿Recopila o comparte datos de usuario? **Sí, recopila.**
 - ¿Los datos se cifran en tránsito? **Sí** (todo por HTTPS).
-- ¿Los usuarios pueden pedir que se borren sus datos? **Sí**: escribiendo desde el correo de su cuenta a
-  [CORREO DE SOPORTE] (política de privacidad, sección 6). Ver el pendiente de borrado de cuenta abajo.
+- ¿Los usuarios pueden pedir que se borren sus datos? **Sí**: en el juego (Cuenta → Borrar mi cuenta) o, sin la app,
+  escribiendo desde el correo de su cuenta a soporte@tukanec.com (política de privacidad §9 y `/borrar-cuenta.html`).
+  Ver el pendiente de borrado de cuenta abajo.
 - ¿Se comparten datos con terceros? Para la versión de Play: **No** en el sentido de Google (los pagos los procesa
   Google Play y eso no cuenta como "compartir"). En la web, Pago Plux procesa la tarjeta como proveedor de servicio.
 
@@ -144,6 +149,6 @@ llegara a abrir `pago.php`, habría que declararlos también (Información perso
 3. **Marcas reales en el juego.** La ficha no nombra marcas, pero `js/logic.js` todavía dice "Laptop con vMix",
    "Switcher ATEM", "Director / vMix" y "Partido de LigaPro". Las capturas de pantalla no deben mostrarlas; mejor
    cambiarlas por marcas inventadas antes de publicar (ya está pendiente en `PLAN.md`, revisión de abogado de marcas).
-4. **Datos legales.** Completar [RUC], [DIRECCIÓN], [CORREO DE SOPORTE] y [FECHA] en los términos y la privacidad,
+4. **Datos legales.** Completar [DIRECCIÓN] en los términos y la privacidad (lo demás ya está; ver `docs/LEGAL_REVISION.md`),
    y crear el correo de soporte (`SOPORTE_CORREO`).
 5. **Cuenta de prueba para el revisor** con una compra de sandbox (para que vea mercado y chat).

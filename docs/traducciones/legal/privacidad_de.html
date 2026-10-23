@@ -1,10 +1,9 @@
 <!doctype html>
 <!--
-  IMPORTANTE: BORRADOR DE TRADUCCIÓN (de) de la política de privacidad (server/public/privacidad.html).
-  La versión en español es la única oficial y prevalece. Debe revisarla un abogado en Ecuador antes del lanzamiento
-  (Ley Orgánica de Protección de Datos Personales y su reglamento), y conviene que un traductor nativo revise el texto. Reemplazar los marcadores
-  [RUC], [CORREO DE SOPORTE], [DIRECCIÓN] y [FECHA] con los datos reales (los mismos que en la versión en español).
-  Contacto de soporte: solo «Ayuda y soporte» dentro del juego y el correo.
+  IMPORTANTE: TRADUCCIÓN DE CONVENIENCIA (de) de server/public/privacidad.html. La versión en español es la única oficial y prevalece.
+  Debe revisarla un abogado en Ecuador antes del lanzamiento (docs/LEGAL_REVISION.md) y conviene que un traductor nativo revise el texto.
+  Único dato pendiente del dueño: [DIRECCIÓN] (el mismo que en la versión en español).
+  Contacto de soporte: solo «Ayuda y soporte» dentro del juego y el correo soporte@tukanec.com.
 -->
 <html lang="de">
 <head>
@@ -13,7 +12,7 @@
 <meta name="theme-color" content="#0d0f14">
 <title>Datenschutzerklärung · EN VIVO Tycoon</title>
 <link rel="icon" href="/icons/favicon-32.png">
-<link rel="stylesheet" href="/pago-assets/estilo.css?v=1">
+<link rel="stylesheet" href="/pago-assets/estilo.css?v=2">
 <link rel="alternate" hreflang="es" href="/privacidad.html">
 </head>
 <body>
@@ -21,56 +20,131 @@
   <div class="marca">EN VIVO <b>Tycoon</b></div>
   <div class="aviso aviso-info" id="aviso-traduccion" role="note"><b>Übersetzung nur zur Information.</b> Dieser deutsche Text soll dir helfen, das Dokument zu verstehen. Rechtlich verbindlich ist ausschließlich die spanische Fassung; sie hat bei Abweichungen oder Zweifeln Vorrang. <b>Entwurf:</b> Er muss vor der Veröffentlichung von einem Anwalt geprüft werden. <a href="/privacidad.html" hreflang="es" lang="es">Offizielle spanische Fassung lesen</a>.</div>
   <h1>Datenschutzerklärung</h1>
-  <p class="tenue">Zuletzt aktualisiert: [FECHA]</p>
+  <p class="tenue">Zuletzt aktualisiert: 23. Oktober 2026</p>
 
-  <h2>1. Verantwortlicher</h2>
-  <p>QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES), RUC (ecuadorianische Steuernummer) [RUC], mit Sitz in [DIRECCIÓN], Ecuador. Kontakt: [CORREO DE SOPORTE]
-  oder „Hilfe &amp; Support“ im Spiel. Wir verarbeiten deine Daten gemäß dem ecuadorianischen <b>Organgesetz zum Schutz personenbezogener Daten</b> (Ley Orgánica de Protección de Datos Personales).</p>
+  <h2>1. Verantwortlicher für deine Daten</h2>
+  <p><b>QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES)</b>, RUC (ecuadorianische Steuernummer) 1793135099001, mit Sitz in <mark class="falta">[DIRECCIÓN]</mark>, Ecuador.
+  Kontakt für Datenschutzfragen: die Option „Hilfe &amp; Support“ im Spiel oder <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a>.
+  Wir verarbeiten deine Daten nach dem ecuadorianischen <b>Gesetz zum Schutz personenbezogener Daten</b> (Ley Orgánica de Protección de Datos Personales, LOPDP) und seiner Verordnung.</p>
 
-  <h2>2. Welche Daten wir speichern</h2>
+  <h2>2. Welche Daten wir verarbeiten</h2>
   <ul>
-    <li><b>Dein Konto:</b> E-Mail, Name und dein Passwort (verschlüsselt gespeichert, sodass niemand, auch wir nicht, es lesen kann).</li>
-    <li><b>Dein Spielstand:</b> der Spielfortschritt, den du in der Cloud speicherst, deine Credits, was du erhalten hast, und dein VIP-Pass.</li>
-    <li><b>Deine Käufe:</b> Produkt, Betrag, Datum und die Daten des Karteninhabers, die du beim Bezahlen eingibst (Namen, Ausweisnummer, E-Mail und Handynummer), die
-      wir für die elektronische Rechnung (SRI) brauchen.</li>
-    <li><b>Community:</b> der öffentliche Name deiner Produktionsfirma, deine Allianz, die Chatnachrichten (werden nach 30 Tagen gelöscht), Meldungen und
-      Blockierungen sowie deine Angebote und Verkäufe auf dem Markt.</li>
-    <li><b>Support:</b> die Anfragen, die du uns über „Hilfe &amp; Support“ schickst, und eine kleine technische Diagnose, die das Spiel mitsendet (Version, Sprache,
-      Bildschirmgröße, Spieltag), ohne deine Kartendaten oder dein Passwort.</li>
-    <li><b>Sicherheit:</b> die IP-Adresse und der Browser, mit denen du dich verbindest, um dein Konto zu schützen und Betrug zu verhindern (zum Beispiel Passwortversuche zu begrenzen).</li>
+    <li><b>Dein Konto:</b> E-Mail-Adresse, Name, Spielernummer, Alias und Spielserver sowie dein Passwort (so gespeichert, dass niemand, nicht einmal wir, es lesen kann).</li>
+    <li><b>Dein Spielstand:</b> der Fortschritt, den du in der Cloud speicherst, deine Credits, was du erhalten hast, dein VIP und deine Monatskarte.</li>
+    <li><b>Käufe im Web (Pago Plux):</b> Produkt, Betrag, Datum, Transaktionsnummer und die Daten des Karteninhabers, die du beim Bezahlen angibst (Namen, Ausweis- oder Passnummer, E-Mail-Adresse und Handynummer), die wir für die elektronische Rechnung (SRI) brauchen.</li>
+    <li><b>Käufe in der Android-App (Google Play):</b> Produkt, Datum, Bestellnummer und der Kaufbeleg, den Google uns zur Überprüfung gibt.</li>
+    <li><b>Community:</b> der öffentliche Name deiner Produktionsfirma, dein Verband, Chatnachrichten, Meldungen und Blockierungen sowie deine Angebote und Verkäufe auf dem Marktplatz.</li>
+    <li><b>Discord (optional):</b> Wenn du dein Konto mit Discord verknüpfst, speichern wir deine Discord-Nutzernummer, deinen Discord-Nutzernamen und die Rollen, die der Bot dir gegeben hat. Wir erhalten weder dein Discord-Passwort noch deine Discord-Nachrichten.</li>
+    <li><b>Support:</b> die Anfragen, die du uns schickst, und eine kleine technische Diagnose (Version, Sprache, Bildschirmgröße, Spieltag).</li>
+    <li><b>Statistiken und Fehlerberichte:</b> Das Spiel selbst notiert, welche Teile du nutzt (zum Beispiel gespielte Events oder geöffnete Bildschirme), und welche Fehler auftreten (Fehlermeldung, Version, Art des Browsers oder Geräts). Sie werden nur an unseren Server gesendet: <b>Wir nutzen keine Analyse- oder Werbewerkzeuge anderer Firmen</b>.</li>
+    <li><b>Sicherheit:</b> die IP-Adresse und der Browser, mit denen du dich verbindest, Passwortversuche und ein Protokoll wichtiger Aktionen (Käufe, Kontoänderungen), um dein Konto zu schützen und Betrug zu verhindern.</li>
+    <li><b>Benachrichtigungen (wenn du sie einschaltest):</b> die Abonnement-Adresse, die uns dein Browser oder Handy gibt, um dir Hinweise zu senden. Das ist nicht deine Telefonnummer.</li>
+  </ul>
+  <p>Wir fragen keine sensiblen Daten ab (Gesundheit, Religion usw.). Bitte schreib sie nicht in den Chat oder in Support-Anfragen.</p>
+
+  <h2>3. Deine Kartendaten: speichern wir NICHT</h2>
+  <p>Im Web wird die Zahlung von <b>Pago Plux</b> abgewickelt: Deine Kartendaten (Nummer, Ablaufdatum und CVV) werden in deinem Browser verschlüsselt und
+  verschlüsselt an Pago Plux gesendet. In der Android-App wickelt Google Play die Zahlung ab. <b>Wir sehen, speichern und protokollieren deine Kartendaten nicht.</b>
+  Wir erhalten nur das Ergebnis der Zahlung und ihre Transaktionsnummer.</p>
+
+  <h2>4. Wofür wir deine Daten nutzen und auf welcher Rechtsgrundlage</h2>
+  <p>Wir verarbeiten deine Daten nur auf einer der Rechtsgrundlagen, die die LOPDP erlaubt (Art. 7):</p>
+  <ul>
+    <li><b>Konto bereitstellen, Spielstand speichern, Chat, Marktplatz und Support:</b> zur Erfüllung des Vertrags, den du mit den Bedingungen akzeptierst.</li>
+    <li><b>Käufe abwickeln und liefern:</b> zur Erfüllung des Vertrags.</li>
+    <li><b>Rechnung ausstellen und Kaufdaten aufbewahren:</b> gesetzliche Pflicht (ecuadorianische Steuerregeln).</li>
+    <li><b>Sicherheit, Betrugsvorbeugung und Chat-Moderation:</b> unser berechtigtes Interesse, die Spieler und das Spiel zu schützen.</li>
+    <li><b>Eigene Statistiken und Fehlerberichte des Spiels:</b> unser berechtigtes Interesse, Fehler zu beheben und das Spiel zu verbessern. Du kannst widersprechen (Abschnitt 9).</li>
+    <li><b>Discord verknüpfen und Benachrichtigungen erhalten:</b> deine Einwilligung, die du beim Einschalten gibst und jederzeit widerrufen kannst.</li>
+    <li><b>E-Mails:</b> Wir schreiben dir, um dein Passwort wiederherzustellen, und für Hinweise zu deinem Konto oder deinen Käufen (Vertrag). Ohne deine Einwilligung schicken wir dir keine Werbung per E-Mail.</li>
   </ul>
 
-  <h2>3. Deine Kartendaten: Wir speichern sie NICHT</h2>
-  <p>Die Zahlung wird von <b>Pago Plux</b> abgewickelt. Deine Kartendaten (Nummer, Ablaufdatum und CVV) werden in deinem Browser verschlüsselt und verschlüsselt an
-  Pago Plux gesendet. <b>Wir sehen sie nicht, speichern sie nicht und schreiben sie in kein Protokoll.</b> Von Plux erhalten wir nur das Zahlungsergebnis und die
-  Transaktionsnummer.</p>
-
-  <h2>4. Wofür wir sie verwenden</h2>
+  <h2>5. Mit wem wir deine Daten teilen</h2>
+  <p><b>Wir verkaufen deine Daten nicht und nutzen sie nicht für Werbung.</b> Wir teilen sie nur mit:</p>
   <ul>
-    <li>Dir Zugang zu deinem Konto geben und deinen Spielstand speichern.</li>
-    <li>Deine Käufe abwickeln und liefern und deine Rechnung ausstellen.</li>
-    <li>Dir Support geben und deine Nachrichten beantworten.</li>
-    <li>Das Spiel vor Schummeln und Betrug schützen.</li>
+    <li><b>Pago Plux</b>, um Zahlungen im Web abzuwickeln.</li>
+    <li><b>Google</b>, für Käufe in der App (Google Play Billing). Außerdem lädt das Spiel seine Schriftarten von Google Fonts, daher erhält Google beim Laden deine IP-Adresse und deinen Browser.</li>
+    <li><b>Discord</b>, nur wenn du dein Konto verknüpfst.</li>
+    <li><b>OVHcloud</b>, die Firma, die uns den Server vermietet, auf dem das Spiel läuft; sie speichert die Daten nur in unserem Auftrag.</li>
+    <li>Dem Benachrichtigungsdienst deines Browsers oder Handys (zum Beispiel Google, Apple, Mozilla oder Microsoft), nur wenn du Benachrichtigungen einschaltest.</li>
+    <li>Dem Anbieter, den wir zum Versenden von E-Mails nutzen (zum Beispiel für die Passwort-Wiederherstellung).</li>
+    <li>Dem <b>SRI</b> (für die Rechnung) und Behörden, die sie nach dem Gesetz anfordern.</li>
   </ul>
-  <p>Wir verkaufen deine Daten nicht. Wir teilen sie nur mit Pago Plux (für die Zahlung), mit dem SRI (für die Rechnung) und wenn eine zuständige Behörde
-  dies nach dem Gesetz verlangt.</p>
 
-  <h2>5. Wo und wie lange</h2>
-  <p>Die Daten werden auf unserem Server gespeichert. Das Sitzungs-Cookie gilt 60 Tage und dient nur dazu, dass du dein Passwort nicht jedes
-  Mal eingeben musst. Kaufdaten werden so lange aufbewahrt, wie es die ecuadorianischen Steuervorschriften verlangen; alles andere, solange dein Konto besteht.</p>
+  <h2>6. Wo die Daten gespeichert werden und internationale Übermittlung</h2>
+  <p>Das Spiel läuft auf einem <b>Server von OVHcloud außerhalb Ecuadors</b> (OVHcloud hat keine Rechenzentren in Ecuador, sondern in Europa,
+  Nordamerika und im asiatisch-pazifischen Raum). Wir bewahren eine verschlüsselte Sicherungskopie auf einem eigenen Server in Ecuador auf. Google und Discord verarbeiten die Daten, die sie
+  erhalten, auf ihren eigenen Servern, hauptsächlich in den Vereinigten Staaten.
+  Das ist eine <b>internationale Datenübermittlung</b> (LOPDP, Art. 55 bis 57). Wir machen sie nur, um den Dienst zu erbringen, mit Anbietern, die
+  Datenschutzverträge haben, mit verschlüsselten Verbindungen (HTTPS) und verschlüsselten Sicherungskopien. Du kannst uns über die Support-Adresse nach mehr Informationen zu
+  diesen Garantien fragen.</p>
 
-  <h2>6. Deine Rechte</h2>
-  <p>Du kannst jederzeit verlangen, deine Daten <b>einzusehen, zu berichtigen oder zu löschen</b> oder <b>dein Konto zu löschen</b>, und du kannst der Nutzung widersprechen oder ihre
-  Übertragbarkeit verlangen. Schreib uns von der E-Mail-Adresse deines Kontos an [CORREO DE SOPORTE]. Beim Löschen des Kontos gehen dein Spielstand, deine Credits und deine Käufe verloren.
-  Wir bewahren nur die Rechnungsdaten auf, zu deren Aufbewahrung uns das Gesetz verpflichtet.</p>
+  <h2>7. Wie lange wir deine Daten aufbewahren</h2>
+  <ul>
+    <li><b>Konto, Spielstand, Marktplatz und Support:</b> solange dein Konto besteht. Wenn du es löschst, werden sie sofort gelöscht oder anonymisiert.</li>
+    <li><b>Chatnachrichten:</b> werden nach 30 Tagen automatisch gelöscht (mit ihren Meldungen).</li>
+    <li><b>Sitzung:</b> Das Sitzungs-Cookie gilt 60 Tage; abgelaufene Sitzungen werden täglich gelöscht. Passwortversuche werden nach 24 Stunden gelöscht.</li>
+    <li><b>Käufe und Rechnungen:</b> 7 Jahre, wie es die ecuadorianischen Steuerregeln verlangen, auch wenn du dein Konto löschst (nur die Kauf- und Rechnungsdaten).</li>
+    <li><b>Sicherheitsprotokoll:</b> solange dein Konto besteht; wenn du es löschst, entfernen wir deine IP-Adresse aus diesem Protokoll.</li>
+    <li><b>Statistiken und Fehlerberichte:</b> höchstens 90 Tage mit deiner Spielernummer; danach bleiben nur Summen, die dich nicht identifizieren.</li>
+    <li><b>Discord-Verknüpfung und Benachrichtigungen:</b> bis du sie ausschaltest oder dein Konto löschst.</li>
+    <li><b>Sicherungskopien:</b> werden automatisch erneuert; Gelöschtes verschwindet daraus nach spätestens 6 Monaten.</li>
+  </ul>
 
-  <h2>7. Minderjährige</h2>
-  <p>Wenn du minderjährig bist, nutze das Spiel mit Erlaubnis deiner Eltern oder Erziehungsberechtigten. Sie können verlangen, deine Daten einzusehen oder zu löschen.</p>
+  <h2>8. Deine Rechte</h2>
+  <p>Du hast das Recht auf:</p>
+  <ul>
+    <li><b>Auskunft:</b> zu erfahren, welche Daten wir über dich haben, und eine Kopie zu verlangen.</li>
+    <li><b>Berichtigung:</b> falsche oder unvollständige Daten korrigieren zu lassen.</li>
+    <li><b>Löschung:</b> zu verlangen, dass wir deine Daten oder dein Konto löschen.</li>
+    <li><b>Widerspruch:</b> zu verlangen, dass wir deine Daten für etwas nicht nutzen, zum Beispiel für Statistiken.</li>
+    <li><b>Datenübertragbarkeit:</b> deine Daten in einem gängigen Dateiformat (JSON) zu erhalten.</li>
+    <li><b>Aussetzung der Verarbeitung</b> und darauf, <b>keinen ausschließlich automatisierten Entscheidungen unterworfen zu werden</b> (siehe Abschnitt 10).</li>
+    <li><b>Widerruf deiner Einwilligung</b> jederzeit (Discord, Benachrichtigungen), ohne dass das bisher Geschehene davon berührt wird.</li>
+  </ul>
 
-  <h2>8. Änderungen</h2>
-  <p>Wenn wir diese Erklärung ändern, informieren wir dich im Spiel.</p>
+  <h2>9. Wie du deine Rechte ausübst und Beschwerden einreichst</h2>
+  <p>Schreib uns über „Hilfe &amp; Support“ oder an <a href="mailto:soporte@tukanec.com">soporte@tukanec.com</a>, am besten von der E-Mail-Adresse deines
+  Kontos. Es ist kostenlos. Wir <b>antworten innerhalb von höchstens 15 Tagen</b>. Wir können dich bitten zu bestätigen, dass dir das Konto gehört.
+  Um <b>dein Konto zu löschen</b>, mach es selbst im Spiel (<b>Konto → Mein Konto löschen</b>) oder beantrage es ohne das Spiel: siehe
+  <a href="/borrar-cuenta_de.html">So löschst du dein Konto</a>.
+  Wenn wir nicht innerhalb von 15 Tagen antworten oder du nicht zufrieden bist, kannst du dich bei der <b>Aufsichtsbehörde für den Schutz personenbezogener Daten</b>
+  Ecuadors beschweren (Superintendencia de Protección de Datos Personales, <a href="https://servicios.spdp.gob.ec/denuncia">servicios.spdp.gob.ec/denuncia</a>). Wenn du in Kolumbien lebst, kannst du dich auch an die
+  Superintendencia de Industria y Comercio wenden; wenn du in Peru lebst, an die Autoridad Nacional de Protección de Datos Personales.</p>
 
-  <p class="pie"><a href="/">← Zurück zum Spiel</a> · <a href="/terminos_de.html">Kaufbedingungen</a></p>
+  <h2>10. Automatisierte Entscheidungen</h2>
+  <p>Einige Schutzmaßnahmen sind automatisch: Der Chatfilter blockiert bestimmte Wörter, und bei einer Rückbuchung oder mehreren Erstattungen von Käufen, die
+  erhalten wurden, wird das Konto automatisch vorübergehend oder dauerhaft gesperrt. Wir zeigen dir immer den Grund, und du kannst verlangen, dass <b>eine Person aus unserem Team die
+  Entscheidung überprüft</b>.</p>
+
+  <h2>11. Sicherheit und Meldung von Datenpannen</h2>
+  <p>Wir nutzen verschlüsselte Verbindungen (HTTPS), Passwörter mit Einweg-Verschlüsselung, Sitzungscodes, die nicht im Klartext gespeichert werden, eingeschränkten
+  Zugang zum Verwaltungsbereich und verschlüsselte Sicherungskopien. Falls es zu einer Datenpanne oder einem Datenleck kommt, informieren wir die
+  Aufsichtsbehörde für den Schutz personenbezogener Daten innerhalb von höchstens 5 Tagen und, wenn ein Risiko für dich besteht, dich innerhalb von höchstens 3 Tagen,
+  mit einer Erklärung, was passiert ist und was du tun kannst (LOPDP, Art. 43 und 46).</p>
+
+  <h2>12. Minderjährige</h2>
+  <p>Das Spiel ist für Personen <b>ab 16 Jahren</b>. Wenn du 16 oder 17 bist, kannst du selbst in die Nutzung deiner Daten einwilligen (die LOPDP erlaubt das ab
+  15 Jahren, Art. 21), aber du brauchst für Käufe die Erlaubnis deiner Eltern oder Erziehungsberechtigten. Wenn wir erfahren, dass ein Konto jemandem unter 16
+  gehört, löschen wir es. Eltern oder Erziehungsberechtigte können uns schreiben, um die Daten ihres Kindes einzusehen oder löschen zu lassen.</p>
+
+  <h2>13. Cookies und Speicherung auf deinem Gerät</h2>
+  <p>Wir nutzen <b>ein einziges Cookie</b>, das Sitzungs-Cookie: Es gilt 60 Tage, dient nur dazu, dass du nicht jedes Mal dein Passwort eingeben musst, und kann von
+  anderen Seiten nicht gelesen werden. Das Spiel speichert außerdem auf deinem Gerät (lokaler Speicher des Browsers) deinen Spielstand, deine Sprache, den Ton und ob du die Anleitung schon gesehen hast.
+  <b>Wir nutzen keine Werbe- oder Tracking-Cookies.</b> Wenn du die Browserdaten löschst, geht der Spielstand verloren, den du nicht in der Cloud gespeichert hast.</p>
+
+  <h2>14. Benachrichtigungen</h2>
+  <p>Wir schicken dir nur Benachrichtigungen, wenn <b>du sie einschaltest</b> (dein Browser oder Handy fragt dich um Erlaubnis). Sie dienen für Hinweise aus dem Spiel, etwa zu Events oder
+  zum Ende deines VIP. Du kannst sie jederzeit im Spiel oder in den Einstellungen deines Browsers oder Handys ausschalten.</p>
+
+  <h2>15. Chat und Moderation</h2>
+  <p>Chatnachrichten können von den anderen Spielern im Kanal gelesen werden. Wenn jemand eine Nachricht meldet, prüft unser Team sie zusammen mit ihrem Kontext.
+  Nur du siehst deine Liste blockierter Spieler. Nachrichten werden nach 30 Tagen gelöscht.</p>
+
+  <h2>16. Änderungen dieser Erklärung</h2>
+  <p>Wenn wir diese Erklärung ändern, informieren wir dich im Spiel. Wenn die Änderung deine Einwilligung braucht, fragen wir dich erneut.</p>
+
+  <p class="pie"><a href="/">← Zurück zum Spiel</a> · <a href="/terminos_de.html">Allgemeine Geschäftsbedingungen</a> · <a href="/borrar-cuenta_de.html">Konto löschen</a></p>
 </main>
 </body>
 </html>

@@ -458,7 +458,10 @@ $exec('DELETE FROM intentos');
 // =====================================================================
 titulo('Borrar la cuenta (LOPDP y Google Play)');
 check('/borrar-cuenta.html se ve (pública) y explica cómo', [200, true, false], [$v->get('/borrar-cuenta.html'), $v->tiene('Borrar mi cuenta'), stripos($v->cuerpo, 'whatsapp') !== false]);
+check('…y cómo pedirlo SIN la app (correo de soporte con enlace mailto)', [true, true], [$v->tiene('href="mailto:soporte@tukanec.com?subject='), $v->tiene('sin la app')]);
 [$bo, $JBO, $emailBO, , $claveBO] = $pagador('Borra Cuenta');
+$pdo->exec((string) file_get_contents(dirname(__DIR__) . '/src/migraciones/discord.sql'));   // vínculo con Discord de prueba: al borrar la cuenta se quita (privacidad.html)
+$exec("INSERT INTO discord_vinculos (jugador_id, discord_user_id, discord_nombre, roles_json, creado) VALUES ($JBO, '99887766554433221', 'borrable', '[]', " . time() . ')');
 $bo->api('/api/partida', ['datos' => '{"dia":3}']);
 $bo->api('/api/perfil', ['alias' => 'Borrable TV']);
 $espera = fn() => usleep(3100 * 1000);
@@ -473,6 +476,7 @@ check('Borrar -> ok y la sesión se cierra', [200, true, false], [$bo->http, $r[
 $jb = $fila('SELECT * FROM jugadores WHERE id = ?', [$JBO]);
 check('…datos personales anonimizados', ['borrado-' . $JBO . '@invalid', 'Cuenta borrada', null, 'borrado'], [$jb['email'], $jb['nombre'], $jb['alias'], $jb['estado']]);
 check('…partida, inventario, mensajes y sesiones borrados', [0, 0, 0, 0], [(int) $val('SELECT COUNT(*) FROM partidas WHERE jugador_id = ?', [$JBO]), (int) $val('SELECT COUNT(*) FROM inventario WHERE jugador_id = ?', [$JBO]), (int) $val('SELECT COUNT(*) FROM chat_mensajes WHERE jugador_id = ?', [$JBO]), (int) $val('SELECT COUNT(*) FROM sesiones WHERE jugador_id = ?', [$JBO])]);
+check('…el vínculo con Discord se borra', 0, (int) $val('SELECT COUNT(*) FROM discord_vinculos WHERE jugador_id = ?', [$JBO]));
 check('…las compras se CONSERVAN con los datos de factura (SRI)', [true, '1710034065'], [(bool) $val('SELECT 1 FROM compras WHERE id = ?', [$compraBO]), $val('SELECT comprador_cedula FROM compras WHERE id = ?', [$compraBO])]);
 $bo->api('/api/entrar', ['email' => $emailBO, 'clave' => $claveBO]);
 check('…ya no se puede entrar con esos datos', 401, $bo->http);

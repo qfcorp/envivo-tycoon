@@ -72,6 +72,13 @@ final class Cuentas
             Db::q('UPDATE auditoria SET ip = NULL WHERE jugador_id = ?', [$jugador]);
             Auditoria::anotar('jugador', 'cuenta_borrada', 'El jugador borró su cuenta (correo anterior: ' . substr(hash('sha256', (string) $j['email']), 0, 12) . '…). Se conservan sus compras para el SRI.', $jugador);
         });
+        // Discord (si el módulo está): quitar el vínculo y los roles del juego, como dicen privacidad.html y borrar-cuenta.html
+        // (fuera de la transacción porque habla con Discord; ver server/INTEGRAR_LEGAL.md).
+        if (Migraciones::columnas('discord_vinculos') !== null) {
+            try { Discord::desvincular(null, $jugador); } catch (\Throwable $e) { error_log('EN VIVO borrar cuenta: Discord ' . $e->getMessage()); }
+            Db::q('DELETE FROM discord_vinculos WHERE jugador_id = ?', [$jugador]);
+            if (Migraciones::columnas('discord_codigos') !== null) Db::q('DELETE FROM discord_codigos WHERE jugador_id = ?', [$jugador]);
+        }
     }
 
     /** Marca de riesgo para el Centro de Control (no bloquea nada por sí sola). */

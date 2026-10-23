@@ -1,8 +1,9 @@
 /* Prueba de las traducciones (docs/traducciones y docs/play_store).
    - soporte.json: los 10 idiomas tienen todas las claves del diccionario ES de js/soporte.js, con los mismos {marcadores}.
    - errores.json: los 10 idiomas tienen todos los códigos, con los mismos {marcadores}; cubre todos los 'codigo' que usa server/src.
-   - legal/: 18 páginas (9 idiomas × términos y privacidad) con los marcadores, el aviso de traducción, las mismas secciones
-     que la versión en español y sin WhatsApp.
+   - legal/: 27 páginas (9 idiomas × términos, privacidad y borrar cuenta) con los datos reales (solo [DIRECCIÓN] pendiente),
+     el aviso de traducción, las mismas secciones y viñetas que la versión en español y sin WhatsApp; y las 3 páginas en español
+     (server/public) sin marcadores viejos, con la fecha y con <mark class="falta"> solo para [DIRECCIÓN].
    - play_store/: fichas de los 10 idiomas dentro de los límites de Google Play y la tabla del README con los números reales.
    Uso:  node tests/test_traducciones.js      (sale con código 1 si algo falla) */
 'use strict';
@@ -125,10 +126,22 @@ console.log('errores.json');
 // ---------------------------------------------------------------- legal/
 console.log('legal/');
 {
-  for (const doc of ['terminos', 'privacidad']) {
+  for (const doc of ['terminos', 'privacidad', 'borrar-cuenta']) {
     const es = leer(`server/public/${doc}.html`);
     const h2es = (es.match(/<h2>/g) || []).length;
     const liEs = (es.match(/<li>/g) || []).length;
+    // Versión oficial en español: datos reales del dueño; el único dato pendiente es [DIRECCIÓN] (marcado con <mark class="falta">).
+    const pes = `server/public/${doc}.html`;
+    for (const mk of ['[RUC]', '[CORREO DE SOPORTE]', '[FECHA]']) ok(!es.includes(mk), `${pes}: todavía tiene el marcador ${mk}`);
+    ok((es.match(/<mark class="falta">[^<]*<\/mark>/g) || []).every((m) => m.includes('[DIRECCIÓN]')),
+      `${pes}: <mark class="falta"> solo se usa para [DIRECCIÓN]`);
+    ok(es.includes('soporte@tukanec.com'), `${pes}: falta el correo de soporte`);
+    ok(es.includes('Última actualización: 23 de octubre de 2026'), `${pes}: falta la fecha de última actualización`);
+    ok(!/whats\s*app/i.test(es), `${pes}: menciona WhatsApp`);
+    if (doc !== 'borrar-cuenta') {
+      ok(es.includes('<mark class="falta">[DIRECCIÓN]</mark>'), `${pes}: falta el marcador visible [DIRECCIÓN]`);
+      ok(es.includes('1793135099001'), `${pes}: falta el RUC`);
+    }
     for (const code of IDIOMAS.filter((c) => c !== 'es')) {
       const p = `docs/traducciones/legal/${doc}_${code}.html`;
       const existe = fs.existsSync(path.join(ROOT, p));
@@ -139,14 +152,24 @@ console.log('legal/');
       ok(t.includes(`<html lang="${code}">`), `${p}: falta <html lang="${code}">`);
       ok(t.includes('id="aviso-traduccion"'), `${p}: falta el aviso visible de traducción`);
       ok(t.includes(`href="/${doc}.html"`), `${p}: el aviso no enlaza la versión en español`);
-      for (const mk of ['[RUC]', '[CORREO DE SOPORTE]', '[DIRECCIÓN]', '[FECHA]']) ok(t.includes(mk), `${p}: falta el marcador ${mk}`);
+      // Datos reales (RUC, correo, fecha); el único pendiente es [DIRECCIÓN], igual que en español.
+      for (const mk of ['[RUC]', '[CORREO DE SOPORTE]', '[FECHA]', '{FECHA}']) ok(!t.includes(mk), `${p}: todavía tiene el marcador ${mk}`);
+      ok(t.includes('soporte@tukanec.com'), `${p}: falta el correo de soporte`);
+      if (doc !== 'borrar-cuenta') {
+        ok(t.includes('<mark class="falta">[DIRECCIÓN]</mark>'), `${p}: falta el marcador visible [DIRECCIÓN]`);
+        ok(t.includes('1793135099001'), `${p}: falta el RUC`);
+      }
+      ok(t.includes('href="mailto:soporte@tukanec.com') , `${p}: falta el enlace mailto al soporte`);
+      if (doc === 'borrar-cuenta') ok(t.includes('href="mailto:soporte@tukanec.com?subject='), `${p}: falta el botón para pedir el borrado por correo (sin la app)`);
       ok(!/whats\s*app|\[WHATSAPP\]/i.test(t), `${p}: menciona WhatsApp (el soporte es solo en el juego y por correo)`);
       ok((t.match(/<h2>/g) || []).length === h2es, `${p}: tiene ${(t.match(/<h2>/g) || []).length} secciones y el español ${h2es}`);
       ok((t.match(/<li>/g) || []).length === liEs, `${p}: tiene ${(t.match(/<li>/g) || []).length} viñetas y el español ${liEs}`);
-      ok(t.includes('QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES)'), `${p}: falta la razón social exacta`);
-      ok(t.includes('Pago Plux'), `${p}: falta Pago Plux`);
+      if (doc !== 'borrar-cuenta') {
+        ok(t.includes('QFCORP SOCIEDAD POR ACCIONES SIMPLIFICADA (QF PRODUCCIONES)'), `${p}: falta la razón social exacta`);
+        ok(t.includes('Pago Plux') && t.includes('Google Play'), `${p}: falta Pago Plux o Google Play`);
+      }
       // etiquetas abiertas = cerradas (chequeo simple de HTML)
-      for (const tag of ['p', 'h2', 'ul', 'li', 'b', 'a', 'main', 'div']) {
+      for (const tag of ['p', 'h2', 'ul', 'ol', 'li', 'b', 'a', 'main', 'div', 'mark']) {
         const a = (t.match(new RegExp(`<${tag}[\\s>]`, 'g')) || []).length, c = (t.match(new RegExp(`</${tag}>`, 'g')) || []).length;
         ok(a === c, `${p}: <${tag}> abiertas ${a} ≠ cerradas ${c}`);
       }
