@@ -1,6 +1,7 @@
 # Publicar EN VIVO Tycoon en Google Play (app de Android)
 
-Guía paso a paso. La parte técnica ya está preparada en el repositorio. Lo que se hace a mano está marcado:
+Guía técnica paso a paso. **La lista corta y en orden para el dueño está en `docs/PUBLICAR_GOOGLE_PLAY.md`** (incluye
+el robot de GitHub que construye el .aab, la prueba cerrada y la solicitud de producción). Lo que se hace a mano está marcado:
 
 - 🖥️ **qfone**: en tu PC con Windows.
 - 🌐 **Play Console**: en el navegador, en play.google.com/console.
@@ -25,6 +26,8 @@ no aparece igual, escribe la palabra en inglés que va entre paréntesis en la *
   El juego detecta si está dentro de la app (`js/googleplay.js`) y cambia la Tienda sola.
 - Google cobra **15 %** de comisión sobre el primer millón de dólares al año (hay que **inscribirse** en ese nivel
   del 15 %; sin inscripción es 30 %). Esta comisión no se aplica a lo que se vende por la web con Plux.
+  (Google cambia a 10 % + 5 % de facturación por región desde el 30 jun 2026; Latinoamérica a más tardar en sept. 2027:
+  ver `docs/PUBLICAR_GOOGLE_PLAY.md`, paso 2.)
 
 ### Qué ya está listo en el repositorio
 
@@ -50,7 +53,7 @@ no aparece igual, escribe la palabra en inglés que va entre paréntesis en la *
 | **Cajas sorpresa** | Si algún día se vende algo al azar (cajas, sobres), hay que mostrar las probabilidades **antes** de comprar. Hoy no hay. |
 | **Transferencia de cuenta ($9,99)** | Es un servicio digital. En la app se vende con Google Play o **no se ofrece**. Recomendado: no mostrarla en la app, solo en la web. |
 | **Chat (contenido de usuarios)** | Debe haber: (1) términos aceptados **antes** de escribir en el chat, (2) qué está prohibido (insultos, estafas, contenido sexual…), (3) botón para **reportar** y para **bloquear** dentro del juego (ya existe: "Reportar y bloquear"), (4) moderación de verdad y continua (el panel ya tiene ocultar, silenciar y expulsar). |
-| **Borrar la cuenta** | Como se puede crear una cuenta, el jugador debe poder **pedir que se borre** desde el juego **y** desde una página web cuyo enlace va en el formulario "Seguridad de los datos". ⚠️ Hoy el juego no tiene ese botón: hay que hacerlo antes de publicar. |
+| **Borrar la cuenta** | Como se puede crear una cuenta, el jugador debe poder **pedir que se borre** desde el juego **y** desde una página web cuyo enlace va en el formulario "Seguridad de los datos". ✅ Ya existe: Cuenta → Borrar mi cuenta, y `https://juego.tukanec.com/borrar-cuenta.html`. |
 | **Compras sin confirmar** | Si el servidor no confirma la compra en **3 días**, Google le devuelve el dinero al jugador y le quita lo comprado. `Google.php` lo confirma al instante. Si se cae, `GooglePlay.restaurar()` vuelve a intentar cada vez que se abre la app. |
 | **Reembolsos y contracargos** | Si Google devuelve el dinero, el servidor debe **quitar** lo entregado. Lo hace `bin/google_anulados.php` con la API de compras anuladas (Voided Purchases), que solo guarda los últimos **30 días**: debe correr por lo menos una vez al día. |
 | **Requisitos técnicos 2026** | Desde el 31 ago 2026, las apps nuevas deben apuntar a **Android 16 (API 36)** y usar **Play Billing Library 8 o más nueva**. Bubblewrap 1.27.0 ya lo cumple: API 36 y la librería de pagos `androidbrowserhelper:billing:1.2.0`, que usa Play Billing **8.3.0**. |
@@ -269,6 +272,10 @@ Menú → **Monetizar con Play** (Monetize with Play) → **Productos** (Product
 (Los precios salen de `server/src/Catalogo.php`. Los refuerzos se venden directo a 0,99 según `GOOGLE_PRECIO_REFUERZO`.
 No crees `transferencia_cuenta`.)
 
+⚠️ Esta tabla tiene solo los productos de la versión 1. La **lista completa** (pases de temporada, packs de obra,
+pase de copa, ofertas VIP…), con nombres, descripciones y cuáles están pendientes de confirmar, está en
+`docs/PUBLICAR_GOOGLE_PLAY.md`, paso 7; los precios por país (Colombia, Perú), en el paso 17.
+
 ---
 
 ## 7. 🌐 Que puedas probar compras sin pagar
@@ -348,9 +355,10 @@ En **Panel** (Dashboard) → "Configura tu app", completa todo:
 - **Anuncios**: "No, mi app no contiene anuncios" (si es así).
 - **Clasificación de contenido** (cuestionario IARC): categoría Juego. Responde **Sí** a: los usuarios pueden
   interactuar/chatear, compras digitales. Responde la verdad sobre violencia, apuestas, etc. (no hay apuestas).
-- **Público objetivo**: **16 años o más** (o 13+). **No** marques niños.
+- **Público objetivo**: **16-17 y 18 o más** (decisión: 16+). **No** marques niños ni 13-15.
 - **Seguridad de los datos** (Data safety): correo y nombre (cuenta), compras, mensajes del chat, partida guardada;
-  todo **cifrado en tránsito** (https). Pide el **enlace web para borrar la cuenta** (hay que crearlo, ver Sección 1).
+  todo **cifrado en tránsito** (https). Enlace web para borrar la cuenta: `https://juego.tukanec.com/borrar-cuenta.html`.
+  Respuestas completas en `docs/play_store/README.md` §2.6.
 - **Ficha de Play Store**: descripción, ícono 512×512 (`icons/icon-512.png`), imagen destacada de 1024×500 y
   mínimo 2 capturas del celular (sirven las de `tests/capturas/`). **No** escribas que se puede comprar en la web.
 
@@ -363,7 +371,8 @@ En **Panel** (Dashboard) → "Configura tu app", completa todo:
 2. Manda el enlace de la prueba a esas 12 personas: tienen que **aceptar** el enlace e **instalar** la app.
    Pídeles que la abran varias veces en esos días y que te comenten.
 3. Espera **14 días seguidos** con las 12 inscritas (si alguien se sale, su cuenta de días vuelve a empezar).
-4. **Panel** → **Solicitar acceso a producción** (Apply for production) → responde el cuestionario.
+4. **Panel** → **Solicitar acceso a producción** (Apply for production) → responde el cuestionario (respuestas
+   listas, mensajes para reclutar testers y grupo de Google en `docs/PUBLICAR_GOOGLE_PLAY.md`, pasos 12 a 15).
 5. Cuando lo aprueben (pueden tardar unos días): **Producción** → **Crear versión** → el mismo `.aab` → **Países**:
    Ecuador (y los que quieras) → **Enviar a revisión**.
 

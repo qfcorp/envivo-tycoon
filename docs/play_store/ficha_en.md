@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Run a live event production company: from a garage to the stadium final.
+Run your event production company: cameras and live streaming in a tycoon
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Six chapters with their own characters. MegaVisión, the rival company, will fig
 ★ PLAY WITH OTHER COMPANIES
 • Player market to buy and sell gear with credits (opens after your first purchase; credits can't be exchanged for real money).
 • Alliances of up to 20 companies and a moderated chat with report and block buttons.
-• Coming soon: online events, weekly leagues and challenges between companies.
+• Online events: Weekly League, Daily Challenge, Mega Festival and Production Duel.
 
 ★ FREE TO PLAY
-The game is free to download and the whole story can be played without paying. It offers optional in-app purchases: credit packs, a welcome offer and a starter pack (once each), temporary boosts, a Monthly Card and a 30-day VIP Pass. Nothing renews automatically. No ads.
+The game is free to download and the whole story can be played without paying. It offers optional in-app purchases: credit packs, one-time offers (welcome, starter pack and achievement offers), temporary boosts, a Monthly Card and time-limited passes (such as the 30-day VIP Pass). Every item shows its contents before you buy and nothing renews automatically. No ads.
 
 ★ WORKS OFFLINE
 Story mode works without a connection and your game saves automatically. Create an account if you want to save to the cloud, make purchases or play with other companies.

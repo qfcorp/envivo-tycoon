@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Guida la tua casa di produzione live: dal garage alla finale allo stadio.
+Gestisci la tua casa di produzione: telecamere, eventi e dirette in un tycoon
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Sei capitoli con personaggi propri. MegaVisión, la casa di produzione rivale, t
 ★ GIOCA CON ALTRE CASE DI PRODUZIONE
 • Mercato tra giocatori per comprare e vendere attrezzatura con i crediti (si apre dopo il tuo primo acquisto; i crediti non si convertono in denaro reale).
 • Alleanze fino a 20 case di produzione e chat moderata, con pulsanti per segnalare e bloccare.
-• Prossimamente: eventi online, leghe settimanali e sfide tra case di produzione.
+• Eventi online: Lega settimanale, Sfida del giorno, Mega Festival e Duello tra produzioni.
 
 ★ GRATIS
-Il gioco si scarica gratis e tutta la storia si può giocare senza pagare. Include acquisti in-app facoltativi: pacchetti di crediti, un'offerta di benvenuto e un pacchetto iniziale (una volta ciascuno), rinforzi temporanei, una Tessera mensile e un Pass VIP di 30 giorni. Niente si rinnova da solo. Niente pubblicità.
+Il gioco si scarica gratis e tutta la storia si può giocare senza pagare. Include acquisti in-app facoltativi: pacchetti di crediti, offerte una tantum (benvenuto, pacchetto iniziale e offerte per traguardi), rinforzi temporanei, una Tessera mensile e pass a tempo (come il Pass VIP di 30 giorni). Ogni articolo mostra il contenuto prima dell'acquisto e niente si rinnova da solo. Niente pubblicità.
 
 ★ FUNZIONA OFFLINE
 La modalità storia funziona senza connessione e la partita si salva da sola. Crea un account se vuoi salvare nel cloud, fare acquisti o giocare con altre case di produzione.

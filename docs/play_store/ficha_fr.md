@@ -9,7 +9,7 @@ EN VIVO Tycoon
 
 ## Descripción breve
 
-Dirigez votre boîte de production en direct : du garage à la finale au stade.
+Dirigez votre boîte de production : caméras, événements et direct en tycoon
 
 ## Descripción completa
 
@@ -35,10 +35,10 @@ Six chapitres avec leurs propres personnages. MegaVisión, la société rivale, 
 ★ JOUEZ AVEC D'AUTRES SOCIÉTÉS
 • Marché entre joueurs pour acheter et vendre du matériel avec des crédits (ouvert après votre premier achat ; les crédits ne s'échangent pas contre de l'argent réel).
 • Alliances jusqu'à 20 sociétés et chat modéré, avec boutons pour signaler et bloquer.
-• Bientôt : événements en ligne, ligues hebdomadaires et défis entre sociétés.
+• Événements en ligne : Ligue hebdomadaire, Défi du jour, Méga Festival et Duel de sociétés.
 
 ★ GRATUIT
-Le jeu se télécharge gratuitement et toute l'histoire peut se jouer sans payer. Il propose des achats intégrés facultatifs : packs de crédits, une offre de bienvenue et un pack de démarrage (une fois chacun), des renforts temporaires, une Carte mensuelle et un Pass VIP de 30 jours. Rien ne se renouvelle automatiquement. Sans publicité.
+Le jeu se télécharge gratuitement et toute l'histoire peut se jouer sans payer. Il propose des achats intégrés facultatifs : packs de crédits, offres uniques (bienvenue, pack de démarrage et offres de réussite), des renforts temporaires, une Carte mensuelle et des pass à durée limitée (comme le Pass VIP de 30 jours). Chaque article affiche son contenu avant l'achat et rien ne se renouvelle automatiquement. Sans publicité.
 
 ★ FONCTIONNE HORS LIGNE
 Le mode histoire se joue sans connexion et votre partie est sauvegardée automatiquement. Créez un compte pour sauvegarder dans le cloud, faire des achats ou jouer avec d'autres sociétés.
