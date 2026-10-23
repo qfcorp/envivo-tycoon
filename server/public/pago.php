@@ -1,0 +1,99 @@
+<?php
+declare(strict_types=1);
+
+// Página de pago con tarjeta (Pago Plux): /pago.php?o=<token de la compra>
+// - Solo la ve el dueño de la compra (su sesión del juego).
+// - El valor es FIJO (del catálogo, con IVA incluido) y no se puede cambiar desde la página.
+// - La tarjeta se cifra en el navegador (assets/pago.js con CryptoJS + JSEncrypt) y va cifrada a /api/plux/pago.
+//   Este servidor nunca ve el número, la fecha ni el CVV.
+
+require dirname(__DIR__) . '/src/arranque.php';
+
+use EnVivo\{Catalogo, Compras, Cuentas, Db, Http, Plux, Sesiones};
+
+try {
+    Db::pdo();
+    $j = Sesiones::jugadorId();
+    if ($j === null) Http::pagina(401, 'Entra a tu cuenta', 'Para pagar, primero entra a tu cuenta desde el juego (menú Tienda) y vuelve a tocar Comprar.');
+    $c = Compras::porToken(is_string($_GET['o'] ?? null) ? $_GET['o'] : '');
+    if (!$c || (int) $c['jugador_id'] !== $j) Http::pagina(404, 'Compra no encontrada', 'Vuelve al juego y toca Comprar otra vez.');
+    if ($c['estado'] === 'pagado') Http::redirigir('/?compra=ok');
+    if ($c['estado'] !== 'pendiente') Http::pagina(409, 'Esta compra ya no está abierta', 'Vuelve al juego y empieza otra compra.');
+    if (!Plux::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con tarjeta todavía no está listo. Intenta más tarde.');
+    $p = Catalogo::producto((string) $c['producto']);
+    if (!$p) Http::pagina(404, 'Producto no disponible', 'Este producto ya no está en la tienda.');
+    if ($c['producto'] === 'inicio' && Compras::inicioComprado($j)) Http::pagina(409, 'Ya tienes el paquete de inicio', 'El paquete de inicio se compra una sola vez y ya lo tienes en tu cuenta.');
+    Sesiones::recordarCompra((int) $c['id']);   // para reconocer la compra al volver del banco (3DS)
+    $jug = Cuentas::porId($j);
+} catch (\Throwable $e) {
+    error_log('EN VIVO pago.php: ' . get_class($e) . ' ' . basename($e->getFile()) . ':' . $e->getLine() . ' ' . mb_substr($e->getMessage(), 0, 300));
+    Http::pagina(500, 'Algo salió mal', 'Intenta otra vez en un momento.');
+}
+
+$e = [Http::class, 'e'];
+$total = Http::dinero($c['total']);
+$avisos = [
+    'rechazado' => 'Tu banco no aprobó el pago. Puedes intentar de nuevo o usar otra tarjeta.',
+    'incompleto' => 'La respuesta del banco llegó incompleta. Intenta otra vez o usa otra tarjeta.',
+];
+$aviso = $avisos[(string) ($_GET['r'] ?? '')] ?? '';
+$nombres = explode(' ', (string) $jug['nombre'], 2);
+
+Http::cabecerasPagina();
+echo Http::inicioHtml('Pagar ' . $p['nombre']);
+?>
+<main class="caja" id="plux-caja" data-o="<?= $e($c['token']) ?>" data-llave="<?= $e(Plux::llavePem()) ?>">
+  <div class="marca">EN VIVO <b>Tycoon</b></div>
+<?php if (Plux::ambiente() === 'sandbox'): ?>
+  <div class="aviso aviso-info"><b>MODO DE PRUEBAS (sandbox):</b> no se cobra dinero real. Usa solo tarjetas de prueba de Plux.</div>
+<?php endif; ?>
+  <h1>Pagar con tarjeta</h1>
+  <section class="producto">
+    <div class="producto-nombre"><?= $e($p['nombre']) ?></div>
+    <div class="producto-detalle"><?= $e($p['detalle']) ?></div>
+    <div class="producto-total"><span>Total a pagar</span><output id="valor-fijo"><?= $e($total) ?></output></div>
+    <div class="tenue">Incluye IVA 15 %. El valor es fijo y no se puede cambiar.</div>
+  </section>
+<?php if ($aviso !== ''): ?>
+  <div class="aviso aviso-error" id="aviso-regreso"><?= $e($aviso) ?></div>
+<?php endif; ?>
+
+  <div id="plux-paso-datos">
+    <div class="campos">
+      <label class="ancho">Número de la tarjeta<input id="plux-numero" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="0000 0000 0000 0000"></label>
+      <label>Mes<select id="plux-mes" autocomplete="cc-exp-month"><option value="">Mes</option>
+<?php for ($m = 1; $m <= 12; $m++): ?>        <option value="<?= sprintf('%02d', $m) ?>"><?= sprintf('%02d', $m) ?></option>
+<?php endfor; ?>
+      </select></label>
+      <label>Año<select id="plux-anio" autocomplete="cc-exp-year"><option value="">Año</option>
+<?php for ($a = (int) date('Y'); $a <= (int) date('Y') + 12; $a++): ?>        <option value="<?= $a ?>"><?= $a ?></option>
+<?php endfor; ?>
+      </select></label>
+      <label>CVV<input id="plux-cvv" type="password" inputmode="numeric" autocomplete="cc-csc" maxlength="4" placeholder="123"></label>
+      <label>Nombres del titular<input id="plux-nombres" maxlength="60" autocomplete="cc-given-name" value="<?= $e($nombres[0] ?? '') ?>"></label>
+      <label>Apellidos del titular<input id="plux-apellidos" maxlength="60" autocomplete="cc-family-name" value="<?= $e($nombres[1] ?? '') ?>"></label>
+      <label>Cédula del titular<input id="plux-cedula" maxlength="20" inputmode="numeric" placeholder="1712345678"></label>
+      <label>Correo<input id="plux-email" type="email" maxlength="120" autocomplete="email" value="<?= $e($jug['email']) ?>"></label>
+      <label class="ancho">Celular<input id="plux-telefono" type="tel" maxlength="16" autocomplete="tel" placeholder="0991234567"></label>
+    </div>
+    <label class="casilla"><input type="checkbox" id="plux-terminos"> <span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener">términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
+    <button type="button" class="boton grande" id="plux-pagar">🔒 Pagar <?= $e($total) ?></button>
+  </div>
+
+  <div id="plux-paso-otp" hidden>
+    <h2>Código de tu banco</h2>
+    <p>Tu banco te envió un código por SMS o correo. Escríbelo aquí:</p>
+    <input id="plux-otp" inputmode="numeric" maxlength="10" autocomplete="one-time-code" class="otp">
+    <button type="button" class="boton grande" id="plux-otp-btn">Confirmar código</button>
+  </div>
+
+  <div id="plux-mensaje" aria-live="polite"></div>
+
+  <p class="tenue seguro">Tu tarjeta se procesa con Pago Plux; nosotros no guardamos los datos de tu tarjeta. Los datos se cifran en este navegador antes de enviarse.</p>
+  <p class="tenue">Si eres menor de edad, pide permiso a tus padres antes de comprar.</p>
+  <p class="pie"><a href="/">← Volver al juego</a> · <a href="/terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
+</main>
+<script src="/pago-assets/vendor/crypto-js.min.js"></script>
+<script src="/pago-assets/vendor/jsencrypt.min.js"></script>
+<script src="/pago-assets/pago.js?v=1"></script>
+</body></html>

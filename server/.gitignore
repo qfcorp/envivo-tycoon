@@ -1,0 +1,7 @@
+# El repositorio es PUBLICO: nunca subir configuracion real, bases de datos ni llaves.
+*.env
+!config.env.ejemplo
+*.sqlite
+*.sqlite-*
+*.pem
+*.key
