@@ -1,6 +1,6 @@
 # Centro de Control (`/control/`): cómo integrarlo
 
-El Centro de Control es **el** panel del dueño. Reemplaza a `/admin.php` (que pasará a redirigir a `/control/`).
+El Centro de Control es **el** panel del dueño. Reemplaza a `/admin.php` (que ya redirige a `/control/`).
 Lee y escribe **solo** con las clases y tablas del servidor. La única tabla propia es `control_sesiones` (las
 sesiones de entrada del panel).
 
@@ -60,15 +60,16 @@ Si falta una tabla opcional (chat, soporte, transferencias, actividad, mercado, 
   Hay un tope diario (suma de valores absolutos), `ENVIVO_CONTROL_TOPE_CREDITOS` (por defecto 20000; 0 = sin tope).
 - Cabeceras: las de `Http::cabecerasPagina()` (CSP `'self'`, `X-Frame-Options DENY`, `no-store`) y `noindex`.
 
-Agregar a `server/config.env.ejemplo` (no lo edité):
+Ya están en `server/config.env.ejemplo` (y `instalar.sh` / `actualizar.sh` las agregan solas a `/etc/envivo/config.env`
+si faltan, vacías; `ENVIVO_CONTROL_TOPE_CREDITOS` vacío = 20000):
 ```
 ; Centro de Control /control/: segundo factor (php server/bin/control_totp.php), IPs permitidas y tope diario de créditos a mano
 ENVIVO_ADMIN_TOTP=
 ENVIVO_CONTROL_IPS=
-ENVIVO_CONTROL_TOPE_CREDITOS=20000
+ENVIVO_CONTROL_TOPE_CREDITOS=
 ```
 
-## nginx (para `server/deploy/nginx-sitio.sh`, dentro de `reglas()`, antes de `location / { return 404; }`)
+## nginx (ya está en `server/deploy/nginx-sitio.sh`, dentro de `reglas()`; referencia)
 
 Lista blanca, igual que el resto. Solo se ejecuta `index.php`. Se sirven solo `control.css` y `control.js`. Todo lo
 demás bajo `/control/` (incluido `lib/`) da 404.
@@ -95,16 +96,15 @@ demás bajo `/control/` (incluido `lib/`) da 404.
 (Dentro del heredoc de `nginx-sitio.sh` los `$` de nginx van con `\$`, como ya se hace con `\$uri`. `$PUB` y `$SOCK`
 son las variables del script.) Para probarlo: `curl -I https://juego.tukanec.com/control/lib/base.php` debe dar 404.
 
-**Service worker (A-16):** agregar `control\/` a la expresión de exclusión de `sw.js` (línea ~569), para que el panel nunca
-quede guardado en un celular.
+**Service worker (A-16):** `sw.js` ya excluye `control/` (igual que `api/`, `pago.php`, `admin.php`), así el panel nunca
+queda guardado en un celular.
 
-## Cuando `/control/` reemplace a `/admin.php`
+## `/control/` reemplazó a `/admin.php` (hecho)
 
 `/control/` ya cubre todo lo de `admin.php`: ventas, CSV para el SRI, créditos a mano, estado de la cuenta, cerrar sesiones,
 revertir compras, productos y ofertas, mercado, chat y palabras, soporte y respuestas rápidas, transferencias, mantenimiento,
 anuncio y auditoría. Además tiene gráficos, TOTP, lista de IPs, tope de créditos y reglas contra el abuso de reembolsos.
-Para redirigir, al inicio de `admin.php`: `header('Location: /control/', true, 301); exit;`. En nginx también se puede
-cambiar `location = /admin.php` por `return 301 /control/;`.
+`admin.php` ya redirige al inicio (`header('Location: /control/', true, 302)`), sin leer nada de lo que mande el navegador.
 
 ## Métodos que convendría tener en el servidor
 
@@ -156,7 +156,7 @@ contracargos con `Compras::revertir`, las columnas del CSV, que la tienda de `/a
 y el mantenimiento y el anuncio. Si hay Playwright (`NODE_PATH=/opt/npm-tools/node_modules`), también un celular de
 390x844: sin desplazamiento horizontal, sin errores de consola y con capturas.
 
-Para sumarlas a `server/tests/correr.sh` (no lo edité), antes del resumen final:
+Ya corren dentro de `server/tests/correr.sh` (paso 3c, junto con Discord, Festival, Liga y Duelos). Referencia de cómo se suman:
 ```bash
 echo
 echo "== 7. Centro de Control (/control/)"

@@ -15,7 +15,8 @@
 #   4. Crea /etc/envivo/ops.env (ajustes y Telegram) si no existe. Si ya existe, no lo toca.
 #   5. Agrega al cron de root (sin repetir):  1:30 respaldo   y   cada hora (minuto 17) chequeo de salud.
 #      Antes guarda una copia del cron de root en /var/backups/envivo/.
-#   6. Rotacion de los registros del juego (/etc/logrotate.d/envivo), probada con logrotate -d.
+#   6. Rotacion de los registros del juego (/etc/logrotate.d/envivo, desde envivo.logrotate), probada con logrotate -d:
+#      respaldo, salud, tareas, discord, festival y liga.
 #   7. Zonas de limite para nginx en /etc/nginx/conf.d/envivo-limites.conf (solo definen zonas: no cambian
 #      ningun sitio). Prueba con "nginx -t": si falla, lo quita y deja nginx como estaba. NGINX_LIMITES=0 lo salta.
 #   8. Hace el primer respaldo, un chequeo de prueba (sin mandar a Telegram) y muestra la lista de pendientes.
@@ -41,7 +42,7 @@ FECHA="$(date +%Y%m%d-%H%M%S)"
 cd /tmp || exit 1
 
 [ "$(id -u)" = "0" ] || { echo "ERROR: correlo con sudo:   sudo bash $0"; exit 1; }
-for f in respaldo_envivo.sh salud_envivo.sh nginx-envivo-limites.conf; do
+for f in respaldo_envivo.sh salud_envivo.sh nginx-envivo-limites.conf envivo.logrotate; do
   [ -f "$SRC/$f" ] || { echo "ERROR: falta $SRC/$f (corre este instalador desde la carpeta del juego)"; exit 1; }
 done
 haz() { if [ "$DRY_RUN" = "1" ]; then echo "   (prueba) haria: $*"; else "$@"; fi; }
@@ -168,29 +169,7 @@ fi
 
 echo "== 6. Rotacion de registros ($LOGROTATE)"
 LR="$(mktemp)"
-cat > "$LR" <<'LOGR'
-# EN VIVO Tycoon: registros del juego (creado por server/deploy/ops/instalar_ops.sh). Una vez por semana, 8 semanas.
-/var/log/envivo-respaldo.log /var/log/envivo-salud.log {
-    su root adm
-    weekly
-    rotate 8
-    compress
-    delaycompress
-    missingok
-    notifempty
-    create 0640 root adm
-}
-/var/log/envivo-tareas.log {
-    su root adm
-    weekly
-    rotate 8
-    compress
-    delaycompress
-    missingok
-    notifempty
-    create 0640 www-data www-data
-}
-LOGR
+cp "$SRC/envivo.logrotate" "$LR"
 if ! command -v logrotate > /dev/null; then
   echo "   AVISO: no esta logrotate (sudo apt install logrotate). Se salta."
 elif [ -f "$LOGROTATE" ] && cmp -s "$LR" "$LOGROTATE"; then
@@ -222,7 +201,7 @@ else
   ANTES=""; [ -f "$LIMITES" ] && ANTES="$RESPALDOS/envivo-limites.conf.antes-$FECHA" && cp -p "$LIMITES" "$ANTES"
   install -o root -g root -m 644 "$SRC/nginx-envivo-limites.conf" "$LIMITES"
   if nginx -t > /tmp/envivo-ops-nginx-t.log 2>&1; then
-    recargar_nginx && echo "   listo (nginx -t correcto y nginx recargado). Solo define zonas: ningun sitio cambia todavia."
+    recargar_nginx && echo "   listo (nginx -t correcto y nginx recargado). Solo define zonas: las usa el sitio del juego."
   else
     echo "   ERROR: nginx -t fallo con las zonas. Se deja nginx como estaba. Detalle:"; sed 's/^/     /' /tmp/envivo-ops-nginx-t.log | head -n 10
     if [ -n "$ANTES" ]; then cp -p "$ANTES" "$LIMITES"; else rm -f "$LIMITES"; fi
@@ -259,5 +238,4 @@ echo "Lista de lo que falta (en orden, ver docs/OPERACION.md):"
 echo " a) Probar que llegan las alertas:   sudo $BIN/salud_envivo.sh --probar-telegram"
 echo " b) Agregar /var/backups/envivo y /etc/envivo al restic de las 2:00 (docs/OPERACION.md, paso 3)."
 echo "    Primero mandame lo que sale de:   sudo grep -n \"/etc/erp_qf\\|/var/www\" /usr/local/bin/backup_restic_erp_qf.sh"
-echo " c) Cuando la plantilla de nginx del juego traiga los limites y las cabeceras:  sudo bash /var/www/envivo/server/deploy/instalar.sh"
-echo " d) Ver los respaldos:   sudo $BIN/respaldo_envivo.sh --listar"
+echo " c) Ver los respaldos:   sudo $BIN/respaldo_envivo.sh --listar"

@@ -1,0 +1,25 @@
+# EN VIVO Tycoon: registros del juego. Una vez por semana, 8 semanas.
+# Lo instala server/deploy/ops/instalar_ops.sh en /etc/logrotate.d/envivo (y actualizar.sh lo pone al dia).
+# Si una tarea programada nueva escribe otro /var/log/envivo-*.log, se suma aqui.
+# Cron de root (instalar_ops.sh): respaldo y chequeo de salud
+/var/log/envivo-respaldo.log /var/log/envivo-salud.log {
+    su root adm
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root adm
+}
+# Cron de www-data (instalar.sh): tarea diaria y Google Play (tareas), bot de Discord, Mega Festival y Liga Semanal
+/var/log/envivo-tareas.log /var/log/envivo-discord.log /var/log/envivo-festival.log /var/log/envivo-liga.log {
+    su root adm
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 www-data www-data
+}

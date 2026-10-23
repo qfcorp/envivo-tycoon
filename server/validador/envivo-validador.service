@@ -1,6 +1,8 @@
 # EN VIVO Tycoon — validador de intentos de evento (repite cada jugada en el servidor)
-# Copiar a /etc/systemd/system/envivo-validador.service (ver server/validador/README.md)
-# Escucha solo en 127.0.0.1:8790. La clave se lee de /etc/envivo/validador.clave (root, 600).
+# Lo instala solo server/deploy/instalar.sh (y actualizar.sh si falta) en /etc/systemd/system/envivo-validador.service,
+# cambiando /var/www/envivo por la carpeta del juego si es otra. No editar la copia instalada: se vuelve a escribir.
+# Escucha solo en 127.0.0.1:8790. La clave se lee de /etc/envivo/validador.clave (root, 600), que es la misma
+# VALIDADOR_CLAVE de /etc/envivo/config.env (la crea el instalador con openssl rand). Ver server/validador/README.md
 
 [Unit]
 Description=EN VIVO Tycoon - validador de intentos de evento

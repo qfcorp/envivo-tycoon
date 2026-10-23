@@ -5,7 +5,7 @@
 #   0. bash -n y shellcheck (si esta) de los scripts
 #   1. respaldo_envivo.sh con una base TEMPORAL: prueba (DRY_RUN), respaldo real, copia mientras se escribe,
 #      revision de integridad, rotacion 7/4, base danada, restaurar
-#   2. nginx de verdad con la plantilla + nginx-endurecer.patch + nginx-envivo-limites.conf: nginx -t (HTTP y HTTPS),
+#   2. nginx de verdad con la plantilla (ya trae nginx-endurecer.patch; si no, se aplica) + nginx-envivo-limites.conf: nginx -t (HTTP y HTTPS),
 #      cabeceras de seguridad en todas las rutas, limite 429 en JSON, tamanos maximos, CSP en Chromium sin violaciones
 #   3. salud_envivo.sh contra ese nginx y un Telegram FALSO: todo bien, cada problema, anti-spam de 3 h,
 #      "ya se arreglo", DRY_RUN, token leido de alerta-telegram.sh, modo helper, Telegram caido
@@ -156,8 +156,14 @@ if command -v nginx > /dev/null && [ -n "$FPM" ]; then
   NG="$TMP/nginx"; mkdir -p "$NG/logs" "$NG/tmp"
   APPN="$TMP/app"; mkdir -p "$APPN"
   (cd "$RAIZ" && tar --exclude=./node_modules --exclude=./tests/capturas --exclude=./.git -cf - .) | tar -xf - -C "$APPN"
-  (cd "$APPN" && patch -s -p1 < "$OPS/nginx-endurecer.patch")
-  check "El parche se aplica a la plantilla actual" 0 "$?"
+  # El parche ya esta aplicado en la plantilla del repositorio (limites, respuesta 429 y Permissions-Policy): no se vuelve a aplicar
+  P_SITIO="$APPN/server/deploy/nginx-sitio.sh"
+  if grep -q 'limit_req zone=envivo_entrar' "$P_SITIO" && grep -q 'location @envivo_429' "$P_SITIO" && grep -q 'Permissions-Policy' "$P_SITIO"; then
+    check "La plantilla ya trae nginx-endurecer.patch (no se vuelve a aplicar)" 0 0
+  else
+    (cd "$APPN" && patch -s -N -p1 < "$OPS/nginx-endurecer.patch")
+    check "El parche se aplica a la plantilla actual" 0 "$?"
+  fi
   chmod -R a+rX "$APPN"
   cat > "$NG/fpm.conf" <<FPMC
 [global]
@@ -192,7 +198,7 @@ http {
 }
 NGC
   }
-  # Plantilla de HOY (sin el parche) + zonas: debe seguir pasando (las zonas solas no cambian nada)
+  # Plantilla del repositorio tal cual + zonas: debe pasar
   DOMINIO=juego.tukanec.com APP="$APPN" SOCK="$NG/fpm.sock" LISTEN="127.0.0.1:$P_NG" bash "$RAIZ/server/deploy/nginx-sitio.sh" > "$NG/sitio_hoy.conf"
   conf_nginx "$NG/sitio_hoy.conf" "$NG/nginx_hoy.conf" "$NG/t1.pid"
   nginx -t -q -c "$NG/nginx_hoy.conf" -p "$NG" 2> "$NG/logs/t.log"

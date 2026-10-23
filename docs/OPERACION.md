@@ -137,29 +137,21 @@ sudo cp -p /root/backup_restic_erp_qf.sh.antes-envivo-FECHA /usr/local/bin/backu
 
 ---
 
-## Paso 4. Protección de nginx (lo prepara el programador; tú solo corres el instalador)
+## Paso 4. Protección de nginx (ya está puesta: solo comprobar)
 
-El paso 1 ya dejó las **zonas de límite** en `/etc/nginx/conf.d/envivo-limites.conf`. Por sí solas no cambian nada en
-ningún sitio: solo las usa el sitio del juego. El instalador las probó con `nginx -t` antes de recargar
-(si `nginx -t` hubiera fallado, las quita y deja nginx como estaba).
-
-El cambio del **sitio del juego** está listo en `server/deploy/ops/nginx-endurecer.patch` para la plantilla
-`server/deploy/nginx-sitio.sh`. Cuando esté en GitHub, en el VPS solo corres:
-
-```
-sudo bash /var/www/envivo/server/deploy/instalar.sh
-```
-
-(El instalador prueba con `nginx -t` y si algo falla deja el sitio como estaba.) Luego comprueba:
+El paso 1 dejó las **zonas de límite** en `/etc/nginx/conf.d/envivo-limites.conf` (el instalador del juego también las
+pone). El **sitio del juego** ya trae los límites y las cabeceras de seguridad: la plantilla `server/deploy/nginx-sitio.sh`
+ya tiene aplicado `server/deploy/ops/nginx-endurecer.patch`, y `instalar.sh` la escribe cada vez que corre
+(prueba con `nginx -t` y si algo falla deja el sitio como estaba). No hay nada que aplicar. Para comprobar:
 
 ```
 curl -sI --resolve juego.tukanec.com:443:127.0.0.1 https://juego.tukanec.com/ | grep -iE "content-security|permissions-policy|strict-transport|x-frame|referrer"
 ```
 
-Deben salir **5 líneas**. **No edites a mano** `/etc/nginx/sites-available/juego.tukanec.com`: el instalador lo vuelve
-a escribir cada vez desde la plantilla.
+Deben salir **5 líneas**. Si salen menos, corre `sudo bash /var/www/envivo/server/deploy/instalar.sh` y vuelve a probar.
+**No edites a mano** `/etc/nginx/sites-available/juego.tukanec.com`: el instalador lo vuelve a escribir cada vez desde la plantilla.
 
-### Qué hace (para el programador): fragmentos exactos, probados con `nginx -t` (nginx 1.24, el de Ubuntu 24.04)
+### Qué hace (para el programador): fragmentos exactos, ya en la plantilla, probados con `nginx -t` (nginx 1.24, el de Ubuntu 24.04)
 
 **a) Zonas (nivel `http`, archivo `/etc/nginx/conf.d/envivo-limites.conf`, es `server/deploy/ops/nginx-envivo-limites.conf`).**
 Cada zona cuenta por IP real (también detrás de Cloudflare: el sitio ya tiene `real_ip_header CF-Connecting-IP`)
@@ -202,8 +194,8 @@ location @envivo_429 {
 }
 ```
 
-**d) Cabeceras de seguridad.** La plantilla ya las repite en cada `location` que tiene su propio `add_header`
-(en nginx un `add_header` dentro de un `location` anula todos los de afuera; auditoría A-09). El parche agrega:
+**d) Cabeceras de seguridad.** La plantilla las repite en cada `location` que tiene su propio `add_header`
+(en nginx un `add_header` dentro de un `location` anula todos los de afuera; auditoría A-09). El parche agregó:
 
 - `Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), midi=(), magnetometer=(), gyroscope=(), accelerometer=()"` en todas las respuestas.
 - **Arreglo importante en la CSP del juego:** `connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com`.
@@ -222,7 +214,7 @@ object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
 
 - **HSTS** (`Strict-Transport-Security: max-age=31536000`): la plantilla lo pone **solo cuando ya hay certificado**
   (modo HTTPS) y lo repite en cada `location`. No agregar `includeSubDomains` ni `preload` (afectaría a otros subdominios de tukanec.com).
-- `pago.php` y `admin.php` mandan además su propia CSP desde PHP (más estricta); el navegador cumple las dos.
+- `pago.php` y `/control/` mandan además su propia CSP desde PHP (más estricta); el navegador cumple las dos.
   No poner `form-action` en la CSP de nginx para `pago.php`: el 3DS manda un formulario al banco.
 
 > Ojo con los límites y los celulares: en Ecuador muchos celulares salen a internet con **la misma IP** (CGNAT).
@@ -245,9 +237,9 @@ cada 12 horas). Cuando se arregla, llega una vez "✅ Ya se arreglo".
 | **La base creció / pesa mucho / el -wal pesa mucho** | Mándame el aviso; puede ser alguien abusando del juego. |
 | **errores de nginx/PHP del juego** | `sudo grep 'server: juego.tukanec.com' /var/log/nginx/error.log \| tail -n 20` y mándamelo. |
 | **peticiones frenadas por el límite** | Posible ataque o un bot. Si el juego anda bien, no hay que hacer nada. |
-| **Muchos pagos fallidos** | Revisa en el panel de Plux si hay una caída; prueba una compra en `/admin.php`. |
-| **aviso(s) nuevo(s) del juego** | Entra a `https://juego.tukanec.com/admin.php` → avisos: casi siempre es un pago para revisar a mano. |
-| **casos de soporte abiertos** / **reportes de chat** | Respóndelos en `/admin.php`. |
+| **Muchos pagos fallidos** | Revisa en el panel de Plux si hay una caída; mira las compras en `/control/` → **Compras**. |
+| **aviso(s) nuevo(s) del juego** | Entra a `https://juego.tukanec.com/control/` → **Resumen** (avisos): casi siempre es un pago para revisar a mano. |
+| **casos de soporte abiertos** / **reportes de chat** | Respóndelos en `/control/` → **Soporte** / **Chat**. |
 | **El último respaldo FALLÓ** / es de hace más de 26 h | `sudo tail -n 30 /var/log/envivo-respaldo.log` y mándamelo. |
 | **El certificado vence en N días** | `sudo certbot renew` y mándame la salida si falla. |
 
@@ -262,7 +254,7 @@ cada 12 horas). Cuando se arregla, llega una vez "✅ Ya se arreglo".
 | Probar el respaldo sin guardar nada | `sudo DRY_RUN=1 respaldo_envivo.sh` |
 | Correr el chequeo ahora sin mandar a Telegram | `sudo DRY_RUN=1 salud_envivo.sh` |
 | Ver cómo manda los avisos | `sudo salud_envivo.sh --modo-telegram` |
-| Ver los registros | `sudo tail -n 30 /var/log/envivo-respaldo.log` · `sudo tail -n 30 /var/log/envivo-salud.log` |
+| Ver los registros | `sudo tail -n 30 /var/log/envivo-respaldo.log` · `sudo tail -n 30 /var/log/envivo-salud.log` (y `envivo-tareas`, `envivo-discord`, `envivo-festival`, `envivo-liga`; todos rotan cada semana) |
 | Cambiar umbrales o Telegram | `sudo nano /etc/envivo/ops.env` (vale desde la próxima hora) |
 
 ### Volver la base del juego a como estaba en un respaldo (solo si hace falta)
@@ -310,8 +302,8 @@ mismo comando con la ruta completa del archivo.
   proceso escribía sin parar (unas 129 000 filas en 4 s): los 3 sanos**; rotación 7/4/7 con las más nuevas;
   base dañada → no guarda y marca FALLA; restaurar con y sin "SI", respaldo dañado rechazado, copia previa guardada,
   dueño www-data conservado.
-- nginx de verdad: `nginx -t` de la plantilla actual + zonas, y de la plantilla con el parche (prueba, HTTP y HTTPS con
-  certificado de prueba); cabeceras en las 11 rutas probadas (juego, sw.js, js, iconos, legales, API, pago.php, admin.php, 404);
+- nginx de verdad: `nginx -t` de la plantilla (que ya trae el parche; `probar_ops.sh` lo detecta y no lo vuelve a aplicar)
+  + zonas (prueba, HTTP y HTTPS con certificado de prueba); cabeceras en las 11 rutas probadas (juego, sw.js, js, iconos, legales, API, pago.php, admin.php, 404);
   `POST /api/entrar` ×40 → 24 respuestas 429 en JSON con `Retry-After`; otra IP real (CF-Connecting-IP) no queda frenada;
   GET de `/api/estado` y `/api/chat` nunca se frenan; registro 4/15, pago 4/15, chat 14/30 frenados; partida de 732 KB pasa
   y 1,5 MB se corta (413); 100 KB a `/pago.php` se corta (413).

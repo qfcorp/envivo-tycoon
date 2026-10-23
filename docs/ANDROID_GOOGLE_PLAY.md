@@ -73,20 +73,11 @@ no aparece igual, escribe la palabra en inglés que va entre paréntesis en la *
 
 ---
 
-## 3. ☁️ Publicar el archivo de huellas en el VPS (una vez)
+## 3. ☁️ El archivo de huellas en el VPS (ya está listo en nginx)
 
-Hoy nginx solo deja ver los archivos de una lista (todo lo demás da 404), así que hay que agregar
-`/.well-known/assetlinks.json` a esa lista. **Esto lo cambia quien mantiene `server/deploy/nginx-sitio.sh`**
-(no lo edites a mano en el VPS: `instalar.sh` vuelve a escribir el archivo).
-
-Línea que hay que agregar dentro de `reglas()`, junto a las otras de "Archivos del juego" y **antes** de
-`location / { return 404; }`:
-
-```nginx
-    location = /.well-known/assetlinks.json { default_type application/json; add_header Cache-Control "no-cache"; add_header X-Content-Type-Options nosniff always; try_files \$uri =404; }
-```
-
-(En `nginx-sitio.sh` va con `\$uri`, como las demás líneas. En un archivo de nginx normal sería `$uri`.)
+nginx ya deja ver `/.well-known/assetlinks.json` (la plantilla `server/deploy/nginx-sitio.sh` lo trae, y `instalar.sh`
+la escribe cada vez). No hay que agregar nada a nginx. El archivo es `.well-known/assetlinks.json` del repositorio: llega
+al VPS con `actualizar.sh` cuando sus huellas estén puestas (Paso 5). No lo edites a mano en el VPS.
 
 Condiciones de Google para ese archivo: **https**, respuesta **200** sin redirecciones, tipo `application/json` y
 JSON perfecto (una coma de más lo rompe). Prueba en el VPS después de actualizar:

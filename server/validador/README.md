@@ -80,35 +80,33 @@ El estado se arma **nuevo**: modo libre (sin historia), fuera del tutorial, con 
 
 - `version_logica`: huella de `js/*.js`. Guárdala cuando entregas la semilla; si el juego del jugador tenía otra versión
   (actualización a mitad del evento) un `resultado_no_coincide` no es trampa: dale el resultado del servidor sin castigo.
-  El servicio **recarga solo** la lógica cuando cambian los archivos de `js/` (no hace falta reiniciarlo tras `actualizar.sh`).
+  El servicio **recarga solo** la lógica cuando cambian los archivos de `js/`; igual `actualizar.sh` lo reinicia cuando
+  cambian `js/logic.js`, `js/datos.js`, `js/premium.js` o `server/validador/`.
 
-## Instalar en el VPS (Ubuntu)
+## Instalar en el VPS (Ubuntu): lo hace el instalador
 
-1. **Node 22** (Ubuntu trae uno viejo):
-   ```bash
-   curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource.sh && sudo bash /tmp/nodesource.sh
-   sudo apt-get install -y nodejs
-   node -v      # debe decir v22...
-   ```
-2. **Clave** compartida entre PHP y el validador:
-   ```bash
-   CLAVE=$(openssl rand -hex 32)
-   echo "$CLAVE" | sudo tee /etc/envivo/validador.clave > /dev/null
-   sudo chmod 600 /etc/envivo/validador.clave && sudo chown root:root /etc/envivo/validador.clave
-   echo "VALIDADOR_CLAVE=$CLAVE" | sudo tee -a /etc/envivo/config.env > /dev/null
-   echo "VALIDADOR_URL=http://127.0.0.1:8790" | sudo tee -a /etc/envivo/config.env > /dev/null
-   ```
-3. **Probar** que la lógica carga: `node /var/www/envivo/server/validador/validador.js --version`
-4. **Activar el servicio**:
-   ```bash
-   sudo cp /var/www/envivo/server/validador/envivo-validador.service /etc/systemd/system/
-   sudo systemctl daemon-reload
-   sudo systemctl enable --now envivo-validador
-   sudo systemctl status envivo-validador          # debe decir "active (running)"
-   curl -s -H "X-Validador-Clave: $(sudo cat /etc/envivo/validador.clave)" http://127.0.0.1:8790/salud
-   ```
-   Ver errores: `sudo journalctl -u envivo-validador -n 50`. Reiniciar: `sudo systemctl restart envivo-validador`.
-5. Nada que tocar en nginx ni en el firewall: el servicio solo escucha en `127.0.0.1`.
+`sudo bash /var/www/envivo/server/deploy/instalar.sh` (y `actualizar.sh` si todavía no estaba) hace todo solo
+(funciones en `server/deploy/comun.sh`):
+
+1. **Node 22** de NodeSource si `/usr/bin/node` no está o es más viejo que Node 20 (Ubuntu trae uno viejo).
+2. **Clave** compartida entre PHP y el validador: si `VALIDADOR_CLAVE` falta o está vacía en `/etc/envivo/config.env`,
+   la crea con `openssl rand -hex 32` (o reutiliza la de `/etc/envivo/validador.clave` si ya existía), y deja
+   `/etc/envivo/validador.clave` (root, 600) con el mismo valor. `VALIDADOR_URL` queda en `http://127.0.0.1:8790`.
+3. **Servicio**: copia `envivo-validador.service` a `/etc/systemd/system/`, `daemon-reload`, `enable`, `restart`.
+4. **Prueba** `GET /salud` con la clave. El resultado sale en la línea `8) Validador de partidas` del instalador.
+
+`actualizar.sh` reinicia el servicio (y vuelve a probar `/salud`) cuando entre la versión de antes y la nueva cambió algo
+en `server/validador/` o en `js/logic.js`, `js/datos.js` o `js/premium.js`; si no cambió nada solo prueba `/salud`
+(y si no responde, lo reinicia).
+
+Revisar a mano:
+```bash
+systemctl is-active envivo-validador                      # active
+node /var/www/envivo/server/validador/validador.js --version
+printf 'header = "X-Validador-Clave: %s"\n' "$(sudo cat /etc/envivo/validador.clave)" | curl -s -K - http://127.0.0.1:8790/salud
+```
+Ver errores: `sudo journalctl -u envivo-validador -n 50`. Reiniciar: `sudo systemctl restart envivo-validador`.
+Nada que tocar en nginx ni en el firewall: el servicio solo escucha en `127.0.0.1`.
 
 Si el servicio está caído, PHP usa el modo consola (más lento, unos 60 ms por intento porque arranca Node cada vez).
 

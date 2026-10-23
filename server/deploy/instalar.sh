@@ -11,12 +11,16 @@
 #  Que hace:
 #   1. Instala php8.3-sqlite3 y php8.3-curl si faltan (y git).
 #   2. Crea /var/lib/envivo (la base de datos; solo www-data, permisos 750).
-#   3. Crea /etc/envivo/config.env si no existe (pregunta usuario y clave del panel; Plux queda vacio en sandbox).
+#   3. Crea /etc/envivo/config.env si no existe (pregunta usuario y clave del Centro de Control; Plux queda vacio en sandbox).
 #   4. Baja (git clone) o actualiza (git pull) https://github.com/qfcorp/envivo-tycoon en /var/www/envivo.
-#   5. Crea las tablas (migraciones) y programa la tarea diaria (bin/tareas.php).
-#   6. Escribe el sitio de nginx /etc/nginx/sites-available/juego.tukanec.com, prueba con "nginx -t"
+#      Si bajo una version nueva de este instalador, sigue con la nueva.
+#   5. Agrega a config.env las lineas de server/config.env.ejemplo que falten (vacias o con su valor por defecto;
+#      la clave del validador se crea al azar). Nunca cambia un valor que ya estaba (server/deploy/comun.sh).
+#   6. Crea las tablas (migraciones).   7. Programa las tareas (cron de www-data).
+#   8. Node 22 (NodeSource) si falta o es viejo, y el servicio envivo-validador (systemd): lo enciende y prueba /salud.
+#   9. Escribe el sitio de nginx /etc/nginx/sites-available/juego.tukanec.com, prueba con "nginx -t"
 #      y SOLO si la prueba sale bien recarga nginx (si sale mal, deja todo como estaba).
-#   7. Ofrece el certificado HTTPS con certbot.
+#  10. Ofrece el certificado HTTPS con certbot.
 #  Variables opcionales: DOMINIO (juego.tukanec.com), APP (/var/www/envivo), RAMA (main), PHPV (8.3).
 #  Los mensajes van sin tildes a proposito (se leen bien por SSH desde el celular).
 # =====================================================================
@@ -32,6 +36,8 @@ CONF_DIR=/etc/envivo
 CONF="$CONF_DIR/config.env"
 SITIO="/etc/nginx/sites-available/$DOMINIO"
 SOCK="/run/php/php$PHPV-fpm.sock"
+# Huella de este instalador: si "git pull" trae uno distinto, se sigue con el nuevo (paso 4)
+HUELLA=""; [ -f "$0" ] && HUELLA="$(sha256sum < "$0")"
 cd /tmp || exit 1
 
 if [ "$(id -u)" != "0" ]; then
@@ -66,7 +72,7 @@ echo "== 2. Carpeta de la base de datos: $DATOS (solo www-data)"
 mkdir -p "$DATOS"
 chown www-data:www-data "$DATOS"
 chmod 750 "$DATOS"
-[ -f "$DATOS/envivo.sqlite" ] && echo "   ya existe la base: NO se borra nada" || echo "   lista (la base se crea en el paso 5)"
+[ -f "$DATOS/envivo.sqlite" ] && echo "   ya existe la base: NO se borra nada" || echo "   lista (la base se crea en el paso 6)"
 
 echo "== 3. Configuracion: $CONF (fuera del repositorio; el repositorio es publico)"
 mkdir -p "$CONF_DIR"
@@ -79,19 +85,19 @@ else
   if [ -z "$ADMIN_U" ] || [ "${#ADMIN_C}" -lt 10 ]; then
     if { : < /dev/tty; } 2> /dev/null; then
       while [ -z "$ADMIN_U" ]; do
-        printf '   Usuario para el panel /admin.php (ej. dimitry) y Enter: '
+        printf '   Usuario para el Centro de Control /control/ (ej. dimitry) y Enter: '
         read -r ADMIN_U < /dev/tty || break
         ADMIN_U="$(printf '%s' "$ADMIN_U" | tr -cd 'A-Za-z0-9._-')"
       done
       while [ -n "$ADMIN_U" ] && [ "${#ADMIN_C}" -lt 10 ]; do
-        printf '   Clave del panel (minimo 10 caracteres; no se ve al escribir) y Enter: '
+        printf '   Clave del Centro de Control (minimo 10 caracteres; no se ve al escribir) y Enter: '
         read -r -s ADMIN_C < /dev/tty || break; echo
         [ "${#ADMIN_C}" -lt 10 ] && echo "   muy corta, otra vez"
       done
     fi
   fi
   if [ -z "$ADMIN_U" ] || [ "${#ADMIN_C}" -lt 10 ]; then
-    echo "   AVISO: no se pudo preguntar el usuario y la clave del panel (no hay teclado). El panel queda cerrado."
+    echo "   AVISO: no se pudo preguntar el usuario y la clave del Centro de Control (no hay teclado). Queda cerrado."
     echo "          Para ponerlos: sudo rm $CONF  y corre otra vez el instalador desde la consola."
     ADMIN_C=""
   fi
@@ -107,7 +113,7 @@ ENVIVO_DB=$DATOS/envivo.sqlite
 ENVIVO_URL=https://$DOMINIO
 ENVIVO_ZONA=America/Guayaquil
 
-; Panel /admin.php (la clave se guarda como hash bcrypt, nunca en texto)
+; Centro de Control /control/ (la clave se guarda como hash bcrypt, nunca en texto)
 ENVIVO_ADMIN_USUARIO=$ADMIN_U
 ENVIVO_ADMIN_CLAVE_HASH=$HASH
 
@@ -137,7 +143,7 @@ fi
 chown root:www-data "$CONF"; chmod 640 "$CONF"
 
 echo "== 4. Bajar o actualizar el juego en $APP"
-git config --global --add safe.directory "$APP" 2> /dev/null
+git config --global --get-all safe.directory 2> /dev/null | grep -qxF "$APP" || git config --global --add safe.directory "$APP" 2> /dev/null
 if [ -d "$APP/.git" ]; then
   # js/intento.js es una COPIA de server/validador/intento.js (nginx solo sirve /js/; no un enlace). No está en git:
   # se quita antes de bajar lo nuevo (así "git pull" nunca choca con ella) y se vuelve a copiar después.
@@ -157,11 +163,22 @@ fi
 # El codigo es de root (www-data solo lo lee: si alguien entrara por PHP no podria cambiar el programa)
 chown -R root:root "$APP"
 chmod -R u+rwX,go+rX,go-w "$APP"
+if [ -z "${ENVIVO_REEJECUTADO:-}" ] && [ -f "$APP/server/deploy/instalar.sh" ] && [ "$HUELLA" != "$(sha256sum < "$APP/server/deploy/instalar.sh")" ]; then
+  echo "   este instalador cambio en GitHub: se sigue con la version nueva"
+  ENVIVO_REEJECUTADO=1 exec bash "$APP/server/deploy/instalar.sh"
+fi
+# shellcheck source-path=SCRIPTDIR source=comun.sh
+. "$APP/server/deploy/comun.sh"
 
-echo "== 5. Tablas de la base de datos"
+echo "== 5. Configuracion: lineas nuevas de server/config.env.ejemplo (no cambia las que ya estan)"
+completar_config "$APP/server/config.env.ejemplo" "$CONF" instalar.sh || exit 1
+chown root:www-data "$CONF"; chmod 640 "$CONF"
+[ "$CONFIG_CAMBIO" = "1" ] && { systemctl reload "php$PHPV-fpm" 2> /dev/null || true; }
+
+echo "== 6. Tablas de la base de datos"
 if sudo -u www-data env ENVIVO_CONFIG="$CONF" php "$APP/server/bin/migrar.php"; then echo "   listo"; else echo "   ERROR en las migraciones (mira el mensaje de arriba)"; exit 1; fi
 
-echo "== 5b. Tareas programadas (tarea diaria 4:10, Google Play, Discord, Festival, Liga)"
+echo "== 7. Tareas programadas (tarea diaria 4:10, Google Play, Discord, Festival, Liga)"
 TAREA="10 4 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/tareas.php >> /var/log/envivo-tareas.log 2>&1"
 touch /var/log/envivo-tareas.log && chown www-data:www-data /var/log/envivo-tareas.log
 # Google Play: cada 6 horas reintenta avisos a Google y revisa compras anuladas (reembolsos / contracargos)
@@ -178,14 +195,19 @@ CRON
 for l in envivo-tareas envivo-discord envivo-festival envivo-liga; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
 ( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
 
-echo "== 6. nginx: sitio $DOMINIO (y las zonas de límite /etc/nginx/conf.d/envivo-limites.conf)"
+echo "== 8. Node y el validador de partidas (eventos en linea sin trampas)"
+VALIDADOR="no"
+if preparar_node && instalar_validador "$APP" "$CONF"; then VALIDADOR="si"; fi
+
+export DOMINIO APP SOCK   # los usa nginx-sitio.sh
+echo "== 9. nginx: sitio $DOMINIO (y las zonas de límite /etc/nginx/conf.d/envivo-limites.conf)"
 # Zonas de límite por IP (limit_req_zone) que usa el sitio en /api/: deben existir ANTES de "nginx -t"
 LIMITES=/etc/nginx/conf.d/envivo-limites.conf
 grep -qE '^\s*include\s+/etc/nginx/conf\.d/\*\.conf;' /etc/nginx/nginx.conf || echo "   AVISO: /etc/nginx/nginx.conf no incluye /etc/nginx/conf.d/*.conf: nginx -t va a fallar (revisa: grep -n include /etc/nginx/nginx.conf)"
 LIM_ANTES=""; [ -f "$LIMITES" ] && LIM_ANTES="$(mktemp)" && cp -p "$LIMITES" "$LIM_ANTES"
 install -o root -g root -m 644 "$APP/server/deploy/ops/nginx-envivo-limites.conf" "$LIMITES"
 NUEVO="$(mktemp)"
-DOMINIO="$DOMINIO" APP="$APP" SOCK="$SOCK" bash "$APP/server/deploy/nginx-sitio.sh" > "$NUEVO"
+bash "$APP/server/deploy/nginx-sitio.sh" > "$NUEVO"
 ANTES=""
 [ -f "$SITIO" ] && ANTES="$(mktemp)" && cp -p "$SITIO" "$ANTES"
 install -m 644 "$NUEVO" "$SITIO"; rm -f "$NUEVO"
@@ -204,7 +226,7 @@ fi
 [ -n "$ANTES" ] && rm -f "$ANTES"
 [ -n "$LIM_ANTES" ] && rm -f "$LIM_ANTES"
 
-echo "== 7. Certificado HTTPS"
+echo "== 10. Certificado HTTPS"
 if [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ]; then
   echo "   ya hay certificado para $DOMINIO (el sitio ya usa HTTPS)"
 elif command -v certbot > /dev/null; then
@@ -216,7 +238,7 @@ elif command -v certbot > /dev/null; then
   if [ "$RESP" = "s" ] || [ "$RESP" = "S" ]; then
     if certbot --nginx -d "$DOMINIO"; then
       # Se vuelve a escribir el sitio, ya con HTTPS, con la plantilla de siempre (y se prueba otra vez)
-      DOMINIO="$DOMINIO" APP="$APP" SOCK="$SOCK" bash "$APP/server/deploy/nginx-sitio.sh" > "$SITIO.nuevo"
+      bash "$APP/server/deploy/nginx-sitio.sh" > "$SITIO.nuevo"
       cp -p "$SITIO" "$SITIO.certbot"; mv "$SITIO.nuevo" "$SITIO"
       if nginx -t > /dev/null 2>&1; then systemctl reload nginx; rm -f "$SITIO.certbot"; echo "   HTTPS listo"
       else mv "$SITIO.certbot" "$SITIO"; nginx -t > /dev/null 2>&1 && systemctl reload nginx; echo "   HTTPS listo (se dejo la version de certbot)"; fi
@@ -233,15 +255,18 @@ fi
 echo
 echo "=========== RESULTADO ==========="
 echo "1) Version del juego: $(git -C "$APP" log -1 --format='%h %cd' --date=short 2> /dev/null)"
-echo "2) Base de datos: $(ls -l "$DATOS/envivo.sqlite" 2> /dev/null | awk '{print $3":"$4, $5" bytes"}')"
+echo "2) Base de datos: $(stat -c '%U:%G %s bytes' "$DATOS/envivo.sqlite" 2> /dev/null)"
 if [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ]; then PRUEBA=(curl -sk --noproxy '*' --resolve "$DOMINIO:443:127.0.0.1" -o /dev/null -w '%{http_code}'); BASE="https://$DOMINIO"
 else PRUEBA=(curl -s --noproxy '*' --resolve "$DOMINIO:80:127.0.0.1" -o /dev/null -w '%{http_code}'); BASE="http://$DOMINIO"; fi
 echo "3) Prueba de la API en este servidor: $("${PRUEBA[@]}" "$BASE/api/estado") (debe ser 200)"
 echo "4) Prueba de que el codigo esta protegido: $("${PRUEBA[@]}" "$BASE/server/src/Config.php") (debe ser 404)"
-grep -qE '^ENVIVO_ADMIN_CLAVE_HASH=.+' "$CONF" && echo "5) Panel /admin.php: con usuario y clave" || echo "5) Panel /admin.php: SIN clave (borra $CONF y corre otra vez el instalador desde la consola)"
+if grep -qE '^ENVIVO_ADMIN_CLAVE_HASH=.+' "$CONF"; then
+  grep -qE '^ENVIVO_ADMIN_TOTP=.+' "$CONF" && echo "5) Centro de Control /control/: con usuario, clave y codigo del celular" || echo "5) Centro de Control /control/: con usuario y clave (falta el codigo del celular)"
+else echo "5) Centro de Control /control/: SIN clave (borra $CONF y corre otra vez el instalador desde la consola)"; fi
 if grep -qE '^PLUX_CLAVE_SECRETA=.+' "$CONF"; then echo "6) Plux: credenciales puestas (ambiente: $(grep -E '^PLUX_AMBIENTE=' "$CONF" | cut -d= -f2))"
 else echo "6) Plux: SIN credenciales (la tienda muestra 'pago no disponible' hasta ponerlas)"; fi
 [ -f "/etc/letsencrypt/live/$DOMINIO/fullchain.pem" ] && echo "7) HTTPS: si" || echo "7) HTTPS: todavia no"
+[ "$VALIDADOR" = "si" ] && echo "8) Validador de partidas: activo" || echo "8) Validador de partidas: NO activo (mira el paso 8 de arriba; el juego usa Node directo, mas lento)"
 echo "================================="
 echo
 echo "Lista de lo que falta (en orden):"
@@ -251,9 +276,10 @@ echo "    (con la nube gris certbot funciona directo; si luego la pones naranja,
 echo " b) Certificado:   sudo certbot --nginx -d $DOMINIO     y despues otra vez:   sudo bash $APP/server/deploy/instalar.sh"
 echo " c) Plux: edita   sudo nano $CONF   pega PLUX_ID_ESTABLECIMIENTO, PLUX_ID_CLIENTE, PLUX_CLAVE_SECRETA y PLUX_LLAVE_PUBLICA"
 echo "    (deja PLUX_AMBIENTE=sandbox hasta probar), guarda con Ctrl+O, Enter, Ctrl+X, y luego:   sudo systemctl reload php$PHPV-fpm"
+echo " c2) Codigo del celular (2FA) del Centro de Control: docs/DESPLIEGUE.md, paso 6"
 echo " d) Revisa con un abogado y completa terminos.html y privacidad.html ([RUC], [CORREO DE SOPORTE], [DIRECCION], [FECHA])."
 echo " d2) Soporte: cuando tengas el correo de soporte, ponlo en $CONF (SOPORTE_CORREO=... y SOPORTE_HORARIO=Lunes a viernes 9:00-18:00)"
 echo "     y luego:  sudo systemctl reload php$PHPV-fpm   (el juego lo muestra en Ayuda y soporte)"
 echo " d3) Google Play (cuando publiques la app): sigue server/GOOGLE_PLAY.md"
-echo " e) Panel de ventas:   https://$DOMINIO/admin.php"
+echo " e) Centro de Control (ventas, jugadores, soporte):   https://$DOMINIO/control/"
 echo " f) Para actualizar mas adelante:   sudo bash $APP/server/deploy/actualizar.sh"

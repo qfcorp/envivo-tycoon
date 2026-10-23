@@ -1,6 +1,6 @@
 # Publicar EN VIVO Tycoon en juego.tukanec.com (VPS de OVH)
 
-Guía para copiar y pegar. Tiempo total: **1 hora y media** la primera vez, por partes (puedes parar al final de cualquier paso).
+Guía para copiar y pegar. Tiempo total: **1 hora y cuarto** la primera vez, por partes (puedes parar al final de cualquier paso).
 Nada de esto toca TuPass, el ERP ni los otros sitios del VPS.
 Al final el juego queda en **https://juego.tukanec.com** con la tienda en **modo de pruebas** (no cobra de verdad),
 el Centro de Control protegido con clave y código del celular, y respaldo y alertas a tu Telegram.
@@ -8,14 +8,19 @@ el Centro de Control protegido con clave y código del celular, y respaldo y ale
 | Paso | Qué | Tiempo |
 |---|---|---|
 | 1 | Dirección "juego" en Cloudflare | 5 min |
-| 2 | Instalar el juego en el VPS | 10 min |
-| 3 | Agregar las líneas nuevas a la configuración | 5 min |
+| 2 | Instalar el juego en el VPS (también deja lista la configuración, Node 22 y el validador) | 15 min |
+| 3 | Mirar qué líneas de la configuración llenas tú (no hay que pegar nada) | 2 min |
 | 4 | Claves de Plux en modo de pruebas | 5 min |
-| 5 | Node 22 y el validador de partidas (eventos en línea) | 10 min |
+| 5 | Comprobar el validador de partidas (eventos en línea) | 1 min |
 | 6 | Entrar al Centro de Control y activar el código del celular (2FA) | 10 min |
 | 7 | Respaldos y alertas por Telegram | 20 min |
 | 8 | Comprobar que todo funciona | 10 min |
 | 9 | Proteger la cuenta de GitHub | 5 min |
+
+**Lo hace solo el instalador:** bajar el juego, la configuración completa (con sus claves al azar), las tablas, las
+tareas programadas, Node 22, el validador de partidas, nginx y el certificado.
+**Lo haces tú a mano:** las claves de Plux (paso 4), el código del celular (paso 6), Telegram y restic (paso 7)
+y, más adelante, las claves de Discord (`docs/DISCORD_BOT.md`).
 
 **Antes de empezar, ten a mano:**
 - PuTTY abierto en el VPS (como siempre).
@@ -46,7 +51,7 @@ el Centro de Control protegido con clave y código del celular, y respaldo y ale
 
 ---
 
-## Paso 2. Instalar el juego en el VPS (10 minutos)
+## Paso 2. Instalar el juego en el VPS (15 minutos)
 
 1. Entra a tu VPS por **PuTTY** como siempre.
 2. Copia esta línea completa, pégala (clic derecho en PuTTY) y presiona **Enter**:
@@ -58,22 +63,28 @@ curl -fsSL https://raw.githubusercontent.com/qfcorp/envivo-tycoon/main/server/de
 3. Te va a pedir tu contraseña de `sudo` (no se ve mientras escribes: es normal).
 4. Te pregunta un **usuario** y una **clave para el Centro de Control** (mínimo 10 caracteres).
    Inventa unos nuevos y **anótalos**: con ellos entras a ver ventas, jugadores y soporte.
-5. Cuando pregunte si quieres sacar el **certificado HTTPS** escribe `s` y Enter
+5. Después trabaja solo unos minutos: baja el juego, completa la configuración, instala **Node 22** y enciende el
+   **validador de partidas** (lo que repite los eventos en línea para que nadie haga trampa). No tienes que hacer nada.
+6. Cuando pregunte si quieres sacar el **certificado HTTPS** escribe `s` y Enter
    (si dice que el DNS todavía no apunta, espera 5 minutos y vuelve a correr la línea del punto 2).
-6. Al final muestra la lista **RESULTADO**. Debe decir:
+7. Al final muestra la lista **RESULTADO**. Debe decir:
    - `3) Prueba de la API en este servidor: 200`
    - `4) Prueba de que el codigo esta protegido: 404`
-   - `5) Panel /admin.php: con usuario y clave`
+   - `5) Centro de Control /control/: con usuario y clave (falta el codigo del celular)` (el código se pone en el paso 6)
    - `6) Plux: SIN credenciales` (normal: se ponen en el paso 4)
    - `7) HTTPS: si`
+   - `8) Validador de partidas: activo`
 
    **Mándame una captura de esa lista** y la reviso.
 
-Para volver a correr el instalador más adelante (no borra nada, no duplica nada):
+Para volver a correr el instalador más adelante (no borra nada, no duplica nada, no cambia lo que ya escribiste):
 
 ```
 sudo bash /var/www/envivo/server/deploy/instalar.sh
 ```
+
+> Si ya lo habías instalado antes, igual corre la línea del punto 2 (o esta última): agrega solo lo que falta
+> (las líneas nuevas de la configuración y el validador) y deja tus claves como estaban.
 
 ### Qué dejó programado el instalador (no tienes que hacer nada)
 
@@ -92,44 +103,12 @@ Mientras Discord no esté configurado, `envivo-discord.log` solo dice "el bot no
 
 ---
 
-## Paso 3. Agregar las líneas nuevas a la configuración (5 minutos)
+## Paso 3. La configuración: qué líneas llenas tú (2 minutos, no hay que pegar nada)
 
-El instalador crea `/etc/envivo/config.env` con lo básico (panel, Plux, soporte, Google Play). Las opciones nuevas
-(código del celular, Discord, Festival, Liga) hay que agregarlas **una vez**. Copia y pega **todo el bloque** de una vez:
-
-```
-C=/etc/envivo/config.env
-if sudo grep -q '^ENVIVO_ADMIN_TOTP=' $C; then echo "YA ESTABAN: no hay que hacer nada"; else
-sudo tee -a $C > /dev/null <<'FIN'
-
-; ---- Agregado con docs/DESPLIEGUE.md (paso 3) ----
-; Centro de Control /control/: codigo del celular (paso 6), IPs permitidas (opcional) y tope diario de creditos a mano (vacio = 20000)
-ENVIVO_ADMIN_TOTP=
-ENVIVO_CONTROL_IPS=
-ENVIVO_CONTROL_TOPE_CREDITOS=
-
-; Bot de Discord (docs/DISCORD_BOT.md): se llena despues
-DISCORD_APP_ID=
-DISCORD_PUBLIC_KEY=
-DISCORD_BOT_TOKEN=
-DISCORD_GUILD_ID=
-DISCORD_ROLES_JSON=
-DISCORD_WEBHOOK_ANUNCIOS=
-DISCORD_WEBHOOK_EVENTOS=
-DISCORD_WEBHOOK_ESTADO=
-DISCORD_INVITACION=
-
-; Mega Festival y Liga Semanal: dejar asi
-FESTIVAL_INICIO=
-LIGA_VALIDACION=firma
-LIGA_SECRETO=
-NODE_BIN=
-FIN
-echo "AGREGADAS"; fi
-sudo systemctl reload php8.3-fpm
-```
-
-Debe decir **`AGREGADAS`** (o `YA ESTABAN` si ya lo habías hecho).
+El instalador deja `/etc/envivo/config.env` **completo**: pone todas las líneas, vacías o con su valor normal, y crea
+solo las claves al azar (la del aviso de pago de Plux y la del validador). Cada vez que corre `instalar.sh` o
+`actualizar.sh` agrega las líneas nuevas que traiga el juego, **sin cambiar las que ya llenaste**
+(antes de cambiar algo guarda una copia: `/etc/envivo/config.env.antes-FECHA`).
 
 ### Todas las líneas de la configuración: cuáles llenas tú y cuándo
 
@@ -151,7 +130,7 @@ Si una línea aparece dos veces, **vale la de más abajo**.
 | `ENVIVO_CONTROL_TOPE_CREDITOS` | Vacío = 20.000 créditos a mano por día | Solo si quieres otro tope (0 = sin tope) |
 | `DISCORD_...` (9 líneas) | Tú | Con `docs/DISCORD_BOT.md` |
 | `FESTIVAL_INICIO`, `LIGA_VALIDACION`, `LIGA_SECRETO`, `NODE_BIN` | Dejar como están | — |
-| `VALIDADOR_URL`, `VALIDADOR_CLAVE` | Los comandos del paso 5 | Paso 5 (no los escribas a mano) |
+| `VALIDADOR_URL`, `VALIDADOR_CLAVE` | El instalador (clave al azar, la misma del validador) | No tocar |
 
 > ⚠️ Nunca agregues `PLUX_API_BASE`, `GOOGLE_API_BASE` ni `GOOGLE_TOKEN_URL`: son solo para pruebas del programador.
 
@@ -182,58 +161,22 @@ sudo systemctl reload php8.3-fpm
 
 ---
 
-## Paso 5. Node 22 y el validador de partidas (10 minutos)
+## Paso 5. Comprobar el validador de partidas (1 minuto)
 
 Los eventos en línea (Liga Semanal, Mega Festival, Duelos, Desafío del Día) los **repite el servidor** para que nadie haga
-trampa. Para eso el VPS necesita **Node 22** (Ubuntu trae uno viejo) y un servicio pequeño, `envivo-validador`, que solo
-escucha dentro del mismo servidor (no hay que tocar nginx ni el firewall).
+trampa. El instalador del paso 2 ya instaló **Node 22**, creó la clave entre el juego y el validador y encendió el
+servicio `envivo-validador` (solo escucha dentro del mismo servidor: no hay que tocar nginx ni el firewall).
 
-**5.1 Instalar Node 22** (una línea a la vez):
-
-```
-curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource.sh && sudo bash /tmp/nodesource.sh
-```
-```
-sudo apt-get install -y nodejs
-```
-```
-node -v
-```
-
-Debe decir `v22...`.
-
-**5.2 Crear la clave entre el juego y el validador** (bloque completo, **solo una vez**; si ya lo hiciste, salta al 5.3):
+Solo comprueba:
 
 ```
-CLAVE=$(openssl rand -hex 32)
-echo "$CLAVE" | sudo tee /etc/envivo/validador.clave > /dev/null
-sudo chmod 600 /etc/envivo/validador.clave && sudo chown root:root /etc/envivo/validador.clave
-echo "VALIDADOR_CLAVE=$CLAVE" | sudo tee -a /etc/envivo/config.env > /dev/null
-echo "VALIDADOR_URL=http://127.0.0.1:8790" | sudo tee -a /etc/envivo/config.env > /dev/null
-sudo systemctl reload php8.3-fpm
-```
-
-**5.3 Probar que la lógica del juego carga:**
-
-```
-node /var/www/envivo/server/validador/validador.js --version
-```
-
-Debe mostrar una línea que empieza con `{"version_logica":"...` y dice `"cargado":true`.
-
-**5.4 Activar el servicio** (bloque completo):
-
-```
-sudo cp /var/www/envivo/server/validador/envivo-validador.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now envivo-validador
 systemctl is-active envivo-validador
-curl -s -H "X-Validador-Clave: $(sudo cat /etc/envivo/validador.clave)" http://127.0.0.1:8790/salud
 ```
 
-Debe decir **`active`** y luego una línea que empieza con `{"ok":true,...`. **Mándame una captura.**
+Debe decir **`active`** (y en la lista RESULTADO del paso 2, `8) Validador de partidas: activo`).
 
-Si algo falla: `sudo journalctl -u envivo-validador -n 50` y mándame lo que sale.
+Si dice otra cosa: vuelve a correr `sudo bash /var/www/envivo/server/deploy/instalar.sh` y, si sigue igual,
+mándame lo que sale de `sudo journalctl -u envivo-validador -n 50`.
 (Si el servicio se cae, el juego sigue funcionando: usa Node directo, solo que más lento.)
 
 ---
@@ -433,8 +376,8 @@ Cada vez que te avise que hay una versión nueva en GitHub:
 sudo bash /var/www/envivo/server/deploy/actualizar.sh
 ```
 
-Baja lo nuevo, actualiza las tablas y recarga PHP. Debe terminar con `Listo.` No borra la base ni la configuración.
-El validador toma la lógica nueva solo (no hay que reiniciarlo).
+Baja lo nuevo, agrega a la configuración las líneas nuevas (sin cambiar las tuyas), actualiza las tablas, reinicia el
+validador si cambió y recarga PHP. Debe terminar con `Listo.` No borra la base ni tus claves.
 
 Solo si te aviso que **cambió nginx o las tareas programadas**, corre además (es seguro correrlo las veces que quieras):
 
@@ -458,11 +401,12 @@ sudo bash /var/www/envivo/server/deploy/ops/instalar_ops.sh
 | Pasa esto | Haz esto |
 |---|---|
 | El instalador dice `ERROR` | Mándame la captura completa; no borra nada, se puede volver a correr. |
-| `/control/` dice "Centro de Control sin configurar" | Falta usuario o clave: `sudo rm /etc/envivo/config.env` y corre otra vez el instalador **desde PuTTY** (vuelve a pedir usuario y clave; después repite los pasos 3, 4, 5.2 y 6). |
+| `/control/` dice "Centro de Control sin configurar" | Falta usuario o clave: `sudo rm /etc/envivo/config.env` y corre otra vez el instalador **desde PuTTY** (vuelve a pedir usuario y clave; después repite los pasos 4 y 6). |
 | Quieres cambiar la clave del panel | `php -r 'echo password_hash(trim(fgets(STDIN)), PASSWORD_BCRYPT), "\n";'` → escribe la clave nueva y Enter → copia lo que sale (empieza con `$2y$`) en `ENVIVO_ADMIN_CLAVE_HASH=` y recarga PHP. |
 | "Demasiados intentos fallidos" en `/control/` | Espera 15 minutos. |
 | `/control/` da 404 | Revisa `ENVIVO_CONTROL_IPS` (paso 6.3): déjala vacía y recarga PHP. |
 | La tienda dice "pago no disponible" | Faltan las claves de Plux (paso 4) o no recargaste PHP. |
+| El RESULTADO dice `8) Validador de partidas: NO activo` | Mira el paso 5. |
 | Llegó una alerta a Telegram | Mira la tabla "Qué avisos te pueden llegar" en `docs/OPERACION.md`. |
 
 ---

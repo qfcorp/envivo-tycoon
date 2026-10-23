@@ -83,7 +83,8 @@ Por SSH:
 sudo nano /etc/envivo/config.env
 ```
 
-Agrega al final (con tus datos):
+Las líneas `DISCORD_...` ya están en el archivo, vacías (las pone el instalador). Busca cada una con **Ctrl + W**
+y escribe tu dato después del `=`:
 
 ```ini
 DISCORD_APP_ID=123456789012345678
@@ -108,8 +109,8 @@ sudo systemctl reload php8.3-fpm
 
 ## 5. Actualizar el juego y registrar los comandos
 
-Primero quien mantiene el servidor aplica `server/INTEGRAR_DISCORD.md` (la ruta en `api.php`, el bloque de nginx y el cron).
-Después:
+La ruta en `api.php`, el bloque de nginx de `/discord/interacciones` y el cron (`bin/discord_sync.php`, cada 10 minutos)
+ya están en el juego y los deja puestos el instalador. Solo corre:
 
 ```bash
 sudo bash /var/www/envivo/server/deploy/actualizar.sh
