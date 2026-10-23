@@ -74,7 +74,7 @@ async function usarLaMasNueva(p) {
   console.log('1) Computadora con la pestaña abierta; se avanza en el celular');
   await A.goto(base + '/', { waitUntil: 'domcontentloaded' });
   await A.waitForFunction(() => window.Api && window.Api.disponible !== null, null, { timeout: 15000 });
-  await A.evaluate(async ([e, c]) => { await window.Api.registro(e, 'Productora Nube', c); }, [email, clave]);
+  await A.evaluate(async ([e, c]) => { await window.Api.registro(e, 'Productora Nube', c, { acepta_terminos: true, edad_16: true }); }, [email, clave]);
   await A.reload({ waitUntil: 'domcontentloaded' });
   await listo(A); await cerrarVentanas(A);
   await jugar(A, 1); await subir(A);

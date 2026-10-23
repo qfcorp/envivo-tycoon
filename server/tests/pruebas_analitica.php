@@ -270,7 +270,7 @@ $iL = $hex(32);
 $cods = [];
 for ($k = 1; $k <= Analitica::LIMITE_INSTALACION + 2; $k++) $cods[] = $http('POST', '/api/eventos', $sobre($iL, 1, sprintf('%02d', $k)), $JS)[0];
 check('Límite por instalación: ' . Analitica::LIMITE_INSTALACION . ' lotes en 10 min y luego 429', [Analitica::LIMITE_INSTALACION, 2], [count(array_filter($cods, fn($c) => $c === 200)), count(array_filter($cods, fn($c) => $c === 429))]);
-$r = $http('POST', '/api/registro', ['email' => 'an@prueba.example', 'nombre' => 'Analítica', 'clave' => 'ClaveAnalitica1'], $JS, true);
+$r = $http('POST', '/api/registro', ['email' => 'an@prueba.example', 'nombre' => 'Analítica', 'clave' => 'ClaveAnalitica1', 'acepta_terminos' => true, 'edad_16' => true], $JS, true);
 $jid = (int) ($r[1]['jugador']['id'] ?? 0);
 $iJ = $hex(32);
 $s = $sobre($iJ, 1, 'b'); $s['e'][0]['n'] = 'cuenta_creada'; $s['j'] = 999999; $s['e'][0]['d'] = ['jugador_id' => 999999];

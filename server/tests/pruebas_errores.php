@@ -157,7 +157,7 @@ check('El grupo guarda primera y última vez', true, (int) $val('SELECT primero 
 
 titulo('A) Jugador de la sesión');
 $cj = new Cli($BASE, 'jugador');
-check('Registro de un jugador', 200, $cj->pedir('POST', '/api/registro', json_encode(['email' => 'errores@prueba.example', 'nombre' => 'Errores', 'clave' => 'ClaveErrores1']), ['Content-Type: application/json', 'X-Envivo: 1']));
+check('Registro de un jugador', 200, $cj->pedir('POST', '/api/registro', json_encode(['email' => 'errores@prueba.example', 'nombre' => 'Errores', 'clave' => 'ClaveErrores1', 'acepta_terminos' => true, 'edad_16' => true]), ['Content-Type: application/json', 'X-Envivo: 1']));
 $jid = (int) $val("SELECT id FROM jugadores WHERE email = 'errores@prueba.example'");
 $cj->error(['errores' => [$e('Con sesión', ['linea' => 77])]]);
 check('Con sesión: se anota el jugador', $jid, (int) $val("SELECT jugador_id FROM errores_cliente WHERE mensaje = 'Con sesión'"));

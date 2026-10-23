@@ -548,7 +548,7 @@ $api = function (string $m, string $ruta, ?array $datos = null, array $cab = ['X
     return [(int) curl_getinfo($ch, CURLINFO_HTTP_CODE), json_decode($c, true) ?: []];
 };
 check('Sin sesión -> 401', 401, $api('POST', '/api/push/estado', [], ['X-Envivo: 1'], "$TMP/jar_vacio.txt")[0]);
-[$h, $reg] = $api('POST', '/api/registro', ['email' => 'http@prueba.example', 'nombre' => 'Http Push', 'clave' => 'clave-segura-123']);
+[$h, $reg] = $api('POST', '/api/registro', ['email' => 'http@prueba.example', 'nombre' => 'Http Push', 'clave' => 'clave-segura-123', 'acepta_terminos' => true, 'edad_16' => true]);
 check('Cuenta nueva por /api/registro', 200, $h);
 $jHttp = (int) Db::valor("SELECT id FROM jugadores WHERE email = 'http@prueba.example'");
 [$h, $e] = $api('POST', '/api/push/estado', []);

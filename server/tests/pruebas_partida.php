@@ -78,7 +78,7 @@ $n = 0;
 $cuenta = function () use ($URL, &$n): array {
     $n++;
     $nav = new Nav($URL, "c$n");
-    $r = $nav->post('/api/registro', ['email' => "partida$n." . bin2hex(random_bytes(3)) . '@prueba.example', 'nombre' => "Partida $n", 'clave' => "ClaveSegura$n"]);
+    $r = $nav->post('/api/registro', ['email' => "partida$n." . bin2hex(random_bytes(3)) . '@prueba.example', 'nombre' => "Partida $n", 'clave' => "ClaveSegura$n", 'acepta_terminos' => true, 'edad_16' => true]);
     return [$nav, (int) ($r['jugador']['id'] ?? 0), "ClaveSegura$n"];
 };
 $partida = fn(int $dia, int $dinero) => json_encode(['day' => $dia, 'money' => $dinero, 'stats' => ['events' => $dia * 2]]);

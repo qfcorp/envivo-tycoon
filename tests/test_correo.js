@@ -43,7 +43,7 @@ const dormir = (ms) => new Promise((ok) => setTimeout(ok, ms));
       const r = await fetch(BASE + ruta, { method: cuerpo ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', ...(galleta ? { Cookie: galleta } : {}) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
       return { status: r.status, j: await r.json().catch(() => null), galleta: (r.headers.get('set-cookie') || '').split(';')[0] };
     };
-    const reg = await api('/api/registro', { email: 'dimi@prueba.example', nombre: 'Dimi', clave: 'ClaveVieja1' });
+    const reg = await api('/api/registro', { email: 'dimi@prueba.example', nombre: 'Dimi', clave: 'ClaveVieja1', acepta_terminos: true, edad_16: true });
     bien(reg.status === 200 && /^envivo_s=/.test(reg.galleta), 'Cuenta de prueba creada (y su sesión en "otro celular")');
     const otroCelular = reg.galleta;
 

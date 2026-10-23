@@ -133,7 +133,7 @@ function simular(cfg) {
     check('Ni pidió el permiso del navegador', (await p.evaluate(() => window.__push.pedidos)) === 0);
 
     console.log('\n== Al crear la cuenta: aviso previo propio');
-    await p.evaluate(() => window.Api.registro('nav1@prueba.example', 'Nadia Push', 'ClaveSegura123'));
+    await p.evaluate(() => window.Api.registro('nav1@prueba.example', 'Nadia Push', 'ClaveSegura123', { acepta_terminos: true, edad_16: true }));
     await cerrarModales(p);
     await p.waitForSelector('#push-previo', { timeout: 15000 }).catch(() => null);
     check('Aparece el aviso previo después de crear la cuenta', await hay(p, '#push-previo'));
@@ -192,7 +192,7 @@ function simular(cfg) {
 
     console.log('\n== Primer evento de 5 estrellas');
     ({ ctx, p } = await nuevaPagina());
-    await p.evaluate(async () => { await fetch('/api/registro', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' }, body: JSON.stringify({ email: 'nav2@prueba.example', nombre: 'Beto Estrellas', clave: 'ClaveSegura123' }) }); await window.Api.refrescar(); });
+    await p.evaluate(async () => { await fetch('/api/registro', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' }, body: JSON.stringify({ email: 'nav2@prueba.example', nombre: 'Beto Estrellas', clave: 'ClaveSegura123', acepta_terminos: true, edad_16: true }) }); await window.Api.refrescar(); });
     await p.reload({ waitUntil: 'load' });
     await p.waitForFunction(() => window.Push && window.Api && window.Api.estado && window.Api.estado.logueado, null, { timeout: 15000 });
     await esperar(3000);
@@ -237,7 +237,7 @@ function simular(cfg) {
 
     console.log('\n== Permiso bloqueado y otro idioma');
     ({ ctx, p } = await nuevaPagina({ permiso: 'denied' }, 'en-US'));
-    await p.evaluate(async () => { await fetch('/api/registro', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' }, body: JSON.stringify({ email: 'nav3@prueba.example', nombre: 'Carl Blocked', clave: 'ClaveSegura123' }) }); await window.Api.refrescar(); });
+    await p.evaluate(async () => { await fetch('/api/registro', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' }, body: JSON.stringify({ email: 'nav3@prueba.example', nombre: 'Carl Blocked', clave: 'ClaveSegura123', acepta_terminos: true, edad_16: true }) }); await window.Api.refrescar(); });
     await p.evaluate(async () => { if (window.I18N && window.I18N.setIdioma) { window.I18N.setIdioma('en'); if (window.I18N.listo) await window.I18N.listo; } });
     await p.evaluate(() => window.Push.momentoExito('estrellas'));
     await esperar(2500);
