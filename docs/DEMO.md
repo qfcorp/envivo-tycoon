@@ -60,7 +60,7 @@ Dos partes: primero una **partida nueva** (los días 1 a 15, lo que mejor se sie
 
 ### Partida preparada del capítulo 4 (`?demo=cap4`)
 
-- **Desde el celular, lo más fácil:** abre **EN VIVO Tycoon Demo** → https://claude.ai/artifact/RVBzdXCEN26juFswBwp9SN . La primera vez arranca sola en el capítulo 4 (día 54, $9.560, fama 71); después guarda tu avance como cualquier partida.
+- **Desde el celular, lo más fácil:** abre **EN VIVO Tycoon Demo** → https://claude.ai/artifact/RVBzdXCEN26juFswBwp9SN . La primera vez arranca sola en el capítulo 4 (día 52, $6.509, fama 60); después guarda tu avance como cualquier partida.
 
 - Se abre agregando `?demo=cap4` a la dirección del juego, por ejemplo `https://juego.tukanec.com/?demo=cap4`
   o `index.html?demo=cap4` / `dist/envivo-tycoon.html?demo=cap4` en la computadora.
@@ -68,9 +68,9 @@ Dos partes: primero una **partida nueva** (los días 1 a 15, lo que mejor se sie
   Si cancelas, tu partida queda igual. Si aceptas, se reemplaza (no se puede recuperar).
 - La partida **no está hecha a mano**: la lógica del juego juega sola con una semilla fija (compra, contrata y cubre
   eventos con las reglas normales) hasta llegar al capítulo 4, y luego agrega con sus propias funciones un contrato
-  **disputado por MegaVisión** y una **oferta internacional**. Siempre sale igual: día 54, unos $9.500, fama 71,
-  10 personas, 18 equipos, un **duelo** en una graduación (MegaVisión promete 52; tu equipo espera ~71) y una
-  **velada de boxeo para StreamRing USA** (Estados Unidos). La oferta internacional pide un realizador con experiencia
+  **disputado por MegaVisión** y una **oferta internacional**. Siempre sale igual: día 52, unos $6.500, fama 60,
+  7 personas, 17 equipos, dos **duelos** con MegaVisión (un lanzamiento de autos y una graduación) y un
+  **lanzamiento internacional** para Colombia y Perú. La oferta internacional pide un realizador con experiencia
   internacional: sirve para mostrar los requisitos, no para jugarla.
 - El parámetro se quita de la dirección al cargar: recargar no vuelve a preguntar.
 - El enlace de claude.ai puede no pasarle `?demo=cap4` al juego; para la segunda parte del demo usa el archivo
