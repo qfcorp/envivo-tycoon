@@ -196,8 +196,8 @@ llegara a abrir `pago.php`, habría que declararlos también (Información perso
    Falta llenar [CORREO DE SOPORTE] en esa página.
 2. **Pagos en la app de Play.** En la app de Android los bienes digitales se cobran con **Google Play Billing**
    (`server/src/Google.php` ya lo verifica). La app de Play no debe mostrar ni enlazar el pago con tarjeta de Pago Plux.
-3. **Capturas sin marcas reales.** Volver a generar la captura 01 ("Partido de LigaPro") y revisar las demás
-   (`ASO_Y_CAPTURAS.md` §3).
+3. ~~Capturas sin marcas reales~~ **Listo**: 8 capturas por idioma (10 idiomas) en `assets/promo/screens_<idioma>/01..08.png`,
+   sin marcas reales (el generador revisa ~55 marcas). Antes de subir: que un nativo revise los títulos de las capturas que no están en español.
 4. **Datos legales.** Completar [DIRECCIÓN] en los términos y la privacidad (lo demás ya está; ver `docs/LEGAL_REVISION.md`),
    y crear el correo de soporte (`SOPORTE_CORREO`).
 5. **Cuenta de prueba para el revisor** con una compra de sandbox (para que vea mercado y chat).
