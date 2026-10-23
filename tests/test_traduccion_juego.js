@@ -33,8 +33,8 @@ const SOLO_MARCA = [
   'item.audio_basic.nombre', 'item.encoder.nombre', 'item.enc_liveyou_solo_pro.nombre', 'item.router4g.nombre', 'item.tx_terradek_rayo_6.nombre',
   'item.ups.nombre',
 ];
-// Tecnicismos que se dicen igual (PTZ, Steadicam, Junior, Senior) y coincidencias reales de cada idioma
-const IGUAL_TODOS = ['pos.prensa.abierta_ptz.ideal', 'pos.internacional_host.comcam.ideal', 'pos.concierto.steadicam.ideal', 'nivel.junior', 'nivel.senior',
+// Tecnicismos que se dicen igual (PTZ, Junior, Senior) y coincidencias reales de cada idioma
+const IGUAL_TODOS = ['pos.prensa.abierta_ptz.ideal', 'pos.internacional_host.comcam.ideal', 'nivel.junior', 'nivel.senior',
   // Nombres de países que se escriben igual en varios idiomas
   'pais.argentina', 'pais.chile', 'pais.colombia', 'pais.mexico', 'pais.estados_unidos', 'pais.peru'];
 const IGUAL_IDIOMA = {

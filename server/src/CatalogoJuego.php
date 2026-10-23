@@ -137,13 +137,13 @@ final class CatalogoJuego
   array (
     'cat' => 'cam',
     'fama' => 4,
-    'nombre' => 'DGI Osmo Bolsillo 3',
+    'nombre' => 'DGI Ozmo Bolsillo 3',
   ),
   'cam_celular_gimbal' => 
   array (
     'cat' => 'cam',
     'fama' => 0,
-    'nombre' => 'Celular gama alta + gimbal DGI Osmo Móvil 8',
+    'nombre' => 'Celular gama alta + gimbal DGI Ozmo Móvil 8',
   ),
   'dron_dgi_micro_4_pro' => 
   array (
