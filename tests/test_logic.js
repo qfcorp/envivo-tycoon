@@ -157,6 +157,14 @@ function botTurn(s) {
   check(f.ok && f.result.stars >= 1 && f.result.stars <= 5, 'finishEvent falló');
   if (f.ok) {
     starsByChapter[chBefore].push(f.result.stars);
+    // Varios eventos por día: cuántos eventos se ven en pérdida (ganancia del evento - su parte de los gastos fijos)
+    if (f.result.dia) {
+      const cap = chBefore < 2 ? 'inicio' : chBefore < NCH ? 'historia' : 'libre';
+      verPerdida[cap] = verPerdida[cap] || [0, 0, 0]; verPerdida[cap][0]++;
+      if (f.result.net - f.result.dia.parte < 0) verPerdida[cap][1]++;
+      if (f.result.net - f.result.dailyCost < 0) verPerdida[cap][2]++; // como se veía antes (todo el gasto del día en un evento)
+      check(f.result.dia.parte >= 0 && f.result.dia.n >= 1 && f.result.dia.n <= G.BALANCE.dia.franjas, 'resultado: turno del día inválido');
+    }
     check(f.result.crewPlan && f.result.cameraPlan && f.result.type === best.c.type && Array.isArray(f.result.avisos), 'el resultado no trae los planes, el tipo o los avisos');
     if (best.c.internacional) intlPlayed++;
     if (f.result.rival) {
@@ -167,6 +175,8 @@ function botTurn(s) {
   }
 }
 const crewStats = { events: 0, falta: 0 };
+const evPorDia = []; // eventos por día durante la historia
+const verPerdida = {}; // { inicio | historia | libre: [eventos, en pérdida con su parte, en pérdida con todo el gasto del día] }
 const intlIds = new Set();
 const idle = { descanso: 0, sinOferta: 0, noRinde: 0, falta: 0 }; // por qué el bot no trabajó
 const faltaRol = {};
@@ -183,7 +193,8 @@ for (let g = 0; g < GAMES; g++) {
   const s = G.newGame(SEED + g);
   validState(s, `partida ${g} inicio`);
   let winDay = null, lastCh = s.chapter;
-  for (let t = 0; t < MAX_DAYS && !s.gameOver; t++) {
+  const evDia = { ev: 0, dias: 0 };
+  for (let t = 0; s.day <= MAX_DAYS && !s.gameOver && t < MAX_DAYS * 4; t++) { // cada vuelta: un evento o cerrar el día
     try { botTurn(s); } catch (e) { check(false, `partida ${g} día ${s.day}: EXCEPCIÓN ${e.stack}`); break; }
     validState(s, `partida ${g} día ${s.day}`);
     check(Number.isFinite(G.dailyCost(s)) && G.dailyCost(s) >= 20, `partida ${g}: gasto diario inválido`);
@@ -200,12 +211,14 @@ for (let g = 0; g < GAMES; g++) {
       }
     });
     while (lastCh < s.chapter) { chapterDays[lastCh].push(s.day); lastCh++; }
+    if (!s.storyDone) { evDia.ev = s.stats.events; evDia.dias = s.day; }
     if (s.storyDone && winDay === null) { winDay = s.day; chapterDays[NCH - 1].push(s.day); lastCh = NCH; }
   }
   // Guardar y cargar
   const copy = G.deserialize(G.serialize(s));
   check(copy && copy.money === s.money && copy.day === s.day, `partida ${g}: guardar/cargar no coincide`);
   if (winDay) { storyWins++; daysToWin.push(winDay); }
+  if (evDia.dias) evPorDia.push(evDia.ev / evDia.dias);
   if (s.gameOver) { bankrupt++; if (!s.storyDone) bankruptStory++; bankruptAt.push({ day: s.day, ch: s.storyDone ? NCH : s.chapter, ev: s.stats.events }); }
   duelsWon += s.stats.duels.won; duelsLost += s.stats.duels.lost;
   chapterReached[s.storyDone ? NCH : s.chapter]++;
@@ -277,6 +290,60 @@ G.CHAPTERS.forEach((ch, i) => {
   check(o && typeof o.contracts[0].rivalQuality === 'number', 'deserialize no rellenó la calidad de MegaVisión');
   check(o && Array.isArray(o.pending) && typeof o.lastWorkDay === 'number' && o.v === G.SAVE_VERSION, 'deserialize no rellenó cobros pendientes / versión');
   for (let i = 0; i < 30; i++) { G.nextDay(o); validState(o, 'partida vieja'); }
+})();
+
+/* ---------- Varios eventos por día (v4) ---------- */
+(function () {
+  const jugar = (s, c) => {
+    const r = G.startEvent(s, c.id, [s.staff[0].id], [s.equip[0].id]);
+    check(r.ok, 'varios eventos: no se pudo iniciar ' + r.msg);
+    let inc; while ((inc = G.currentIncident(s))) G.resolveIncident(s, inc.choices.find((x) => x.ok).i);
+    return G.finishEvent(s).result;
+  };
+  const s = G.newGame(4242);
+  const d0 = s.day, m0 = s.money, dc = G.dailyCost(s);
+  check(G.turnoDia(s).n === 0 && G.turnoDia(s).libres === 3 && G.turnoDia(s).turno === 0 && G.turnoDia(s).parte === null, 'turnoDia al empezar');
+  const r1 = jugar(s, s.contracts[0]);
+  check(s.day === d0 && !r1.dia.cerrado && r1.dia.n === 1 && r1.dia.parte === dc && r1.dia.conOtro === Math.round(dc / 2), `1er evento: el día no avanza (${s.day}) y le toca todo el gasto (${JSON.stringify(r1.dia)})`);
+  check(s.money === m0 + r1.payNow - r1.wages - (r1.transporte ? r1.transporte.total : 0) + (r1.chapterDone ? r1.chapterDone.reward : 0), 'sin cerrar el día no se cobran los gastos fijos');
+  const r2 = jugar(s, s.contracts[0]);
+  check(s.day === d0 && r2.dia.n === 2 && r2.dia.turno === 1 && r2.dia.parte === Math.round(dc / 2) && r2.dia.conOtro === Math.round(dc / 3), `2º evento: mismo día, la parte baja a la mitad (${JSON.stringify(r2.dia)})`);
+  check(G.turnoDia(s).n === 2 && G.turnoDia(s).libres === 1 && G.turnoDia(s).turno === 2, 'turnoDia después de 2 eventos (queda la noche)');
+  // Cerrar el día: se cobra una vez y queda el resumen
+  const m1 = s.money, gHoy = G.dailyCost(s);
+  G.nextDay(s);
+  const rd = G.takeResumenDia(s);
+  check(s.day === d0 + 1 && rd && rd.eventos === 2 && rd.dia === d0 && rd.gastos === gHoy && rd.ganancia === r1.net + r2.net && rd.resultado === rd.ganancia - rd.gastos && rd.lista.length === 2,
+    `resumen del día (${JSON.stringify(rd)})`);
+  check(m1 - s.money <= gHoy && G.takeResumenDia(s) === null && G.turnoDia(s).n === 0, 'cerrar el día cobra una vez y el resumen se entrega una vez');
+  // El 3er evento del día cierra el día solo
+  const t = G.newGame(4343); t.stats.events = 5; t.contracts = [];
+  for (let i = 0; i < 3; i++) { const c = G.addContract(t, 'misa'); c.stream = false; c.outdoor = false; c.cams = 1; }
+  const dt = t.day;
+  jugar(t, t.contracts[0]); jugar(t, t.contracts[0]);
+  const r3 = jugar(t, t.contracts[0]);
+  check(r3.dia.cerrado && r3.dia.n === 3 && t.day === dt + 1 && r3.dia.parte === Math.round(r3.dia.gastos / 3) && r3.dia.conOtro === null, `el 3er evento cierra el día (${JSON.stringify(r3.dia)})`);
+  check(G.takeResumenDia(t).eventos === 3, 'resumen con los 3 eventos');
+  // Los eventos grandes ocupan el día entero
+  check(G.jornadaCompleta({ type: 'concierto' }) && G.jornadaCompleta({ type: 'final' }) && G.jornadaCompleta({ type: 'misa', internacional: true }) && !G.jornadaCompleta({ type: 'boda', diff: 2 }) && !G.jornadaCompleta({ type: 'lanzamiento' }),
+    'jornada completa: dificultad 4+ e internacionales');
+  const j = G.newGame(4444); j.stats.events = 5; j.rep = 40; j.contracts = [];
+  const cj = G.addContract(j, 'concierto'); const dj = j.day;
+  const rj = jugar(j, cj);
+  check(rj.dia.jornada && rj.dia.cerrado && j.day === dj + 1, 'un concierto cierra el día');
+  // Intento en línea: igual que antes (el evento ocupa el día y no hay turnos)
+  const I = require('../server/validador/intento.js');
+  const it = I.jugar(G, { seed: 77, equipo: { staff: [{ role: 'camarografo', skill: 3, owner: true }], equip: [{ type: 'cam_basic', condition: 90 }] }, contrato: { type: 'misa' } }, (inc) => inc.choices.find((x) => x.ok).i);
+  check(it.completo && it.completo.dia === undefined, 'intento en línea: el resultado no trae turnos');
+  const est = I.crearEstado(G, { seed: 77, equipo: { staff: [{ role: 'camarografo', skill: 3, owner: true }], equip: [{ type: 'cam_basic', condition: 90 }] }, contrato: { type: 'misa' } }).s;
+  G.startEvent(est, est.contracts[0].id, est.staff.map((p) => p.id), est.equip.map((e) => e.id));
+  let inc; while ((inc = G.currentIncident(est))) G.resolveIncident(est, inc.choices.find((x) => x.ok).i);
+  G.finishEvent(est);
+  check(est.day === 2 && !est.resumenDia, 'intento en línea: el día avanza como antes');
+  // Partida v3 (sin turnos) carga bien
+  const v3 = JSON.parse(G.serialize(G.newGame(4545))); v3.v = 3; delete v3.hoy; delete v3.resumenDia;
+  const o3 = G.deserialize(JSON.stringify(v3));
+  check(o3 && o3.v === G.SAVE_VERSION && o3.hoy && o3.hoy.n === 0 && o3.hoy.dia === o3.day && G.turnoDia(o3).libres === 3, 'partida v3: arranca el día sin eventos hechos');
 })();
 
 // Probar que un guardado dañado no rompa el juego
@@ -671,7 +738,9 @@ check(bot60 > G.BALANCE.start.money && bot90 > bot30 && bot120 > bot60, `una pro
 // cuando bajan los contratos grandes y a veces se funde hacia el día 300; eso se reporta aparte.
 const bankRate = bankruptStory / GAMES, winRate = storyWins / GAMES, bankFree = (bankrupt - bankruptStory) / GAMES;
 // Ni muy rápido ni un muro (QA4: el capítulo 3 era un muro para jugadores reales): días entre capítulos
-const MIN_GAP = [0, 10, 12, 15, 15, 15];
+// v4 (varios eventos por día, 23 oct 2026): el bot hace ~1,6 eventos por día y los capítulos que no esperan una oferta
+// de la historia llegan antes en días (cap. 2: +9, cap. 4: +14). Los mínimos se bajaron a propósito (ver PLAN.md, Bitácora).
+const MIN_GAP = [0, 6, 10, 10, 15, 15];
 const MAX_GAP = [10, 25, 22, 28, 30, 32];
 medians.forEach((m, i) => {
   check(Number.isFinite(m), `capítulo ${i + 1}: sin mediana`);
@@ -679,10 +748,12 @@ medians.forEach((m, i) => {
   if (i > 0) check(m - medians[i - 1] <= MAX_GAP[i], `capítulo ${i + 1}: es un muro (+${m - medians[i - 1]} días, máximo ${MAX_GAP[i]})`);
 });
 check(medians[0] <= 10, `capítulo 1 debería ser rápido (mediana ${medians[0]})`);
-// El bot juega mejor que una persona (QA4: una persona cuidadosa tarda más): para el bot, ~90-150 días
-check(medians[NCH - 1] >= 90 && medians[NCH - 1] <= 150, `la historia debería durar ~90-150 días para el bot (mediana ${medians[NCH - 1]})`);
+// El bot juega mejor que una persona (QA4: una persona cuidadosa tarda más): para el bot, ~70-130 días
+// (v4: con varios eventos por día la historia se acorta en días: antes ~104, ahora ~84; los eventos son los mismos)
+check(medians[NCH - 1] >= 70 && medians[NCH - 1] <= 130, `la historia debería durar ~70-130 días para el bot (mediana ${medians[NCH - 1]})`);
 check(bankRate >= 0.01 && bankRate <= 0.11, `quiebras durante la historia fuera de rango (1-11%): ${(bankRate * 100).toFixed(1)}%`);
-check(bankFree <= 0.3, `demasiadas quiebras en el modo libre (máx. 30% en 400 días): ${(bankFree * 100).toFixed(1)}%`);
+// v4: antes ~20%; con el tope de exigencia por fama (expectMaxRep) bajó a ~15%
+check(bankFree <= 0.25, `demasiadas quiebras en el modo libre (máx. 25% en 400 días): ${(bankFree * 100).toFixed(1)}%`);
 check(winRate >= 0.85, `historia completada fuera de rango (85% o más): ${(winRate * 100).toFixed(1)}%`);
 check(duelLoss >= 0.25, `el bot pierde muy pocos duelos (${(duelLoss * 100).toFixed(1)}%, mínimo 25%)`);
 for (let i = 2; i < NCH; i++) {
@@ -690,6 +761,9 @@ for (let i = 2; i < NCH; i++) {
   check(a >= 3.0 && a <= 3.9, `capítulo ${i + 1}: estrellas promedio fuera de rango (3,0-3,9): ${a.toFixed(2)}`);
 }
 check(lateStars >= 3.0 && lateStars <= 3.8, `estrellas promedio de los capítulos 3-6 fuera de rango (3,0-3,8): ${lateStars.toFixed(2)}`);
+console.log('Eventos que se ven en pérdida (ganancia del evento - su parte de los gastos del día) · antes (todo el gasto del día en el evento):',
+  Object.keys(verPerdida).map((k) => `${k} ${(100 * verPerdida[k][1] / verPerdida[k][0]).toFixed(1)}% · antes ${(100 * verPerdida[k][2] / verPerdida[k][0]).toFixed(1)}%`).join(' | '));
+console.log(`Eventos por día (mediana por partida, hasta el fin de la historia o la quiebra): ${median(evPorDia).toFixed(2)}`);
 console.log(`Quiebras durante la historia ${(bankRate * 100).toFixed(1)}% · en modo libre ${(bankFree * 100).toFixed(1)}% · historia completada ${(winRate * 100).toFixed(1)}%`);
 console.log(`Contratos internacionales vistos: ${intlIds.size} · jugados por el bot: ${intlPlayed} · eventos con algún rol en rojo: ${(100 * crewStats.falta / Math.max(1, crewStats.events)).toFixed(1)}% · días sin trabajar: ${JSON.stringify(idle)}`);
 

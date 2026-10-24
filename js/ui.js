@@ -82,6 +82,10 @@
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
   const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
   const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
+  // Varios eventos por día: turno de hoy (G.turnoDia). Con una lógica vieja (un evento = un día), null
+  const turnoHoy = () => { try { return G.turnoDia && S ? G.turnoDia(S) : null; } catch (e) { return null; } };
+  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(2, Number(i) || 0)));
+  const esJornada = (c) => { try { return !!(G.jornadaCompleta && G.jornadaCompleta(c)); } catch (e) { return false; } };
 
   /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
   const RES_KEY = 'envivo_resultado_pendiente'; // resultado que falta ver (si se recarga en esa pantalla)
@@ -607,6 +611,7 @@
     const rent = G.dailyCost ? G.dailyCost(S) : 20 + 4 * (S.staff.length - 1);
     let cb = null;
     try { cb = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null; } catch (e) { cb = null; }
+    const tHoy = turnoHoy();
     const costBox = cb ? `<div class="costbox"><div class="ci">${I('home')}</div><div class="t">
         <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>${AY('gastos')}
         <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}${cb.fijoExt && window.Decoracion ? ` · ${esc(window.Decoracion.t('c_decor', { m: M(cb.fijoExt) }))}` : ''}${cb.vehiculos && window.Movilizacion ? ` · ${esc(window.Movilizacion.t('gasto', { m: M(cb.vehiculos) }))}` : ''}</div>
@@ -646,8 +651,9 @@
             ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
           </div>
           ${costBox}
+          ${tHoy ? `<div class="small turno-hoy" style="margin:2px 0 8px">${I('calendar', 'sm')} ${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}${AY('dia')}</div>` : ''}
           <button class="btn main" data-act="tab" data-tab="clientes">${I('clients')}${T('inicio.ver_ofertas', { n: S.contracts.length })}</button>
-          <button class="btn" data-act="next-day">${I('sleep')}${T('inicio.descansar')} <span class="muted small">(${T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
+          <button class="btn" data-act="next-day">${I('sleep')}${tHoy && tHoy.n ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
         </div>
       </div>
       ${installCard()}
@@ -836,18 +842,20 @@
     try { return Object.assign({}, c, { requisitos: G.requisitosInternacional(S, c, S.staff.map((p) => p.id), S.equip.map((e) => e.id)).map((r) => Object.assign({}, r, { texto: TL(r.texto) })) }); } catch (e) { return c; }
   }
   function renderClientes() {
+    const tHoy = turnoHoy();
     const cards = S.contracts.map((c) => {
       const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
+      const todoDia = tHoy && esJornada(c) ? `<span class="tag amber todo-dia">${I('calendar', 'sm')}${T('clientes.todo_dia')}</span>` : '';
       return `<div class="card ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
-        <div style="margin-top:6px">${reqTags(c)}</div>
+        <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
         ${PE ? PE.internacional(intlVista(c)) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
-          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${T('clientes.vence', { n: c.daysLeft })}</span>
+          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${tHoy && c.daysLeft <= 1 ? T('clientes.vence_hoy') : T('clientes.vence', { n: c.daysLeft })}</span>
         </div>
         <button class="btn main" data-act="prep" data-id="${c.id}">${T('clientes.preparar')}</button>
       </div>`;
@@ -860,6 +868,7 @@
         <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}${T('clientes.visitar')} <span class="muted small">(${T('clientes.visitar_det')})</span></button>
       </div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
+      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')}</div></div>` : ''}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
@@ -1843,6 +1852,9 @@
     }
     const reqVista = reqs.map((r) => ({ texto: TL(r.texto), ok: r.ok, detalle: r.ok ? '' : r.obligatorio ? T('prep.obligatorio') : T('prep.req_resta') }));
     const intlHtml = PE && c.internacional ? PE.internacional(Object.assign({}, c, { requisitos: reqVista })) : PE ? PE.internacional(c) : '';
+    const tHoy = turnoHoy();
+    const avisoDia = !tHoy ? '' : esJornada(c) ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.jornada')}</p>`
+      : tHoy.libres === 1 ? `<p class="small muted" style="margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.ultimo_turno')}</p>` : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
     const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP);
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
@@ -1852,7 +1864,7 @@
     const calcHtml = `${intlHtml}
       <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
         ${puede ? tip : ''}
-        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div></div>
+        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>
       ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
       ${window.Movilizacion ? window.Movilizacion.seccionPrep(ctxInicio(), c, [...prep.staff], [...prep.equip]) : ''}`;
     const tablaHtml = `${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}
@@ -2072,7 +2084,10 @@
         return [T('inicio.local', { m: M(b.rent) }), pers ? T('inicio.c_personal', { m: M(pers) }) : '', b.equip ? T('inicio.c_seguro', { m: M(b.equip) }) : '', b.fijoExt && window.Decoracion ? window.Decoracion.t('c_decor', { m: M(b.fijoExt) }) : '', b.vehiculos && window.Movilizacion ? window.Movilizacion.t('gasto', { m: M(b.vehiculos) }) : ''].filter(Boolean).join(' · ');
       } catch (e) { return ''; }
     })();
-    const neto = r.net - (gastoDia || 0);
+    // Varios eventos por día (r.dia): lo grande es lo que dejó el evento; los gastos fijos del día van aparte, con la parte
+    // que le toca a este evento (repartidos entre los eventos de hoy). Con una lógica vieja: como antes (todo el día en el evento).
+    const dd = r.dia && typeof r.dia.parte === 'number' ? r.dia : null;
+    const neto = dd ? r.net : r.net - (gastoDia || 0);
     const sgn = (v) => (v > 0 ? '+' : '') + M(v);
     const quebro = !!S.gameOver;
     const bk = quebro ? null : bkInfo();
@@ -2089,7 +2104,7 @@
       <h2>${esc(noEmoji(TL(r.title)))}</h2></div>
       ${starsBig(r.stars)}
       <div class="bigmoney ${tono} num" id="resNet">${fresh ? (neto >= 0 ? '+' : '-') + M(0) : (neto >= 0 ? '+' : '-') + M(Math.abs(neto))}</div>
-      <div class="small muted" style="text-align:center">${gastoDia !== null ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
+      <div class="small muted" style="text-align:center">${gastoDia !== null && !dd ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
       ${alerta}
       <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}${AY('calidad')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
@@ -2103,11 +2118,12 @@
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
         ${window.Movilizacion ? window.Movilizacion.filaResultado(r, M) : ''}
-        ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
+        ${gastoDia !== null && !dd ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
         <tr><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
       </table>
+      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
@@ -2123,6 +2139,18 @@
     if (quebro) return;
     if (r.stars >= 4) confetti(r.stars === 5 ? 28 : 20);
     else if (r.stars === 3) confetti(10);
+  }
+
+  /* Gastos fijos del día en el resultado (varios eventos por día): cuánto son, cuándo se cobran y la parte de este evento */
+  function fijosRes(r, d, desg, sgn) {
+    const resto = r.net - d.parte;
+    return `<div class="paylater fijos-dia" id="resFijos">${I('home', 'sm')} <div class="grow">
+      <b>${T('res.fijos', { m: M(d.gastos) })}</b>${AY('gastos')}
+      ${desg ? `<div class="small muted" style="font-size:11.5px">${desg}</div>` : ''}
+      <div class="small" style="margin-top:3px">${d.cerrado ? T('res.fijos_cobrados', { n: d.n, m: M(d.parte) }) : T('res.fijos_luego', { n: d.n, m: M(d.parte) })}</div>
+      ${!d.cerrado && typeof d.conOtro === 'number' && d.conOtro < d.parte ? `<div class="small up">${T('res.fijos_otro', { m: M(d.conOtro) })}</div>` : ''}
+      <div class="row between small" style="margin-top:4px"><span class="muted">${T('res.con_parte')}</span><b class="num ${resto >= 0 ? 'up' : 'down'}">${sgn(resto)}</b></div>
+    </div></div>`;
   }
 
   let capDeCola = false;   // el capítulo que se ve salió de S.capCompletados (se quita al cerrar)
