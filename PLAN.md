@@ -227,6 +227,7 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-23 (18:50): arreglo: en 'Equipos dañados' del resultado, al reparar, la barra y el número ahora muestran cómo quedó (p. ej. 81% → 100%).
 
 ## ⏸️ EN PAUSA (viernes 23-oct-2026, 19:40) — seguir el lunes
+**Regla de Dimitry (23-oct): primero terminar el JUEGO para poder probarlo y publicarlo; manuales, guías y trámites van después. El lunes: 1) varios eventos por día, 2) lo que salga al probarlo.**
 **Lo que está en main y en el servidor:** todo lo de arriba, ya probado.
 - Servidor 106/0, ensayo del VPS 87/0.
 - PayPal listo pero sin claves.
