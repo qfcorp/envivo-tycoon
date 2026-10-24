@@ -225,3 +225,41 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-23 (18:10): sin marcas reales en textos visibles: Steadicam → estabilizador corporal (10 idiomas); Osmo → Ozmo; Steadikam Aéreo → Estabilio Aéreo; Smart-UPS → VoltGuard; Rosco → Rozz. dist/ reconstruido.
 - 2026-10-23 (19:00): **PayPal** en la tienda web (no en la app de Google Play): redirección a PayPal, captura y verificación en el servidor, webhook firmado (reembolso, reverso o disputa → se revierte la compra), mínimo $4.99 (PAYPAL_MINIMO), factura SRI con forma de pago 20. Guía `docs/PAYPAL.md`. Servidor 106/0, ensayo VPS 87/0.
 - 2026-10-23 (18:50): arreglo: en 'Equipos dañados' del resultado, al reparar, la barra y el número ahora muestran cómo quedó (p. ej. 81% → 100%).
+
+## ⏸️ EN PAUSA (viernes 23-oct-2026, 19:40) — seguir el lunes
+**Lo que está en main y en el servidor:** todo lo de arriba, ya probado.
+- Servidor 106/0, ensayo del VPS 87/0.
+- PayPal listo pero sin claves.
+- Arreglo de la barra de equipos reparados.
+
+**A medias: "Varios eventos por día" (decisión de Dimitry).**
+- Qué es:
+  - Hasta 3 eventos por día (mañana, tarde, noche).
+  - Los gastos fijos se cobran una sola vez al "Cerrar el día".
+  - Cada resultado muestra la parte de los gastos del día que le toca (prorrateado).
+  - Resumen al cerrar el día.
+  - El balance se reajusta para que no se pierda en casi todos los eventos.
+- Dónde está: rama de GitHub **`wip-varios-eventos`**, commit 00ad439 (NO está en main).
+  - Hay cambios en `logic.js`, `ui.js`, `ayuda.js`, `datos.js`, los textos de los 10 idiomas y `tests/test_logic.js`.
+  - Se cortó cuando iba por la pantalla: Inicio, Clientes y preparación.
+- Falta:
+  - Terminar la pantalla.
+  - Resumen del día.
+  - Revisar los módulos que usan el día:
+    - `alNuevoDia` en sede, decoración, movilización, logros, misiones y temporadas;
+    - que la guía del primer evento siga funcionando.
+  - Que los modos en línea (validador) sigan iguales.
+  - Que las partidas viejas carguen (nueva SAVE_VERSION).
+  - Reajustar el balance con el bot y escribir los números aquí.
+  - `tests/test_varios_eventos.js`.
+  - Todas las pruebas, `dist/`, versión en `sw.js`.
+- Para retomar: `git fetch origin && git checkout -b varios-eventos origin/wip-varios-eventos && git merge main`, y seguir con un ayudante con el mismo encargo.
+
+**Pendientes de Dimitry (no dependen de programar):**
+- Crear el Discord (`docs/DISCORD_CREAR_SERVIDOR.md`).
+- Correo de soporte y SMTP (`docs/CORREO.md`).
+- PayPal Business y claves (`docs/PAYPAL.md`).
+- Marca en SENADI (`docs/MARCA_NOMBRE.md`).
+- Abogado (`docs/LEGAL_REVISION.md`).
+- Contador: cómo facturar las ventas de Google Play.
+- Claves de producción de Plux al salir en vivo.
