@@ -144,7 +144,7 @@ async function servir(ctx) {
       marcadas: [...document.querySelectorAll('#modal input[data-act="tog-equip"]')].filter((x) => x.checked).map((x) => +x.dataset.id),
       plan: [...document.querySelectorAll('#modal .pe-clr')].map((r) => r.innerText.replace(/\s+/g, ' ')) };
   });
-  const marcar = async (page, id) => { await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${id}"])`).click(); await page.waitForTimeout(60); };
+  const marcar = async (page, id) => { await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${id}"])`).click({ position: { x: 12, y: 12 } }); await page.waitForTimeout(60); };
   const comprar = async (page, cat, k) => {
     await page.click('nav button[data-tab="bodega"]');
     await page.click(`[data-act="cat"][data-k="${cat}"]`);

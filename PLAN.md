@@ -275,3 +275,11 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 3. Bloqueo por "cámara al hombro": el juego la exige siempre, pero no está en el inventario y al inicio (sin fama) no se puede desbloquear ni comprar.
 4. Marcador de estado/batería: después de reparar tras un evento, el porcentaje no se actualiza y sigue como dañado.
 5. Fama: al terminar el evento dice +10, pero al cerrar la pantalla vuelve a 3 o 0.
+- 2026-10-25: arreglados los 5 puntos de Dimitry:
+  - Cámaras: la mejor va primero, el cambio se respeta y la probabilidad sube; aviso de lente que falta con "cámara + lente"; cámara al hombro Zony HXR-MK2500 desde fama 0.
+  - Descripciones "para qué sirve" en los 115 equipos, con botón "?".
+  - Fama y equipos reparados: la partida en la nube creía que su propio guardado era de otro dispositivo y recargaba una versión vieja. El resultado dice "Fama +N → ahora X".
+  - Temporada de Halloween: ya no tapa el inicio con "Resumen del día"; las pruebas usan una fecha fija.
+  - El precio de reparación cobrado ahora es igual al mostrado (equipos un 25 % más baratos de reparar).
+  - Textos nuevos solo en español; `node tools/pendientes_traduccion.js` lista lo que falta traducir.
+  - Pruebas: servidor 106/0 y 53 pruebas del juego en verde.
