@@ -614,6 +614,9 @@
   .bq .small{font-size:11.5px;line-height:1.3}
   .bqr{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:#ffb3b3;background:#3a1519;border:1px solid #5a2026;border-radius:999px;padding:2px 8px;white-space:nowrap}
   .bqr .ico{width:12px;height:12px;margin:0}
+  .camav{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:8px}
+  .camav-t{color:var(--amber);line-height:1.35;margin:4px 0}
+  .camav-b{margin:4px 0 6px}
   .rolwarn{display:flex;align-items:center;gap:8px;font-size:13px;border-radius:10px;padding:8px 10px;margin:-6px 0 6px;background:#2a2210;border:1px solid #5a4214;color:#ffd78a}
   .rolwarn.falta{background:#3a1519;border-color:#5a2026;color:#ffb3b3}
   .rolwarn .ico{flex:none;margin:0}
@@ -26252,6 +26255,17 @@
     "prep.bloqueados": "Cámaras que no se pueden usar",
     "prep.bloqueados_n": {"one":"{n} cámara","other":"{n} cámaras"},
     "prep.bloq.sin_lente": "Sin lente",
+    "prep.lente_falta": "Le falta un lente: {lente} ({m}) en la Bodega, categoría Lentes.",
+    "prep.lente_fama": "Le falta un lente: {lente}, que se desbloquea con {n} de fama. Mientras tanto lleva otra cámara.",
+    "prep.ir_bodega": "Comprar en la Bodega",
+    "prep.cam_no_usada": "No se usa en este evento: {cams}. No le queda posición o no hay camarógrafo libre para manejarla.",
+    "prep.cam_sugerida": "«{pos}» rinde poco con lo que tienes (lo ideal: {ideal}). Ya puedes comprar {item} ({m}) en la Bodega.",
+    "prep.cam_sugerida_vacia": "«{pos}» se queda sin cámara (lo ideal: {ideal}). Ya puedes comprar {item} ({m}) en la Bodega.",
+    "bodega.lente_t": "Esta cámara necesita lente",
+    "bodega.lente_q": "{cam} no graba sin {lente} y no tienes uno libre. ¿Compras también el lente ({m})?",
+    "bodega.lente_si": "Comprar cámara + lente ({m})",
+    "bodega.lente_solo": "Solo la cámara ({m})",
+    "bodega.lente_bloq": "{cam} no graba sin {lente}, y ese lente se desbloquea con {n} de fama. Hasta entonces no la vas a poder usar.",
     "prep.bloq.sin_fibra": "Sin fibra",
     "prep.bloq.sin_piloto": "Sin piloto",
     "prep.bloq.sin_generador": "Sin generador",
@@ -27271,6 +27285,7 @@
     'item.cam_cine.nombre': "Kanon XF615", 'item.cam_cine.desc': "Sensor 1\", zoom 15x, 12G-SDI (cable largo hasta el switcher), 4K60.",
     'item.cam_jvk_gy_hk560.nombre': "JVK GY-HK560 Conectada", 'item.cam_jvk_gy_hk560.desc': "Sensor 1\", 20x y encoder interno: transmite sola por SRT sin switcher.",
     'item.cam_zony_fz6_cine.nombre': "Zony FZ6 Cine", 'item.cam_zony_fz6_cine.desc': "Full frame, 4K 120p, fondo desenfocado de cine. Para gimbal o estabilizador corporal.",
+    'item.cam_zony_hxr_mk2500.nombre': "Zony HXR-MK2500 (de hombro)", 'item.cam_zony_hxr_mk2500.desc': "Cámara de hombro de entrada con lente incluido: no necesita lentes aparte. Ideal para entrevistas, la banda de la cancha y el ring.",
     'item.cam_blackmagia_urso_broadcast_g3.nombre': "Blackmagia URSO Broadcast G3", 'item.cam_blackmagia_urso_broadcast_g3.desc': "Al hombro, montura B4: usa lentes ENG de televisión. 4K/6K, SDI.",
     'item.cam_panasonika_aw_uv170.nombre': "Panasonika AW-UV170", 'item.cam_panasonika_aw_uv170.desc': "Robótica broadcast: sensor 1\", 20x, 12G-SDI y fibra, 120p en HD. Táctica o detrás del arco.",
     'item.cam_zony_pxv_z760.nombre': "Zony PXV-Z760", 'item.cam_zony_pxv_z760.desc': "3 sensores 2/3\" 4K, obturador global (sin \"gelatina\" con flashes), 120p en HD. Sin lente.",
@@ -27611,6 +27626,9 @@
     cam_cine: { icon: 'cam_pro', cat: 'cam', subtipo: 'camcorder_pro_sdi', q: 3, price: 2550, minRep: 12, rareza: 'profesional', durabilidad: 3, eventos: ['graduacion','lanzamiento','concierto','barrial','prensa'] },
     cam_jvk_gy_hk560: { icon: 'cam_pro', cat: 'cam', subtipo: 'camcorder_streaming', q: 3, price: 2800, minRep: 12, rareza: 'profesional', durabilidad: 3, eventos: ['prensa','barrial','irl','internacional_unilateral'] },
     cam_zony_fz6_cine: { icon: 'cam_pro', cat: 'cam', subtipo: 'cine', q: 3, price: 3150, minRep: 12, rareza: 'profesional', durabilidad: 3, requiere: ['lente_cine'], acepta: ['lente_cine'], eventos: ['boda','lanzamiento','lanzamiento_autos','concierto'] },
+    // Cámara de hombro de entrada con lente incluido: se compra desde el inicio (sin fama), para que las posiciones
+    // "al hombro" de los primeros eventos (prensa, barrial, lucha libre...) se puedan cubrir sin lentes de televisión
+    cam_zony_hxr_mk2500: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 2, price: 1150, minRep: 0, rareza: 'comun', durabilidad: 3, eventos: ['prensa','barrial','lucha_libre','graduacion','boda'] },
     cam_blackmagia_urso_broadcast_g3: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 3, price: 2450, minRep: 12, rareza: 'profesional', durabilidad: 3, requiere: ['lente_b4'], acepta: ['lente_eng'], eventos: ['barrial','concierto','ligapro','boxeo','lucha_libre'] },
     cam_panasonika_aw_uv170: { icon: 'cam_basic', cat: 'cam', subtipo: 'ptz_broadcast', q: 4, price: 5450, minRep: 28, rareza: 'elite', durabilidad: 4, requiere: ['operador_ptz'], eventos: ['concierto','ligapro','final','lanzamiento','lanzamiento_autos'] },
     cam_zony_pxv_z760: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 4, price: 12500, minRep: 28, rareza: 'elite', durabilidad: 5, requiere: ['lente_b4'], acepta: ['lente_eng'], eventos: ['ligapro','final','concierto','boxeo','internacional_unilateral'] },
@@ -29195,26 +29213,47 @@
     const { ready, blocked } = readyCams(equip, staff);
     const left = ready.slice();
     const usados = [];
-    const assigned = pos.map((p) => {
+    // Operadores: se reparten mientras se eligen las cámaras, así una cámara que se quedaría sin nadie que la maneje
+    // (una PTZ sin operador de robóticas, una segunda cámara sin segundo camarógrafo) no le quita el puesto a otra que sí rinde.
+    let camOps = roleCount(staff, 'camarografo');
+    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
+    const canOp = (r) => (r.needs === 'camarografo' ? camOps > 0 : r.needs === 'operador_ptz' ? ptzCap > 0 : true);
+    // Puntaje de una cámara en una posición: cuánto encaja, su calidad y su estado; si nadie la puede manejar vale
+    // mucho menos (rinde la mitad y además deja sin puesto a una que sí tendría operador)
+    const score = (p, r) => fitOf(p.perfil, r) * (2 + r.effQ) * r.cond * (canOp(r) ? 1 : 0.25);
+    const asg = new Map();
+    const tomar = (p, r) => {
+      left.splice(left.indexOf(r), 1);
+      const operado = canOp(r);
+      if (operado && r.needs === 'camarografo') camOps--;
+      else if (operado && r.needs === 'operador_ptz') ptzCap--;
+      asg.set(p, { r, operado });
+    };
+    // Posiciones obligatorias: cada vez la mejor pareja posición-cámara de todas (así la cámara de hombro va a la
+    // posición al hombro y no a la fija, donde cualquier otra sirve)
+    const pend = pos.filter((p) => !p.opcional);
+    while (pend.length && left.length) {
+      let bp = null, br = null, bs = -1;
+      pend.forEach((p) => left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; bp = p; br = r; } }));
+      if (!br) break;
+      tomar(bp, br);
+      pend.splice(pend.indexOf(bp), 1);
+    }
+    // Tomas extra (opcionales), en orden: con una cámara que encaje y que alguien maneje; sin nadie que la maneje, solo
+    // si encaja casi perfecto (con su trípode o soporte llega a 1: una cámara "dejada" en su sitio rinde la mitad, pero suma como toma extra)
+    pos.filter((p) => p.opcional).forEach((p) => {
       let best = null, bs = -1;
-      left.forEach((r) => {
-        const f = fitOf(p.perfil, r);
-        const sc = f * (2 + r.effQ) * r.cond;
-        if (sc > bs) { bs = sc; best = r; }
-      });
-      if (best && p.opcional && fitOf(p.perfil, best) < 0.5) best = null;
-      if (best) left.splice(left.indexOf(best), 1);
-      return { p, r: best };
+      left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; best = r; } });
+      const f = best ? fitOf(p.perfil, best) : 0;
+      if (best && (canOp(best) ? f >= 0.5 : f >= 0.85)) tomar(p, best);
     });
+    const assigned = pos.map((p) => { const a = asg.get(p); return { p, r: a ? a.r : null, operado: a ? a.operado : false }; });
     // Accesorios: trípodes, gimbal, steadicam, jib y dolly mejoran el ajuste de su posición
     const sup = (f) => equip.filter((e) => f(itemOf(e))).length;
     const S = { tripode: sup((it) => /^tripode/.test(it.subtipo)), gimbal: sup((it) => it.subtipo === 'gimbal'), steadicam: sup((it) => it.subtipo === 'steadicam'),
       jib: sup((it) => it.subtipo === 'jib'), dolly: sup((it) => it.subtipo === 'dolly') };
-    // Operadores
-    let camOps = roleCount(staff, 'camarografo');
-    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
     let sysCams = 0;
-    const out = assigned.map(({ p, r }) => {
+    const out = assigned.map(({ p, r, operado }) => {
       const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional,
         asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, ajuste: 0, operado: false };
       if (!r) return o;
@@ -29225,9 +29264,6 @@
       else if (supOk && p.perfil === 'hombro' && S.steadicam > 0) { S.steadicam--; fit = Math.min(1, fit + 0.15); }
       else if (supOk && p.perfil === 'grua' && S.jib > 0) { S.jib--; fit = Math.max(fit, 0.85); }
       else if (supOk && p.perfil === 'riel' && S.dolly > 0) { S.dolly--; fit = Math.max(fit, 0.85); }
-      let operado = true;
-      if (r.needs === 'camarografo') { if (camOps > 0) camOps--; else operado = false; }
-      else if (r.needs === 'operador_ptz') { if (ptzCap > 0) ptzCap--; else operado = false; }
       if (isSystem(r.it)) sysCams++;
       usados.push(r.e.id); if (r.lens) usados.push(r.lens.id);
       return Object.assign(o, { asignado: r.e.type, equipId: r.e.id, equipo: equipName(r.e), lente: r.lens ? r.lens.type : null,
@@ -29240,6 +29276,37 @@
       ajusteMedio: req.length ? r2(req.reduce((a, p) => a + p.ajuste, 0) / req.length) : 0,
       bloqueados: blocked, usados, sistema: sysCams, sinOperador: req.filter((p) => p.asignado && !p.operado).length,
     };
+  }
+
+  /* ---------- Ayudas para el jugador: qué cámara o qué lente le falta y dónde conseguirlo ---------- */
+  const LENTE_DE = { lente_b4: 'lente_eng', lente_cine: 'lente_cine', lente_mft: 'lente_mft' };
+  const enTienda = (k) => { const it = CATALOG[k]; return it && !it.premium && !it.exclusivo && !it.alquiler; };
+  // El lente que necesita una cámara de ese tipo y que todavía no tienes (o null si no necesita o ya hay uno libre).
+  // extra = 1 cuando la cámara aún no es tuya (antes de comprarla). Devuelve { subtipo, key (el más barato de la tienda),
+  // bloqueado (falta fama), precio }.
+  function lenteFaltante(s, type, extra) {
+    const it = CATALOG[type];
+    if (!it || it.incluyeLente) return null;
+    const rq = (it.requiere || []).find((r) => LENTE_DE[r]);
+    if (!rq) return null;
+    const sub = LENTE_DE[rq];
+    const lentes = s.equip.filter((e) => CATALOG[e.type] && CATALOG[e.type].subtipo === sub).length;
+    const camaras = s.equip.filter((e) => { const c = CATALOG[e.type]; return c && !c.incluyeLente && (c.requiere || []).includes(rq); }).length + (extra || 0);
+    if (lentes >= camaras) return null;
+    const ops = Object.keys(CATALOG).filter((k) => enTienda(k) && CATALOG[k].subtipo === sub)
+      .sort((a, b) => ((CATALOG[a].minRep > s.rep) - (CATALOG[b].minRep > s.rep)) || CATALOG[a].price - CATALOG[b].price);
+    const key = ops[0] || null;
+    return { subtipo: sub, key, bloqueado: key ? CATALOG[key].minRep > s.rep : true, precio: key ? CATALOG[key].price : 0, minRep: key ? CATALOG[key].minRep : 0 };
+  }
+  // La cámara de la tienda que mejor cubre una posición de ese perfil y que ya puedes comprar (fama), sin lentes ni
+  // accesorios aparte: la que mejor encaja y, entre iguales, la más barata. null si ninguna encaja mejor que `minFit`.
+  function camaraParaPerfil(s, perfil, minFit) {
+    const row = FIT[perfil] || FIT.fija;
+    let best = null, bf = typeof minFit === 'number' ? minFit : 0;
+    Object.keys(CATALOG).filter((k) => enTienda(k) && CATALOG[k].cat === 'cam' && CATALOG[k].minRep <= s.rep && !(CATALOG[k].requiere || []).length)
+      .sort((a, b) => CATALOG[a].price - CATALOG[b].price)
+      .forEach((k) => { const f = row[CLASE[CATALOG[k].subtipo]] || 0; if (f > bf + 1e-9) { bf = f; best = k; } });
+    return best ? { key: best, fit: bf, precio: CATALOG[best].price } : null;
   }
 
   /* ---------- Calidad base del evento ---------- */
@@ -30557,7 +30624,7 @@
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, suggestLoadout, lenteFaltante, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
@@ -35161,7 +35228,7 @@
     'pe.leg.ok': 'Ideal', 'pe.leg.mid': 'Sirve', 'pe.leg.bad': 'No es la ideal', 'pe.leg.off': 'Vacía', 'pe.leg.na': 'Asignada',
     'pe.forma.fija': 'Fija', 'pe.forma.mano': 'Al hombro', 'pe.forma.robot': 'Robótica', 'pe.forma.aerea': 'Aérea',
     'pe.vacia': 'Sin cámara', 'pe.opcional': 'Opcional', 'pe.idealp': 'Ideal: {t}', 'pe.ajuste': 'Ajuste {p}%', 'pe.tocar': 'Toca una cámara para ver cuál va',
-    'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
+    'pe.sinop': 'sin camarógrafo: rinde la mitad', 'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
 
     'pe.intl': 'Contrato internacional', 'pe.intl.pago': '×{m} pago', 'pe.intl.dias': '{n} días de viaje', 'pe.intl.dia': '1 día de viaje',
     'pe.intl.gastos': 'Gastos de viaje {m}', 'pe.intl.bloqueo': 'Mientras viajas no puedes tomar otros contratos.',
@@ -35921,7 +35988,10 @@
       const asg = p.asignado !== undefined ? p.asignado : p.camara !== undefined ? p.camara : p.equip !== undefined ? p.equip : p.assigned;
       let aj = num(p.ajuste != null ? p.ajuste : p.fit != null ? p.fit : p.score);
       if (aj != null && aj > 1) aj = aj / 100;
-      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
+      // fit = qué tan bien encaja la cámara (sin contar si hay quien la maneje); operado === false: nadie la maneja
+      let fit = num(p.fit);
+      if (fit != null && fit > 1) fit = fit / 100;
+      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, fit, sinOp: p.operado === false, eid: p.equipId != null ? p.equipId : null, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
     });
   }
   function camName(a, o) {
@@ -36008,7 +36078,12 @@
       const t = tipoKey(tipoEvento || (plan && (plan.tipo || plan.type)));
       const v = lugar(t), vr = variante(t, v);
       const list = posList(plan, t);
-      list.forEach((p) => { p.asgName = camName(p.asg, o); });
+      // Con el id del equipo se usa el nombre que el jugador ve en su bodega (p. ej. "Cámara de Don Ramiro")
+      list.forEach((p) => {
+        let n = '';
+        if (p.asg != null && p.asg !== false && p.asg !== '' && p.eid != null && o.nombreEquipo) { try { n = o.nombreEquipo(p.eid) || ''; } catch (e) { n = ''; } }
+        p.asgName = n || camName(p.asg, o);
+      });
       placeAll(list, v);
       const u = 'pe' + (++UID).toString(36);
       const cables = o.cables === false || v === 'calle' ? '' : list.map((p) => cable(p, vr)).filter(Boolean).join('');
@@ -36030,8 +36105,11 @@
       const rowsHtml = o.lista === false ? '' : `<div class="pe-cl">${list.map((p) => {
         const k = fitK(p);
         const info = `${T('pe.cam.n', { n: p.n })} · ${p.asgName || vacioTxt(p)}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
+        // "Ideal: ..." solo si la cámara no es la adecuada; si es la adecuada pero nadie la maneja, se dice eso
+        const camMal = p.asgName && p.fit != null ? p.fit < 0.8 : k !== 'ok';
+        const extra = p.asgName && p.sinOp && !camMal ? ' · ' + esc(T('pe.sinop')) : p.ideal && camMal ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : '';
         return `<div class="pe-clr pe-k-${k}" data-pe-cam="${p.n}" data-pe-info="${esc(info)}"><b class="pe-n">${p.n}</b>
-          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${p.ideal && (k !== 'ok') ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</small></div>
+          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${extra}</small></div>
           <span class="pe-fit">${p.asgName && p.aj != null ? `${Math.round(p.aj * 100)}%<u><i style="width:${Math.round(p.aj * 100)}%"></i></u>` : p.asgName ? '' : '—'}</span></div>`;
       }).join('')}</div>`;
       return `<div class="pe-cams ${esc(o.clase || '')}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${legend}<div class="pe-det" aria-live="polite"></div>${rowsHtml}</div></div>`;
@@ -36335,10 +36413,11 @@
     G.CATALOG[k] = Object.assign({ key: k }, EXCLUSIVOS[k]);
   });
 
+  // El costo sale de la lógica (G.repairCost: repairBase de la Edición Exclusiva, factor de vehículos, alquilados gratis);
+  // aquí solo se aplica el descuento VIP. Así lo que se muestra (Bodega, flota) es lo mismo que se cobra.
+  const repairCostLogica = G.repairCost;
   function costoReparar(e) {
-    const it = G.CATALOG[e.type];
-    const base = it.premium || typeof it.repairBase === 'number' ? it.repairBase : it.price;   // Edición Exclusiva: repairBase propio
-    const c = Math.round(base * 0.4 * (100 - e.condition) / 100);
+    const c = Math.max(0, repairCostLogica(e) || 0);
     return vipActivo ? Math.round(c * (1 - VIP_DESCUENTO)) : c;
   }
 
@@ -38898,6 +38977,23 @@
       <div class="card log">${S.log.map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}</div>`;
   }
 
+  /* ---------- Comprar un equipo (y el lente que necesita) ---------- */
+  function comprarEquipo(k) {
+    const r = act(G.buy(S, k), 'buy');
+    if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+  }
+  function pedirLente(k, lf) {
+    const cam = esc(itemName(k)), lente = esc(itemName(lf.key));
+    const total = G.CATALOG[k].price + lf.precio;
+    const kit = !lf.bloqueado
+      ? `<p>${T('bodega.lente_q', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, m: M(lf.precio) })}</p>
+        <button class="btn main" data-act="buy-kit" data-k="${esc(k)}" data-l="${esc(lf.key)}" ${S.money < total ? 'disabled' : ''}>${T('bodega.lente_si', { m: M(total) })}</button>`
+      : `<p>${T('bodega.lente_bloq', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, n: lf.minRep })}</p>`;
+    openModal(`<h2>${T('bodega.lente_t')}</h2>${kit}
+      <button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${T('bodega.lente_solo', { m: M(G.CATALOG[k].price) })}</button>
+      <button class="btn" data-act="close">${T('comun.cancelar')}</button>`);
+  }
+
   /* ---------- Preparar evento ---------- */
   function openPrep(contractId) {
     const c = S.contracts.find((x) => x.id === contractId);
@@ -38949,8 +39045,39 @@
         const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
         const it = G.CATALOG[b.tipo] || {};
         const e = S.equip.find((x) => x.id === b.equipId);
-        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div></div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
+        // Sin lente: qué lente le falta y dónde comprarlo (o con cuánta fama se desbloquea)
+        let lente = '';
+        if (b.motivo === 'sin_lente' && G.lenteFaltante) {
+          const lf = G.lenteFaltante(S, b.tipo, 0) || G.lenteFaltante(S, b.tipo, 1);
+          if (lf && lf.key) {
+            lente = lf.bloqueado ? `<div class="small camav-t">${T('prep.lente_fama', { lente: esc(itemName(lf.key)), n: lf.minRep })}</div>`
+              : `<div class="small camav-t">${T('prep.lente_falta', { lente: esc(itemName(lf.key)), m: M(lf.precio) })}</div>
+                <button class="btn sm camav-b" data-act="ir-bodega" data-k="lens">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`;
+          }
+        }
+        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div>${lente}</div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
       }).join('')}</div>`;
+  }
+  // Avisos de las cámaras: las que elegiste y no se usan (y por qué) y, si una posición obligatoria queda vacía o mal
+  // cubierta, qué cámara ya puedes comprar para ella en la Bodega
+  function camAvisosHtml(c, camP, equip) {
+    if (!camP || !Array.isArray(camP.positions)) return '';
+    const usados = new Set(camP.usados || []);
+    const bloq = new Set((camP.bloqueados || []).map((b) => b.equipId));
+    const out = [];
+    const sobran = equip.filter((e) => isCam(e) && !usados.has(e.id) && !bloq.has(e.id));
+    if (sobran.length) out.push(`<div class="small camav-t">${I('tip', 'sm')} ${T('prep.cam_no_usada', { cams: sobran.map((e) => esc(nmE(e))).join(', ') })}</div>`);
+    if (G.camaraParaPerfil) {
+      const flojas = camP.positions.filter((p) => !p.opcional && (!p.asignado || p.fit < 0.75));
+      for (const p of flojas) {
+        const sug = G.camaraParaPerfil(S, p.perfil, p.asignado ? p.fit : 0);
+        if (!sug || sug.fit < 0.8) continue;
+        out.push(`<div class="small camav-t">${I('role_camarografo', 'sm')} ${T(p.asignado ? 'prep.cam_sugerida' : 'prep.cam_sugerida_vacia', { pos: esc(TL(p.nombre)), ideal: esc(TL(p.ideal || '')), item: `<b>${esc(itemName(sug.key))}</b>`, m: M(sug.precio) })}</div>
+          <button class="btn sm camav-b" data-act="ir-bodega" data-k="cam">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`);
+        break;
+      }
+    }
+    return out.length ? `<div class="camav">${out.join('')}</div>` : '';
   }
   function renderPrep(soloCalculo) {
     const c = S.contracts.find((x) => x.id === prep.id);
@@ -38994,7 +39121,8 @@
     const reqVista = reqs.map((r) => ({ texto: TL(r.texto), ok: r.ok, detalle: r.ok ? '' : r.obligatorio ? T('prep.obligatorio') : T('prep.req_resta') }));
     const intlHtml = PE && c.internacional ? PE.internacional(Object.assign({}, c, { requisitos: reqVista })) : PE ? PE.internacional(c) : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
-    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP);
+    const avisos = camAvisosHtml(c, camP, equip);
+    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP) + avisos;
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
@@ -39166,6 +39294,9 @@
   function showResumenDia() {
     const lista = avisosPend();
     if (!lista.length) { tomarAvisos(); continuar(); return; }
+    // Al abrir el juego (no pasó ningún día) solo llegaron avisos de la temporada: un aviso corto en vez de la ventana
+    // "Resumen del día" (la oferta ya está en Clientes y la temporada tiene su tarjeta en Inicio)
+    if (!diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
     const dia = lista[lista.length - 1].day;
     const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
     snd.play(malo ? 'bad' : 'good');
@@ -39183,6 +39314,8 @@
     if (VI || !S) return;
     if ($('overlay').classList.contains('on')) return;
     if (S.currentEvent) { showIncident(); return; }
+    // Partida nueva: primero la intro del capítulo 1 y después el resumen del día (p. ej. "empezó la temporada")
+    if (!capPend().length && !S.chapterSeen && !(S.stats && S.stats.events) && showChapterIntro()) return;
     if (avisosPend().length) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
@@ -39628,8 +39761,31 @@
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {
-        const r = act(G.buy(S, el.dataset.k), 'buy');
-        if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+        // Cámara que no graba sin un lente que todavía no tienes: se avisa antes y se ofrece comprar los dos
+        const k = el.dataset.k;
+        const lf = !el.dataset.solo && G.lenteFaltante && G.CATALOG[k] && G.CATALOG[k].cat === 'cam' ? G.lenteFaltante(S, k, 1) : null;
+        if (lf && lf.key) { pedirLente(k, lf); break; }
+        if (el.dataset.solo) closeModal();
+        comprarEquipo(k);
+        break;
+      }
+      case 'buy-kit': {
+        closeModal();
+        const r1 = G.buy(S, el.dataset.k);
+        if (!r1 || !r1.ok) { act(r1, 'buy'); continuar(); break; }
+        const r2 = act(G.buy(S, el.dataset.l), 'buy');
+        const cd = (r2 && r2.chapterDone) || r1.chapterDone;
+        if (cd && !Array.isArray(S.capCompletados)) showChapterDone(cd); else continuar();
+        break;
+      }
+      case 'ir-bodega': {
+        // Desde la preparación: a la categoría de la tienda donde está lo que falta (la oferta sigue en Clientes)
+        e.preventDefault();
+        closeModal(); prep = null;
+        catSel = el.dataset.k || catSel; lsSet('envivo_cat', catSel);
+        tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
+        const te = $('tiendaEq');
+        if (te) { try { te.scrollIntoView({ block: 'start' }); } catch (err) { window.scrollTo(0, 0); } }
         break;
       }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
@@ -41657,6 +41813,8 @@
         <div class="vacia">${dibujo(OP_DIB.economico, 92, 42)}<p class="small muted" style="margin:0">${esc(t('vacia'))}</p></div>
         <button class="btn sm" data-ext="flota" data-acc="tienda">${esc(t('tienda'))}</button></div>`;
     }
+    // Lo que se cobra al reparar (G.repairCost, con el descuento VIP si lo hay): lo mismo que dice el botón
+    const costoRep = (v) => { try { const e = (S.equip || []).find((x) => x.id === v.id); return e && G().repairCost ? Math.max(0, G().repairCost(e) || 0) : v.reparar; } catch (err) { return v.reparar; } };
     const filas = fl.map((v) => {
       const cond = Math.max(0, Math.min(100, Math.round(v.condition)));
       const tono = cond < 40 ? 'red' : cond < 60 ? 'amber' : '';
@@ -41664,7 +41822,7 @@
         <div class="tx"><b>${esc(nombreEquipo(v))}</b><small>${esc(t('asientos', { n: num(v.asientos) }))} · ${esc(t('hasta', { n: num(v.carga) }))} · ${esc(t('dia', { m: money(v.mant) }))}</small>
           <div class="bar ${tono}"><i style="width:${cond}%"></i></div>
           <small>${v.enTaller ? `<span class="taller">${esc(t('taller'))}</span> · ` : ''}${esc(t('estado', { n: num(cond) }))}</small>
-          ${v.enTaller || cond < 50 ? `<div><button class="btn sm" data-ext="flota" data-acc="reparar" data-id="${v.id}">${esc(t('reparar', { m: money(v.reparar) }))}</button></div>` : ''}</div></div>`;
+          ${v.enTaller || cond < 50 ? `<div><button class="btn sm" data-ext="flota" data-acc="reparar" data-id="${v.id}">${esc(t('reparar', { m: money(costoRep(v)) }))}</button></div>` : ''}</div></div>`;
     }).join('');
     return `<div class="card mov-flota"><h3>${esc(t(fl.length === 1 ? 'veh1' : 'vehs', { n: num(fl.length), m: money(mantTot) }))}</h3>${filas}
       <button class="btn sm" data-ext="flota" data-acc="tienda">${esc(t('tienda'))}</button></div>`;
