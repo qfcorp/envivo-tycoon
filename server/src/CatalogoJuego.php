@@ -79,6 +79,12 @@ final class CatalogoJuego
     'fama' => 12,
     'nombre' => 'Zony FZ6 Cine',
   ),
+  'cam_zony_hxr_mk2500' => 
+  array (
+    'cat' => 'cam',
+    'fama' => 0,
+    'nombre' => 'Zony HXR-MK2500 (de hombro)',
+  ),
   'cam_blackmagia_urso_broadcast_g3' => 
   array (
     'cat' => 'cam',
