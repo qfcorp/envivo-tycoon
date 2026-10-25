@@ -603,6 +603,8 @@
         <div class="vacia">${dibujo(OP_DIB.economico, 92, 42)}<p class="small muted" style="margin:0">${esc(t('vacia'))}</p></div>
         <button class="btn sm" data-ext="flota" data-acc="tienda">${esc(t('tienda'))}</button></div>`;
     }
+    // Lo que se cobra al reparar (G.repairCost, con el descuento VIP si lo hay): lo mismo que dice el botón
+    const costoRep = (v) => { try { const e = (S.equip || []).find((x) => x.id === v.id); return e && G().repairCost ? Math.max(0, G().repairCost(e) || 0) : v.reparar; } catch (err) { return v.reparar; } };
     const filas = fl.map((v) => {
       const cond = Math.max(0, Math.min(100, Math.round(v.condition)));
       const tono = cond < 40 ? 'red' : cond < 60 ? 'amber' : '';
@@ -610,7 +612,7 @@
         <div class="tx"><b>${esc(nombreEquipo(v))}</b><small>${esc(t('asientos', { n: num(v.asientos) }))} · ${esc(t('hasta', { n: num(v.carga) }))} · ${esc(t('dia', { m: money(v.mant) }))}</small>
           <div class="bar ${tono}"><i style="width:${cond}%"></i></div>
           <small>${v.enTaller ? `<span class="taller">${esc(t('taller'))}</span> · ` : ''}${esc(t('estado', { n: num(cond) }))}</small>
-          ${v.enTaller || cond < 50 ? `<div><button class="btn sm" data-ext="flota" data-acc="reparar" data-id="${v.id}">${esc(t('reparar', { m: money(v.reparar) }))}</button></div>` : ''}</div></div>`;
+          ${v.enTaller || cond < 50 ? `<div><button class="btn sm" data-ext="flota" data-acc="reparar" data-id="${v.id}">${esc(t('reparar', { m: money(costoRep(v)) }))}</button></div>` : ''}</div></div>`;
     }).join('');
     return `<div class="card mov-flota"><h3>${esc(t(fl.length === 1 ? 'veh1' : 'vehs', { n: num(fl.length), m: money(mantTot) }))}</h3>${filas}
       <button class="btn sm" data-ext="flota" data-acc="tienda">${esc(t('tienda'))}</button></div>`;

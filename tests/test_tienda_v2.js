@@ -11,6 +11,8 @@
    También: el atajo a una sección, el hub "En línea" con Estrellas (si el módulo la pinta) y la versión en inglés.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_tienda_v2.js   (capturas en tests/capturas/tienda_v2_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -88,6 +90,7 @@ function fakePlay(precios) {
 
 async function abrir(browser, caso) {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: caso.locale || 'es-EC' });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));

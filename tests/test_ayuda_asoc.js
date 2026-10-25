@@ -8,6 +8,8 @@
    - Inglés; extensión de logic.js (multPago); sin errores de JS ni desborde horizontal.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_ayuda_asoc.js   (capturas en tests/capturas/ayuda_asoc_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 let chromium;
@@ -96,6 +98,7 @@ function asoc(ruta, metodo, body, cab) {
 
 async function partida(browser) {
   const ctx = await browser.newContext();
+  await ctx.addInitScript(FECHA_FIJA);
   const p = await ctx.newPage();
   await p.setContent('<html></html>');
   await p.addScriptTag({ path: path.join(RAIZ, 'js/datos.js') });
@@ -111,6 +114,7 @@ async function partida(browser) {
   try {
     const save = await partida(browser);
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    await ctx.addInitScript(FECHA_FIJA);
     const page = await ctx.newPage();
     const errores = [];
     page.on('pageerror', (e) => errores.push(String(e)));

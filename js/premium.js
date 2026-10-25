@@ -69,10 +69,11 @@
     G.CATALOG[k] = Object.assign({ key: k }, EXCLUSIVOS[k]);
   });
 
+  // El costo sale de la lógica (G.repairCost: repairBase de la Edición Exclusiva, factor de vehículos, alquilados gratis);
+  // aquí solo se aplica el descuento VIP. Así lo que se muestra (Bodega, flota) es lo mismo que se cobra.
+  const repairCostLogica = G.repairCost;
   function costoReparar(e) {
-    const it = G.CATALOG[e.type];
-    const base = it.premium || typeof it.repairBase === 'number' ? it.repairBase : it.price;   // Edición Exclusiva: repairBase propio
-    const c = Math.round(base * 0.4 * (100 - e.condition) / 100);
+    const c = Math.max(0, repairCostLogica(e) || 0);
     return vipActivo ? Math.round(c * (1 - VIP_DESCUENTO)) : c;
   }
 
