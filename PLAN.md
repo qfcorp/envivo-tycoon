@@ -265,3 +265,10 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - Abogado (`docs/LEGAL_REVISION.md`).
 - Contador: cómo facturar las ventas de Google Play.
 - Claves de producción de Plux al salir en vivo.
+
+## 🐞 Correcciones de jugabilidad reportadas por Dimitry (domingo 25-oct-2026) — PRIORIDAD
+1. Selección de cámaras: por defecto siempre sale la cámara de "Don Ramiro"; al cambiarla por una mejor, el juego no lo registra y baja la probabilidad.
+2. Descripciones de equipos: cada aparato debe tener una descripción corta que diga para qué sirve.
+3. Bloqueo por "cámara al hombro": el juego la exige siempre, pero no está en el inventario y al inicio (sin fama) no se puede desbloquear ni comprar.
+4. Marcador de estado/batería: después de reparar tras un evento, el porcentaje no se actualiza y sigue como dañado.
+5. Fama: al terminar el evento dice +10, pero al cerrar la pantalla vuelve a 3 o 0.
