@@ -2353,6 +2353,7 @@
     if (ev.step < ev.incidents.length) return { ok: false, msg: tx('msg.faltan_imprevistos') };
     const c = ev.contract;
     const t = EVENT_TYPES[c.type];
+    const famaAntes = s.rep;
     const quality = clamp(ev.base + ev.deltas.reduce((a, b) => a + b, 0), 0, 100);
     const B = BALANCE.stars;
     const stars = quality >= B[0] ? 5 : quality >= B[1] ? 4 : quality >= B[2] ? 3 : quality >= B[3] ? 2 : 1;
@@ -2473,6 +2474,9 @@
     for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
     if (!result.chapterDone) result.chapterDone = checkChapter(s);
     result.avisos = (s.avisos || []).slice(Math.min(avisos0, (s.avisos || []).length));
+    // Fama antes y la que queda de verdad (con lo que sumaron las extensiones y el día que pasó): la que muestra el resultado
+    result.famaAntes = famaAntes;
+    result.fama = s.rep;
     return { ok: true, result };
   }
 
