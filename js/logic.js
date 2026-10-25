@@ -19,8 +19,10 @@
    Datos
      Game.CATEGORIAS   [{ key, nombre, icon }] en el orden de la tienda
      Game.shopByCategory(s) → [{ key, nombre, items: [{ key, ...CATALOG[key], locked, owned }] }]
-     Game.CATALOG[k]   { name, desc, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
+     Game.CATALOG[k]   { name, desc, uso, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
                          requiere: [...], acepta: [...], alquiler (bool, se usa en un evento y se va), eventos: [...] }
+                       uso = para qué sirve, en una frase corta y sencilla (item.<clave>.uso, máx. 90 caracteres);
+                       desc = el detalle técnico (item.<clave>.desc)
      Game.ROLES[k]     { key, name, desc, siFalta, icon, wageMul, orden }  (14 roles; las claves viejas
                          cam / dir / audio / stream siguen funcionando como alias ocultos)
      Game.TIERS[k]     { key, name, mul, base, bonus, skill: [min, max] }  junior, semi_senior, senior, internacional
@@ -319,6 +321,7 @@
     Object.keys(CATALOG).forEach((k) => {
       if (!Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.nombre')) return; // los de premium.js traen su propio nombre
       CATALOG[k].name = tx('item.' + k + '.nombre'); CATALOG[k].desc = tx('item.' + k + '.desc');
+      if (Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.uso')) CATALOG[k].uso = tx('item.' + k + '.uso');
     });
     CATEGORIAS.forEach((c) => { c.nombre = tx('cat.' + c.key); c.name = c.nombre; });
     Object.keys(CONSUMABLES).forEach((k) => { CONSUMABLES[k].name = tx('cons.' + k + '.nombre'); CONSUMABLES[k].desc = tx('cons.' + k + '.desc'); });

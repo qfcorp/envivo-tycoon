@@ -950,6 +950,33 @@
     if (I18 && I18.T.has('rq.' + k)) return T('rq.' + k);
     return String(k).replace(/_/g, ' ');
   }
+  /* Para qué sirve cada equipo (item.<clave>.uso): frase corta y sencilla en las tarjetas, la preparación y el "?".
+     El detalle técnico (desc), la calidad y lo que necesita salen en la hoja del "?" (js/ayuda.js). */
+  const usoDe = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it ? TL(it.uso || it.desc || '') : ''; };
+  const usoHtml = (type, cls) => { const u = usoDe(type); return u ? `<div class="${cls || 'ds uso'}">${esc(u)}</div>` : ''; };
+  // El "?" se arma aquí (js/ayuda.js carga después, con defer): ayuda.js atrapa data-ayuda-item y abre la hoja con itemInfo
+  const infoBtn = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it
+    ? `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(type)}" aria-label="${esc(T('equipo.ver', { nombre: TL(it.name || type) }))}">?</button>` : ''; };
+  function itemInfo(type) {
+    const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]);
+    if (!it) return null;
+    const uso = TL(it.uso || '');
+    const tec = TL(it.desc || '');
+    const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
+    const meta = [];
+    if (it.q) meta.push(`${T('bodega.calidad')} ${qPips(it.q)}`);
+    if (rq.length) meta.push(`<b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}`);
+    if (ac.length) meta.push(`<b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}`);
+    if (it.alquiler) meta.push(esc(T('bodega.alquiler_det')));
+    return {
+      titulo: TL(it.name || type),
+      top: `<div class="ay-it-top">${itemArt(type, 56, 'mini')}<h3>${esc(TL(it.name || type))}</h3></div>`,
+      html: `<div class="ay-sub">${T('equipo.para_que')}</div><p class="ay-uso">${esc(uso || tec)}</p>
+        ${uso && tec && tec !== uso ? `<div class="ay-sub">${T('equipo.detalle')}</div><p class="ay-tec">${esc(tec)}</p>` : ''}
+        ${meta.length ? `<div class="ay-meta">${meta.join('<br>')}</div>` : ''}`,
+    };
+  }
+  window.AyudaItemInfo = itemInfo;   // lo usa js/ayuda.js (Ayuda.setItemInfo también sirve)
   function qPips(q) {
     const n = Math.max(0, Math.min(6, q || 0));
     return `<span class="qp" aria-label="${esc(T('bodega.calidad_n', { n }))}">${[1, 2, 3, 4, 5, 6].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -969,10 +996,10 @@
     const ac = (it.acepta || []).map(rqLabel);
     const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq })
       : it.alquiler ? T('bodega.reservar', { m: M(it.price) }) : M(it.price);
-    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}">
-      <div class="row between">${rtag(k)}</div>
+    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}" data-item="${esc(k)}">
+      <div class="row between">${rtag(k)}${infoBtn(k)}</div>
       <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${it.alquiler ? `<span class="rent rentov" title="${esc(T('bodega.alquiler_det'))}">${I('clock', 'sm')}${T('bodega.alquiler')}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
-      <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+      <div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
       <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -1026,9 +1053,9 @@
         : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
     }
     return `<div class="card gear shopc exq rf r-${x.vip ? 'vip' : 'exclusivo'}" data-ex="${esc(k)}">
-      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span>${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}</div>
+      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span><span class="row" style="gap:0">${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}${infoBtn(k)}</span></div>
       <div class="exq-body"><div class="art">${itemArt(k, 120)}</div>
-        <div><div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+        <div><div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
         <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>${exPerks(it)}</div></div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -1150,9 +1177,9 @@
       const off = vipBloqueado(e);
       if (it.alquiler) {
         return `<div class="card gear rf r-${r.key} rented">
-        <div class="row between">${rtag(e.type)}</div>
+        <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
         <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
         <div class="grow2"></div>
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
@@ -1160,9 +1187,9 @@
       const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
       const rgo = enRiesgo(e);
       return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}">
-        <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
+        <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
         <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
@@ -1454,7 +1481,7 @@
     if (!Api.disponible || !Api.estado) {
       const vitrina = Object.keys(G.CATALOG).filter((k) => G.CATALOG[k].premium).slice(0, 4).map((k) => {
         const r = rar(k);
-        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div><div class="ds">${esc(TL(G.CATALOG[k].desc || ''))}</div></div>`;
+        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}${infoBtn(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div>${usoHtml(k)}</div>`;
       }).join('');
       const aviso = app
         ? `<h3>${T('tienda.sin_conexion_t')}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.sin_conexion')}</p>`
@@ -1955,7 +1982,7 @@
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;

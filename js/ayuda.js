@@ -5,6 +5,9 @@
    - La explicación sale en una hoja abajo, encima de todo (también encima de una ventana abierta) y se cierra
      tocando en cualquier parte. El toque del "?" no llega a lo que está debajo (no elige ni cierra nada).
    - Textos en los 10 idiomas aquí mismo; idioma = window.I18N.idioma (respaldo: español).
+   - Equipos: window.Ayuda.itemBtn(clave, etiqueta) → "?" con data-ayuda-item="<clave>" que abre "¿Para qué sirve?"
+     del equipo. El contenido lo arma la pantalla (Ayuda.setItemInfo(fn) o window.AyudaItemInfo, fn(clave) → { titulo, html }); sin ella,
+     se usa el nombre y el texto "uso" de Game.CATALOG.
    ===================================================================== */
 (function (root) {
   'use strict';
@@ -128,6 +131,15 @@
 .ay-hoja h3{margin:0 0 6px;font-size:16px;color:var(--amber,#ffb020)}
 .ay-hoja p{margin:0 0 10px;font-size:14px;line-height:1.45}
 .ay-hoja button{width:100%}
+.ay-hoja.ay-item{max-height:86vh;overflow-y:auto}
+.ay-hoja .ay-it-top{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.ay-hoja .ay-it-top h3{margin:0;overflow-wrap:anywhere}
+.ay-hoja .ay-it-top .itemart{flex:none}
+.ay-hoja .ay-sub{font-size:12px;font-weight:700;color:var(--muted,#9aa4b5);text-transform:uppercase;letter-spacing:.04em;margin:0 0 2px}
+.ay-hoja .ay-uso{font-size:15px;font-weight:600}
+.ay-hoja .ay-tec{font-size:13px;color:var(--muted,#9aa4b5)}
+.ay-hoja .ay-meta{font-size:12.5px;color:var(--muted,#9aa4b5);margin:-4px 0 12px;line-height:1.5}
+.ay-hoja .ay-meta b{color:var(--text,#e9edf5)}
 @keyframes ay-sube{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.ay-hoja{animation:none}}
 [data-ayuda]:not(.ay-q){cursor:help}`;
@@ -139,18 +151,48 @@
     return `<button type="button" class="ay-q" data-ayuda="${esc(k)}" aria-label="${esc(txt('_titulo') + ': ' + txt(k)[0])}">?</button>`;
   }
 
+  /* ---------- Equipos: "¿Para qué sirve?" ---------- */
+  let itemInfo = null;   // fn(clave) → { titulo, html } (la pone js/ui.js)
+  const TL = (s) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(s) : s; } catch (e) { return s; } };
+  const TT = (k, p, def) => { try { if (root.I18N && root.I18N.T && root.I18N.T.has(k)) return root.I18N.T(k, p); } catch (e) { /* abajo */ } return def; };
+  function itemDe(k) {
+    try { const G = root.Game; return (G && G.CATALOG && G.CATALOG[k]) || (G && G.CONSUMABLES && G.CONSUMABLES[k]) || null; } catch (e) { return null; }
+  }
+  function itemBtn(k, etiqueta) {
+    const it = itemDe(k);
+    if (!it) return '';
+    const lbl = etiqueta || TT('equipo.ver', { nombre: TL(it.name || k) }, TL(it.name || k));
+    return `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(k)}" aria-label="${esc(lbl)}">?</button>`;
+  }
+  function contenidoItem(k) {
+    const fn = itemInfo || (typeof root.AyudaItemInfo === 'function' ? root.AyudaItemInfo : null);
+    if (fn) { try { const r = fn(k); if (r && r.html) return r; } catch (e) { /* abajo */ } }
+    const it = itemDe(k);
+    if (!it) return null;
+    const uso = TL(it.uso || it.desc || '');
+    return { titulo: TL(it.name || k), html: `<div class="ay-sub">${esc(TT('equipo.para_que', null, '¿Para qué sirve?'))}</div><p class="ay-uso">${esc(uso)}</p>` };
+  }
+
   let abierta = null;
   function cerrar() { if (abierta) { abierta.remove(); abierta = null; } }
   function abrir(k) {
     const t = txt(k);
     if (!t || !Array.isArray(t)) return;
+    hoja(`<h3>${esc(t[0])}</h3><p>${esc(t[1])}</p>`);
+  }
+  function abrirItem(k) {
+    const c = contenidoItem(k);
+    if (!c) return;
+    hoja(`${c.top || `<h3>${esc(c.titulo)}</h3>`}${c.html}`, 'ay-item');
+  }
+  function hoja(cuerpo, clase) {
     ponerEstilo();
     cerrar();
     const v = document.createElement('div');
     v.className = 'ay-velo';
     v.setAttribute('role', 'dialog');
     v.setAttribute('aria-modal', 'true');
-    v.innerHTML = `<div class="ay-hoja"><h3>${esc(t[0])}</h3><p>${esc(t[1])}</p><button type="button" class="btn main">${esc(txt('_ok'))}</button></div>`;
+    v.innerHTML = `<div class="ay-hoja ${clase || ''}">${cuerpo}<button type="button" class="btn main">${esc(txt('_ok'))}</button></div>`;
     v.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); cerrar(); });
     document.body.appendChild(v);
     abierta = v;
@@ -161,13 +203,14 @@
     ponerEstilo();
     // En captura: el toque en un "?" (o en algo con data-ayuda) no llega al juego
     document.addEventListener('click', (e) => {
-      const el = e.target && e.target.closest ? e.target.closest('[data-ayuda]') : null;
+      const el = e.target && e.target.closest ? e.target.closest('[data-ayuda], [data-ayuda-item]') : null;
       if (!el || (abierta && abierta.contains(el))) return;
       e.stopPropagation(); e.preventDefault();
-      abrir(el.getAttribute('data-ayuda'));
+      if (el.hasAttribute('data-ayuda-item')) abrirItem(el.getAttribute('data-ayuda-item'));
+      else abrir(el.getAttribute('data-ayuda'));
     }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && abierta) { e.stopPropagation(); cerrar(); } }, true);
   }
 
-  root.Ayuda = { btn, abrir, cerrar, claves: () => Object.keys(D.es).filter((k) => k[0] !== '_'), _D: D };
+  root.Ayuda = { btn, abrir, cerrar, itemBtn, abrirItem, setItemInfo: (fn) => { itemInfo = typeof fn === 'function' ? fn : null; }, claves: () => Object.keys(D.es).filter((k) => k[0] !== '_'), _D: D };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -5,7 +5,14 @@
      el aviso de traducción, las mismas secciones y viñetas que la versión en español y sin WhatsApp; y las 3 páginas en español
      (server/public) sin marcadores viejos, con la fecha y con <mark class="falta"> solo para [DIRECCIÓN].
    - play_store/: fichas de los 10 idiomas dentro de los límites de Google Play y la tabla del README con los números reales.
-   Uso:  node tests/test_traducciones.js      (sale con código 1 si algo falla) */
+   Español primero (PLAN.md): mientras se desarrolla, los textos nuevos se agregan SOLO en español. En soporte.json y
+   errores.json, una clave que está en "es" y falta en otro idioma es un AVISO ("pendiente de traducir: N claves, ej. …")
+   y NO hace fallar la prueba (el juego muestra el español). Sigue siendo falla: JSON inválido, textos vacíos, {marcadores}
+   distintos, plurales que el idioma no tiene, claves sobrantes (que no están en "es"), códigos del servidor sin texto en
+   español, las páginas legales, las marcas reales y los límites de la ficha de Google Play.
+   TRADUCCION_ESTRICTA=1 vuelve falla lo pendiente (fase final de traducción). Lista completa: node tools/pendientes_traduccion.js
+   Uso:  node tests/test_traducciones.js      (sale con código 1 si algo falla)
+         TRADUCCION_ESTRICTA=1 node tests/test_traducciones.js */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -18,6 +25,10 @@ const ok = (cond, msg) => { pruebas++; if (!cond) { fallos++; console.log('  ✗
 const leer = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 const largo = (t) => [...t].length;   // caracteres (puntos de código), como cuenta Play Console
 const marcadores = (t) => (String(t).match(/\{\w+\}/g) || []).sort().join(',');
+// Claves en español que faltan en otro idioma: aviso (o falla con TRADUCCION_ESTRICTA=1)
+const ESTRICTA = process.env.TRADUCCION_ESTRICTA === '1';
+const pendientes = [];   // 'archivo code:clave'
+const pendiente = (nombre, code, k) => { pendientes.push(`${nombre} ${code}:${k}`); if (ESTRICTA) ok(false, `${nombre}: ${code} no tiene "${k}" (pendiente de traducir; TRADUCCION_ESTRICTA=1)`); };
 
 function revisarDiccionario(nombre, json, claves) {
   for (const code of IDIOMAS) {
@@ -25,9 +36,10 @@ function revisarDiccionario(nombre, json, claves) {
     if (!json[code]) continue;
     for (const k of claves) {
       const t = json[code][k];
+      if (t === undefined) { pendiente(nombre, code, k); continue; }   // sin traducir todavía: sale el español
       // Texto, o plurales { one, few, many, other } como en js/i18n.js (debe tener "other" y solo categorías de ese idioma)
       const variantes = typeof t === 'string' ? [t] : (t && typeof t === 'object' ? Object.values(t) : []);
-      ok(variantes.length > 0 && variantes.every((x) => typeof x === 'string' && x.trim() !== ''), `${nombre}: ${code} no tiene "${k}"`);
+      ok(variantes.length > 0 && variantes.every((x) => typeof x === 'string' && x.trim() !== ''), `${nombre}: ${code}."${k}" está vacío o no es texto`);
       if (t && typeof t === 'object') {
         ok(typeof t.other === 'string', `${nombre}: ${code}.${k} es plural y le falta "other"`);
         const cats = new Intl.PluralRules(code).resolvedOptions().pluralCategories;
@@ -240,6 +252,7 @@ for (const code of IDIOMAS) {
 
 console.log('\nMedidas (caracteres): idioma · nombre/30 · breve/80 · completa/4000 · novedades/500');
 for (const [code, m] of Object.entries(medidas)) console.log(`  | ${code} | ${m.nombre} | ${m.breve} | ${m.completa} | ${m.novedades} |`);
+if (pendientes.length) console.log(`\n${ESTRICTA ? '✗' : '⚠'} pendiente de traducir: ${pendientes.length} claves, ej. ${pendientes.slice(0, 3).join(', ')}${ESTRICTA ? '' : ' (aviso: no es falla; TRADUCCION_ESTRICTA=1 para exigirlas)'} · lista: node tools/pendientes_traduccion.js`);
 console.log(`\n${pruebas - fallos}/${pruebas} comprobaciones OK`);
 if (fallos) { console.log(`✗ ${fallos} fallo(s)`); process.exit(1); }
 console.log('✓ Traducciones OK');

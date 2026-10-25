@@ -65,7 +65,7 @@
   /* ---------- Catálogo y reglas protegidas ---------- */
   Object.keys(EXCLUSIVOS).forEach((k) => {
     // Los textos viven en js/datos.js (item.<clave>.nombre / .desc) para poder traducirlos
-    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); }
+    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); if (G.TEXTOS['item.' + k + '.uso']) EXCLUSIVOS[k].uso = G.tx('item.' + k + '.uso'); }
     G.CATALOG[k] = Object.assign({ key: k }, EXCLUSIVOS[k]);
   });
 

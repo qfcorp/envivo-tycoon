@@ -361,6 +361,11 @@
   .gear .art .itemart{width:100%;max-width:120px;height:auto}
   .gear .nm{font-weight:700;font-size:14px;line-height:1.2;margin-top:6px;overflow-wrap:anywhere}
   .gear .ds{font-size:12px;color:var(--muted);line-height:1.3;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .gear .ds.uso{-webkit-line-clamp:4;color:#b4bdcc}
+  .exq .ds.uso{-webkit-line-clamp:4}
+  .gear .row.between .ay-q,.gear .exq-top .ay-q{margin-inline-start:6px}
+  .pkuso{font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pick .ay-q{width:18px;height:18px;min-width:18px;font-size:11px;margin-inline-start:4px}
   .gear .grow2{flex:1}
   .gear .btn{width:100%;margin-top:8px;padding:9px 6px;font-size:13px}
   .gear .btn.sm{display:block}
@@ -25286,6 +25291,10 @@
     "danos.badge": {"one": "{n} equipo para reparar", "other": "{n} equipos para reparar"},
     "danos.chip": "¡Repárame!",
     'bodega.tienda': 'Tienda de equipos',
+    // Para qué sirve cada equipo (botón "?" de las tarjetas y de la preparación). Solo en español hasta la traducción final.
+    'equipo.para_que': '¿Para qué sirve?',
+    'equipo.detalle': 'Detalle técnico',
+    'equipo.ver': 'Para qué sirve {nombre}',
 
     // Tienda
     'tienda.conectando': 'Conectando con la tienda…',
@@ -27348,6 +27357,123 @@
     'item.srv_grua_telescopica.nombre': "Grúa de 12 m con operador - servicio", 'item.srv_grua_telescopica.desc': "Barridos sobre el público. Necesita espacio y un operador especializado.",
     'item.srv_unidad_movil_4cam.nombre': "Alquiler de unidad móvil (hasta 4 cámaras)", 'item.srv_unidad_movil_4cam.desc': "Llega con switcher, audio, repetición y técnico. Caro, pero salva un partido si no tienes OB propia.",
     'item.srv_sng_satelital.nombre': "Enlace satelital SNG - servicio", 'item.srv_sng_satelital.desc': "Sube la señal al satélite: no depende del internet del estadio.",
+
+    // Para qué sirve cada equipo: una frase corta y sencilla (máx. 90 caracteres) que se ve en la Bodega, la tienda,
+    // la preparación del evento y el detalle "?". Solo en español mientras se desarrolla (los demás idiomas usan este texto).
+    "item.cam_basic.uso": "Cámara de mano sencilla para grabar misas, bodas y eventos chicos.",
+    "item.cam_pro.uso": "Cámara de mano para bodas y eventos sociales; acepta micrófonos profesionales.",
+    "item.cam_panasonika_aw_uv22.uso": "Cámara robótica fija que se mueve a control remoto: ideal en iglesias y auditorios.",
+    "item.cam_blackmagia_estudio_4k_g3.uso": "Cámara de estudio liviana para escenarios y foros; hay que comprarle un lente.",
+    "item.cam_cine.uso": "Cámara de mano que llega con cable largo hasta el mezclador: para eventos grandes.",
+    "item.cam_jvk_gy_hk560.uso": "Cámara que transmite sola por internet, sin mezclador: notas y ruedas de prensa.",
+    "item.cam_zony_fz6_cine.uso": "Cámara de cine con fondo desenfocado: tomas bonitas con estabilizador.",
+    "item.cam_blackmagia_urso_broadcast_g3.uso": "Cámara de televisión que el camarógrafo lleva al hombro en la cancha o la calle.",
+    "item.cam_panasonika_aw_uv170.uso": "Cámara robótica de TV: va fija detrás del arco o arriba y se maneja a distancia.",
+    "item.cam_zony_pxv_z760.uso": "Cámara de hombro de alta gama que no se deforma con flashes. Necesita un lente.",
+    "item.cam_zony_hdk_3200.uso": "Cámara de estadio que va por fibra; un técnico le iguala el color desde el control.",
+    "item.cam_zony_hdk_3600.uso": "La cámara principal de una final: imagen 4K desde la tribuna con un lente gigante.",
+    "item.cam_zony_hdk_5600_hfr.uso": "Cámara súper lenta: repite goles y jugadas en cámara lenta muy fluida.",
+    "item.cam_fantomas_vio4k.uso": "Graba instantes en cámara ultra lenta para repeticiones espectaculares, no en vivo.",
+    "item.cam_marchall_cv513_pov.uso": "Minicámara fija en el arco, el ring o el auto: toma muy cercana sin camarógrafo.",
+    "item.cam_gopra_heroe13.uso": "Cámara pequeña que va en el casco o el pecho: tomas en movimiento y bajo el agua.",
+    "item.cam_dgi_osmo_bolsillo_3.uso": "Cámara de bolsillo que no tiembla: para caminar y transmitir desde la calle.",
+    "item.cam_celular_gimbal.uso": "Celular con estabilizador: graba y transmite solo, para streams en la calle.",
+    "item.dron_dgi_micro_4_pro.uso": "Dron pequeño para tomas aéreas de apertura; no vuela con viento fuerte.",
+    "item.dron4k.uso": "Dron de cine para tomas aéreas de gran calidad. Lo vuela un piloto de dron.",
+    "item.grua.uso": "Brazo gigante que pasea la cámara por encima del público: tomas de película.",
+    "item.unidad_movil.uso": "Camioneta con sala de control adentro: mezcla cámaras, sonido y comunicación.",
+    "item.generador.uso": "Generador grande y silencioso: mantiene todo encendido si se corta la luz.",
+    "item.vip_cam8k.uso": "La mejor cámara de estadio, con lente gigante y fibra incluidos. Lleva técnico de color.",
+    "item.vip_switcher.uso": "Mezclador de TV: eliges qué cámara sale al aire, con repeticiones y gráficos.",
+    "item.vip_satelital.uso": "Antena que manda tu transmisión por satélite: ya no dependes del internet.",
+    "item.lente_kit_mft.uso": "Lente sencillo para cámaras de estudio livianas: planos medios, no de lejos.",
+    "item.lente_zony_gm_24_75.uso": "Lente para la cámara de cine: fondo desenfocado y poco zoom.",
+    "item.lente_kanon_kx21x8_2.uso": "Lente con zoom para cámara de hombro: acerca a personas a media distancia.",
+    "item.lente_kanon_cx25ex7_5.uso": "Lente con más zoom para cámara de hombro 4K: cancha y tribuna baja.",
+    "item.lente_box_fujinox_xa23x7.uso": "Lente grande de estudio para planos abiertos del escenario, el ring o el set.",
+    "item.lente_box_kanon_digisupra_88.uso": "Lente gigante con mucho zoom: desde la tribuna se ven las caras en la cancha.",
+    "item.lente_box_fujinox_ux108x.uso": "Lente gigante 4K que no tiembla: la toma principal de una final.",
+    "item.lente_box_kanon_uhd_digisupra_125.uso": "El lente con más zoom del juego, con autofoco: ve todo desde muy lejos.",
+    "item.adaptador_lente_box.uso": "Pieza que deja poner un lente gigante en la cámara de estadio.",
+    "item.ex_lente_box.uso": "Lente gigante dorado con muchísimo zoom para la cámara de estadio.",
+    "item.sop_tripode_basico.uso": "Patas para que la cámara no tiemble; al moverla sale un poco a saltos.",
+    "item.sop_manfrotti_504x.uso": "Trípode de cabeza suave: movimientos de cámara lisos con cámaras chicas.",
+    "item.sop_vinter_vector_760.uso": "Trípode pesado que aguanta cámaras con lente gigante; sin él no se pueden usar.",
+    "item.sop_gimbal_dgi_rz4_pro.uso": "Estabilizador de mano: el camarógrafo camina y la imagen no tiembla.",
+    "item.sop_steadikam_aereo_32.uso": "Chaleco con brazo para correr con la cámara sin temblor: salidas y festejos.",
+    "item.sop_jib_proeme_4m.uso": "Grúa pequeña que lleva la cámara por arriba del público.",
+    "item.sop_dolly_riel_6m.uso": "Carrito sobre rieles: la cámara se desliza suave junto al escenario.",
+    "item.ex_soporte.uso": "Trípode pesado dorado para cámaras con lente gigante.",
+    "item.switch_basic.uso": "Computadora que mezcla hasta 3 cámaras, pone gráficos y transmite.",
+    "item.sw_blackmagia_atom_mini_pro.uso": "Mezclador pequeño: eliges con botones qué cámara sale al aire, y transmite.",
+    "item.sw_blackmagia_atom_mini_extremo_iso_g3.uso": "Mezclador de 8 cámaras que además graba cada cámara por separado.",
+    "item.sw_vmax_pro_pc.uso": "Computadora potente que mezcla cámaras, repite jugadas y transmite.",
+    "item.sw_blackmagia_atom_tv_estudio_hd9_iso.uso": "Mezclador de TV para 8 cámaras con cable largo; también habla con el equipo.",
+    "item.switch_pro.uso": "Mezclador grande de TV para muchas cámaras y efectos; se maneja con un panel.",
+    "item.sw_rosco_carbonita_ultra.uso": "Mezclador de canal de TV: muchas cámaras, efectos y sonido en un solo equipo.",
+    "item.sw_glass_valley_kayena.uso": "Mezclador gigante de unidad móvil para decenas de cámaras y gráficos.",
+    "item.rep_vmax_repeticion.uso": "Computadora que guarda las jugadas y las repite en cámara lenta.",
+    "item.rep_trikaster_3jugadas.uso": "Equipo para repetir jugadas en cámara lenta, manejado con una palanca.",
+    "item.rep_evx_xt_nano.uso": "El equipo de repeticiones de la TV deportiva: repite en segundos y no falla.",
+    "item.rep_evx_xt_via.uso": "Repite jugadas de muchas cámaras 4K a la vez, incluidas las súper lentas.",
+    "item.ex_repeticion.uso": "Equipo dorado de repeticiones 4K para las finales.",
+    "item.gfx_kasparcg_pc.uso": "Pone en pantalla el marcador, el reloj, los nombres y los logos.",
+    "item.gfx_rosco_xpresion_go.uso": "Gráficos 3D en pantalla: estadísticas, alineaciones y marcador.",
+    "item.gfx_vizart_ar.uso": "Dibuja gráficos y publicidad virtual sobre la cancha, como en las finales.",
+    "item.ex_graficos.uso": "Gráficos 3D dorados y publicidad virtual sobre la cancha.",
+    "item.mon_blackmagia_multivista_16.uso": "Pantalla que muestra 16 cámaras juntas para que el director vea todo.",
+    "item.mon_referencia_shader.uso": "Pantalla de colores exactos para que todas las cámaras se vean iguales.",
+    "item.ex_monitor.uso": "Pantalla dorada de colores exactos para igualar todas las cámaras.",
+    "item.audio_basic.uso": "Mezcladora de sonido pequeña: junta micrófonos y música para la transmisión.",
+    "item.audio_pro.uso": "Mezcladora digital que se maneja con tablet: más micrófonos y sonido ordenado.",
+    "item.au_behringa_x33_rack.uso": "Mezcladora digital para muchos micrófonos e instrumentos, como en conciertos.",
+    "item.au_mydas_m33_live.uso": "Mezcladora de concierto con muchos controles y sonido de alta calidad.",
+    "item.au_yamaka_kl5.uso": "Mezcladora grande de gira para conciertos con muchos músicos.",
+    "item.au_kalrek_brio_37.uso": "Mezcladora de TV: junta a los narradores con el ambiente del estadio sin fallas.",
+    "item.ex_audio.uso": "Mezcladora dorada de TV para narradores y ambiente del estadio.",
+    "item.mic_shur_sm59.uso": "Micrófono de mano con cable que casi no se rompe: discursos y entrevistas.",
+    "item.mics.uso": "Dos micrófonos de mano sin cable, baratos; a veces se cortan.",
+    "item.mic_shur_slxd25_doble.uso": "Dos micrófonos de mano sin cable que buscan solos una señal limpia.",
+    "item.mic_sennhauser_ewdz_corbatero.uso": "Va en la solapa: graba la voz de quien habla sin cables.",
+    "item.mic_roade_ntg6_boom.uso": "Micrófono en una caña larga: capta voces y ambiente sin salir en cámara.",
+    "item.mic_sennhauser_hmd27.uso": "Audífonos con micrófono para el narrador: tapan el ruido del estadio.",
+    "item.mic_dgi_mike_2.uso": "Micrófono pequeño de solapa sin cables para celular o cámara.",
+    "item.ex_mics.uso": "Dos micrófonos dorados de mano sin cable, con sonido digital.",
+    "item.ic_hollyband_solidkom_c2.uso": "Audífonos para que el director hable con 8 personas del equipo a la vez.",
+    "item.ic_clearkom_freehabla_3.uso": "Comunicación sin cables para todo el equipo en un estadio grande.",
+    "item.ex_intercom.uso": "Comunicación dorada sin cables para 12 personas del equipo.",
+    "item.encoder.uso": "Caja que manda la transmisión a internet, aunque la computadora se cuelgue.",
+    "item.enc_kilovista_p3.uso": "Mochila que junta varios chips de celular para transmitir sin internet fijo.",
+    "item.enc_liveyou_solo_pro.uso": "Mochila que une varias conexiones para transmitir desde cualquier lugar.",
+    "item.enc_liveyou_lu900.uso": "Mochila de TV con 8 chips 5G: transmite hasta 4 cámaras desde donde sea.",
+    "item.ex_encoder.uso": "Mochila dorada con 8 chips 5G para transmitir con calidad de TV.",
+    "item.router4g.uso": "Internet de respaldo por chip de celular, por si falla el del lugar.",
+    "item.ex_internet.uso": "Internet de respaldo dorado con chips de dos compañías a la vez.",
+    "item.tx_hollyband_marte_4k.uso": "Manda la imagen de la cámara sin cable hasta el control (unos 135 m).",
+    "item.tx_terradek_rayo_6.uso": "Imagen sin cable y sin retraso: para cámaras que corren o se mueven en el ring.",
+    "item.ex_wireless.uso": "Imagen dorada sin cable y sin retraso hasta 450 m.",
+    "item.fib_conversor_sdi_fibra.uso": "Lleva la imagen por fibra a kilómetros: cámaras lejos del control.",
+    "item.fib_cable_smpte_100m.uso": "Cable especial que da imagen, energía y comunicación a la cámara de estadio.",
+    "item.ex_cable.uso": "Cable de fibra dorado para la cámara de estadio que aguanta pisadas.",
+    "item.ups.uso": "Batería de respaldo: si se va la luz, el mezclador y la transmisión siguen un rato.",
+    "item.pw_jonda_eu2300i.uso": "Generador pequeño y silencioso para canchas sin luz; no alcanza para luces grandes.",
+    "item.raincover.uso": "Funda que protege una cámara chica de la llovizna.",
+    "item.rain_cobertor_broadcast.uso": "Funda grande que cubre cámara, lente y camarógrafo en lluvias fuertes.",
+    "item.ex_lluvia.uso": "Funda dorada con ventilación para cámara grande y camarógrafo en aguaceros.",
+    "item.case_maletas_pelikano.uso": "Maletas duras: tus equipos se gastan menos al viajar.",
+    "item.ex_maletas.uso": "Maletas doradas con ruedas: tus equipos se gastan menos en los viajes.",
+    "item.veh_sedan_usado.uso": "Auto para 4 personas y equipo chico: llegas sin pagar taxi.",
+    "item.veh_camioneta_carga.uso": "Camioneta para llevar todo el equipo sin pagar fletes.",
+    "item.veh_van_pasajeros_usada.uso": "Van para llevar juntas hasta 12 personas del equipo, con algo de carga.",
+    "item.veh_furgon_carga.uso": "Furgón cerrado para equipo pesado: grúas, rieles y consolas.",
+    "item.veh_sprinto_ob_usada.uso": "Furgoneta para armar una pequeña sala de control con ruedas.",
+    "item.veh_trailer_ob_hd12.uso": "Tráiler con sala de control para 12 cámaras: tu canal de TV con ruedas.",
+    "item.veh_trailer_ob_uhd20.uso": "Tráiler de 20 cámaras 4K para transmitir las finales más grandes.",
+    "item.srv_aranacam.uso": "Cámara colgada de cables que vuela sobre la cancha. Se alquila con su equipo.",
+    "item.srv_cablecam_riel.uso": "Cámara que corre por un riel junto a la cancha o al escenario. Se alquila.",
+    "item.srv_grua_telescopica.uso": "Grúa grande con su operador para tomas sobre el público. Se alquila.",
+    "item.srv_unidad_movil_4cam.uso": "Sala de control con ruedas y técnico, alquilada para un partido.",
+    "item.srv_sng_satelital.uso": "Camión que sube tu señal al satélite. Se alquila para un evento.",
     // Temporadas (eventos especiales por fecha, js/temporadas.js)
     "temp.halloween.nombre": "Halloween",
     "temp.halloween.premio": "Calabazas iluminadas en la entrada",
@@ -27833,8 +27959,10 @@
    Datos
      Game.CATEGORIAS   [{ key, nombre, icon }] en el orden de la tienda
      Game.shopByCategory(s) → [{ key, nombre, items: [{ key, ...CATALOG[key], locked, owned }] }]
-     Game.CATALOG[k]   { name, desc, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
+     Game.CATALOG[k]   { name, desc, uso, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
                          requiere: [...], acepta: [...], alquiler (bool, se usa en un evento y se va), eventos: [...] }
+                       uso = para qué sirve, en una frase corta y sencilla (item.<clave>.uso, máx. 90 caracteres);
+                       desc = el detalle técnico (item.<clave>.desc)
      Game.ROLES[k]     { key, name, desc, siFalta, icon, wageMul, orden }  (14 roles; las claves viejas
                          cam / dir / audio / stream siguen funcionando como alias ocultos)
      Game.TIERS[k]     { key, name, mul, base, bonus, skill: [min, max] }  junior, semi_senior, senior, internacional
@@ -28133,6 +28261,7 @@
     Object.keys(CATALOG).forEach((k) => {
       if (!Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.nombre')) return; // los de premium.js traen su propio nombre
       CATALOG[k].name = tx('item.' + k + '.nombre'); CATALOG[k].desc = tx('item.' + k + '.desc');
+      if (Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.uso')) CATALOG[k].uso = tx('item.' + k + '.uso');
     });
     CATEGORIAS.forEach((c) => { c.nombre = tx('cat.' + c.key); c.name = c.nombre; });
     Object.keys(CONSUMABLES).forEach((k) => { CONSUMABLES[k].name = tx('cons.' + k + '.nombre'); CONSUMABLES[k].desc = tx('cons.' + k + '.desc'); });
@@ -36202,7 +36331,7 @@
   /* ---------- Catálogo y reglas protegidas ---------- */
   Object.keys(EXCLUSIVOS).forEach((k) => {
     // Los textos viven en js/datos.js (item.<clave>.nombre / .desc) para poder traducirlos
-    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); }
+    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); if (G.TEXTOS['item.' + k + '.uso']) EXCLUSIVOS[k].uso = G.tx('item.' + k + '.uso'); }
     G.CATALOG[k] = Object.assign({ key: k }, EXCLUSIVOS[k]);
   });
 
@@ -37918,6 +38047,33 @@
     if (I18 && I18.T.has('rq.' + k)) return T('rq.' + k);
     return String(k).replace(/_/g, ' ');
   }
+  /* Para qué sirve cada equipo (item.<clave>.uso): frase corta y sencilla en las tarjetas, la preparación y el "?".
+     El detalle técnico (desc), la calidad y lo que necesita salen en la hoja del "?" (js/ayuda.js). */
+  const usoDe = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it ? TL(it.uso || it.desc || '') : ''; };
+  const usoHtml = (type, cls) => { const u = usoDe(type); return u ? `<div class="${cls || 'ds uso'}">${esc(u)}</div>` : ''; };
+  // El "?" se arma aquí (js/ayuda.js carga después, con defer): ayuda.js atrapa data-ayuda-item y abre la hoja con itemInfo
+  const infoBtn = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it
+    ? `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(type)}" aria-label="${esc(T('equipo.ver', { nombre: TL(it.name || type) }))}">?</button>` : ''; };
+  function itemInfo(type) {
+    const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]);
+    if (!it) return null;
+    const uso = TL(it.uso || '');
+    const tec = TL(it.desc || '');
+    const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
+    const meta = [];
+    if (it.q) meta.push(`${T('bodega.calidad')} ${qPips(it.q)}`);
+    if (rq.length) meta.push(`<b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}`);
+    if (ac.length) meta.push(`<b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}`);
+    if (it.alquiler) meta.push(esc(T('bodega.alquiler_det')));
+    return {
+      titulo: TL(it.name || type),
+      top: `<div class="ay-it-top">${itemArt(type, 56, 'mini')}<h3>${esc(TL(it.name || type))}</h3></div>`,
+      html: `<div class="ay-sub">${T('equipo.para_que')}</div><p class="ay-uso">${esc(uso || tec)}</p>
+        ${uso && tec && tec !== uso ? `<div class="ay-sub">${T('equipo.detalle')}</div><p class="ay-tec">${esc(tec)}</p>` : ''}
+        ${meta.length ? `<div class="ay-meta">${meta.join('<br>')}</div>` : ''}`,
+    };
+  }
+  window.AyudaItemInfo = itemInfo;   // lo usa js/ayuda.js (Ayuda.setItemInfo también sirve)
   function qPips(q) {
     const n = Math.max(0, Math.min(6, q || 0));
     return `<span class="qp" aria-label="${esc(T('bodega.calidad_n', { n }))}">${[1, 2, 3, 4, 5, 6].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -37937,10 +38093,10 @@
     const ac = (it.acepta || []).map(rqLabel);
     const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq })
       : it.alquiler ? T('bodega.reservar', { m: M(it.price) }) : M(it.price);
-    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}">
-      <div class="row between">${rtag(k)}</div>
+    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}" data-item="${esc(k)}">
+      <div class="row between">${rtag(k)}${infoBtn(k)}</div>
       <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${it.alquiler ? `<span class="rent rentov" title="${esc(T('bodega.alquiler_det'))}">${I('clock', 'sm')}${T('bodega.alquiler')}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
-      <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+      <div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
       <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -37994,9 +38150,9 @@
         : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
     }
     return `<div class="card gear shopc exq rf r-${x.vip ? 'vip' : 'exclusivo'}" data-ex="${esc(k)}">
-      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span>${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}</div>
+      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span><span class="row" style="gap:0">${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}${infoBtn(k)}</span></div>
       <div class="exq-body"><div class="art">${itemArt(k, 120)}</div>
-        <div><div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+        <div><div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
         <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>${exPerks(it)}</div></div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -38118,9 +38274,9 @@
       const off = vipBloqueado(e);
       if (it.alquiler) {
         return `<div class="card gear rf r-${r.key} rented">
-        <div class="row between">${rtag(e.type)}</div>
+        <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
         <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
         <div class="grow2"></div>
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
@@ -38128,9 +38284,9 @@
       const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
       const rgo = enRiesgo(e);
       return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}">
-        <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
+        <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
         <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
@@ -38422,7 +38578,7 @@
     if (!Api.disponible || !Api.estado) {
       const vitrina = Object.keys(G.CATALOG).filter((k) => G.CATALOG[k].premium).slice(0, 4).map((k) => {
         const r = rar(k);
-        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div><div class="ds">${esc(TL(G.CATALOG[k].desc || ''))}</div></div>`;
+        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}${infoBtn(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div>${usoHtml(k)}</div>`;
       }).join('');
       const aviso = app
         ? `<h3>${T('tienda.sin_conexion_t')}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.sin_conexion')}</p>`
@@ -38874,7 +39030,7 @@
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
@@ -49753,6 +49909,9 @@
    - La explicación sale en una hoja abajo, encima de todo (también encima de una ventana abierta) y se cierra
      tocando en cualquier parte. El toque del "?" no llega a lo que está debajo (no elige ni cierra nada).
    - Textos en los 10 idiomas aquí mismo; idioma = window.I18N.idioma (respaldo: español).
+   - Equipos: window.Ayuda.itemBtn(clave, etiqueta) → "?" con data-ayuda-item="<clave>" que abre "¿Para qué sirve?"
+     del equipo. El contenido lo arma la pantalla (Ayuda.setItemInfo(fn) o window.AyudaItemInfo, fn(clave) → { titulo, html }); sin ella,
+     se usa el nombre y el texto "uso" de Game.CATALOG.
    ===================================================================== */
 (function (root) {
   'use strict';
@@ -49876,6 +50035,15 @@
 .ay-hoja h3{margin:0 0 6px;font-size:16px;color:var(--amber,#ffb020)}
 .ay-hoja p{margin:0 0 10px;font-size:14px;line-height:1.45}
 .ay-hoja button{width:100%}
+.ay-hoja.ay-item{max-height:86vh;overflow-y:auto}
+.ay-hoja .ay-it-top{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.ay-hoja .ay-it-top h3{margin:0;overflow-wrap:anywhere}
+.ay-hoja .ay-it-top .itemart{flex:none}
+.ay-hoja .ay-sub{font-size:12px;font-weight:700;color:var(--muted,#9aa4b5);text-transform:uppercase;letter-spacing:.04em;margin:0 0 2px}
+.ay-hoja .ay-uso{font-size:15px;font-weight:600}
+.ay-hoja .ay-tec{font-size:13px;color:var(--muted,#9aa4b5)}
+.ay-hoja .ay-meta{font-size:12.5px;color:var(--muted,#9aa4b5);margin:-4px 0 12px;line-height:1.5}
+.ay-hoja .ay-meta b{color:var(--text,#e9edf5)}
 @keyframes ay-sube{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.ay-hoja{animation:none}}
 [data-ayuda]:not(.ay-q){cursor:help}`;
@@ -49887,18 +50055,48 @@
     return `<button type="button" class="ay-q" data-ayuda="${esc(k)}" aria-label="${esc(txt('_titulo') + ': ' + txt(k)[0])}">?</button>`;
   }
 
+  /* ---------- Equipos: "¿Para qué sirve?" ---------- */
+  let itemInfo = null;   // fn(clave) → { titulo, html } (la pone js/ui.js)
+  const TL = (s) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(s) : s; } catch (e) { return s; } };
+  const TT = (k, p, def) => { try { if (root.I18N && root.I18N.T && root.I18N.T.has(k)) return root.I18N.T(k, p); } catch (e) { /* abajo */ } return def; };
+  function itemDe(k) {
+    try { const G = root.Game; return (G && G.CATALOG && G.CATALOG[k]) || (G && G.CONSUMABLES && G.CONSUMABLES[k]) || null; } catch (e) { return null; }
+  }
+  function itemBtn(k, etiqueta) {
+    const it = itemDe(k);
+    if (!it) return '';
+    const lbl = etiqueta || TT('equipo.ver', { nombre: TL(it.name || k) }, TL(it.name || k));
+    return `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(k)}" aria-label="${esc(lbl)}">?</button>`;
+  }
+  function contenidoItem(k) {
+    const fn = itemInfo || (typeof root.AyudaItemInfo === 'function' ? root.AyudaItemInfo : null);
+    if (fn) { try { const r = fn(k); if (r && r.html) return r; } catch (e) { /* abajo */ } }
+    const it = itemDe(k);
+    if (!it) return null;
+    const uso = TL(it.uso || it.desc || '');
+    return { titulo: TL(it.name || k), html: `<div class="ay-sub">${esc(TT('equipo.para_que', null, '¿Para qué sirve?'))}</div><p class="ay-uso">${esc(uso)}</p>` };
+  }
+
   let abierta = null;
   function cerrar() { if (abierta) { abierta.remove(); abierta = null; } }
   function abrir(k) {
     const t = txt(k);
     if (!t || !Array.isArray(t)) return;
+    hoja(`<h3>${esc(t[0])}</h3><p>${esc(t[1])}</p>`);
+  }
+  function abrirItem(k) {
+    const c = contenidoItem(k);
+    if (!c) return;
+    hoja(`${c.top || `<h3>${esc(c.titulo)}</h3>`}${c.html}`, 'ay-item');
+  }
+  function hoja(cuerpo, clase) {
     ponerEstilo();
     cerrar();
     const v = document.createElement('div');
     v.className = 'ay-velo';
     v.setAttribute('role', 'dialog');
     v.setAttribute('aria-modal', 'true');
-    v.innerHTML = `<div class="ay-hoja"><h3>${esc(t[0])}</h3><p>${esc(t[1])}</p><button type="button" class="btn main">${esc(txt('_ok'))}</button></div>`;
+    v.innerHTML = `<div class="ay-hoja ${clase || ''}">${cuerpo}<button type="button" class="btn main">${esc(txt('_ok'))}</button></div>`;
     v.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); cerrar(); });
     document.body.appendChild(v);
     abierta = v;
@@ -49909,15 +50107,16 @@
     ponerEstilo();
     // En captura: el toque en un "?" (o en algo con data-ayuda) no llega al juego
     document.addEventListener('click', (e) => {
-      const el = e.target && e.target.closest ? e.target.closest('[data-ayuda]') : null;
+      const el = e.target && e.target.closest ? e.target.closest('[data-ayuda], [data-ayuda-item]') : null;
       if (!el || (abierta && abierta.contains(el))) return;
       e.stopPropagation(); e.preventDefault();
-      abrir(el.getAttribute('data-ayuda'));
+      if (el.hasAttribute('data-ayuda-item')) abrirItem(el.getAttribute('data-ayuda-item'));
+      else abrir(el.getAttribute('data-ayuda'));
     }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && abierta) { e.stopPropagation(); cerrar(); } }, true);
   }
 
-  root.Ayuda = { btn, abrir, cerrar, claves: () => Object.keys(D.es).filter((k) => k[0] !== '_'), _D: D };
+  root.Ayuda = { btn, abrir, cerrar, itemBtn, abrirItem, setItemInfo: (fn) => { itemInfo = typeof fn === 'function' ? fn : null; }, claves: () => Object.keys(D.es).filter((k) => k[0] !== '_'), _D: D };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
