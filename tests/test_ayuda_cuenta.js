@@ -10,6 +10,8 @@
    En todos: sin errores de JS y sin desborde horizontal.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_ayuda_cuenta.js   (capturas en tests/capturas/ayuda_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -24,6 +26,7 @@ function bien(c, msg) { if (c) { aciertos++; console.log('✅', msg); } else { f
 
 async function abrir(browser, caso) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push(String(e)));
@@ -85,6 +88,7 @@ const modalTxt = (page) => page.evaluate(() => (document.getElementById('overlay
 // Partida de prueba armada con la lógica real
 async function partida(browser, cambios) {
   const ctx = await browser.newContext();
+  await ctx.addInitScript(FECHA_FIJA);
   const p = await ctx.newPage();
   await p.setContent('<html></html>');
   await p.addScriptTag({ path: path.join(RAIZ, 'js/datos.js') });
@@ -280,7 +284,8 @@ async function partida(browser, cambios) {
 
     /* ---------- 5. Todas las claves de ayuda en los 10 idiomas ---------- */
     {
-      const ctx = await browser.newContext(); const p = await ctx.newPage();
+      const ctx = await browser.newContext();
+      await ctx.addInitScript(FECHA_FIJA); const p = await ctx.newPage();
       await p.setContent('<html><head></head><body></body></html>');
       await p.addScriptTag({ path: path.join(RAIZ, 'js/ayuda.js') });
       const faltan = await p.evaluate(() => { const D = window.Ayuda._D; const o = []; for (const l of Object.keys(D)) for (const k of Object.keys(D.es)) if (!D[l][k]) o.push(l + ':' + k); return o; });

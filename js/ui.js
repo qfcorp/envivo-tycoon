@@ -2091,6 +2091,9 @@
   function showResumenDia() {
     const lista = avisosPend();
     if (!lista.length) { tomarAvisos(); continuar(); return; }
+    // Al abrir el juego (no pasó ningún día) solo llegaron avisos de la temporada: un aviso corto en vez de la ventana
+    // "Resumen del día" (la oferta ya está en Clientes y la temporada tiene su tarjeta en Inicio)
+    if (!diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
     const dia = lista[lista.length - 1].day;
     const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
     snd.play(malo ? 'bad' : 'good');
@@ -2108,6 +2111,8 @@
     if (VI || !S) return;
     if ($('overlay').classList.contains('on')) return;
     if (S.currentEvent) { showIncident(); return; }
+    // Partida nueva: primero la intro del capítulo 1 y después el resumen del día (p. ej. "empezó la temporada")
+    if (!capPend().length && !S.chapterSeen && !(S.stats && S.stats.events) && showChapterIntro()) return;
     if (avisosPend().length) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;

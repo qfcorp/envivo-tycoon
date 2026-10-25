@@ -7,6 +7,8 @@
    En todos: sin errores de JS y sin desborde horizontal.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_discord_unirse.js */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -19,6 +21,7 @@ function bien(c, msg) { if (c) { aciertos++; console.log('✅', msg); } else { f
 
 async function partida(browser) {
   const ctx = await browser.newContext();
+  await ctx.addInitScript(FECHA_FIJA);
   const p = await ctx.newPage();
   await p.setContent('<html></html>');
   await p.addScriptTag({ path: path.join(RAIZ, 'js/datos.js') });
@@ -30,6 +33,7 @@ async function partida(browser) {
 
 async function abrir(browser, caso, guardada) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push(String(e)));

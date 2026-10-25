@@ -6,6 +6,8 @@
    ni desborde horizontal.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_servidores.js   (capturas en tests/capturas/servidores_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -61,6 +63,7 @@ if (!pagina.includes('js/servidores.js')) throw new Error('No se pudo poner js/s
 
 async function abrir(browser, caso, url, init) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: 'es-EC' });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
