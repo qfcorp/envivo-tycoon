@@ -552,6 +552,7 @@
     'item.cam_cine.nombre': "Kanon XF615", 'item.cam_cine.desc': "Sensor 1\", zoom 15x, 12G-SDI (cable largo hasta el switcher), 4K60.",
     'item.cam_jvk_gy_hk560.nombre': "JVK GY-HK560 Conectada", 'item.cam_jvk_gy_hk560.desc': "Sensor 1\", 20x y encoder interno: transmite sola por SRT sin switcher.",
     'item.cam_zony_fz6_cine.nombre': "Zony FZ6 Cine", 'item.cam_zony_fz6_cine.desc': "Full frame, 4K 120p, fondo desenfocado de cine. Para gimbal o estabilizador corporal.",
+    'item.cam_zony_hxr_mk2500.nombre': "Zony HXR-MK2500 (de hombro)", 'item.cam_zony_hxr_mk2500.desc': "Cámara de hombro de entrada con lente incluido: no necesita lentes aparte. Ideal para entrevistas, la banda de la cancha y el ring.",
     'item.cam_blackmagia_urso_broadcast_g3.nombre': "Blackmagia URSO Broadcast G3", 'item.cam_blackmagia_urso_broadcast_g3.desc': "Al hombro, montura B4: usa lentes ENG de televisión. 4K/6K, SDI.",
     'item.cam_panasonika_aw_uv170.nombre': "Panasonika AW-UV170", 'item.cam_panasonika_aw_uv170.desc': "Robótica broadcast: sensor 1\", 20x, 12G-SDI y fibra, 120p en HD. Táctica o detrás del arco.",
     'item.cam_zony_pxv_z760.nombre': "Zony PXV-Z760", 'item.cam_zony_pxv_z760.desc': "3 sensores 2/3\" 4K, obturador global (sin \"gelatina\" con flashes), 120p en HD. Sin lente.",
@@ -775,6 +776,9 @@
     cam_cine: { icon: 'cam_pro', cat: 'cam', subtipo: 'camcorder_pro_sdi', q: 3, price: 2550, minRep: 12, rareza: 'profesional', durabilidad: 3, eventos: ['graduacion','lanzamiento','concierto','barrial','prensa'] },
     cam_jvk_gy_hk560: { icon: 'cam_pro', cat: 'cam', subtipo: 'camcorder_streaming', q: 3, price: 2800, minRep: 12, rareza: 'profesional', durabilidad: 3, eventos: ['prensa','barrial','irl','internacional_unilateral'] },
     cam_zony_fz6_cine: { icon: 'cam_pro', cat: 'cam', subtipo: 'cine', q: 3, price: 3150, minRep: 12, rareza: 'profesional', durabilidad: 3, requiere: ['lente_cine'], acepta: ['lente_cine'], eventos: ['boda','lanzamiento','lanzamiento_autos','concierto'] },
+    // Cámara de hombro de entrada con lente incluido: se compra desde el inicio (sin fama), para que las posiciones
+    // "al hombro" de los primeros eventos (prensa, barrial, lucha libre...) se puedan cubrir sin lentes de televisión
+    cam_zony_hxr_mk2500: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 2, price: 1150, minRep: 0, rareza: 'comun', durabilidad: 3, eventos: ['prensa','barrial','lucha_libre','graduacion','boda'] },
     cam_blackmagia_urso_broadcast_g3: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 3, price: 2450, minRep: 12, rareza: 'profesional', durabilidad: 3, requiere: ['lente_b4'], acepta: ['lente_eng'], eventos: ['barrial','concierto','ligapro','boxeo','lucha_libre'] },
     cam_panasonika_aw_uv170: { icon: 'cam_basic', cat: 'cam', subtipo: 'ptz_broadcast', q: 4, price: 5450, minRep: 28, rareza: 'elite', durabilidad: 4, requiere: ['operador_ptz'], eventos: ['concierto','ligapro','final','lanzamiento','lanzamiento_autos'] },
     cam_zony_pxv_z760: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 4, price: 12500, minRep: 28, rareza: 'elite', durabilidad: 5, requiere: ['lente_b4'], acepta: ['lente_eng'], eventos: ['ligapro','final','concierto','boxeo','internacional_unilateral'] },

@@ -35,7 +35,7 @@
     'pe.leg.ok': 'Ideal', 'pe.leg.mid': 'Sirve', 'pe.leg.bad': 'No es la ideal', 'pe.leg.off': 'Vacía', 'pe.leg.na': 'Asignada',
     'pe.forma.fija': 'Fija', 'pe.forma.mano': 'Al hombro', 'pe.forma.robot': 'Robótica', 'pe.forma.aerea': 'Aérea',
     'pe.vacia': 'Sin cámara', 'pe.opcional': 'Opcional', 'pe.idealp': 'Ideal: {t}', 'pe.ajuste': 'Ajuste {p}%', 'pe.tocar': 'Toca una cámara para ver cuál va',
-    'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
+    'pe.sinop': 'sin camarógrafo: rinde la mitad', 'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
 
     'pe.intl': 'Contrato internacional', 'pe.intl.pago': '×{m} pago', 'pe.intl.dias': '{n} días de viaje', 'pe.intl.dia': '1 día de viaje',
     'pe.intl.gastos': 'Gastos de viaje {m}', 'pe.intl.bloqueo': 'Mientras viajas no puedes tomar otros contratos.',
@@ -795,7 +795,10 @@
       const asg = p.asignado !== undefined ? p.asignado : p.camara !== undefined ? p.camara : p.equip !== undefined ? p.equip : p.assigned;
       let aj = num(p.ajuste != null ? p.ajuste : p.fit != null ? p.fit : p.score);
       if (aj != null && aj > 1) aj = aj / 100;
-      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
+      // fit = qué tan bien encaja la cámara (sin contar si hay quien la maneje); operado === false: nadie la maneja
+      let fit = num(p.fit);
+      if (fit != null && fit > 1) fit = fit / 100;
+      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, fit, sinOp: p.operado === false, eid: p.equipId != null ? p.equipId : null, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
     });
   }
   function camName(a, o) {
@@ -882,7 +885,12 @@
       const t = tipoKey(tipoEvento || (plan && (plan.tipo || plan.type)));
       const v = lugar(t), vr = variante(t, v);
       const list = posList(plan, t);
-      list.forEach((p) => { p.asgName = camName(p.asg, o); });
+      // Con el id del equipo se usa el nombre que el jugador ve en su bodega (p. ej. "Cámara de Don Ramiro")
+      list.forEach((p) => {
+        let n = '';
+        if (p.asg != null && p.asg !== false && p.asg !== '' && p.eid != null && o.nombreEquipo) { try { n = o.nombreEquipo(p.eid) || ''; } catch (e) { n = ''; } }
+        p.asgName = n || camName(p.asg, o);
+      });
       placeAll(list, v);
       const u = 'pe' + (++UID).toString(36);
       const cables = o.cables === false || v === 'calle' ? '' : list.map((p) => cable(p, vr)).filter(Boolean).join('');
@@ -904,8 +912,11 @@
       const rowsHtml = o.lista === false ? '' : `<div class="pe-cl">${list.map((p) => {
         const k = fitK(p);
         const info = `${T('pe.cam.n', { n: p.n })} · ${p.asgName || vacioTxt(p)}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
+        // "Ideal: ..." solo si la cámara no es la adecuada; si es la adecuada pero nadie la maneja, se dice eso
+        const camMal = p.asgName && p.fit != null ? p.fit < 0.8 : k !== 'ok';
+        const extra = p.asgName && p.sinOp && !camMal ? ' · ' + esc(T('pe.sinop')) : p.ideal && camMal ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : '';
         return `<div class="pe-clr pe-k-${k}" data-pe-cam="${p.n}" data-pe-info="${esc(info)}"><b class="pe-n">${p.n}</b>
-          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${p.ideal && (k !== 'ok') ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</small></div>
+          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${extra}</small></div>
           <span class="pe-fit">${p.asgName && p.aj != null ? `${Math.round(p.aj * 100)}%<u><i style="width:${Math.round(p.aj * 100)}%"></i></u>` : p.asgName ? '' : '—'}</span></div>`;
       }).join('')}</div>`;
       return `<div class="pe-cams ${esc(o.clase || '')}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${legend}<div class="pe-det" aria-live="polite"></div>${rowsHtml}</div></div>`;

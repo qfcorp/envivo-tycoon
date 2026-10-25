@@ -1252,26 +1252,47 @@
     const { ready, blocked } = readyCams(equip, staff);
     const left = ready.slice();
     const usados = [];
-    const assigned = pos.map((p) => {
+    // Operadores: se reparten mientras se eligen las cámaras, así una cámara que se quedaría sin nadie que la maneje
+    // (una PTZ sin operador de robóticas, una segunda cámara sin segundo camarógrafo) no le quita el puesto a otra que sí rinde.
+    let camOps = roleCount(staff, 'camarografo');
+    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
+    const canOp = (r) => (r.needs === 'camarografo' ? camOps > 0 : r.needs === 'operador_ptz' ? ptzCap > 0 : true);
+    // Puntaje de una cámara en una posición: cuánto encaja, su calidad y su estado; si nadie la puede manejar vale
+    // mucho menos (rinde la mitad y además deja sin puesto a una que sí tendría operador)
+    const score = (p, r) => fitOf(p.perfil, r) * (2 + r.effQ) * r.cond * (canOp(r) ? 1 : 0.25);
+    const asg = new Map();
+    const tomar = (p, r) => {
+      left.splice(left.indexOf(r), 1);
+      const operado = canOp(r);
+      if (operado && r.needs === 'camarografo') camOps--;
+      else if (operado && r.needs === 'operador_ptz') ptzCap--;
+      asg.set(p, { r, operado });
+    };
+    // Posiciones obligatorias: cada vez la mejor pareja posición-cámara de todas (así la cámara de hombro va a la
+    // posición al hombro y no a la fija, donde cualquier otra sirve)
+    const pend = pos.filter((p) => !p.opcional);
+    while (pend.length && left.length) {
+      let bp = null, br = null, bs = -1;
+      pend.forEach((p) => left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; bp = p; br = r; } }));
+      if (!br) break;
+      tomar(bp, br);
+      pend.splice(pend.indexOf(bp), 1);
+    }
+    // Tomas extra (opcionales), en orden: con una cámara que encaje y que alguien maneje; sin nadie que la maneje, solo
+    // si encaja casi perfecto (con su trípode o soporte llega a 1: una cámara "dejada" en su sitio rinde la mitad, pero suma como toma extra)
+    pos.filter((p) => p.opcional).forEach((p) => {
       let best = null, bs = -1;
-      left.forEach((r) => {
-        const f = fitOf(p.perfil, r);
-        const sc = f * (2 + r.effQ) * r.cond;
-        if (sc > bs) { bs = sc; best = r; }
-      });
-      if (best && p.opcional && fitOf(p.perfil, best) < 0.5) best = null;
-      if (best) left.splice(left.indexOf(best), 1);
-      return { p, r: best };
+      left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; best = r; } });
+      const f = best ? fitOf(p.perfil, best) : 0;
+      if (best && (canOp(best) ? f >= 0.5 : f >= 0.85)) tomar(p, best);
     });
+    const assigned = pos.map((p) => { const a = asg.get(p); return { p, r: a ? a.r : null, operado: a ? a.operado : false }; });
     // Accesorios: trípodes, gimbal, steadicam, jib y dolly mejoran el ajuste de su posición
     const sup = (f) => equip.filter((e) => f(itemOf(e))).length;
     const S = { tripode: sup((it) => /^tripode/.test(it.subtipo)), gimbal: sup((it) => it.subtipo === 'gimbal'), steadicam: sup((it) => it.subtipo === 'steadicam'),
       jib: sup((it) => it.subtipo === 'jib'), dolly: sup((it) => it.subtipo === 'dolly') };
-    // Operadores
-    let camOps = roleCount(staff, 'camarografo');
-    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
     let sysCams = 0;
-    const out = assigned.map(({ p, r }) => {
+    const out = assigned.map(({ p, r, operado }) => {
       const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional,
         asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, ajuste: 0, operado: false };
       if (!r) return o;
@@ -1282,9 +1303,6 @@
       else if (supOk && p.perfil === 'hombro' && S.steadicam > 0) { S.steadicam--; fit = Math.min(1, fit + 0.15); }
       else if (supOk && p.perfil === 'grua' && S.jib > 0) { S.jib--; fit = Math.max(fit, 0.85); }
       else if (supOk && p.perfil === 'riel' && S.dolly > 0) { S.dolly--; fit = Math.max(fit, 0.85); }
-      let operado = true;
-      if (r.needs === 'camarografo') { if (camOps > 0) camOps--; else operado = false; }
-      else if (r.needs === 'operador_ptz') { if (ptzCap > 0) ptzCap--; else operado = false; }
       if (isSystem(r.it)) sysCams++;
       usados.push(r.e.id); if (r.lens) usados.push(r.lens.id);
       return Object.assign(o, { asignado: r.e.type, equipId: r.e.id, equipo: equipName(r.e), lente: r.lens ? r.lens.type : null,
@@ -1297,6 +1315,37 @@
       ajusteMedio: req.length ? r2(req.reduce((a, p) => a + p.ajuste, 0) / req.length) : 0,
       bloqueados: blocked, usados, sistema: sysCams, sinOperador: req.filter((p) => p.asignado && !p.operado).length,
     };
+  }
+
+  /* ---------- Ayudas para el jugador: qué cámara o qué lente le falta y dónde conseguirlo ---------- */
+  const LENTE_DE = { lente_b4: 'lente_eng', lente_cine: 'lente_cine', lente_mft: 'lente_mft' };
+  const enTienda = (k) => { const it = CATALOG[k]; return it && !it.premium && !it.exclusivo && !it.alquiler; };
+  // El lente que necesita una cámara de ese tipo y que todavía no tienes (o null si no necesita o ya hay uno libre).
+  // extra = 1 cuando la cámara aún no es tuya (antes de comprarla). Devuelve { subtipo, key (el más barato de la tienda),
+  // bloqueado (falta fama), precio }.
+  function lenteFaltante(s, type, extra) {
+    const it = CATALOG[type];
+    if (!it || it.incluyeLente) return null;
+    const rq = (it.requiere || []).find((r) => LENTE_DE[r]);
+    if (!rq) return null;
+    const sub = LENTE_DE[rq];
+    const lentes = s.equip.filter((e) => CATALOG[e.type] && CATALOG[e.type].subtipo === sub).length;
+    const camaras = s.equip.filter((e) => { const c = CATALOG[e.type]; return c && !c.incluyeLente && (c.requiere || []).includes(rq); }).length + (extra || 0);
+    if (lentes >= camaras) return null;
+    const ops = Object.keys(CATALOG).filter((k) => enTienda(k) && CATALOG[k].subtipo === sub)
+      .sort((a, b) => ((CATALOG[a].minRep > s.rep) - (CATALOG[b].minRep > s.rep)) || CATALOG[a].price - CATALOG[b].price);
+    const key = ops[0] || null;
+    return { subtipo: sub, key, bloqueado: key ? CATALOG[key].minRep > s.rep : true, precio: key ? CATALOG[key].price : 0, minRep: key ? CATALOG[key].minRep : 0 };
+  }
+  // La cámara de la tienda que mejor cubre una posición de ese perfil y que ya puedes comprar (fama), sin lentes ni
+  // accesorios aparte: la que mejor encaja y, entre iguales, la más barata. null si ninguna encaja mejor que `minFit`.
+  function camaraParaPerfil(s, perfil, minFit) {
+    const row = FIT[perfil] || FIT.fija;
+    let best = null, bf = typeof minFit === 'number' ? minFit : 0;
+    Object.keys(CATALOG).filter((k) => enTienda(k) && CATALOG[k].cat === 'cam' && CATALOG[k].minRep <= s.rep && !(CATALOG[k].requiere || []).length)
+      .sort((a, b) => CATALOG[a].price - CATALOG[b].price)
+      .forEach((k) => { const f = row[CLASE[CATALOG[k].subtipo]] || 0; if (f > bf + 1e-9) { bf = f; best = k; } });
+    return best ? { key: best, fit: bf, precio: CATALOG[best].price } : null;
   }
 
   /* ---------- Calidad base del evento ---------- */
@@ -2610,7 +2659,7 @@
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, suggestLoadout, lenteFaltante, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
