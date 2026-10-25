@@ -9,7 +9,14 @@
    3) Navegador (Playwright, servidor local): index.html + js/lang/juego/en.js y de.js (carga perezosa con
       I18N.setIdioma; si no llegan, se inyectan), Game.CATALOG y Game.EVENT_TYPES salen traducidos y no hay
       errores; si falla la descarga del idioma, se queda en español.
-   Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_traduccion_juego.js */
+   Español primero (PLAN.md): mientras se desarrolla, los textos nuevos del juego se agregan SOLO en TEXTOS (js/datos.js).
+   Una clave de TEXTOS que falta en un idioma es un AVISO ("pendiente de traducir: N claves, ej. …") y NO hace fallar la
+   prueba: el juego muestra el español (I18N.juego devuelve null y la lógica usa TEXTOS). Sigue siendo falla: textos
+   vacíos, {marcadores} distintos, plurales que el idioma no tiene, claves sobrantes, marcas parodia cambiadas, letras
+   de otro alfabeto y textos iguales al español fuera de las excepciones.
+   TRADUCCION_ESTRICTA=1 vuelve falla lo pendiente (fase final de traducción). Lista completa: node tools/pendientes_traduccion.js
+   Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_traduccion_juego.js
+         TRADUCCION_ESTRICTA=1 NODE_PATH=/opt/npm-tools/node_modules node tests/test_traduccion_juego.js */
 'use strict';
 const path = require('path');
 const fs = require('fs');
@@ -18,6 +25,17 @@ const http = require('http');
 const ROOT = path.resolve(__dirname, '..');
 let fallas = 0;
 const ok = (c, m) => { if (!c) { fallas++; console.log('  ✘ ' + m); } return c; };
+// Claves de TEXTOS que faltan en un idioma: aviso (o falla con TRADUCCION_ESTRICTA=1)
+const ESTRICTA = process.env.TRADUCCION_ESTRICTA === '1';
+const pendientes = {};
+const pendiente = (code, k) => { (pendientes[code] = pendientes[code] || []).push(k); if (ESTRICTA) ok(false, `${code}: "${k}" falta (pendiente de traducir; TRADUCCION_ESTRICTA=1)`); };
+const esPendiente = (code, k) => !!(pendientes[code] && pendientes[code].includes(k));
+function avisarPendientes() {
+  const n = Object.values(pendientes).reduce((a, l) => a + l.length, 0);
+  if (!n) return;
+  const ej = Object.entries(pendientes).flatMap(([c, l]) => l.slice(0, 2).map((k) => `${c}:${k}`)).slice(0, 4);
+  console.log(`  ${ESTRICTA ? '✘' : '⚠'} pendiente de traducir: ${n} claves, ej. ${ej.join(', ')} (${Object.entries(pendientes).map(([c, l]) => c + ' ' + l.length).join(', ')}) · lista: node tools/pendientes_traduccion.js`);
+}
 
 const CODES = ['en', 'pt-BR', 'fr', 'de', 'it', 'ru', 'tr', 'id', 'zh-CN'];
 
@@ -81,8 +99,9 @@ for (const c of CODES) {
   let buenas = 0;
   for (const k of claves) {
     const v = d[k];
+    if (v === undefined) { pendiente(c, k); continue; }   // sin traducir todavía: el juego muestra el español
     const vs = variantes(v);
-    if (!ok(vs.length && vs.every((x) => typeof x === 'string' && x.trim()), `${c}: "${k}" falta o está vacío`)) continue;
+    if (!ok(vs.length && vs.every((x) => typeof x === 'string' && x.trim()), `${c}: "${k}" está vacío`)) continue;
     let bien = true;
     for (const x of vs) {
       if (!ok(marc(x) === marc(T[k]), `${c}: "${k}" marcadores ${marc(x) || '-'} ≠ ${marc(T[k]) || '-'}`)) bien = false;
@@ -100,8 +119,9 @@ for (const c of CODES) {
   }
   for (const k of Object.keys(d)) ok(k in T, `${c}: clave sobrante "${k}"`);
   totales[c] = buenas;
-  console.log(`  ${c}: ${buenas}/${claves.length} claves`);
+  console.log(`  ${c}: ${buenas}/${claves.length} claves${pendientes[c] ? ` (${pendientes[c].length} pendientes de traducir)` : ''}`);
 }
+avisarPendientes();
 // Las listas de excepciones no deben esconder textos que ya no son marcas
 for (const k of [...SOLO_MARCA, ...IGUAL_TODOS, ...Object.values(IGUAL_IDIOMA).flat()]) ok(k in T, `la excepción "${k}" no existe en TEXTOS`);
 
@@ -114,6 +134,18 @@ ok(I18N.juego('ev.boda') === 'Wedding', `en: ev.boda → ${I18N.juego('ev.boda')
 ok(I18N.juego('pos.extra', { n: 2 }) === 'Extra camera 2', `en: {n} se rellena (${I18N.juego('pos.extra', { n: 2 })})`);
 ok(I18N.juego('log.vencieron', { n: 1 }).startsWith('1 offer ') && I18N.juego('log.vencieron', { n: 3 }).startsWith('3 offers '), 'en: plurales');
 ok(I18N.juego('clave.que.no.existe') === null, 'clave inexistente → null');
+{
+  // Español primero: una clave que solo está en TEXTOS sale en español por Game.tx (nunca la clave)
+  const G = require('../js/logic.js');
+  G.TEXTOS['prueba.solo_es'] = 'Solo en español {n}';
+  G.setTraductor(I18N.juego);
+  ok(G.tx('prueba.solo_es', { n: 2 }) === 'Solo en español 2', `en: una clave que solo está en TEXTOS sale en español (${G.tx('prueba.solo_es', { n: 2 })})`);
+  ok(G.CATALOG.cam_basic.uso === T['item.cam_basic.uso'] || G.CATALOG.cam_basic.uso === J.en['item.cam_basic.uso'], 'en: Game.CATALOG.uso sin traducir queda en español');
+  delete G.TEXTOS['prueba.solo_es'];
+  I18N.setIdioma('es');
+  G.setTraductor(I18N.juego);
+  I18N.setIdioma('en');
+}
 I18N.setIdioma('ru');
 const ru = [1, 3, 5].map((n) => I18N.juego('log.olvido', { n }));
 ok(/1 день/.test(ru[0]) && /3 дня/.test(ru[1]) && /5 дней/.test(ru[2]), `ru: plurales (${ru.map((x) => x.slice(0, 14)).join(' | ')})`);
@@ -200,7 +232,8 @@ function servidor() {
     ok(conTexto.length >= 90, `${code}: ${conTexto.length} equipos del catálogo tienen texto en TEXTOS`);
     ok(!malCat.length, `${code}: Game.CATALOG con el nombre traducido${malCat.length ? ' — mal: ' + malCat.slice(0, 3).map((x) => x.k + '=' + x.v).join(', ') : ''}`);
     ok(!sinCambio.length, `${code}: ningún equipo quedó en español${sinCambio.length ? ' — ' + sinCambio.slice(0, 3).map((x) => x.v).join(', ') : ''}`);
-    const malEv = r.ev.filter((x) => x.v !== x.esperado || x.v === x.es);
+    // Un tipo de evento sin traducir todavía (pendiente) sale en español: eso no es falla
+    const malEv = r.ev.filter((x) => (x.esperado === undefined ? !(esPendiente(code, 'ev.' + x.k) && x.v === x.es) : x.v !== x.esperado || x.v === x.es));
     ok(r.ev.length >= 10 && !malEv.length, `${code}: Game.EVENT_TYPES traducidos (${r.ev.length})${malEv.length ? ' — mal: ' + malEv.slice(0, 3).map((x) => x.k + '=' + x.v).join(', ') : ''}`);
     console.log(`  ${code}: catálogo ${conTexto.length - malCat.length}/${conTexto.length}, eventos ${r.ev.length - malEv.length}/${r.ev.length}, p. ej. “${r.ev.find((x) => x.k === 'boda').v}”, “${(r.cat.find((x) => x.k === 'veh_camioneta_carga') || {}).v}”`);
     // Al volver a español vuelve todo a TEXTOS
@@ -251,6 +284,7 @@ function servidor() {
 })().catch((e) => { console.error('❌', e); process.exit(1); });
 
 function fin() {
+  if (Object.keys(pendientes).length && !ESTRICTA) console.log(`\n⚠ ${Object.values(pendientes).reduce((a, l) => a + l.length, 0)} claves del juego pendientes de traducir (aviso: no es falla; TRADUCCION_ESTRICTA=1 para exigirlas)`);
   if (fallas) { console.error(`\n❌ ${fallas} fallas`); process.exit(1); }
   console.log(`\n✅ Textos del juego OK (${CODES.length} idiomas × ${claves.length} claves: ${CODES.map((c) => c + ' ' + totales[c]).join(', ')})`);
 }

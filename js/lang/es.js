@@ -187,6 +187,10 @@
     "danos.badge": {"one": "{n} equipo para reparar", "other": "{n} equipos para reparar"},
     "danos.chip": "¡Repárame!",
     'bodega.tienda': 'Tienda de equipos',
+    // Para qué sirve cada equipo (botón "?" de las tarjetas y de la preparación). Solo en español hasta la traducción final.
+    'equipo.para_que': '¿Para qué sirve?',
+    'equipo.detalle': 'Detalle técnico',
+    'equipo.ver': 'Para qué sirve {nombre}',
 
     // Tienda
     'tienda.conectando': 'Conectando con la tienda…',

@@ -135,7 +135,14 @@ async function abrir(browser, caso) {
   if (caso.play) await page.addInitScript(fakePlay, caso.play);
   if (caso.idioma) await page.addInitScript((c) => { try { localStorage.setItem('envivo_lang', c); } catch (e) { /* nada */ } }, caso.idioma);
   await page.goto(BASE + '/' + (caso.query || ''), { waitUntil: 'domcontentloaded' });
-  try { await page.waitForSelector('#overlay.on [data-act="close"]', { timeout: 4000 }); await page.click('#overlay.on [data-act="close"]'); } catch (e) { /* sin bienvenida */ }
+  // Bienvenida (intro del capítulo) y, en fechas de temporada (Halloween, Navidad…), el resumen del día
+  try { await page.waitForSelector('#overlay.on [data-act="close"], #overlay.on [data-act="close-dia"]', { timeout: 4000 }); } catch (e) { /* sin bienvenida */ }
+  for (let k = 0; k < 5; k++) {
+    const b = page.locator('#overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"], #overlay.on [data-act="close"]');
+    if (!(await b.count())) break;
+    await b.first().click().catch(() => {});
+    await page.waitForTimeout(120);
+  }
   await page.waitForFunction(() => window.Api && window.Api.disponible !== null, null, { timeout: 8000 });
   return { ctx, page, errores, srv };
 }
