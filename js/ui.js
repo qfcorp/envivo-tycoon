@@ -209,31 +209,41 @@
   function nubeMarcar(rev, clave) { nubeInfo = { cuenta: nubeCuenta(), rev, clave }; lsSet(NUBE_KEY, nubeInfo); }
   const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
   const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo'));
+  /* ¿La versión más nueva de la nube la guardó ESTA pestaña y nadie más la tiene abierta? Pasa cuando la respuesta de un
+     guardado no llegó (red lenta del celular, se pasó el tiempo, se cortó) o cuando se revisó la nube justo mientras
+     subía (al volver a la pestaña, cada minuto). Antes eso se tomaba como "otro dispositivo": se dejaba de guardar y
+     "Usar la partida más nueva" volvía a una versión vieja (la fama y las reparaciones del último evento se perdían).
+     Lo que hay en la nube salió de esta misma partida, así que la de aquí es igual o más nueva: se sigue sobre esa versión. */
+  const nubeEsMia = (n) => !!(n && n.guardo && n.guardo === NUBE_DISP && Number.isInteger(n.rev) && (!n.activo || n.activo.dispositivo === NUBE_DISP));
   function nubeLuego() {
     if (!nubeActiva() || cloudPendiente) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
     clearTimeout(nubeT);
     nubeT = setTimeout(subirNube, 4000);
   }
-  async function subirNube(tomar) {
+  async function subirNube(tomar, reintento) {
     if (!nubeActiva() || cloudPendiente || nubeBloqueo || nubeRecargando) return;
     const base = nubeBase();
     if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
-    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar); }               // un guardado a la vez
+    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar, reintento); }    // un guardado a la vez
     clearTimeout(nubeT);
     const datos = G.serialize(S), clave = nubeClave(S);
     nubePendiente = false;
-    let bien = false;
+    let bien = false, otraVez = false;
     nubeSubiendo = (async () => {
       try {
         const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar });
         nubeMarcar(r.rev, clave); nubeEstado = 'ok'; bien = true;
       } catch (e) {
         nubePendiente = true; nubeEstado = 'error';
-        if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
+        const n = e && e.respuesta ? e.respuesta.nube : null;
+        // Un guardado anterior de esta pestaña sí llegó (no llegó la respuesta): se sigue sobre esa versión, una vez
+        if (e && e.codigo === 'partida_desactualizada' && !reintento && nubeEsMia(n) && n.rev > base) { nubeMarcar(n.rev, ''); otraVez = true; }
+        else if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
       }
     })();
     try { await nubeSubiendo; } finally { nubeSubiendo = null; }
+    if (otraVez) return subirNube(tomar, true);
     if (bien && nubePendiente) nubeLuego();   // se guardó algo más mientras subía
   }
   // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
@@ -243,12 +253,21 @@
     if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
     return nubeRevisando;
   }
-  async function nubeRevisar(intentos) {
+  async function nubeRevisar(intentos, vueltas) {
+    // Primero que termine el guardado que está subiendo (si no, su versión nueva parece de "otro dispositivo")
+    if (nubeSubiendo) { try { await nubeSubiendo; } catch (e) { /* nada */ } }
     const base = nubeBase();
     if (base === null) return nubeSinBase();
     let m;
     try { m = await Api.partidaMeta(NUBE_DISP); } catch (e) { return; }   // sin red: se sigue con la del celular
+    // Mientras se preguntaba, esta pestaña subió otra versión: se pregunta otra vez con la versión al día
+    if ((nubeSubiendo || nubeBase() !== base) && (vueltas || 0) < 3) return nubeRevisar(intentos, (vueltas || 0) + 1);
     if (!m.hay || m.rev < base) return nubeSinBase();
+    // La versión nueva es un guardado de esta misma pestaña cuya respuesta no llegó: se sigue sobre ella (y se sube lo de aquí)
+    if (m.rev > base && nubeEsMia(m)) {
+      nubeMarcar(m.rev, '');
+      return nubeLista !== nubeCuenta() ? nubeTomar(intentos) : subirNube();
+    }
     if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeMasNueva();
     if (nubeLista !== nubeCuenta()) return nubeTomar(intentos);              // al día: esta pestaña toma la partida
     if (m.activo && m.activo.dispositivo !== NUBE_DISP) return nubeConflicto();   // otro dispositivo la tomó
@@ -326,6 +345,9 @@
     let r;
     try { r = await Api.partida(); } catch (e) { toast(T('nube.sin_red')); eleccion = () => nubeUsarNueva(); return; }
     const nube = nubeLeer(r);
+    // Aquí hay avance que esa versión no tiene (p. ej. un evento que terminó con el aviso tapado por el resultado):
+    // se pregunta cuál usar, nunca se pisa sin preguntar
+    if (nube && nubeAvance() && nubeClave(nube) !== nubeClave(S)) { closeModal(); nubeElegir(nube, r.datos, r.rev); return; }
     if (nube) { nubeUsar(nube, r.datos, r.rev, true); return; }
     // La otra pestaña no guardó nada todavía: esta toma la partida con la suya
     closeModal(); nubeBloqueo = false; nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); render();
@@ -519,8 +541,8 @@
     return { Api, A, estado: () => S, toast, snd, openModal,
       closeModal: () => { closeModal(); render(); if (Api.disponible && Api.logueado()) Api.refrescar().then(() => render()).catch(() => {}); } };
   }
-  function render() {
-    marcarDia();
+  // Dinero, fama, día y créditos de arriba (también se llama con una ventana abierta: el resultado, una reparación…)
+  function cabecera() {
     $('hMoney').textContent = M(S.money);
     $('hMoney').classList.toggle('neg', S.money < 0);
     $('hRep').textContent = Math.floor(S.rep);
@@ -539,6 +561,10 @@
       if (S.day !== lastHead.d) bump('cDay', true);
     }
     lastHead = { m: S.money, r: Math.floor(S.rep), d: S.day };
+  }
+  function render() {
+    marcarDia();
+    cabecera();
     if (lastTab !== tab) {
       const sec = $('tab-' + tab);
       if (sec && lastTab !== null) { sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter'); }
@@ -1998,6 +2024,7 @@
     try { resDanos = evEq ? danosFin(evEq.ids, evEq.cid) : null; } catch (e) { resDanos = null; }
     lsSet(RES_KEY, { r, ev: S.stats.events, caja, ty, danos: resDanos });
     showResult(r, caja, true, ty);
+    cabecera();   // la fama y el dinero de arriba ya son los del resultado (antes cambiaban recién al cerrarlo)
   }
 
   /* ---------- Avisos del día (renuncias, pagos, la rival, cancelaciones…) ---------- */
@@ -2042,6 +2069,11 @@
   function extrasRes(r) {
     if (!r || !Array.isArray(r.extras) || !r.extras.length) return '';
     return r.extras.map((x) => `<div class="paylater ext">${I((x && x.icon) || 'star', 'sm')} ${esc(gtx(x, x && x.text))}</div>`).join('');
+  }
+  // Fama del resultado: lo que sumó o restó el evento y con cuánta quedas de verdad ("+10 → ahora 23"), la misma de arriba
+  function famaTxt(r) {
+    const d = (r.repDelta >= 0 ? '+' : '') + r.repDelta;
+    return typeof r.fama === 'number' && isFinite(r.fama) ? T('res.fama_ahora', { delta: d, n: `<b class="num">${Math.floor(r.fama)}</b>` }) : d;
   }
   function showResult(r, caja, fresh, ty0) {
     // Con la lógica nueva los capítulos esperan en S.capCompletados; con una vieja, en r.chapterDone
@@ -2106,7 +2138,7 @@
         ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
-        <tr><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
+        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
       </table>
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}

@@ -110,6 +110,8 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
     console.log(`2) Navegador ${vp.width}x${vp.height}`);
     for (const code of codes) {
       const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: vp.width === 390 ? 2 : 1, isMobile: true, hasTouch: true, locale: 'es-EC' });
+      // Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale primero el resumen del día)
+      await ctx.addInitScript(() => { window.__ENVIVO_FECHA = '2026-06-10'; });
       const page = await ctx.newPage();
       const errores = [];
       page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
@@ -178,7 +180,7 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
     const errores = [];
     page.on('pageerror', (e) => errores.push(e.message));
     await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
-    await page.addInitScript(() => { try { localStorage.setItem('envivo_lang', 'en'); } catch (e) { /* nada */ } });
+    await page.addInitScript(() => { window.__ENVIVO_FECHA = '2026-06-10'; try { localStorage.setItem('envivo_lang', 'en'); } catch (e) { /* nada */ } });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => window.I18N.listo);
     await page.waitForSelector('#overlay.on');

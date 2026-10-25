@@ -322,6 +322,7 @@
     'res.pago_cliente': 'Pago del cliente',
     'res.sueldos': 'Sueldos del personal',
     'res.ganancia': 'Ganancia',
+    'res.fama_ahora': '{delta} → ahora {n}',
     'res.ver_detalle': 'Ver detalle',
     'res.calidad_inicial': 'Calidad inicial: {n}',
     'res.desgaste': 'El equipo se desgastó un poco y pasó un día.',
