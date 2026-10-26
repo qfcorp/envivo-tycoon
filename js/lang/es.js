@@ -182,6 +182,8 @@
     "danos.reparar_todo": "Reparar todo ({m})",
     "danos.falta": "Te falta {m}",
     "danos.reparado": "Reparado",
+    "bodega.rep_todo_t": "{n} equipos con desgaste",
+    "bodega.rep_todo_det": "Dejarlos todos al 100 % cuesta {m}.",
     "danos.reparados": {"one": "{n} equipo reparado", "other": "{n} equipos reparados"},
     "danos.inicio": {"one": "{n} equipo necesita reparación", "other": "{n} equipos necesitan reparación"},
     "danos.badge": {"one": "{n} equipo para reparar", "other": "{n} equipos para reparar"},

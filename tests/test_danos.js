@@ -251,6 +251,25 @@ function armarPartida(cambios) {
       bien(e3.length === 0, '6: sin errores de JS' + (e3.length ? ': ' + e3.join(' | ') : ''));
       await c3.close();
     }
+    /* ---------- 7. Bodega: "Reparar todo" con el costo total a la vista ---------- */
+    {
+      const R = armarPartida({ money: 5000 });
+      const total = R.s.equip.filter((e) => e.condition < 100).reduce((a, e) => a + R.G.repairCost(e), 0);
+      const { ctx: c4, page: p4, errores: e4 } = await abrir(browser, { partida: R.G.serialize(R.s) });
+      await cerrarVentanas(p4);
+      await p4.click('nav button[data-tab="bodega"]');
+      await p4.waitForSelector('#repTodo');
+      const txt = await p4.textContent('#repTodo');
+      bien(txt.replace(/\D/g, '').includes(String(total)), `7: la Bodega muestra el total para reparar todo (${total})`);
+      const m0 = await p4.evaluate(() => window.__game.state.money);
+      await p4.click('#repTodo [data-act="repair-all-bodega"]');
+      await p4.waitForTimeout(250);
+      const st = await p4.evaluate(() => ({ m: window.__game.state.money, c: window.__game.state.equip.map((e) => e.condition) }));
+      bien(st.c.every((c) => c === 100) && st.m === m0 - total, `7: "Reparar todo" deja todo al 100% y cobra el total (${m0} → ${st.m})`);
+      bien(!(await p4.$('#repTodo')), '7: el botón se va cuando ya no hay nada que reparar');
+      bien(e4.length === 0, '7: sin errores de JS' + (e4.length ? ': ' + e4.join(' | ') : ''));
+      await c4.close();
+    }
   } catch (e) {
     fallas++; console.error('❌ excepción:', e);
   } finally {

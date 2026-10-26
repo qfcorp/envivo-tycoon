@@ -1097,6 +1097,17 @@
     const tot = xs.reduce((a, e) => a + costoRep(e), 0);
     return `<button class="redstrip amberstrip dnstrip" data-act="ir-danos">${I('wrench', 'sm')}<span class="grow">${T('danos.inicio', { n: xs.length })} · ${T('danos.reparar', { m: `<b class="num">${M(tot)}</b>` })}</span><span class="dn-fl" aria-hidden="true">&#8250;</span></button>`;
   }
+  // Bodega: un botón para reparar todo lo que tiene desgaste, con el costo total a la vista
+  const porReparar = () => (S && Array.isArray(S.equip) ? S.equip.filter((e) => reparable(e) && e.condition < 100 && costoRep(e) > 0) : []);
+  function repararTodoBodega() {
+    const xs = porReparar();
+    if (!xs.length || S.gameOver) return '';
+    const tot = xs.reduce((a, e) => a + costoRep(e), 0), falta = tot - S.money;
+    return `<div class="card rep-todo" id="repTodo"><div class="row between" style="gap:8px;align-items:center">
+      <div class="grow" style="min-width:0"><b>${I('wrench', 'sm')} ${T('bodega.rep_todo_t', { n: xs.length })}</b>
+        <div class="small muted">${T('bodega.rep_todo_det', { m: M(tot) })}</div>${falta > 0 ? `<div class="small neg">${T('danos.falta', { m: M(falta) })}</div>` : ''}</div>
+      <button class="btn sm green" data-act="repair-all-bodega" ${falta > 0 ? 'disabled' : ''} style="width:auto">${T('danos.reparar_todo', { m: M(tot) })}</button></div></div>`;
+  }
   // Preparación: aviso en el equipo elegido que puede fallar (se ve solo si está marcado)
   function prepDano(e) {
     if (!enRiesgo(e)) return '';
@@ -1157,6 +1168,7 @@
     $('tab-bodega').innerHTML = `
       <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
       <div class="sectitle" id="tusEquipos">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: S.equip.length, max: maxEq })}</span>` : ''}</div>
+      ${repararTodoBodega()}
       ${mine ? `<div class="ggrid">${mine}</div>` : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
       <p class="small muted">${T('bodega.desgaste')}</p>
       <div class="sectitle" id="tiendaEq">${T('bodega.tienda')}</div>${chips}
@@ -2884,6 +2896,7 @@
       case 'repair': act(G.repair(S, id), 'buy'); break;
       // Equipos dañados (resultado del evento, Inicio y preparación)
       case 'repair-res': act(G.repair(S, id), 'buy'); pintarDanosRes(); break;
+      case 'repair-all-bodega': repararVarios(porReparar().map((x) => x.id)); break;
       case 'repair-all-res': repararVarios((resDanos || []).map((d) => d.id)); pintarDanosRes(); break;
       case 'repair-prep': e.preventDefault(); act(G.repair(S, id), 'buy'); if (prep) renderPrep(); break;
       case 'ir-danos': {
