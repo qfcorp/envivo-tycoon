@@ -46325,9 +46325,9 @@
     return (h >= 24 ? Math.floor(h / 24) + 'd ' + String(h % 24).padStart(2, '0') : String(h).padStart(2, '0')) + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0');
   }
   function tic() {
-    if (!st.el || !st.el.isConnected) { detener(); return; }
-    const c = st.el.querySelector('[data-fest-cuenta]');
-    if (!c) return;
+    // Si la pantalla se volvió a pintar (otro módulo repinta), se busca la cuenta nueva en vez de detenerse
+    const c = (st.el && st.el.isConnected ? st.el : document).querySelector('[data-fest-cuenta]');
+    if (!c) { if (!st.el || !st.el.isConnected) detener(); return; }
     const ms = restante(c.getAttribute('data-fest-cuenta'));
     c.textContent = hms(ms);
     if (ms <= 0 && !st.cargando && !st.ocupado) { st.datos = null; cargar(); }

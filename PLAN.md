@@ -280,3 +280,10 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   - Pruebas: servidor 106/0 y 53 pruebas del juego en verde.
 - 2026-10-26: decisión de Dimitry: bodega al doble (40 → 80 equipos) y personal +50 % (12 → 18 personas). Bot sin cambios (4,5 % quiebras en historia).
 - 2026-10-26: pedido de Dimitry ("no me gusta ir abriendo cada cosa"): **Inicio es la productora por dentro** (`js/hub.js`). El edificio cortado muestra 9 cuartos + antena, letrero y buzón; cada uno se toca y abre lo mismo que abría su fila (Clientes, Personal, Bodega, Registro como pestaña; Logros, Historia, Misiones/premio diario/temporadas, Sala/decoración/visitas, Flota, En línea, Tu sede, Buzón como hoja de abajo). Avisos en cada lugar (ofertas, equipos por reparar, "!" para reclamar, punto de novedades) en vez de "Nuevo". Cambia con el local (garaje → oficina → estudio → centro): fachada, letrero, antena, muebles, vehículo propio, trofeos y la sala de control "en obra" hasta el Estudio. Debajo: qué hacer ahora, el capítulo y pasar el día. Un módulo nuevo elige su lugar con `{ hub: '<lugar>' }`; si no, va a "Más". Prueba `tests/test_sede_hub.js`.
+- 2026-10-26: unidos en main (todo en verde: servidor 106/0 y las 56 pruebas del juego):
+  - Varios eventos por día con gastos prorrateados.
+  - Inicio nuevo: la productora por dentro (js/hub.js).
+  - Cámara VIP y combos de compra: lo que falta se ofrece en combo y en la preparación; el equipo VIP funciona solo con el Pase VIP activo, y la preparación lo explica.
+  - Pruebas del servidor con reloj fijo.
+  - La cuenta regresiva del Festival ya no se detiene cuando la pantalla se repinta.
+- PREGUNTA ABIERTA para Dimitry: el equipo VIP comprado con diamantes funciona solo mientras el Pase VIP de 30 días está activo. ¿Se queda así o debe funcionar siempre?
