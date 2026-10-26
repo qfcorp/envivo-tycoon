@@ -20,6 +20,7 @@ file_put_contents($TMP . '/config.env', "; SOLO PRUEBAS\nENVIVO_DB=$TMP/datos/en
 putenv('ENVIVO_CONFIG=' . $TMP . '/config.env');
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 require dirname(__DIR__) . '/src/arranque.php';
+require_once __DIR__ . '/reloj_prueba.php';
 
 use EnVivo\{Copas, Db, Fallo, Migraciones, Monedero, Social};
 
@@ -48,6 +49,9 @@ foreach ([2 => 'Servidor 2 · Guayaquil', 3 => 'Servidor 3 · Cuenca'] as $id =>
     Db::q('INSERT OR IGNORE INTO servidores (id, nombre, capacidad, abierto, creado) VALUES (?, ?, 1000, 1, ?)', [$id, $nom, time()]);
 }
 if (isset($cols['universo_id'])) Db::q('UPDATE servidores SET universo_id = (SELECT MIN(id) FROM universos) WHERE id IN (1, 2, 3)');
+// Creados con el reloj de verdad: se dejan creados antes de la simulación (lunes 2026-10-26) para que la edad del servidor
+// (EdadServidor: la copa abre el día 7) no dependa del día en que se corre la prueba
+Db::q('UPDATE servidores SET creado = ? WHERE id IN (1, 2, 3)', [$en('2026-09-01 00:00:00')]);
 $U = Copas::universos();
 check('Un universo con los servidores 1, 2 y 3' . (isset($cols['universo_id']) ? ' (tabla universos)' : ' (sin Universos.php: todos en el 1)'), [1, [1, 2, 3]], [count($U), $U[0]['servidores']]);
 
@@ -456,8 +460,12 @@ check('…y la tarea después no entrega nada más', $n, (int) Db::valor("SELECT
 
 // =====================================================================
 titulo('Tarea programada (server/bin/copas.php) y rutas por HTTP (copia de api.php + la línea de INTEGRAR_COPAS.md)');
-Copas::$reloj = null; Copas::$motor = null; Copas::$validador = null;
-$sal = []; exec('ENVIVO_CONFIG=' . escapeshellarg($TMP . '/config.env') . ' php ' . escapeshellarg(dirname(__DIR__) . '/bin/copas.php') . ' 2>&1', $sal, $cod);
+// Reloj congelado también en la tarea y en "php -S" (server/tests/reloj_prueba.php): martes de la semana siguiente a la
+// última de la simulación (con el reloj de verdad, la copa de hoy podía ser una que la simulación ya jugó y cerró)
+$FIJO = $en('2026-11-17 10:00:00');
+$reloj($FIJO); Copas::$motor = null; Copas::$validador = null;
+$PREP = ['-d', 'auto_prepend_file=' . __DIR__ . '/reloj_prueba.php'];
+$sal = []; exec('ENVIVO_CONFIG=' . escapeshellarg($TMP . '/config.env') . ' ENVIVO_PRUEBA_AHORA=' . $FIJO . ' php ' . implode(' ', array_map('escapeshellarg', $PREP)) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/copas.php') . ' 2>&1', $sal, $cod);
 check('php server/bin/copas.php termina bien', [0, true], [$cod, str_contains(implode("\n", $sal), 'copas OK')]);
 $api = (string) file_get_contents(dirname(__DIR__) . '/public/api.php');
 $linea = "    if (\\EnVivo\\CopasApi::esRuta(\$ruta)) \\EnVivo\\CopasApi::responder(\$ruta, \$metodo, requiere_sesion());\n";
@@ -466,12 +474,12 @@ if (!str_contains($api, 'CopasApi::')) {
     check('api.php tiene el punto donde va la línea (después de LigaApi)', true, str_contains($api, $ancla));
     $api = str_replace($ancla, $linea . $ancla, $api);
 }
-$api = str_replace("require dirname(__DIR__) . '/src/arranque.php';", 'require ' . var_export(dirname(__DIR__) . '/src/arranque.php', true) . ';', $api);
+$api = str_replace("require dirname(__DIR__) . '/src/arranque.php';", 'require ' . var_export(dirname(__DIR__) . '/src/arranque.php', true) . '; require ' . var_export(__DIR__ . '/reloj_prueba.php', true) . ';', $api);
 file_put_contents($TMP . '/api.php', $api);
 $puerto = (int) (getenv('P_APP') ?: 8900 + random_int(0, 500));
 $log = $TMP . '/http.log';
 $srv = proc_open(['php', '-d', 'error_log=' . $TMP . '/php_errores.log', '-d', 'log_errors=1', '-S', '127.0.0.1:' . $puerto, $TMP . '/api.php'],
-    [0 => ['file', '/dev/null', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $tub, null, ['ENVIVO_CONFIG' => $TMP . '/config.env', 'PATH' => getenv('PATH')]);
+    [0 => ['file', '/dev/null', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $tub, null, ['ENVIVO_CONFIG' => $TMP . '/config.env', 'ENVIVO_PRUEBA_AHORA' => (string) $FIJO, 'PATH' => getenv('PATH')] + envReloj());
 for ($k = 0; $k < 50; $k++) { if (@fsockopen('127.0.0.1', $puerto)) break; usleep(100000); }
 $sesion = function (int $j): string { $tok = bin2hex(random_bytes(32)); Db::q('INSERT INTO sesiones (token_hash, jugador_id, creado, expira) VALUES (?, ?, ?, ?)', [hash('sha256', $tok), $j, time(), time() + 3600]); return $tok; };
 $http = function (string $metodo, string $ruta, ?array $cuerpo = null, ?string $tok = null, bool $cabecera = true) use ($puerto): array {
@@ -485,8 +493,8 @@ $http = function (string $metodo, string $ruta, ?array $cuerpo = null, ?string $
 };
 $J = $nuevoJugador('Productora HTTP', 2);
 $tok = $sesion($J);
-$prepAhora = Copas::fase(time()) === 'preparacion';
-if (!$prepAhora) echo "  AVISO: hoy no es semana de preparación (fin de semana): equipo e intento deben responder 409 fase\n";
+$prepAhora = Copas::fase($FIJO) === 'preparacion';
+check('El reloj congelado de las rutas cae en preparación (martes)', true, $prepAhora);
 $cod = fn(array $r) => [$r[0], is_string($r[1]['codigo'] ?? null) && $r[1]['codigo'] !== '', ($r[1]['ok'] ?? null)];
 check('GET /api/copa sin sesión -> 401 con codigo', [401, true, false], $cod($http('GET', '/api/copa')));
 check('POST /api/copa/intento/enviar sin sesión -> 401 con codigo', [401, true, false], $cod($http('POST', '/api/copa/intento/enviar', ['intento_id' => 1, 'decisiones' => []])));

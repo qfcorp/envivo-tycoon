@@ -17,6 +17,7 @@ file_put_contents($TMP . '/config.env', "; SOLO PRUEBAS\nENVIVO_DB=$TMP/datos/en
 putenv('ENVIVO_CONFIG=' . $TMP . '/config.env');
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 require dirname(__DIR__) . '/src/arranque.php';
+require_once __DIR__ . '/reloj_prueba.php';
 
 use EnVivo\{Db, Fallo, Liga, Monedero, Social};
 
@@ -62,6 +63,12 @@ $P4b = $nuevoJugador('Socio Prov'); Social::unirse($P4b, $ASOC[4]);
 $LIBRE = $nuevoJugador('Sin Asociacion');
 // Ligas de arranque: 0-3 Nacional, 4-7 Provincial, 8-16 Barrial
 foreach ($ASOC as $i => $a) Db::q('INSERT INTO liga_asociaciones (asociacion_id, liga, desde, mejor_liga, semanas) VALUES (?, ?, ?, ?, 0)', [$a, $i < 4 ? 2 : ($i < 8 ? 1 : 0), time(), $i < 4 ? 2 : ($i < 8 ? 1 : 0)]);
+// Las asociaciones (y sus miembros) se crearon con el reloj de verdad: se dejan creadas una semana antes de la simulación
+// (lunes 2026-10-26) para que "nueva" (menos de 14 días) no dependa del día en que se corre la prueba
+$CREADAS = $lunes('2026-10-19');
+Db::q('UPDATE asociaciones SET creado = ?', [$CREADAS]);
+Db::q('UPDATE asociacion_miembros SET desde = ?', [$CREADAS]);
+Db::q('UPDATE liga_asociaciones SET desde = ?', [$CREADAS]);
 
 $EQUIPO = ['staff' => [['role' => 'cam', 'skill' => 3, 'owner' => true, 'name' => 'Tú'], ['role' => 'dir', 'skill' => 4, 'tier' => 'senior'], ['role' => 'audio', 'skill' => 2], ['role' => 'stream', 'skill' => 2], ['role' => 'cam', 'skill' => 2]],
            'equip' => array_merge(array_fill(0, 2, ['type' => 'cam_pro', 'condition' => 90]), array_fill(0, 4, ['type' => 'cam_basic', 'condition' => 90]),
@@ -455,14 +462,18 @@ if ($VALIDADOR_OK) {
 
 // =====================================================================
 titulo('Tarea programada (server/bin/liga.php) y rutas por HTTP');
-Liga::fijarReloj(null);
-$sal = []; exec('ENVIVO_CONFIG=' . escapeshellarg($TMP . '/config.env') . ' php ' . escapeshellarg(dirname(__DIR__) . '/bin/liga.php') . ' 2>&1', $sal, $cod);
+// Reloj congelado también en la tarea y en "php -S" (server/tests/reloj_prueba.php): martes de la semana 3, la última de la
+// simulación (con el reloj de verdad, la semana de hoy podía ser una que la simulación ya cerró)
+$FIJO = $W3 + 34 * 3600;
+Liga::fijarReloj($FIJO);
+$PREP = ['-d', 'auto_prepend_file=' . __DIR__ . '/reloj_prueba.php'];
+$sal = []; exec('ENVIVO_CONFIG=' . escapeshellarg($TMP . '/config.env') . ' ENVIVO_PRUEBA_AHORA=' . $FIJO . ' php ' . implode(' ', array_map('escapeshellarg', $PREP)) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/liga.php') . ' 2>&1', $sal, $cod);
 check('php server/bin/liga.php termina bien', [0, true], [$cod, str_contains(implode("\n", $sal), 'liga OK')]);
 
 $puerto = 8300 + random_int(0, 500);
 $log = $TMP . '/http.log';
-$srv = proc_open(['php', '-d', 'error_log=' . $TMP . '/php_errores.log', '-d', 'log_errors=1', '-S', '127.0.0.1:' . $puerto, __DIR__ . '/router_liga.php'],
-    [0 => ['file', '/dev/null', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $tub, null, ['ENVIVO_CONFIG' => $TMP . '/config.env', 'PATH' => getenv('PATH')]);
+$srv = proc_open(array_merge(['php', '-d', 'error_log=' . $TMP . '/php_errores.log', '-d', 'log_errors=1'], $PREP, ['-S', '127.0.0.1:' . $puerto, __DIR__ . '/router_liga.php']),
+    [0 => ['file', '/dev/null', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $tub, null, ['ENVIVO_CONFIG' => $TMP . '/config.env', 'ENVIVO_PRUEBA_AHORA' => (string) $FIJO, 'PATH' => getenv('PATH')] + envReloj());
 for ($k = 0; $k < 50; $k++) { if (@fsockopen('127.0.0.1', $puerto)) break; usleep(100000); }
 $sesion = function (int $j): string { $tok = bin2hex(random_bytes(32)); Db::q('INSERT INTO sesiones (token_hash, jugador_id, creado, expira) VALUES (?, ?, ?, ?)', [hash('sha256', $tok), $j, time(), time() + 3600]); return $tok; };
 $http = function (string $metodo, string $ruta, ?array $cuerpo = null, ?string $tok = null, bool $cabecera = true) use ($puerto): array {
