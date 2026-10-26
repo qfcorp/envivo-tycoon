@@ -139,6 +139,92 @@ check('estado(): reclamados por periodo (para otro celular)', [true, true, true]
 check('estado(): misiones de hoy y de la semana', [Misiones::elegir('d', '2026-10-23'), Misiones::elegir('s', '2026-10-19'), '2026-10-23', '2026-10-19'], [$e['dia'], $e['semana'], $e['hoy'], $e['lunes']]);
 
 // =====================================================================
+titulo('Premios por constancia: cofre semanal (5 de 7 días) y premio de la semana');
+$activar = function (int $j, string $desde, int $n) use ($t): void {
+    for ($k = 0; $k < $n; $k++) { $f = date('Y-m-d', $t($desde . ' 12:00') + 86400 * $k); Misiones::fijarReloj($t($f . ' 10:00:00')); Misiones::reclamar($j, 'd:' . $f, 'cofre60'); }
+};
+$sec = array_map(fn($l) => Misiones::premioSemana($l), ['2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29']);
+check('Premio de la semana: rota cada lunes (obra → estrella → vip → ...) y vuelve a empezar', [['estrella', 'vip', 'obra', 'estrella'], true],
+    [$sec, $sec[0] === $sec[3]]);
+$rot = []; foreach (['2026-06-08', '2026-06-15', '2026-06-22'] as $l) $rot[] = Misiones::premioSemana($l);
+check('Las 3 semanas seguidas traen los 3 premios distintos', 3, count(array_unique($rot)));
+check('Equipo exclusivo del mes: rota y todos existen en el catálogo', [true, 6], [array_reduce(Misiones::EXCLUSIVOS_MES, fn($a, $x) => $a && \EnVivo\Catalogo::esEquipo($x), true),
+    count(array_unique(array_map(fn($m) => Misiones::exclusivoMes(sprintf('2026-%02d', $m)), range(1, 6))))]);
+$F = $nuevo('Fede Constante');
+Misiones::fijarReloj($t('2026-06-10 10:00:00'));   // miércoles; lunes 2026-06-08
+check('Sin días activos: constancia -> 409 no_disponible (0 de 5)', [409, 'no_disponible'], falla(fn() => Misiones::reclamar($F, 's:2026-06-08', 'constancia')));
+check('"constancia" no es del día ni "mes7" de la semana (404)', [[404, 'mision_invalida'], [404, 'mision_invalida']],
+    [falla(fn() => Misiones::reclamar($F, 'd:2026-06-10', 'constancia')), falla(fn() => Misiones::reclamar($F, 's:2026-06-08', 'mes7'))]);
+$activar($F, '2026-06-08', 4);
+check('4 días activos: todavía no', [409, 'no_disponible'], falla(fn() => Misiones::reclamar($F, 's:2026-06-08', 'constancia')));
+check('estado(): 4 de 5 días activos en la semana', [4, 5, 'estrella'], (fn($c) => [$c['semana']['activos'], $c['semana']['meta'], $c['semana']['premio']])(Misiones::estado($F)['constancia']));
+Misiones::fijarReloj($t('2026-06-11 18:00:00'));
+check('Abrir el cofre 20 no cuenta como día activo', [409, 'no_disponible'], (function () use ($F) { Misiones::reclamar($F, 'd:2026-06-12', 'cofre20'); return falla(fn() => Misiones::reclamar($F, 's:2026-06-08', 'constancia')); })());
+$activar($F, '2026-06-12', 1);
+$antes = Monedero::saldo($F);
+$r = Misiones::reclamar($F, 's:2026-06-08', 'constancia');
+check('5 días: cofre de constancia con 25 créditos, materiales y premio "estrella"', [25, 25, 4, 'estrella', true],
+    [$r['creditos_dados'], Monedero::saldo($F) - $antes, count($r['entregas']), $r['extra']['tipo'] ?? null, $r['extra']['dado'] ?? null]);
+check('Semana "estrella": contrato de regalo de 2 partidos (la estrella de la semana)', [2, 'regalo', 1],
+    [(int) Db::valor('SELECT partidos FROM estrellas_contratos WHERE jugador_id = ?', [$F]), (string) Db::valor('SELECT origen FROM estrellas_contratos WHERE jugador_id = ?', [$F]), (int) Db::valor('SELECT COUNT(*) FROM estrellas_contratos WHERE jugador_id = ?', [$F])]);
+check('Constancia otra vez -> 409 ya_reclamado', [409, 'ya_reclamado'], falla(fn() => Misiones::reclamar($F, 's:2026-06-08', 'constancia')));
+check('Constancia no da XP del pase', 0, $r['xp_pase']);
+check('El cofre de constancia no gasta el tope del día: cofre100 de hoy da sus 5', 5, Misiones::reclamar($F, 'd:2026-06-12', 'cofre100')['creditos_dados']);
+// VIP y obra
+$V = $nuevo('Vale Vip');
+$activar($V, '2026-06-15', 5);
+$r = Misiones::reclamar($V, 's:2026-06-15', 'constancia');
+$hasta = (int) Db::valor('SELECT vip_hasta FROM jugadores WHERE id = ?', [$V]);
+check('Semana "vip": prueba del Pase VIP de 1 día (vip_hasta ≈ ahora + 24 h)', ['vip', true, true], [$r['extra']['tipo'], $r['extra']['dado'], abs($hasta - (time() + 86400)) < 120]);
+$O = $nuevo('Oscar Obra');
+$activar($O, '2026-06-22', 5);
+$r = Misiones::reclamar($O, 's:2026-06-22', 'constancia');
+check('Semana "obra": equipo de obra extra 24 h (impulsos_obra_alquiler, origen premio)', ['obra', true, 1, 86400],
+    array_merge([$r['extra']['tipo'], $r['extra']['dado']], (fn($f) => [$f ? 1 : 0, $f ? (int) $f['fin'] - (int) $f['inicio'] : 0])(Db::fila("SELECT * FROM impulsos_obra_alquiler WHERE jugador_id = ? AND origen = 'premio' AND ref = ?", [$O, 'misiones:s:2026-06-22:constancia']))));
+// Tope semanal
+Ajustes::set('misiones_creditos_semana', '20');
+$W = $nuevo('Wil Tope');
+$activar($W, '2026-06-08', 5);   // 5 cofres de 60 = 15 créditos
+$r = Misiones::reclamar($W, 's:2026-06-08', 'constancia');
+check('Tope semanal 20: la constancia da solo 5 (y avisa)', [5, true, 20, 20], [$r['creditos_dados'], $r['tope_alcanzado'], $r['creditos_semana'], $r['creditos_semana_tope']]);
+check('Tope semanal: un cofre del día ya no da créditos esa semana', 0, Misiones::reclamar($W, 'd:2026-06-12', 'cofre100')['creditos_dados']);
+Ajustes::set('misiones_creditos_semana', '');
+check('Tope semanal por defecto 120', 120, Misiones::topeCreditosSemana());
+
+// =====================================================================
+titulo('Ruta del mes: 7, 14 y 21 días activos (el de 21 trae un exclusivo permanente)');
+$M = $nuevo('Mila Mes');
+$activar($M, '2026-06-01', 6);
+check('6 días: mes7 -> 409 no_disponible', [409, 'no_disponible'], falla(fn() => Misiones::reclamar($M, 'm:2026-06', 'mes7')));
+$activar($M, '2026-06-07', 1);
+$antes = Monedero::saldo($M);
+$r = Misiones::reclamar($M, 'm:2026-06', 'mes7');
+check('7 días: mes7 con 20 créditos y 2 entregas de materiales', [20, 20, 2], [$r['creditos_dados'], Monedero::saldo($M) - $antes, count($r['entregas'])]);
+check('mes14 todavía no; hito que no existe (mes10) -> 404', [[409, 'no_disponible'], [404, 'mision_invalida']], [falla(fn() => Misiones::reclamar($M, 'm:2026-06', 'mes14')), falla(fn() => Misiones::reclamar($M, 'm:2026-06', 'mes10'))]);
+$activar($M, '2026-06-08', 7);
+check('14 días: mes14 con 30 créditos', 30, Misiones::reclamar($M, 'm:2026-06', 'mes14')['creditos_dados']);
+$activar($M, '2026-06-15', 6);
+check('20 días: mes21 todavía no', [409, 'no_disponible'], falla(fn() => Misiones::reclamar($M, 'm:2026-06', 'mes21')));
+$activar($M, '2026-06-21', 1);
+$r = Misiones::reclamar($M, 'm:2026-06', 'mes21');
+$ex = Misiones::exclusivoMes('2026-06');
+check('21 días: el exclusivo del mes al inventario (origen misiones), sin créditos', [$ex, 'misiones', 1, 0, 'exclusivo'],
+    [$r['equipos'][0]['item'] ?? null, (string) Db::valor('SELECT origen FROM inventario WHERE jugador_id = ?', [$M]), (int) Db::valor('SELECT COUNT(*) FROM inventario WHERE jugador_id = ?', [$M]), $r['creditos_dados'], $r['extra']['tipo'] ?? null]);
+check('mes21 otra vez -> 409 (un solo exclusivo por mes)', [409, 'ya_reclamado'], falla(fn() => Misiones::reclamar($M, 'm:2026-06', 'mes21')));
+Misiones::fijarReloj($t('2026-06-30 10:00:00'));
+$e = Misiones::estado($M);
+check('estado() el 30: el mes sigue con lo reclamado (más de 16 días) y 21 días activos', [true, 21, $ex, true],
+    [in_array('mes7', $e['reclamados']->{'m:2026-06'} ?? [], true), $e['constancia']['mes']['activos'], $e['constancia']['mes']['exclusivo'], in_array('2026-06-21', $e['constancia']['dias'], true)]);
+check('Periodos del mes: el anterior vence; el 1 todavía vale (±1 día); formato malo -> 400', [[409, 'misiones_vencidas'], ['m', '2026-06'], [400, 'periodo_invalido']],
+    [falla(fn() => Misiones::periodo('m:2026-05')), (function () use ($t) { Misiones::fijarReloj($t('2026-07-01 08:00:00')); return Misiones::periodo('m:2026-06'); })(), falla(fn() => Misiones::periodo('m:2026-13'))]);
+// Una semana entera de un F2P constante: créditos por debajo del tope semanal
+$K = $nuevo('Kike Constante');
+$c0 = Monedero::saldo($K);
+for ($k = 0; $k < 7; $k++) { $f = date('Y-m-d', $t('2026-06-08 12:00') + 86400 * $k); Misiones::fijarReloj($t($f . ' 10:00:00')); Misiones::reclamar($K, 'd:' . $f, 'cofre60'); Misiones::reclamar($K, 'd:' . $f, 'cofre100'); }
+Misiones::reclamar($K, 's:2026-06-08', 'constancia');
+check('Semana completa de un F2P: 7 × 8 + 25 = 81 créditos (debajo del tope 120)', 81, Monedero::saldo($K) - $c0);
+
+// =====================================================================
 titulo('Rutas por HTTP (php -S con server/public/api.php)');
 Misiones::fijarReloj(null); Pase::fijarReloj(null);
 $api = (string) file_get_contents(dirname(__DIR__) . '/public/api.php');
@@ -173,6 +259,9 @@ check('GET /api/estado sigue igual', [200, true], (function () use ($http) { [$c
 check('GET /api/misiones sin sesión -> 401 sesion_requerida', [401, 'sesion_requerida'], (function () use ($http) { [$c, $j] = $http('GET', '/api/misiones'); return [$c, $j['codigo'] ?? null]; })());
 [$c, $j] = $http('GET', '/api/misiones', null, $tok);
 check('GET /api/misiones -> 200 con hoy, misiones y tope', [200, $hoy, 5, 5, 10], [$c, $j['hoy'] ?? null, count($j['dia'] ?? []), count($j['semana'] ?? []), $j['creditos_tope'] ?? null]);
+check('GET /api/misiones trae los premios por constancia y el tope semanal', [0, 5, 120, true],
+    [$j['constancia']['semana']['activos'] ?? null, $j['constancia']['semana']['meta'] ?? null, $j['creditos_semana_tope'] ?? null, isset($j['constancia']['mes']['exclusivo'])]);
+check('POST constancia sin días -> 409 no_disponible', [409, 'no_disponible'], (function () use ($http, $tok, $hoy) { [$c, $j] = $http('POST', '/api/misiones/reclamar', ['periodo' => 's:' . \EnVivo\Misiones::lunes($hoy), 'clave' => 'constancia'], $tok); return [$c, $j['codigo'] ?? null]; })());
 check('POST sin X-Envivo -> 403', 403, $http('POST', '/api/misiones/reclamar', ['periodo' => 'd:' . $hoy, 'clave' => 'eventos'], $tok, false)[0]);
 [$c, $j] = $http('POST', '/api/misiones/reclamar', ['periodo' => 'd:' . $hoy, 'clave' => 'cofre60'], $tok);
 check('POST /api/misiones/reclamar cofre60 -> 200, 3 créditos, saldo 3', [200, 3, 3], [$c, $j['creditos_dados'] ?? null, $j['creditos'] ?? null]);
