@@ -3,6 +3,7 @@
 // server/INTEGRAR_LIGA.md (misma revisión de X-Envivo, misma sesión, mismo LigaApi::responder y mismos errores).
 // Uso: ENVIVO_CONFIG=... php -S 127.0.0.1:PUERTO server/tests/router_liga.php
 require dirname(__DIR__) . '/src/arranque.php';
+require __DIR__ . '/reloj_prueba.php';   // ENVIVO_PRUEBA_AHORA: reloj congelado de la prueba ("php -S" no corre auto_prepend_file en el enrutador)
 
 use EnVivo\{Db, Fallo, Http, LigaApi, Sesiones};
 

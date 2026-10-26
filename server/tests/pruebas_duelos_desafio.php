@@ -49,9 +49,10 @@ if (preg_match("#^/api/(duelos|desafio)(/|$)#", $ruta)) {
 }
 return require ' . var_export($RAIZ . '/server/tests/router.php', true) . ';');
 
+require_once __DIR__ . '/reloj_prueba.php';   // envReloj(): faketime también para los "php -S" de la prueba
 $procs = [];
 $arrancar = function (array $cmd, array $env, string $log) use (&$procs) {
-    $p = proc_open($cmd, [0 => ['file', '/dev/null', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $t, null, $env + ['PATH' => getenv('PATH')]);
+    $p = proc_open($cmd, [0 => ['file', '/dev/null', 'r'], 1 => ['file', $log, 'a'], 2 => ['file', $log, 'a']], $t, null, $env + ['PATH' => getenv('PATH')] + envReloj());
     $procs[] = $p;
     return $p;
 };
@@ -465,7 +466,8 @@ Db::q('UPDATE desafio_intentos SET vence = ? WHERE id = ?', [time() - 1, $rc['in
 $r = $C->post('/api/desafio/terminar', ['intento_id' => $rc['intento_id'], 'decisiones' => [0]]);
 check('Intento vencido -> 410', [410, 'vencido'], [$C->http, $r['codigo'] ?? null]);
 [$F, $JF] = $jugador('Productora Épsilon', 30);
-$rf = $F->post('/api/desafio/empezar', ['personal' => ['p1'], 'equipos' => ['e2', 'e3', 'e13', 'e15', 'e9']]);
+// 2 cámaras, salvo el martes ("Una sola cámara", máximo 1): la elección no puede depender del día en que se corre la prueba
+$rf = $F->post('/api/desafio/empezar', ['personal' => ['p1'], 'equipos' => $mod['max_camaras'] >= 2 ? ['e2', 'e3', 'e13', 'e15', 'e9'] : ['e2', 'e13', 'e15', 'e9']]);
 if ($F->http !== 200) echo '  (Épsilon no pudo empezar: ' . json_encode($rf, JSON_UNESCAPED_UNICODE) . ")\n";
 $jF = $jugar($rf['intento']);
 $tf = $F->post('/api/desafio/terminar', ['intento_id' => $rf['intento_id'], 'decisiones' => $jF['decisiones'], 'resultado' => $jF['resultado']]);
@@ -507,7 +509,11 @@ check('Día con 1 participante: sin premios de ranking (mínimo 3)', 0, (int) Db
 check('Bloque para /api/estado', ['dia', 'modificador', 'nombre', 'icono', 'restantes', 'jugado_hoy', 'pases_prensa'], array_keys(Desafio::estado($JA)));
 
 titulo('Desafío: los 7 modificadores traen lo que prometen');
-foreach (['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'] as $dd) {
+// Una semana fija del pasado (lunes a domingo): ni hoy ni ayer pueden caer en ella. Antes era 2026-10-19..25 y, al correr
+// la prueba un lunes 2026-10-26, la fila de "ayer" (2026-10-25) era la de hoy movida por la prueba del cierre del día
+// (contrato del lunes con fecha de domingo) y el domingo "Todo junto" no encontraba sus 3 imprevistos.
+foreach (['2025-06-02', '2025-06-03', '2025-06-04', '2025-06-05', '2025-06-06', '2025-06-07', '2025-06-08'] as $k => $dd) {
+    check('Semana fija: ' . $dd . ' es ' . Desafio::DIAS[$k + 1] . ' y no es hoy ni ayer', [$k + 1, false], [Desafio::modificadorDe($dd)['n'], in_array($dd, [$hoy, $ayer], true)]);
     $m = Desafio::modificadorDe($dd);
     $a = Desafio::armar(Desafio::dia($dd), $eleccion($m));
     $s = Repeticion::motor(['accion' => 'semilla', 'intento' => $a['intento'], 'semilla_base' => (int) Desafio::dia($dd)['semilla_base'], 'requeridos' => $m['requeridos'], 'max' => Desafio::BUSQUEDA_MAX]);
