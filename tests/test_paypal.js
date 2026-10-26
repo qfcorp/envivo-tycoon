@@ -35,7 +35,7 @@ const PRODUCTOS = [
   prod('bienvenida', 'Oferta de bienvenida', 'Una sola vez: 150 créditos, un camarógrafo senior de refuerzo por 3 eventos y 3 cables', 0.99, 150, 'bienvenida', { una_vez: true }),
   prod('inicio', 'Paquete de inicio', 'Una sola vez: cámara profesional, 5 cables, 3 baterías, técnico de streaming nivel 3 y 200 créditos', 2.99, 200, 'inicio', { una_vez: true }),
   prod('tarjeta_mensual', 'Tarjeta mensual', '30 días: reclama 20 créditos cada día (600 en total). No se renueva sola; si compras otra se suman 30 días', 4.99, 0, 'tarjeta'),
-  prod('vip30', 'Pase VIP 30 días', 'No se renueva solo: bono diario de $150 + 10 créditos, reparaciones 30 % más baratas, 1 oferta extra al día, distintivo VIP', 9.99, 0, 'vip'),
+  prod('vip30', 'Pase VIP 30 días', 'No se renueva solo. Según tu nivel VIP: 4 o 5 eventos por día, reparaciones 30 a 50 % más baratas, obras de la sede 10 a 30 % más rápidas, bono diario (dinero, créditos, cables y baterías), 1 oferta extra al día y distintivo VIP. Lo que compras con créditos funciona siempre, con o sin el Pase', 9.99, 0, 'vip'),
 ];
 const PLAY = { creditos_250: '2.49', creditos_700: '5.99', creditos_1500: '11.99', creditos_3200: '23.99', inicio: '3.49', bienvenida: '1.29', vip30: '11.99', tarjeta_mensual: '5.99' };
 

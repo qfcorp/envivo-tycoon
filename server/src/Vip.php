@@ -202,6 +202,69 @@ final class Vip
         return count(array_filter(self::NIVELES_INTENTO, fn($x) => $n >= $x));
     }
 
+    // ------------------------------------------------------------------ ventajas del Pase VIP (30 días) por nivel
+    /**
+     * Lo que da el Pase VIP de 30 días mientras está activo, según el nivel VIP (decisión de Dimitry, oct. 2026): los equipos
+     * comprados con créditos (también los VIP) funcionan SIEMPRE; el Pase da comodidad, no poder en la competencia.
+     * Filas "desde nivel" (con el Pase activo y nivel 0 cuenta como VIP 1):
+     *  turnos: eventos por día en el modo historia (base 3; solo el juego, nunca en línea).
+     *  descuento: reparaciones más baratas (modo historia). obra: obras de la Sede oficial más cortas (servidor, al empezarlas).
+     *  bono: bono diario (POST /api/vip/bono): dinero del juego, créditos, cables, baterías y "todo tu equipo al 100 %".
+     * La MISMA tabla está en js/premium.js (Premium.PASE_VIP): tests/pruebas_vip.php revisa que sean iguales.
+     */
+    public const PASE = [
+        1 => ['turnos' => 4, 'descuento' => 30, 'obra' => 10, 'bono' => ['dinero' => 150, 'creditos' => 10, 'cable' => 1, 'battery' => 0, 'reparar' => false]],
+        3 => ['turnos' => 4, 'descuento' => 35, 'obra' => 15, 'bono' => ['dinero' => 250, 'creditos' => 10, 'cable' => 2, 'battery' => 1, 'reparar' => false]],
+        5 => ['turnos' => 5, 'descuento' => 40, 'obra' => 20, 'bono' => ['dinero' => 400, 'creditos' => 15, 'cable' => 2, 'battery' => 2, 'reparar' => false]],
+        7 => ['turnos' => 5, 'descuento' => 45, 'obra' => 25, 'bono' => ['dinero' => 600, 'creditos' => 15, 'cable' => 3, 'battery' => 3, 'reparar' => false]],
+        9 => ['turnos' => 5, 'descuento' => 50, 'obra' => 30, 'bono' => ['dinero' => 800, 'creditos' => 20, 'cable' => 4, 'battery' => 4, 'reparar' => true]],
+    ];
+
+    /** Ventajas del Pase VIP para un nivel VIP (0 cuenta como 1). */
+    public static function pase(int $nivel): array
+    {
+        $n = max(1, min(self::MAX, $nivel));
+        $o = self::PASE[1];
+        foreach (self::PASE as $desde => $f) if ($n >= $desde) $o = $f;
+        return $o + ['nivel' => $n];
+    }
+
+    /** Ventajas del Pase VIP de este jugador, o null si no tiene el Pase activo. */
+    public static function paseDe(int $jugador): ?array
+    {
+        if (!Monedero::vipActivo($jugador)) return null;
+        $n = 0;
+        try { $n = self::nivel($jugador); } catch (\Throwable) { $n = 0; }
+        return self::pase($n);
+    }
+
+    /** Duración de una obra de la Sede oficial con el Pase VIP (más corta según el nivel; sin Pase, igual). Mínimo 1 minuto. */
+    public static function segundosObra(int $jugador, int $seg): int
+    {
+        try { $p = self::paseDe($jugador); } catch (\Throwable) { $p = null; }
+        if ($p === null || $seg <= 0) return $seg;
+        return max(60, (int) (round($seg * (100 - $p['obra']) / 100 / 60) * 60));
+    }
+
+    /** Entregas del bono diario del Pase VIP para un nivel (dinero, cables, baterías, reparar todo). Los créditos van aparte. */
+    public static function entregasBono(int $nivel): array
+    {
+        $b = self::pase($nivel)['bono'];
+        $o = [['tipo' => 'dinero', 'item' => '-', 'cantidad' => $b['dinero']]];
+        if ($b['cable'] > 0) $o[] = ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => $b['cable']];
+        if ($b['battery'] > 0) $o[] = ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => $b['battery']];
+        if ($b['reparar']) $o[] = ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1];
+        return $o;
+    }
+
+    /** Tabla del Pase VIP por nivel (la que ve el jugador en la Tienda). */
+    public static function tablaPase(): array
+    {
+        $o = [];
+        foreach (self::PASE as $desde => $f) $o[] = ['desde' => $desde] + $f;
+        return $o;
+    }
+
     /** Espacios de obra a la vez en la Sede oficial: 2 desde VIP 4, si no 1. */
     public static function slotsObra(int $jugador): int { return self::nivel($jugador) >= self::NIVEL_SLOT_OBRA ? 2 : 1; }
 
@@ -429,6 +492,6 @@ final class Vip
                 'intentos_extra' => count(array_filter(self::NIVELES_INTENTO, fn($x) => $nivel >= $x)), 'slots_obra' => $nivel >= self::NIVEL_SLOT_OBRA ? 2 : 1,
                 'niveles' => self::tabla(), 'mensual' => self::mensual($jugador, $nivel), 'regalos' => Regalos::pendientes($jugador),
                 'regalos_tope_dia' => Regalos::topeDia(), 'ofertas' => self::ofertas($jugador), 'ajustes' => self::preferencias($jugador),
-                'pase_vip_activo' => Monedero::vipActivo($jugador)];
+                'pase_vip_activo' => Monedero::vipActivo($jugador), 'pase_vip' => self::pase($nivel), 'pase_vip_tabla' => self::tablaPase()];
     }
 }

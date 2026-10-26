@@ -30,7 +30,7 @@
     regalo_de: 'Regalo de {a}', regalo_anonimo: 'Regalo de una productora anónima', regalo_tuyo: 'Tu regalo para la asociación',
     abrir: 'Abrir', abriendo: 'Abriendo…', mas_regalos: '+{n} regalos más', vence: 'Vence el {f}',
     mensual_listo: 'Tu regalo VIP del mes está listo', reclamar: 'Reclamar', oferta_nueva: 'Oferta para ti: {o}',
-    'modal.titulo': 'Nivel VIP', 'modal.pase': 'El Pase VIP de 30 días es aparte. Tu nivel VIP es para siempre.',
+    'modal.titulo': 'Nivel VIP', 'modal.pase': 'El Pase VIP de 30 días es aparte y da más según tu nivel VIP. Tu nivel VIP es para siempre.',
     'modal.puntos': '$1 en la tienda = 10 puntos VIP',
     'tab.niveles': 'Niveles', 'tab.mecenas': 'Mecenas',
     'sec.regalos': 'Regalos de tu asociación', 'sec.mensual': 'Regalo del mes', 'sec.ofertas': 'Ofertas para ti', 'sec.tabla': 'Ventajas por nivel',

@@ -449,7 +449,9 @@ $vh2 = (int) $val('SELECT vip_hasta FROM jugadores WHERE id = ?', [$JC]);
 check('Comprar VIP otra vez -> se SUMAN 30 días (60 en total)', [true, $vh + 30 * 86400], [cerca($vh2, time() + 60 * 86400), $vh2]);
 check('Bono no reclamado todavía', false, $ec['vip_bono_hoy']);
 $r = $c1->api('/api/vip/bono');
-check('Bono VIP -> {ok, creditos: 10, entrega dinero 150}', [200, true, 10, 'dinero', 150], [$c1->http, $r['ok'] ?? null, $r['creditos'] ?? null, $r['entrega']['tipo'] ?? null, $r['entrega']['cantidad'] ?? null]);
+// El bono crece con el nivel VIP (Vip::PASE): dos Pases VIP ($19,98) = VIP 3 → $250 + 10 créditos + 2 cables + 1 batería
+check('Bono VIP (VIP 3) -> {ok, creditos: 10, entrega dinero 250, entregas con 2 cables y 1 batería}', [200, true, 10, 'dinero', 250, [['dinero', 250], ['consumible', 2], ['consumible', 1]]],
+    [$c1->http, $r['ok'] ?? null, $r['creditos'] ?? null, $r['entrega']['tipo'] ?? null, $r['entrega']['cantidad'] ?? null, array_map(fn($e) => [$e['tipo'], $e['cantidad']], $r['entregas'] ?? [])]);
 check('…vip_bono_hoy true', true, $c1->apiGet('/api/estado')['vip_bono_hoy']);
 $r = $c1->api('/api/vip/bono');
 check('Bono otra vez el mismo día -> 409 y no da nada', [409, 10, 1], [$c1->http, $saldo($JC), (int) $val("SELECT COUNT(*) FROM entregas WHERE jugador_id = ? AND tipo = 'dinero'", [$JC])]);

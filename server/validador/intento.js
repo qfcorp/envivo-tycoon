@@ -93,7 +93,7 @@
       if (!esObj(e)) falla('equipo_invalido', `Equipo ${i + 1}: formato inválido.`);
       if (typeof e.type !== 'string' || !tiene(G.CATALOG, e.type)) falla('equipo_invalido', `Equipo ${i + 1}: tipo desconocido (${String(e.type)}).`);
       if (!entero(e.condition, 1, 100)) falla('equipo_invalido', `Equipo ${i + 1}: estado debe ser entero de 1 a 100.`);
-      if (G.CATALOG[e.type].vip && !vip) falla('equipo_vip_sin_vip', `Equipo ${i + 1}: ${G.CATALOG[e.type].name} es VIP y el VIP no está activo.`);
+      // Los equipos VIP valen siempre (lo comprado con créditos es tuyo, con o sin Pase VIP): ya no hay equipo_vip_sin_vip
       return Object.assign(extras(e, ['id', 'type', 'condition']), { type: e.type, condition: e.condition });
     });
   }

@@ -363,7 +363,9 @@
     "paypal_minimo": "existe · Compras.php / PayPal.php · 409 · el producto cuesta menos que PAYPAL_MINIMO (4.99 por defecto): se paga con tarjeta",
     "paypal_metodo_distinto": "existe · PayPal.php · 409 · la compra se creó para pagar con tarjeta (canal web_plux) y se intentó pagar con PayPal",
     "paypal_error": "existe · PayPal.php · 502 · PayPal no respondió o respondió algo que no se entiende al crear la orden",
-    "pago_metodo_distinto": "existe · api.php (/api/plux/pago) · 409 · la compra se creó para pagar con PayPal (canal web_paypal) y se intentó pagar con tarjeta"
+    "pago_metodo_distinto": "existe · api.php (/api/plux/pago) · 409 · la compra se creó para pagar con PayPal (canal web_paypal) y se intentó pagar con tarjeta",
+    "fuera_de_combo": "existe · api.php (POST /api/gastar \"juego:\" / \"personal:\", Monedero::gastarCombo) · 403",
+    "tope_combo": "existe · api.php (POST /api/gastar \"juego:\" / \"personal:\", Monedero::gastarCombo) · 409"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -727,7 +729,9 @@
     "paypal_minimo": "PayPal está disponible solo en compras más grandes. Paga este producto con tarjeta.",
     "paypal_metodo_distinto": "Esta compra es para pagar con tarjeta. Vuelve a la tienda y elige PayPal.",
     "paypal_error": "No se pudo conectar con PayPal. No se hizo ningún cobro: intenta otra vez en unos minutos.",
-    "pago_metodo_distinto": "Esta compra es para pagar con PayPal. Vuelve a la tienda y elige «Pagar con tarjeta»."
+    "pago_metodo_distinto": "Esta compra es para pagar con PayPal. Vuelve a la tienda y elige «Pagar con tarjeta».",
+    "fuera_de_combo": "Con créditos solo se completa el combo de un equipo que canjeaste con créditos y que está en tu bodega.",
+    "tope_combo": "Ya llegaste al tope de esa pieza (o de ese rol) en el combo con créditos."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1091,7 +1095,9 @@
     "paypal_minimo": "PayPal is only available for larger purchases. Pay for this item by card.",
     "paypal_metodo_distinto": "This purchase was started for card payment. Go back to the shop and choose PayPal.",
     "paypal_error": "Couldn't connect to PayPal. Nothing was charged: try again in a few minutes.",
-    "pago_metodo_distinto": "This purchase was started for PayPal. Go back to the shop and choose \"Pay by card\"."
+    "pago_metodo_distinto": "This purchase was started for PayPal. Go back to the shop and choose \"Pay by card\".",
+    "fuera_de_combo": "Credits can only complete the combo of gear you redeemed with credits and still have in your storage.",
+    "tope_combo": "You already reached the limit for that part (or role) in the credits combo."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1455,7 +1461,9 @@
     "paypal_minimo": "O PayPal só está disponível em compras maiores. Pague este produto com cartão.",
     "paypal_metodo_distinto": "Esta compra foi iniciada para pagar com cartão. Volte à loja e escolha PayPal.",
     "paypal_error": "Não foi possível conectar ao PayPal. Nada foi cobrado: tente de novo em alguns minutos.",
-    "pago_metodo_distinto": "Esta compra foi iniciada para pagar com PayPal. Volte à loja e escolha \"Pagar com cartão\"."
+    "pago_metodo_distinto": "Esta compra foi iniciada para pagar com PayPal. Volte à loja e escolha \"Pagar com cartão\".",
+    "fuera_de_combo": "Com créditos só dá para completar o combo de um equipamento que você resgatou com créditos e que está no seu depósito.",
+    "tope_combo": "Você já chegou ao limite dessa peça (ou função) no combo com créditos."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1819,7 +1827,9 @@
     "paypal_minimo": "PayPal n'est disponible que pour les achats plus importants. Paie cet article par carte.",
     "paypal_metodo_distinto": "Cet achat a été lancé pour un paiement par carte. Reviens à la boutique et choisis PayPal.",
     "paypal_error": "Impossible de se connecter à PayPal. Rien n'a été débité : réessaie dans quelques minutes.",
-    "pago_metodo_distinto": "Cet achat a été lancé pour PayPal. Reviens à la boutique et choisis « Payer par carte »."
+    "pago_metodo_distinto": "Cet achat a été lancé pour PayPal. Reviens à la boutique et choisis « Payer par carte ».",
+    "fuera_de_combo": "Avec des crédits, tu ne peux compléter que le combo d’un équipement échangé contre des crédits et présent dans ton entrepôt.",
+    "tope_combo": "Tu as déjà atteint la limite de cette pièce (ou de ce rôle) dans le combo avec crédits."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2183,7 +2193,9 @@
     "paypal_minimo": "PayPal gibt es nur bei größeren Käufen. Bezahle diesen Artikel mit Karte.",
     "paypal_metodo_distinto": "Dieser Kauf wurde für Kartenzahlung gestartet. Geh zurück in den Shop und wähle PayPal.",
     "paypal_error": "Keine Verbindung zu PayPal. Es wurde nichts abgebucht: Versuche es in ein paar Minuten erneut.",
-    "pago_metodo_distinto": "Dieser Kauf wurde für PayPal gestartet. Geh zurück in den Shop und wähle „Mit Karte zahlen“."
+    "pago_metodo_distinto": "Dieser Kauf wurde für PayPal gestartet. Geh zurück in den Shop und wähle „Mit Karte zahlen“.",
+    "fuera_de_combo": "Mit Credits kannst du nur das Combo eines Geräts vervollständigen, das du mit Credits eingelöst hast und das in deinem Lager ist.",
+    "tope_combo": "Du hast das Limit für dieses Teil (oder diese Rolle) im Credit-Combo schon erreicht."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2547,7 +2559,9 @@
     "paypal_minimo": "PayPal è disponibile solo per acquisti più grandi. Paga questo prodotto con carta.",
     "paypal_metodo_distinto": "Questo acquisto è stato avviato per il pagamento con carta. Torna al negozio e scegli PayPal.",
     "paypal_error": "Impossibile collegarsi a PayPal. Non è stato addebitato nulla: riprova tra qualche minuto.",
-    "pago_metodo_distinto": "Questo acquisto è stato avviato per PayPal. Torna al negozio e scegli «Paga con carta»."
+    "pago_metodo_distinto": "Questo acquisto è stato avviato per PayPal. Torna al negozio e scegli «Paga con carta».",
+    "fuera_de_combo": "Con i crediti puoi completare solo il combo di un’attrezzatura riscattata con crediti e presente nel tuo magazzino.",
+    "tope_combo": "Hai già raggiunto il limite per quel pezzo (o ruolo) nel combo con crediti."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -2911,7 +2925,9 @@
     "paypal_minimo": "PayPal доступен только для более крупных покупок. Оплати этот товар картой.",
     "paypal_metodo_distinto": "Эта покупка начата для оплаты картой. Вернись в магазин и выбери PayPal.",
     "paypal_error": "Не удалось связаться с PayPal. Деньги не списаны: попробуй снова через несколько минут.",
-    "pago_metodo_distinto": "Эта покупка начата для оплаты через PayPal. Вернись в магазин и выбери «Оплатить картой»."
+    "pago_metodo_distinto": "Эта покупка начата для оплаты через PayPal. Вернись в магазин и выбери «Оплатить картой».",
+    "fuera_de_combo": "За кредиты можно докупить только комплект к оборудованию, которое ты получил за кредиты и которое есть на твоём складе.",
+    "tope_combo": "Ты уже достиг лимита для этой детали (или роли) в комплекте за кредиты."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3275,7 +3291,9 @@
     "paypal_minimo": "PayPal yalnızca daha büyük alımlarda kullanılabilir. Bu ürünü kartla öde.",
     "paypal_metodo_distinto": "Bu satın alma kartla ödeme için başlatıldı. Mağazaya dön ve PayPal'ı seç.",
     "paypal_error": "PayPal'a bağlanılamadı. Hiçbir ücret alınmadı: birkaç dakika sonra tekrar dene.",
-    "pago_metodo_distinto": "Bu satın alma PayPal için başlatıldı. Mağazaya dön ve \"Kartla öde\"yi seç."
+    "pago_metodo_distinto": "Bu satın alma PayPal için başlatıldı. Mağazaya dön ve \"Kartla öde\"yi seç.",
+    "fuera_de_combo": "Kredilerle yalnızca kredilerle aldığın ve deponda olan bir ekipmanın setini tamamlayabilirsin.",
+    "tope_combo": "Kredili sette o parça (ya da rol) için sınıra zaten ulaştın."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -3639,7 +3657,9 @@
     "paypal_minimo": "PayPal hanya tersedia untuk pembelian yang lebih besar. Bayar item ini dengan kartu.",
     "paypal_metodo_distinto": "Pembelian ini dimulai untuk pembayaran kartu. Kembali ke toko dan pilih PayPal.",
     "paypal_error": "Tidak bisa terhubung ke PayPal. Tidak ada tagihan: coba lagi beberapa menit lagi.",
-    "pago_metodo_distinto": "Pembelian ini dimulai untuk PayPal. Kembali ke toko dan pilih \"Bayar dengan kartu\"."
+    "pago_metodo_distinto": "Pembelian ini dimulai untuk PayPal. Kembali ke toko dan pilih \"Bayar dengan kartu\".",
+    "fuera_de_combo": "Dengan kredit kamu hanya bisa melengkapi combo peralatan yang kamu tukar dengan kredit dan masih ada di gudangmu.",
+    "tope_combo": "Kamu sudah mencapai batas untuk bagian (atau peran) itu di combo kredit."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -4003,6 +4023,8 @@
     "paypal_minimo": "PayPal 仅适用于金额较大的购买。此商品请刷卡支付。",
     "paypal_metodo_distinto": "这笔购买是按刷卡支付创建的。请返回商店并选择 PayPal。",
     "paypal_error": "无法连接 PayPal。未扣任何款项，请几分钟后再试。",
-    "pago_metodo_distinto": "这笔购买是按 PayPal 支付创建的。请返回商店并选择“刷卡支付”。"
+    "pago_metodo_distinto": "这笔购买是按 PayPal 支付创建的。请返回商店并选择“刷卡支付”。",
+    "fuera_de_combo": "只能用积分补齐你用积分兑换、且仍在仓库中的设备所需的组合。",
+    "tope_combo": "这个部件（或职位）在积分组合中已达上限。"
   }
 }

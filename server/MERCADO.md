@@ -7,8 +7,8 @@
 - **Acceso**: solo jugadores con **al menos una compra pagada con dinero real** (`compras.estado = 'pagado'`) pueden
   publicar y comprar. Los demás ven el mercado en modo lectura con el motivo.
 - **Los créditos nunca se convierten en dinero real** (no hay retiro). Está en los términos.
-- **Equipos VIP**: se canjean con créditos solo con VIP activo. Siguen siendo del jugador cuando el VIP vence, pero
-  **solo funcionan con VIP activo** (el juego los muestra "guardados hasta renovar"). Se pueden vender en el mercado.
+- **Equipos VIP**: se canjean con créditos solo con VIP activo. Después son del jugador y **funcionan siempre**, con o sin
+  el Pase VIP (modo historia y en línea; decisión de Dimitry, oct. 2026). Se pueden vender en el mercado.
 - Publicación: precio entero entre 10 y 100.000 créditos; máximo 10 publicaciones activas por jugador; vencen a los
   7 días y el equipo vuelve solo al dueño. El equipo publicado sale de la bodega del vendedor al instante.
 - Al comprar: todo en UNA transacción (créditos del comprador, del vendedor, dueño del equipo, publicación vendida,

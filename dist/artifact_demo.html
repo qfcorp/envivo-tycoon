@@ -25263,7 +25263,7 @@
     'personal.vacante': 'Publicar vacante ({m})',
 
     // Bodega
-    'bodega.guardado_vip': 'Guardado: necesita VIP activo',
+    'bodega.guardado_vip': 'Equipo VIP: funciona siempre',
     'bodega.estado': 'Estado',
     'bodega.nuevo': 'Nuevo',
     'bodega.no_se_vende': 'No se vende',
@@ -25397,7 +25397,7 @@
     'prep.resta': 'Lo que más te resta: {que} ({n}).',
     'prep.contrata': 'Contrata en Personal.',
     'prep.compralo': 'Cómpralo en Bodega.',
-    'prep.necesita_vip': 'Necesita el Pase VIP activo (el nivel VIP no basta)',
+    'prep.necesita_vip': 'Equipo VIP: funciona siempre, con o sin el Pase VIP',
     'prep.paga': 'paga {m} (con 3 estrellas)',
     'prep.auto': 'Elegir lo mejor automáticamente',
     'prep.quien': '¿A quién llevas?',
@@ -26301,6 +26301,10 @@
     "combo.ahora_no": "Ahora no",
     "combo.resto_dinero": "Lo que no se consigue con créditos lo puedes comprar con dinero del juego después del canje.",
     "combo.faltan_creditos": "Te faltan {n} 💎 para canjear todo.",
+    "combo.o_creditos_juego": "o ya mismo por {n} 💎",
+    "combo.personal_cred": "personal: con tu fama aún no aparece (desde {f} de fama); contrata uno ya por {n} 💎",
+    "combo.canjear_combo": "Canjear todo el combo ({n} 💎)",
+    "prep.falta_fama_cred": "{item}: con dinero se desbloquea con {n} de fama, o canjéalo ya por {c} 💎.",
     "prep.sin_operador": {"one":"{n} cámara sin operador: rinde la mitad.","other":"{n} cámaras sin operador: rinden la mitad."},
     "prep.falta_req": "Falta un requisito obligatorio: {req}",
     "prep.falta_viaje": "No te alcanza para el viaje ({m}).",
@@ -26368,6 +26372,22 @@
     "dia.turno.0": "mañana",
     "dia.turno.1": "tarde",
     "dia.turno.2": "noche",
+    "dia.turno.3": "trasnoche",
+    "dia.turno.4": "madrugada",
+    "dia.vip_turnos": "Con tu Pase VIP: hasta {n} eventos al día.",
+    "tienda.vip_bono_n": "Reclamar bono VIP de hoy ({lista})",
+    "tienda.pv_titulo": "Con el Pase VIP (según tu nivel VIP):",
+    "tienda.pv_rango": "VIP {a}–{b}",
+    "tienda.pv_tu_nivel": "tu nivel",
+    "tienda.pv_turnos": "{n} eventos por día",
+    "tienda.pv_reparar_pct": "reparaciones −{n} %",
+    "tienda.pv_obra": "obras de la sede −{n} % de tiempo",
+    "tienda.pv_bono": "bono diario: {lista}",
+    "tienda.pv_creditos": "{n} créditos",
+    "tienda.pv_cables": "{n} cables",
+    "tienda.pv_baterias": "{n} baterías",
+    "tienda.pv_reparar": "todo tu equipo al 100 %",
+    "tienda.pv_siempre": "Lo que compras con créditos (también los equipos VIP) funciona siempre, con o sin el Pase VIP. El Pase da comodidad, no ventaja en Copa, Duelos, Liga ni Festival.",
     "dia.parte_cada": "a cada uno le tocan {m} de gastos fijos",
     "clientes.turnos": {"one": "Hoy te queda {n} turno para eventos.", "other": "Hoy te quedan {n} turnos para eventos."},
     "clientes.turnos_det": "Hasta 3 eventos al día (mañana, tarde y noche) con el mismo personal y equipos. Los gastos fijos se cobran una vez, al cerrar el día.",
@@ -26786,7 +26806,7 @@
     "bodega.ex_perk_ya": "Con créditos: ya disponible",
     "bodega.ex_cuenta": "Crea tu cuenta para canjear exclusivos con créditos: quedan guardados en tu bodega y en tu cuenta.",
     "bodega.ex_mercado": "Se revende en el mercado",
-    "bodega.ex_vip": "Se canjea con VIP activo.",
+    "bodega.ex_vip": "Se canjea con el Pase VIP activo y después es tuyo: funciona siempre, con o sin el Pase.",
     // fin de tienda v2
     // Textos de la lógica y del servidor: en español no hace falta traducirlos
     logica: {},
@@ -27117,7 +27137,7 @@
     'bloq.sin_piloto': '{item} no puede volar sin piloto de dron',
     'bloq.sin_generador': '{item} necesita un generador diésel',
     'bloq.sin_operador_repeticion': '{item} necesita un operador de repeticiones',
-    'bloq.sin_vip': '{item} es un equipo VIP: solo funciona con el Pase VIP activo (el nivel VIP no basta). Sigue siendo tuyo y vuelve a funcionar al activar el Pase VIP',
+    'bloq.sin_vip': '{item} es un equipo VIP: funciona siempre, con o sin el Pase VIP',
 
     // Partes de la calidad
     'parte.base': 'Base',
@@ -28016,8 +28036,22 @@
     stolen: ['taunt.stolen.0'],
   };
 
+  /* Combo con créditos (decisión de Dimitry, oct. 2026: "si permites comprar cosas con diamantes, deberías poder comprar todo
+     el combo que se necesita"). Lo que le falta a un equipo canjeado con créditos (cámara de sistema, lentes, fibra...) se
+     puede canjear también con créditos aunque con dinero del juego todavía pida más fama. Solo las piezas de su combo
+     (Game.comboDe), en el servidor (POST /api/gastar "juego:<clave>" / "personal:<rol>"), con tope por pieza.
+     Precio justo: 4 × raíz del precio en dinero del juego, redondeado a 10 hacia arriba (mínimo 30): $13.000 → 460 💎
+     (una Edición Exclusiva de algo parecido cuesta más). El personal que maneja el equipo, si con tu fama todavía no
+     aparece: 150 💎 por una persona de habilidad 2. El servidor usa los MISMOS números (server/src/CatalogoJuego.php,
+     generado desde aquí). */
+  const COMBO_CREDITOS = { porRaiz: 4, minimo: 30, personal: 150, habilidad: 2, maxPorEquipo: 4, maxPorRol: 2 };
+  function creditosJuego(precio) {
+    const p = Math.max(0, Number(precio) || 0);
+    return Math.max(COMBO_CREDITOS.minimo, Math.ceil(COMBO_CREDITOS.porRaiz * Math.sqrt(p) / 10) * 10);
+  }
+
   const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE,
-    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA };
+    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, creditosJuego };
   if (typeof module !== 'undefined' && module.exports) module.exports = Datos;
   else root.Datos = Datos;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -28298,6 +28332,8 @@
   }
   // Gastos fijos en dólares de las extensiones (decoración: café, agua, luz). No los toca multGastos.
   function extSuma(s, nombre) { let n = 0; cadaExt(s, nombre, (h) => { const v = Number(h(s)); if (isFinite(v) && v > 0) n += v; }); return Math.round(n); }
+  // Turnos (eventos) por día en el modo historia: 3 + lo que den las extensiones (Pase VIP: +1 o +2), nunca más de 5
+  function franjasDia(s) { return clamp(BALANCE.dia.franjas + extLimite(s, 'turnos'), 1, 5); }
   function maxStaff(s) { return BALANCE.maxStaff + extLimite(s, 'staff'); }
   function maxEquip(s) { return BALANCE.maxEquip + extLimite(s, 'equip'); }
   function migrarExt(s) { cadaExt(s, 'migrar', (h) => h(s)); return s; }
@@ -29024,7 +29060,7 @@
      gastos (gastos fijos de hoy, se cobran al cerrar el día), parte (lo que le toca a cada evento de hoy, null sin eventos),
      conOtro (lo que le tocaría a cada uno con un evento más; null si ya no quedan turnos), pagos, ganancia } */
   function turnoDia(s) {
-    const H = hoyDe(s), max = BALANCE.dia.franjas;
+    const H = hoyDe(s), max = franjasDia(s);
     const g = dailyCost(s), n = H.n;
     return { n, max, libres: Math.max(0, max - n), turno: Math.min(n, max - 1), gastos: g,
       parte: n ? Math.round(g / n) : null, conOtro: n < max ? Math.round(g / (n + 1)) : null, pagos: H.pagos, ganancia: H.ganancia };
@@ -29050,7 +29086,7 @@
       if (opts.travel && R0 && typeof R0 === 'object') { R0.gastos += gasto; R0.dias = (R0.dias || 1) + 1; R0.resultado = R0.ganancia - R0.gastos; }
       else {
         s.resumenDia = { dia: cerrado, eventos: H.n, pagos: H.pagos, ganancia: H.ganancia, gastos: gasto, dias: 1,
-          resultado: H.ganancia - gasto, lista: H.eventos.slice(0, BALANCE.dia.franjas) };
+          resultado: H.ganancia - gasto, lista: H.eventos.slice(0, 5) };
       }
       s.hoy = { dia: s.day, n: 0, pagos: 0, ganancia: 0, eventos: [] };
     }
@@ -29483,6 +29519,29 @@
     });
     return out;
   }
+  /* Combo con créditos (js/datos.js COMBO_CREDITOS): las piezas de la tienda y los roles que puede necesitar un equipo
+     (lo que pide y lo que piden esas piezas, hasta 3 niveles). Es una lista amplia (todas las opciones que sirven, no solo
+     la más barata). El servidor usa lo mismo (server/bin/catalogo_juego.php → CatalogoJuego::COMBOS). { equipos, roles } */
+  function opcionesDependencia(req) {
+    const d = DEPS[req];
+    return d ? Object.keys(CATALOG).filter((k) => enTienda(k) && d.da(CATALOG[k])).sort() : [];
+  }
+  function comboDe(type) {
+    const equipos = new Set(), roles = new Set();
+    let cola = [type];
+    const visto = new Set([type]);
+    for (let n = 0; n < 3 && cola.length; n++) {
+      const sig = [];
+      cola.forEach((t) => ((CATALOG[t] && CATALOG[t].requiere) || []).forEach((req) => {
+        const rol = ROLE_KEYS.includes(normRole(req)) ? normRole(req) : null;
+        if (rol) { roles.add(rol); return; }
+        opcionesDependencia(req).forEach((k) => { equipos.add(k); if (!visto.has(k)) { visto.add(k); sig.push(k); } });
+      }));
+      cola = sig;
+    }
+    return { equipos: [...equipos].sort(), roles: [...roles].sort() };
+  }
+  const creditosJuego = (k) => (CATALOG[k] && enTienda(k) && typeof D.creditosJuego === 'function' ? D.creditosJuego(CATALOG[k].price) : 0);
   // La cámara de la tienda que mejor cubre una posición de ese perfil y que ya puedes comprar (fama), sin lentes ni
   // accesorios aparte: la que mejor encaja y, entre iguales, la más barata. null si ninguna encaja mejor que `minFit`.
   function camaraParaPerfil(s, perfil, minFit) {
@@ -30337,7 +30396,7 @@
     if (!staff.length) return { ok: false, msg: tx('msg.lleva_persona') };
     if (!equip.some((e) => itemOf(e).cat === 'cam')) return { ok: false, msg: tx('msg.lleva_camara') };
     // Ya usaste los turnos de hoy (no debería pasar: el día se cierra solo al usar el último)
-    if (!esIntento(s) && hoyDe(s).n >= BALANCE.dia.franjas) return { ok: false, msg: tx('msg.dia_lleno', { n: BALANCE.dia.franjas }) };
+    if (!esIntento(s) && hoyDe(s).n >= franjasDia(s)) return { ok: false, msg: tx('msg.dia_lleno', { n: franjasDia(s) }) };
     staff.forEach((p) => { p.role = normRole(p.role); if (!p.tier) p.tier = 'junior'; });
     if (esIntento(s)) s.intento = true; // se queda marcado para todo el intento (finishEvent cambia stats y día)
     if (contract.internacional) {
@@ -30626,12 +30685,12 @@
     } else {
       // Varios eventos por día: este evento usa un turno (mañana, tarde o noche). El día se cierra solo al usar el
       // último turno o con un evento que ocupa el día entero; si no, sigue el mismo día (los gastos fijos se cobran al cerrar).
-      const H = hoyDe(s), DIA = BALANCE.dia;
+      const H = hoyDe(s), DIA = BALANCE.dia, FR = franjasDia(s);
       H.n++; H.pagos += pay; H.ganancia += result.net;
       H.eventos.push({ t: c.type, e: stars, g: result.net });
       const jornada = jornadaCompleta(c);
-      const cierra = jornada || H.n >= DIA.franjas;
-      result.dia = { turno: H.n - 1, n: H.n, max: DIA.franjas, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
+      const cierra = jornada || H.n >= FR;
+      result.dia = { turno: H.n - 1, n: H.n, max: FR, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
       if (cierra) {
         if (jornada && !c.internacional) log(s, 'log.dia_completo', { evento: { k: 'ev.' + c.type } });
         nextDay(s);
@@ -30844,7 +30903,7 @@
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, lenteFaltante, dependencias, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
@@ -30854,7 +30913,7 @@
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
     // Extensiones
-    registrarExtension, extensiones, esIntento, extActivas, extSuma, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
+    registrarExtension, extensiones, franjasDia, esIntento, extActivas, extSuma, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
     registrarImprevisto, incAyuda, itemOf,
     // Movilización y flota
     planTransporte, distanciaKm, bultosDe, flota, flotaDe, esVehiculoFlota, tarifaApp, desgasteVehiculo, vehiclesDaily, publicidadFlota, topeTransporte,
@@ -36572,7 +36631,9 @@
    - Agrega los equipos exclusivos al catálogo (no se pueden comprar con dinero del juego,
      ni vender, solo se consiguen en la tienda con créditos).
    - Aplica las "entregas" que manda el servidor (cada una UNA sola vez por partida).
-   - Efectos del Pase VIP: reparaciones 30 % más baratas y 1 oferta extra al día.
+   - Efectos del Pase VIP (según el nivel VIP, tabla PASE_VIP): más eventos por día (modo historia), reparaciones más
+     baratas (30 a 50 %) y 1 oferta extra al día. El bono diario y las obras más rápidas los da el servidor (server/src/Vip.php).
+   - Los equipos VIP canjeados funcionan siempre, con o sin el Pase VIP.
    El saldo de créditos y el VIP los decide SIEMPRE el servidor (server/API.md).
    ========================================================= */
 (function (root) {
@@ -36594,7 +36655,7 @@
     generador:    { name: 'Kummins 22 kVA diésel insonorizado', icon: 'generador', creditos: 250, cat: 'power', subtipo: 'generador_diesel', q: 4, price: 0, minRep: 0, rareza: 'exclusivo', durabilidad: 5,
                     eventos: ['ligapro', 'concierto', 'final', 'lanzamiento_autos'], premium: true, repairBase: 900,
                     desc: 'Generador silencioso para estadios y conciertos: si se va la luz, tú sigues al aire.' },
-    // Solo VIP: se canjean con VIP activo y funcionan solo mientras el VIP esté activo
+    // Solo VIP: se canjean con el Pase VIP activo y después funcionan SIEMPRE (con o sin el Pase)
     vip_cam8k:     { name: 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', icon: 'cam_cine', creditos: 800, cat: 'cam', subtipo: 'sistema_4k', q: 6, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
                      requiere: ['lente_b4', 'cable_fibra_smpte', 'shader'], incluyeLente: true, incluyeFibra: true, eventos: ['final', 'ligapro'], premium: true, vip: true, repairBase: 4000,
                      desc: 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.' },
@@ -36605,10 +36666,32 @@
                      eventos: ['final', 'internacional_host', 'internacional_unilateral'], premium: true, vip: true, repairBase: 2500,
                      desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
   };
-  const DURABLES = ['item', 'personal'];   // se vuelven a entregar si empiezas partida nueva
-  const VIP_DESCUENTO = 0.3;
+  const DURABLES = ['item', 'equipo', 'personal'];   // se vuelven a entregar si empiezas partida nueva
+  const VIP_DESCUENTO = 0.3;   // descuento base del Pase VIP (VIP 1); crece con el nivel (PASE_VIP)
+
+  /* Ventajas del Pase VIP de 30 días por nivel VIP ("desde" ese nivel; con el Pase activo y nivel 0 cuenta como VIP 1).
+     MISMA tabla que server/src/Vip.php (Vip::PASE): tests/pruebas_vip.php revisa que sean iguales.
+     turnos: eventos por día en el modo historia (sin Pase: 3). descuento: % menos al reparar. obra: % menos de tiempo en las
+     obras de la Sede oficial (servidor). bono: bono diario (servidor). Nada de esto da poder en Copa, Duelos, Liga ni Festival. */
+  const PASE_VIP = [
+    { desde: 1, turnos: 4, descuento: 30, obra: 10, bono: { dinero: 150, creditos: 10, cable: 1, battery: 0, reparar: false } },
+    { desde: 3, turnos: 4, descuento: 35, obra: 15, bono: { dinero: 250, creditos: 10, cable: 2, battery: 1, reparar: false } },
+    { desde: 5, turnos: 5, descuento: 40, obra: 20, bono: { dinero: 400, creditos: 15, cable: 2, battery: 2, reparar: false } },
+    { desde: 7, turnos: 5, descuento: 45, obra: 25, bono: { dinero: 600, creditos: 15, cable: 3, battery: 3, reparar: false } },
+    { desde: 9, turnos: 5, descuento: 50, obra: 30, bono: { dinero: 800, creditos: 20, cable: 4, battery: 4, reparar: true } },
+  ];
+  const TURNOS_BASE = 3;
+  function pase(nivel) {
+    const n = Math.max(1, Math.min(10, Math.floor(Number(nivel) || 0)));
+    let o = PASE_VIP[0];
+    PASE_VIP.forEach((f) => { if (n >= f.desde) o = f; });
+    return Object.assign({ nivel: n }, o);
+  }
 
   let vipActivo = false;
+  let vipNivel = 0;
+  // Ventajas que tocan ahora (null sin el Pase VIP activo)
+  const paseActual = () => (vipActivo ? pase(vipNivel) : null);
 
   function estado(s) {
     if (!s.premium || typeof s.premium !== 'object') s.premium = {};
@@ -36643,7 +36726,8 @@
   const repairCostLogica = G.repairCost;
   function costoReparar(e) {
     const c = Math.max(0, repairCostLogica(e) || 0);
-    return vipActivo ? Math.round(c * (1 - VIP_DESCUENTO)) : c;
+    const p = paseActual();
+    return p ? Math.round(c * (100 - p.descuento) / 100) : c;
   }
 
   const buyOriginal = G.buy;
@@ -36674,54 +36758,12 @@
     return { ok: true, msg: tx('msg.quedo_nuevo') };
   };
 
-  /* ---------- Equipos VIP: guardados si el VIP no está activo ---------- */
+  /* ---------- Equipos VIP: funcionan SIEMPRE ----------
+     Decisión de Dimitry (oct. 2026): "lo comprado con diamantes se debe quedar". Los equipos VIP se canjean con el Pase VIP
+     activo, pero después son tuyos y funcionan siempre (modo historia y en línea), con o sin el Pase. El Pase VIP da otras
+     ventajas (PASE_VIP, abajo). bloqueado() queda por compatibilidad y siempre dice que no. */
   const esVip = (type) => !!(G.CATALOG[type] && G.CATALOG[type].vip);
-  const bloqueado = (e) => esVip(e.type) && !vipActivo;
-  const suggestOriginal = G.suggestLoadout;
-  G.suggestLoadout = function (s, contractId) {
-    const r = suggestOriginal(s, contractId);
-    if (vipActivo) return r;
-    // Sin VIP: quitar los equipos VIP y completar con lo mejor que quede de la misma categoría
-    const quitados = r.equipIds.map((id) => s.equip.find((e) => e.id === id)).filter((e) => e && bloqueado(e));
-    let ids = r.equipIds.filter((id) => !quitados.some((e) => e.id === id));
-    quitados.forEach((q) => {
-      const cat = G.CATALOG[q.type].cat;
-      const alt = s.equip.filter((e) => G.CATALOG[e.type].cat === cat && !bloqueado(e) && !ids.includes(e.id))
-        .sort((a, b) => (G.CATALOG[b.type].q * 100 + b.condition) - (G.CATALOG[a.type].q * 100 + a.condition))[0];
-      if (alt) ids.push(alt.id);
-    });
-    return { staffIds: r.staffIds, equipIds: ids };
-  };
-  // Lo que ve el jugador al preparar (calidad y plan de cámaras) es lo mismo que pasa al salir al aire: sin el Pase VIP
-  // activo, los equipos VIP no cuentan y las cámaras VIP salen en "no se pueden usar" con su motivo (sin_vip).
-  // Solo se envuelven las funciones públicas (las que usa la pantalla); la lógica por dentro y el validador no cambian.
-  const esCamara = (e) => !!(G.CATALOG[e.type] && G.CATALOG[e.type].cat === 'cam');
-  const bloqVip = (e) => ({ equipId: e.id, tipo: e.type, motivo: 'sin_vip', texto: tx('bloq.sin_vip', { item: G.CATALOG[e.type].name }) });
-  function marcarVip(plan, fuera) {
-    if (!plan || !Array.isArray(plan.bloqueados)) return plan;
-    fuera.filter(esCamara).forEach((e) => { if (!plan.bloqueados.some((b) => b.equipId === e.id)) plan.bloqueados.unshift(bloqVip(e)); });
-    return plan;
-  }
-  const qualityOriginal = G.computeQuality;
-  G.computeQuality = function (s, contract, staff, equip) {
-    const fuera = (equip || []).filter((e) => e && bloqueado(e));
-    if (!fuera.length) return qualityOriginal(s, contract, staff, equip);
-    const r = qualityOriginal(s, contract, staff, equip.filter((e) => e && !bloqueado(e)));
-    if (r) marcarVip(r.cameraPlan, fuera);
-    return r;
-  };
-  const planOriginal = G.cameraPlan;
-  G.cameraPlan = function (s, c, equipIds, staffIds) {
-    const ids = equipIds || [];
-    const fuera = s.equip.filter((e) => ids.includes(e.id) && bloqueado(e));
-    if (!fuera.length) return planOriginal(s, c, equipIds, staffIds);
-    return marcarVip(planOriginal(s, c, ids.filter((id) => !fuera.some((e) => e.id === id)), staffIds), fuera);
-  };
-  const startOriginal = G.startEvent;
-  G.startEvent = function (s, contractId, staffIds, equipIds) {
-    const ok = (equipIds || []).filter((id) => { const e = s.equip.find((x) => x.id === id); return e && !bloqueado(e); });
-    return startOriginal(s, contractId, staffIds, ok);
-  };
+  const bloqueado = () => false;
 
   /* ---------- Inventario del servidor (equipos que se pueden intercambiar en el mercado) ---------- */
   // Cada equipo del servidor vive en la partida con srvId. El servidor manda: si ya no está en su
@@ -36757,6 +36799,14 @@
         const it = G.CATALOG[en.item];
         if (!it) return null;
         if (s.equip.length >= 40) return `No cupo ${it.name} en la bodega.`;
+        s.equip.push({ id: nuevoId(s), type: en.item, condition: 100 });
+        return `Llegó a tu bodega: ${it.name}.`;
+      }
+      case 'equipo': {
+        // Pieza de la tienda canjeada con créditos para completar un combo (POST /api/gastar "juego:<clave>"): va a la bodega
+        // aunque con dinero del juego todavía pida más fama
+        const it = G.CATALOG[en.item];
+        if (!it) return null;
         s.equip.push({ id: nuevoId(s), type: en.item, condition: 100 });
         return `Llegó a tu bodega: ${it.name}.`;
       }
@@ -36810,7 +36860,15 @@
   }
 
   /* ---------- VIP ---------- */
-  function setVip(activo) { vipActivo = !!activo; }
+  // activo: Pase VIP de 30 días; nivel: nivel VIP 1–10 (para la tabla PASE_VIP). Sin nivel se queda el que ya tenía.
+  function setVip(activo, nivel) {
+    vipActivo = !!activo;
+    if (nivel !== undefined && nivel !== null && isFinite(Number(nivel))) vipNivel = Math.max(0, Math.min(10, Math.floor(Number(nivel))));
+  }
+  // Más eventos por día en el modo historia con el Pase VIP (los intentos en línea nunca usan extensiones)
+  if (typeof G.registrarExtension === 'function') {
+    G.registrarExtension({ id: 'pase_vip', limites: () => { const p = paseActual(); return { turnos: p ? p.turnos - TURNOS_BASE : 0 }; } });
+  }
   // Una oferta extra por día mientras el VIP está activo
   function tickVip(s) {
     const p = estado(s);
@@ -36822,7 +36880,8 @@
     return false;
   }
 
-  root.Premium = { EXCLUSIVOS, exclusivoDelServidor, aplicarEntregas, prepararPartidaNueva, sincronizarInventario, setVip, tickVip, esPremium, esVip, bloqueado, nombreSerie, costoReparar, get vip() { return vipActivo; } };
+  root.Premium = { EXCLUSIVOS, exclusivoDelServidor, aplicarEntregas, prepararPartidaNueva, sincronizarInventario, setVip, tickVip, esPremium, esVip, bloqueado, nombreSerie, costoReparar,
+    PASE_VIP, pase, paseActual, get vip() { return vipActivo; }, get nivel() { return vipNivel; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Premium;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -37510,7 +37569,7 @@
   const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
   // Varios eventos por día: turno de hoy (G.turnoDia). Con una lógica vieja (un evento = un día), null
   const turnoHoy = () => { try { return G.turnoDia && S ? G.turnoDia(S) : null; } catch (e) { return null; } };
-  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(2, Number(i) || 0)));
+  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(4, Number(i) || 0)));   // 3 y 4: turnos extra del Pase VIP
   const esJornada = (c) => { try { return !!(G.jornadaCompleta && G.jornadaCompleta(c)); } catch (e) { return false; } };
 
   /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
@@ -37883,7 +37942,6 @@
   const itemName = (type) => TL((G.CATALOG[type] || { name: type }).name);
   const roleName = (r) => TL(G.ROLES[r] ? G.ROLES[r].name : r);
   const eventName = (type) => TL((G.EVENT_TYPES[type] || { name: type }).name);
-  const vipBloqueado = (e) => { try { return !!(Pm && Pm.bloqueado && Pm.bloqueado(e)); } catch (err) { return false; } };
   const wageFor = (p, diff) => { try { return G.eventWage ? G.eventWage(p, diff) : p.wage; } catch (e) { return p.wage; } };
   const emptyState = (iconName, title, text) => `<div class="card empty"><div class="ei">${I(iconName)}</div><b>${title}</b><div class="small">${text}</div></div>`;
   const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
@@ -38256,7 +38314,7 @@
         <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}${T('clientes.visitar')} <span class="muted small">(${T('clientes.visitar_det')})</span></button>
       </div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
-      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}</div></div>` : ''}
+      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}${tHoy.max > 3 ? ` <b>${T('dia.vip_turnos', { n: tHoy.max })}</b>` : ''}</div></div>` : ''}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
@@ -38413,7 +38471,7 @@
     const fc = Number(it.minRepCreditos) || 0;
     const bloq = S.rep < fc;
     const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
-    // Equipos VIP: con cuenta y sin VIP activo el botón queda bloqueado (el servidor igual lo rechazaría)
+    // Equipos VIP: se CANJEAN con el Pase VIP activo (el servidor igual lo rechazaría); después funcionan siempre
     const sinVip = x.vip && !!(Api.estado && Api.estado.logueado && !Api.estado.vip_activo);
     const cred = x.creditos > 0 ? `<button class="btn ex-cred" data-act="ex-canjear" data-k="${esc(x.id)}" aria-label="${esc(T('bodega.ex_canjear', { n: N(x.creditos) }))}" ${bloq || sinVip ? 'disabled' : ''}>${bloq
       ? `${I('lock', 'sm')} ${T('bodega.ex_fama_cred', { n: fc })}` : sinVip ? `${I('lock', 'sm')} VIP · ${I('gem', 'sm')}<span>${N(x.creditos)}</span>` : `${I('gem', 'sm')}<span>${N(x.creditos)}</span>`}</button>` : '';
@@ -38549,7 +38607,6 @@
       const r = rar(e.type);
       let rc = 0;
       try { rc = G.repairCost(e); } catch (err) { rc = 0; }
-      const off = vipBloqueado(e);
       if (it.alquiler) {
         return `<div class="card gear rf r-${r.key} rented">
         <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
@@ -38565,7 +38622,6 @@
         <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
         <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
         <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
-        ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
         <div class="row2">
@@ -38681,7 +38737,7 @@
     if (bono) lis.push({ html: bono, cls: 'amber', ico: 'gift' });
     return `<div class="card tv-prod ${o.cls || ''}" data-prod="${esc(p.id)}">${o.ribbon ? `<span class="ribbon">${esc(o.ribbon)}</span>` : ''}
       <div class="tv-head">${o.art || itemArt(p.id, 56)}<div class="grow"><h3>${esc(o.nombre || TL(p.nombre))}</h3>${o.sub ? `<div class="small muted">${o.sub}</div>` : ''}</div></div>
-      ${incluye(lis)}${botonCompra(p.id, { usd: p.precio, hecho: o.hecho })}</div>`;
+      ${incluye(lis)}${o.extra || ''}${botonCompra(p.id, { usd: p.precio, hecho: o.hecho })}</div>`;
   }
   function cardCreditos(p) {
     const bono = lineaBono(p);
@@ -38701,7 +38757,7 @@
         case 'materiales': if (I18 && I18.T.has('tienda.mat.' + e.item)) return T('tienda.ent_mat', { n: N(n), mat: T('tienda.mat.' + e.item) }); break;
         case 'acelerador': return T('tienda.obra_acel', { h: N(Math.round(n / 6) / 10) });
         case 'consumible': return `${N(n)} × ${TL((G.CONSUMABLES[e.item] || {}).name || e.item)}`;
-        case 'item': return (n > 1 ? N(n) + ' × ' : '') + itemName(e.item);
+        case 'item': case 'equipo': return (n > 1 ? N(n) + ' × ' : '') + itemName(e.item);
         default: break;
       }
     } catch (err) { /* abajo */ }
@@ -38778,6 +38834,36 @@
       <div class="tv-head">${itemArt(o.producto, 52)}<div class="grow"><h3>${esc(TL(o.nombre || ''))}</h3>${meta ? `<div class="small muted">${meta}</div>` : ''}</div></div>
       ${incluye(lis)}${botonCompra(o.producto, { usd: o.precio })}</div>`;
   }
+  /* Pase VIP (30 días): lo que da según el nivel VIP (Premium.PASE_VIP, misma tabla que el servidor) */
+  const paseDe = (n) => seguro(() => Pm.pase(n), null);
+  function bonoTxtDe(b) {
+    if (!b) return '';
+    const p = [M(b.dinero), T('tienda.pv_creditos', { n: b.creditos })];
+    if (b.cable) p.push(T('tienda.pv_cables', { n: b.cable }));
+    if (b.battery) p.push(T('tienda.pv_baterias', { n: b.battery }));
+    if (b.reparar) p.push(T('tienda.pv_reparar'));
+    return p.join(' + ');
+  }
+  function bonoVipTxt() {
+    const pa = seguro(() => Pm.paseActual(), null) || paseDe(Number((Api.estado || {}).vip_nivel) || 1);
+    return pa ? T('tienda.vip_bono_n', { lista: bonoTxtDe(pa.bono) }) : T('tienda.vip_bono', { m: M(150), n: 10 });
+  }
+  // Tabla "Con el Pase VIP: …" por nivel (en la tarjeta del Pase VIP de la Tienda)
+  function tablaPaseVip() {
+    const filas = seguro(() => Pm.PASE_VIP, null);
+    if (!Array.isArray(filas) || !filas.length) return '';
+    const E = Api.estado || {};
+    const mio = E.logueado ? Math.max(1, Number(E.vip_nivel) || 0) : 0;
+    const rows = filas.map((f, i) => {
+      const hasta = filas[i + 1] ? filas[i + 1].desde - 1 : 10;
+      const rango = hasta > f.desde ? T('tienda.pv_rango', { a: f.desde, b: hasta }) : T('tienda.vip_n', { n: f.desde });
+      const yo = mio >= f.desde && mio <= hasta;
+      return `<li class="pv-fila${yo ? ' yo' : ''}" data-desde="${f.desde}"><b>${esc(rango)}${yo ? ` · ${esc(T('tienda.pv_tu_nivel'))}` : ''}</b>
+        <span>${esc(T('tienda.pv_turnos', { n: f.turnos }))} · ${esc(T('tienda.pv_reparar_pct', { n: f.descuento }))} · ${esc(T('tienda.pv_obra', { n: f.obra }))} · ${esc(T('tienda.pv_bono', { lista: bonoTxtDe(f.bono) }))}</span></li>`;
+    }).join('');
+    return `<div class="pv-tabla"><p class="small"><b>${I('crown', 'sm')} ${esc(T('tienda.pv_titulo'))}</b></p><ul class="pv-lista">${rows}</ul>
+      <p class="small muted tv-nota">${esc(T('tienda.pv_siempre'))}</p></div>`;
+  }
   function seccionVip(log, lista) {
     const V = window.Vip;
     const prods = lista.filter((p) => ['vip', 'tarjeta'].includes(tipoProd(p)));
@@ -38790,7 +38876,8 @@
     }
     const aparte = V ? seguro(() => V.T('modal.pase'), '') : '';
     const html = nivel + ofertas.map(cardOfertaVip).join('') + prods.map((p) => cardProd(p, {
-      cls: p.id === 'vip30' ? 'rf r-vip' : '', ribbon: p.id === 'vip30' ? 'VIP' : '', sub: p.id === 'vip30' && aparte ? esc(aparte) : '' })).join('');
+      cls: p.id === 'vip30' ? 'rf r-vip' : '', ribbon: p.id === 'vip30' ? 'VIP' : '', sub: p.id === 'vip30' && aparte ? esc(aparte) : '',
+      extra: p.id === 'vip30' ? tablaPaseVip() : '' })).join('');
     return seccion('tv-vip', I('crown', 'sm'), T('tienda.sec_vip'), html);
   }
 
@@ -38878,7 +38965,7 @@
     } else {
       const vip = E.vip_activo
         ? `<p class="small" style="color:var(--amber)">${I('crown', 'sm')} ${T('tienda.vip_hasta', { fecha: esc(fechaCorta(E.vip_hasta)) })}</p>
-           ${E.vip_bono_hoy ? `<p class="small muted">${T('tienda.vip_bono_ya')}</p>` : `<button class="btn" data-act="vip-bono" style="border-color:var(--amber)">${I('gift')}${T('tienda.vip_bono', { m: M(150), n: 10 })}</button>`}`
+           ${E.vip_bono_hoy ? `<p class="small muted">${T('tienda.vip_bono_ya')}</p>` : `<button class="btn" data-act="vip-bono" style="border-color:var(--amber)">${I('gift')}${bonoVipTxt()}</button>`}`
         : '';
       cuenta = `<div class="card">
         <div class="row between"><div class="wallet">${I('gem')}<div><div class="big">${N(E.creditos)}</div><div class="small muted">${T('tienda.creditos_lbl')}</div></div></div>
@@ -39027,7 +39114,9 @@
     if (!Pm || !Pm.setVip || !Api.estado) return;
     const E = Api.estado;
     const hasta = E.vip_hasta ? Date.parse(E.vip_hasta) : NaN;
-    Pm.setVip(!!E.logueado && !!E.vip_activo && (isNaN(hasta) || hasta > Date.now()));
+    // El nivel VIP (1–10) decide cuánto da el Pase (Premium.PASE_VIP): el de /api/vip si ya llegó, si no el de /api/estado
+    const nv = seguro(() => (window.Vip && window.Vip.datos && window.Vip.datos.nivel != null ? window.Vip.datos.nivel : E.vip_nivel), E.vip_nivel);
+    Pm.setVip(!!E.logueado && !!E.vip_activo && (isNaN(hasta) || hasta > Date.now()), Number(nv) || 0);
   }
   function aplicarEntregas() {
     syncVip();
@@ -39177,7 +39266,8 @@
     try {
       const r = await Api.bonoVip();
       Api.estado.creditos = r.creditos; Api.estado.vip_bono_hoy = true;
-      if (r.entrega) Api.estado.entregas.push(r.entrega);
+      if (Array.isArray(r.entregas) && r.entregas.length) r.entregas.forEach((en) => Api.estado.entregas.push(en));
+      else if (r.entrega) Api.estado.entregas.push(r.entrega);
       aplicarEntregas(); render();
     } catch (e) { toast(TL(e.message)); snd.play('error'); }
   }
@@ -39200,6 +39290,20 @@
      solo botón: se canjea lo que va con créditos y después se ofrece lo que falta con dinero. */
   // Lo que falta, también lo que necesitan las cosas que se comprarían (la cámara de sistema de un lente box pide su
   // lente B4 y su fibra): se simula la compra y se repite (hasta 3 niveles). Sin repetidos.
+  /* Combo con créditos (js/datos.js COMBO_CREDITOS): si el equipo se canjeó con créditos (o se está por canjear), lo que le
+     falta también se consigue con créditos aunque con dinero pida más fama. Raíces: los equipos de crédito de tu bodega del
+     servidor (srvId) y el que se está canjeando. El servidor revisa lo mismo (CatalogoJuego::COMBOS). */
+  const esDeCredito = (k) => { const x = G.CATALOG[k]; return !!x && !!(x.premium || x.exclusivo) && Number(x.creditos) > 0; };
+  function raicesCredito(extra) {
+    const r = new Set();
+    if (extra && esDeCredito(extra)) r.add(extra);
+    (S.equip || []).forEach((e) => { if (e.srvId !== undefined && esDeCredito(e.type)) r.add(e.type); });
+    return [...r];
+  }
+  function permiteCredito(clave, campo, raiz) {
+    if (!Api.logueado() || !G.comboDe) return false;
+    return raicesCredito(raiz).some((k) => { try { return G.comboDe(k)[campo].includes(clave); } catch (e) { return false; } });
+  }
   function deps(k, extra) {
     if (!G.dependencias || !G.CATALOG[k]) return [];
     try {
@@ -39213,7 +39317,8 @@
           const id = d.req + ':' + (d.rol || '');
           if (visto.has(id)) return;
           visto.add(id); out.push(d);
-          if (d.tipo === 'equipo' && d.key && !d.bloqueado) { sim.equip.push({ id: -2 - out.length, type: d.key, condition: 100 }); sig.push(d.key); }
+          // Se sigue la cadena con lo que se puede conseguir: con dinero (ya desbloqueado) o con créditos (combo)
+          if (d.tipo === 'equipo' && d.key && (!d.bloqueado || permiteCredito(d.key, 'equipos', k))) { sim.equip.push({ id: -2 - out.length, type: d.key, condition: 100 }); sig.push(d.key); }
         }));
         cola = sig;
       }
@@ -39230,24 +39335,44 @@
     return { id: p.id, key, creditos: Number(p.creditos) || 0, ok: Api.logueado() && !sinVip && S.rep >= (Number(it.minRepCreditos) || 0) };
   }
   // Cada cosa que falta, resuelta: con dinero (key comprable), con créditos (premium canjeable) o personal
-  function resolverFaltas(lista) {
+  // raiz: el equipo de crédito que se está canjeando (o cuyo combo se completa); con él, cada pieza que falta y no tiene
+  // Edición Exclusiva se ofrece también con créditos ("juego:<clave>"), aunque con dinero pida más fama; y el personal que
+  // con tu fama todavía no aparece ("personal:<rol>"). Así el combo entero se consigue con 💎 en un solo botón.
+  function resolverFaltas(lista, raiz) {
+    const CC = G.COMBO_CREDITOS || { personal: 150 };
     return lista.map((d) => {
-      if (d.tipo === 'personal') return Object.assign({ nombre: roleName(d.rol) }, d);
-      const cred = (d.creditos || []).map(premiumDe).filter((p) => p && p.ok).sort((a, b) => a.creditos - b.creditos)[0] || null;
+      if (d.tipo === 'personal') {
+        const rf = (G.ROLES[d.rol] && G.ROLES[d.rol].fama) || 0;
+        const cred = rf > S.rep && permiteCredito(d.rol, 'roles', raiz) ? { id: 'personal:' + d.rol, key: null, rol: d.rol, creditos: CC.personal, personal: true, fama: rf } : null;
+        return Object.assign({ nombre: roleName(d.rol), cred }, d);
+      }
+      let cred = (d.creditos || []).map(premiumDe).filter((p) => p && p.ok).sort((a, b) => a.creditos - b.creditos)[0] || null;
       const dinero = d.key && !d.bloqueado ? d.key : null;
+      if (!cred && d.key && permiteCredito(d.key, 'equipos', raiz) && G.creditosJuego(d.key) > 0) {
+        cred = { id: 'juego:' + d.key, key: d.key, creditos: G.creditosJuego(d.key), juego: true, ok: true };
+      }
       return Object.assign({ nombre: itemName(d.key || (cred ? cred.key : d.req)), dinero, cred }, d);
     });
   }
+  const totalCred = (fs) => fs.reduce((a, f) => a + (f.cred ? f.cred.creditos : 0), 0);
+  const btnCanjearFalta = (fs, item, cls) => {
+    const cs = fs.filter((f) => f.cred);
+    if (!cs.length) return '';
+    const n = cs.reduce((a, f) => a + f.cred.creditos, 0), saldo = (Api.estado && Api.estado.creditos) || 0;
+    return `<button class="${cls || 'btn main'}" data-act="combo-canjear" data-k="" data-l="${esc(cs.map((f) => f.cred.id).join(','))}" data-item="${esc(item)}" ${saldo < n ? 'disabled' : ''}>${I('gem', 'sm')}${T('combo.canjear_combo', { n: N(n) })}</button>`
+      + (saldo < n ? `<p class="small" style="color:var(--amber)">${T('combo.faltan_creditos', { n: N(n - saldo) })}</p>` : '');
+  };
   const totalDinero = (fs) => fs.reduce((a, f) => a + (f.dinero ? G.CATALOG[f.dinero].price : 0), 0);
   function lineasFalta(fs) {
     return `<ul class="combo-l">${fs.map((f) => {
       let det;
-      if (f.tipo === 'personal') det = T('combo.personal');
+      if (f.tipo === 'personal') det = f.cred ? T('combo.personal_cred', { n: N(f.cred.creditos), f: f.cred.fama }) : T('combo.personal');
       else {
         const partes = [];
         if (f.dinero) partes.push(T('combo.precio', { m: M(G.CATALOG[f.dinero].price) }));
         else if (f.key) partes.push(T('combo.fama', { n: f.minRep }));
-        if (f.cred) partes.push(partes.length ? T('combo.o_creditos', { n: N(f.cred.creditos) }) : T('combo.solo_creditos', { n: N(f.cred.creditos) }));
+        if (f.cred && f.cred.juego) partes.push(T('combo.o_creditos_juego', { n: N(f.cred.creditos) }));
+        else if (f.cred) partes.push(partes.length ? T('combo.o_creditos', { n: N(f.cred.creditos) }) : T('combo.solo_creditos', { n: N(f.cred.creditos) }));
         det = partes.join(' ');
       }
       const ico = f.tipo === 'personal' ? I(roleIcon(f.rol), 'sm') : itemArt(f.dinero || (f.cred && f.cred.key) || f.key || 'cam_basic', 34, 'mini');
@@ -39263,8 +39388,10 @@
   function ofrecerCombo(k, modo, pid) {
     const it = G.CATALOG[k];
     if (!it) return false;
-    const fs = resolverFaltas(deps(k, modo === 'despues' ? 0 : 1));
+    const fs = resolverFaltas(deps(k, modo === 'despues' ? 0 : 1), modo === 'dinero' ? null : k);
     if (!fs.length) return false;
+    // Comprando con dinero del juego no se ofrecen piezas con créditos (eso es del combo de un equipo de crédito)
+    if (modo === 'dinero') fs.forEach((f) => { if (f.cred && (f.cred.juego || f.cred.personal)) f.cred = null; });
     const soloLente = fs.every((f) => /^lente_/.test(f.req));
     const titulo = modo === 'despues' ? T('combo.t_despues') : soloLente && it.cat === 'cam' ? T('bodega.lente_t') : T('combo.t');
     const plata = fs.filter((f) => f.dinero).map((f) => f.dinero);
@@ -39284,8 +39411,10 @@
         + (saldo < total ? `<p class="small" style="color:var(--amber)">${T('combo.faltan_creditos', { n: N(total - saldo) })}</p>` : '');
       btns += `<button class="btn ${creds.length ? '' : 'main'}" data-act="combo-canjear" data-k="${esc(pid)}" data-l="" data-item="${esc(k)}" ${saldo < base ? 'disabled' : ''}>${T(creds.length ? 'combo.canjear_solo' : 'combo.canjear', { item: esc(itemName(k)), n: N(base) })}</button>`;
       if (plata.length) btns += `<p class="small muted">${T('combo.resto_dinero')}</p>`;
-    } else if (plata.length) {
-      btns += `<button class="btn main" data-act="buy-kit" data-k="" data-l="${esc(plata.join(','))}" ${S.money < conPlata ? 'disabled' : ''}>${T('combo.comprar_falta', { m: M(conPlata) })}</button>`;
+    } else {
+      if (plata.length) btns += `<button class="btn main" data-act="buy-kit" data-k="" data-l="${esc(plata.join(','))}" ${S.money < conPlata ? 'disabled' : ''}>${T('combo.comprar_falta', { m: M(conPlata) })}</button>`;
+      // Lo que no se consigue con dinero (fama) pero sí con créditos: todo junto en un botón
+      btns += btnCanjearFalta(fs, k, plata.length ? 'btn' : 'btn main');
     }
     btns += btnPersonal(fs);
     if (!plata.length && modo !== 'creditos') btns += btnVer(fs);
@@ -39309,7 +39438,9 @@
   }
   // Canjea con créditos (servidor) el producto y, si se pide, los que completan el combo; luego ofrece lo que falta
   async function canjearCombo(pid, extras, item) {
-    const ids = [pid].concat((extras || []).filter(Boolean));
+    const ids = [pid].concat((extras || [])).filter(Boolean);
+    if (!ids.length) return;
+    const enPrep = prep ? prep.id : null;   // desde la preparación: se vuelve a ella con lo nuevo
     closeModal();
     let hechos = 0;
     for (const id of ids) {
@@ -39320,6 +39451,7 @@
     try { await Api.refrescar(); } catch (e) { /* queda lo que ya había */ }
     aplicarEntregas();
     render();
+    if (enPrep !== null && S.contracts.some((c) => c.id === enPrep)) { openPrep(enPrep); return; }
     if (item && hechos === ids.length) ofrecerCombo(item, 'despues');
   }
 
@@ -39369,15 +39501,18 @@
   // elegidas y también las tuyas que no se eligieron porque no funcionarían (así una cámara VIP o una sin lente no
   // "desaparece"). Debajo, los otros equipos elegidos a los que les falta algo (lente box sin cámara de sistema...).
   function arreglo(tipo, equipId) {
-    const fs = resolverFaltas(deps(tipo, 0));
+    const fs = resolverFaltas(deps(tipo, 0), tipo);
     if (!fs.length) return '';
     const plata = fs.filter((f) => f.dinero);
     const m = totalDinero(fs);
     const bloq = fs.filter((f) => f.tipo === 'equipo' && !f.dinero && f.key);
     let h = `<div class="small camav-t">${T('prep.falta_motivo', { que: fs.map((f) => esc(f.nombre)).join(', ') })}</div>`;
-    bloq.forEach((f) => { h += `<div class="small camav-t">${T('prep.falta_fama', { item: esc(itemName(f.key)), n: f.minRep })}</div>`; });
+    // Nunca un callejón sin salida: si con dinero pide más fama pero se consigue con créditos, se dice el precio en 💎
+    bloq.forEach((f) => { h += `<div class="small camav-t">${f.cred ? T('prep.falta_fama_cred', { item: esc(itemName(f.key)), n: f.minRep, c: N(f.cred.creditos) }) : T('prep.falta_fama', { item: esc(itemName(f.key)), n: f.minRep })}</div>`; });
     const bs = [];
     if (plata.length) bs.push(`<button class="btn sm camav-b green" data-act="buy-falta" data-k="${esc(tipo)}" data-id="${equipId || ''}" ${S.money < m ? 'disabled' : ''}>${I('cart', 'sm')}${T('prep.falta_comprar', { m: M(m) })}</button>`);
+    const cc = btnCanjearFalta(fs, tipo, 'btn sm camav-b gold');
+    if (cc) bs.push(cc);
     fs.filter((f) => f.tipo === 'personal').slice(0, 1).forEach((f) => bs.push(`<button class="btn sm camav-b" data-act="ir-personal" data-k="${esc(f.rol)}">${I(roleIcon(f.rol), 'sm')}${T('combo.contratar', { rol: esc(f.nombre) })}</button>`));
     if (!plata.length) { const v = btnVer(fs); if (v) bs.push(v.replace('class="btn"', 'class="btn sm camav-b"')); }
     return h + (bs.length ? `<div class="bq-acc">${bs.join('')}</div>` : '');
@@ -39400,9 +39535,7 @@
     const camHtml = bl.map((b) => {
       const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
       const e = S.equip.find((x) => x.id === b.equipId);
-      const extra = b.motivo === 'sin_vip'
-        ? `<div class="bq-acc"><button class="btn sm camav-b" data-act="ir-pase-vip">${I('crown', 'sm')}${T('prep.ir_pase_vip')}</button></div>`
-        : arreglo(b.tipo, b.equipId);
+      const extra = arreglo(b.tipo, b.equipId);
       return fila(b.tipo, e, b.texto || '', corto, extra);
     }).join('');
     const otrosHtml = otros.map((e) => fila(e.type, e, '', T('prep.bloq.falta'), arreglo(e.type, e.id))).join('');
@@ -39526,11 +39659,10 @@
         <span class="num small" style="text-align:end">${M(w)}${w > p.wage ? `<br><span class="muted" style="font-size:10.5px">+${Math.round((w / p.wage - 1) * 100)}%</span>` : ''}</span></label>`; }).join('');
     const equipHtml = S.equip.map((e) => {
       const it = G.CATALOG[e.type] || { name: e.type };
-      const off = vipBloqueado(e);
-      return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
+      return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
@@ -42146,7 +42278,7 @@
       if (!esObj(e)) falla('equipo_invalido', `Equipo ${i + 1}: formato inválido.`);
       if (typeof e.type !== 'string' || !tiene(G.CATALOG, e.type)) falla('equipo_invalido', `Equipo ${i + 1}: tipo desconocido (${String(e.type)}).`);
       if (!entero(e.condition, 1, 100)) falla('equipo_invalido', `Equipo ${i + 1}: estado debe ser entero de 1 a 100.`);
-      if (G.CATALOG[e.type].vip && !vip) falla('equipo_vip_sin_vip', `Equipo ${i + 1}: ${G.CATALOG[e.type].name} es VIP y el VIP no está activo.`);
+      // Los equipos VIP valen siempre (lo comprado con créditos es tuyo, con o sin Pase VIP): ya no hay equipo_vip_sin_vip
       return Object.assign(extras(e, ['id', 'type', 'condition']), { type: e.type, condition: e.condition });
     });
   }
@@ -46866,7 +46998,7 @@
       <div class="sectitle">${esc(T('duelo.exclusivos'))}</div>
       <div class="card" id="dl-inv">${D.inventario_elegible.map((x) => `<div class="dl-elige"><input type="checkbox" id="dli${x.id}" data-id="${x.id}" ${elegidosInv.has(x.id) ? 'checked' : ''}>
           <label for="dli${x.id}"><span class="tile t-amber">${A.icon(x.item)}</span><span class="grow"><b>${esc(x.nombre)}</b> <span class="muted small">#${String(x.serie).padStart(4, '0')}</span>
-          ${x.vip ? `<span class="dl-mini" style="display:block">${esc(T('duelo.vip_guardado'))}</span>` : ''}</span></label></div>`).join('') || `<p class="small muted" style="margin:0">${esc(T('duelo.sin_exclusivos'))}</p>`}</div>
+</span></label></div>`).join('') || `<p class="small muted" style="margin:0">${esc(T('duelo.sin_exclusivos'))}</p>`}</div>
       <button class="btn main" data-dl="guardar-equipo">${A.icon('check', 'sm')} ${esc(T('duelo.guardar'))}</button>
       <button class="btn" data-dl="lobby">${esc(T('duelo.cancelar'))}</button>`;
   }
@@ -48962,7 +49094,7 @@
     regalo_de: 'Regalo de {a}', regalo_anonimo: 'Regalo de una productora anónima', regalo_tuyo: 'Tu regalo para la asociación',
     abrir: 'Abrir', abriendo: 'Abriendo…', mas_regalos: '+{n} regalos más', vence: 'Vence el {f}',
     mensual_listo: 'Tu regalo VIP del mes está listo', reclamar: 'Reclamar', oferta_nueva: 'Oferta para ti: {o}',
-    'modal.titulo': 'Nivel VIP', 'modal.pase': 'El Pase VIP de 30 días es aparte. Tu nivel VIP es para siempre.',
+    'modal.titulo': 'Nivel VIP', 'modal.pase': 'El Pase VIP de 30 días es aparte y da más según tu nivel VIP. Tu nivel VIP es para siempre.',
     'modal.puntos': '$1 en la tienda = 10 puntos VIP',
     'tab.niveles': 'Niveles', 'tab.mecenas': 'Mecenas',
     'sec.regalos': 'Regalos de tu asociación', 'sec.mensual': 'Regalo del mes', 'sec.ofertas': 'Ofertas para ti', 'sec.tabla': 'Ventajas por nivel',

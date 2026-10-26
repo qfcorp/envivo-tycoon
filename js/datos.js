@@ -320,7 +320,7 @@
     'bloq.sin_piloto': '{item} no puede volar sin piloto de dron',
     'bloq.sin_generador': '{item} necesita un generador diésel',
     'bloq.sin_operador_repeticion': '{item} necesita un operador de repeticiones',
-    'bloq.sin_vip': '{item} es un equipo VIP: solo funciona con el Pase VIP activo (el nivel VIP no basta). Sigue siendo tuyo y vuelve a funcionar al activar el Pase VIP',
+    'bloq.sin_vip': '{item} es un equipo VIP: funciona siempre, con o sin el Pase VIP',
 
     // Partes de la calidad
     'parte.base': 'Base',
@@ -1219,8 +1219,22 @@
     stolen: ['taunt.stolen.0'],
   };
 
+  /* Combo con créditos (decisión de Dimitry, oct. 2026: "si permites comprar cosas con diamantes, deberías poder comprar todo
+     el combo que se necesita"). Lo que le falta a un equipo canjeado con créditos (cámara de sistema, lentes, fibra...) se
+     puede canjear también con créditos aunque con dinero del juego todavía pida más fama. Solo las piezas de su combo
+     (Game.comboDe), en el servidor (POST /api/gastar "juego:<clave>" / "personal:<rol>"), con tope por pieza.
+     Precio justo: 4 × raíz del precio en dinero del juego, redondeado a 10 hacia arriba (mínimo 30): $13.000 → 460 💎
+     (una Edición Exclusiva de algo parecido cuesta más). El personal que maneja el equipo, si con tu fama todavía no
+     aparece: 150 💎 por una persona de habilidad 2. El servidor usa los MISMOS números (server/src/CatalogoJuego.php,
+     generado desde aquí). */
+  const COMBO_CREDITOS = { porRaiz: 4, minimo: 30, personal: 150, habilidad: 2, maxPorEquipo: 4, maxPorRol: 2 };
+  function creditosJuego(precio) {
+    const p = Math.max(0, Number(precio) || 0);
+    return Math.max(COMBO_CREDITOS.minimo, Math.ceil(COMBO_CREDITOS.porRaiz * Math.sqrt(p) / 10) * 10);
+  }
+
   const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE,
-    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA };
+    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, creditosJuego };
   if (typeof module !== 'undefined' && module.exports) module.exports = Datos;
   else root.Datos = Datos;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -143,7 +143,7 @@ creado, vence, cerrado }`. La calidad del fantasma solo se ve cuando el duelo es
 - Tope de habilidad = mín(5, 2 + fama ÷ 15) con la **fama pública del servidor**; lo de más solo con personal comprado
   (entregas tipo `personal`, una persona por entrega).
 - `inventario`: ids del inventario del servidor, del jugador y en la bodega (máx. 12). Al jugar se vuelve a revisar: lo
-  vendido o publicado ya no va; lo VIP solo con VIP activo.
+  vendido o publicado ya no va; lo VIP va siempre (con o sin Pase VIP).
 - → `{ ok, equipo }`. 409 `duelo_abierto` si hay un duelo en curso.
 
 ### `POST /api/duelos/retar` `{ rival_id, nivel: "facil"|"medio"|"dificil" }`

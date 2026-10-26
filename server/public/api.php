@@ -223,7 +223,8 @@ function api_gastar(): never
         throw $e;
     } catch (\InvalidArgumentException | \RuntimeException $e) {
         $extra = ['creditos' => Monedero::saldo($j)];
-        $cod = match ((int) $e->getCode()) { 402 => 'sin_creditos', 403 => 'vip_requerido', 404 => 'no_existe', default => 'error' };
+        $combo = str_starts_with(texto_de($in, 'item'), 'juego:') || str_starts_with(texto_de($in, 'item'), 'personal:');
+        $cod = match ((int) $e->getCode()) { 402 => 'sin_creditos', 403 => $combo ? 'fuera_de_combo' : 'vip_requerido', 404 => 'no_existe', 409 => $combo ? 'tope_combo' : 'error', default => 'error' };
         if ($cod === 'vip_requerido') $extra['motivo'] = 'vip_requerido';
         Http::error($e->getCode() ?: 400, $e->getMessage(), $extra, $cod);
     }
@@ -237,13 +238,13 @@ function api_vip_bono(): never
 {
     $j = requiere_sesion();
     try {
-        [$saldo, $entrega] = Monedero::bonoVip($j);
+        [$saldo, $entrega, $entregas] = Monedero::bonoVip($j);
     } catch (Fallo $e) {
         throw $e;
     } catch (\RuntimeException $e) {
         Http::error($e->getCode() ?: 400, $e->getMessage(), [], (int) $e->getCode() === 403 ? 'vip_requerido' : 'ya_reclamado');
     }
-    Http::json(200, ['ok' => true, 'creditos' => $saldo, 'entrega' => $entrega]);
+    Http::json(200, ['ok' => true, 'creditos' => $saldo, 'entrega' => $entrega, 'entregas' => $entregas]);
 }
 
 function api_orden(): never

@@ -24,6 +24,28 @@ final class Ventajas
         'estrella' => 'EnVivo\\Estrellas',
     ];
 
+    /**
+     * Equipos VIP dentro del techo (decisión de Dimitry, oct. 2026: los equipos VIP canjeados funcionan SIEMPRE, también sin
+     * el Pase VIP). Lo que suben la calidad ya validada se cobra del bono de ventajas: cada equipo VIP que lleva el equipo
+     * resta estos puntos del bono (4 cámaras VIP + switcher + satélite = 11 de 12). Medido con batalla.js
+     * (server/tests/pruebas_vip.php): el equipo VIP completo sube ~19,5 % solo; con el bono recortado queda en ~21 %.
+     */
+    public const PUNTOS_VIP = ['vip_cam8k' => 2, 'vip_switcher' => 2, 'vip_satelital' => 1];
+
+    /** Puntos de techo que usan los equipos VIP de una lista [{type}] o [{item}]. */
+    public static function puntosVip(array $equip): int
+    {
+        $n = 0;
+        foreach ($equip as $e) {
+            $t = is_array($e) ? (string) ($e['type'] ?? $e['item'] ?? '') : '';
+            $n += self::PUNTOS_VIP[$t] ?? 0;
+        }
+        return $n;
+    }
+
+    /** Bono de ventajas después de cobrar los equipos VIP que lleva el equipo (nunca menos de 0). */
+    public static function recorteVip(int $bono, array $equip): int { return max(0, $bono - self::puntosVip($equip)); }
+
     public static function tope(): int
     {
         $v = trim(Ajustes::get('ventajas_tope', (string) self::TOPE));

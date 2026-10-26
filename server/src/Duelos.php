@@ -303,7 +303,8 @@ final class Duelos
     /** Lo que ven los demás del equipo (y el "poder" para ordenar). */
     public static function resumenEquipo(array $equipo, bool $vip): array
     {
-        $cams = array_values(array_filter($equipo['inventario'], fn($x) => self::EQUIPOS[$x['item']][0] && ($vip || !in_array($x['item'], self::VIP_ITEMS, true))));
+        // Los equipos VIP cuentan siempre (con o sin Pase VIP): lo comprado con créditos es tuyo. $vip queda por compatibilidad.
+        $cams = array_values(array_filter($equipo['inventario'], fn($x) => self::EQUIPOS[$x['item']][0]));
         usort($cams, fn($a, $b) => self::EQUIPOS[$b['item']][1] <=> self::EQUIPOS[$a['item']][1]);
         $nombres = array_map(fn($x) => self::nombreItem($x['item']), array_slice($cams, 0, 4));
         while (count($nombres) < 4) $nombres[] = self::nombreItem('cam_pro');
@@ -328,7 +329,7 @@ final class Duelos
     /**
      * Arma el intento de un lado del duelo (lo que el validador repite). Igual para los dos lados: la semilla, el contrato,
      * el contexto, el kit básico (estado 85 %) y la cantidad de cámaras (la que pide el contrato: primero las exclusivas,
-     * después las del kit). Los demás equipos del inventario van todos (los VIP solo con VIP activo, y solo si el dueño
+     * después las del kit). Los demás equipos del inventario van todos (también los VIP, con o sin Pase VIP; solo si el dueño
      * todavía los tiene en su bodega). Personal: las mejores personas para las cámaras (siempre al menos un camarógrafo que no
      * es el dueño), director, sonidista (si hay audio), técnico de transmisión y 1 de cada rol de apoyo, hasta 12. Lo que
      * falte de los cuatro roles principales lo cubre un freelance junior de nivel 1.
@@ -337,7 +338,6 @@ final class Duelos
     {
         $inv = array_values(array_filter($equipo['inventario'] ?? [], function ($x) use ($vip, $dueno) {
             if (!isset(self::EQUIPOS[$x['item']])) return false;
-            if (in_array($x['item'], self::VIP_ITEMS, true) && !$vip) return false;
             return $dueno === null || (bool) Db::valor("SELECT 1 FROM inventario WHERE id = ? AND jugador_id = ? AND estado = 'bodega'", [$x['id'], $dueno]);
         }));
         $premCams = array_values(array_filter($inv, fn($x) => self::EQUIPOS[$x['item']][0]));
@@ -437,6 +437,9 @@ final class Duelos
         $bonos = ['retador' => self::bonoVentajas($j), 'defensor' => self::bonoVentajas($rival)];
         $intR = self::armarIntento($miEq, $contrato, $seed, Monedero::vipActivo($j), $j);
         $intD = self::armarIntento($suEq, $contrato, $seed, Monedero::vipActivo($rival), $rival);
+        // Los equipos VIP (funcionan siempre, con o sin Pase) cuentan dentro del mismo techo: se cobran del bono
+        $bonos['retador'] = Ventajas::recorteVip($bonos['retador'], $intR['equipo']['equip']);
+        $bonos['defensor'] = Ventajas::recorteVip($bonos['defensor'], $intD['equipo']['equip']);
         $f = Repeticion::motor(['accion' => 'fantasma', 'intento' => $intD, 'politica' => self::POLITICA, 'fijar' => true]);
         if (!empty($f['ok']) && is_array($f['contrato'] ?? null)) {
             // Mismos imprevistos para los dos: el contrato final (con contrato.imprevistos) va a los dos intentos

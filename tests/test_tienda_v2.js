@@ -38,7 +38,7 @@ const PRODUCTOS = [
   prod('bienvenida', 'Oferta de bienvenida', 'Una sola vez: 150 créditos, un camarógrafo senior de refuerzo por 3 eventos y 3 cables', 0.99, 150, 'bienvenida', { una_vez: true }),
   prod('inicio', 'Paquete de inicio', 'Una sola vez: cámara profesional, 5 cables, 3 baterías, técnico de streaming nivel 3 y 200 créditos', 2.99, 200, 'inicio', { una_vez: true }),
   prod('tarjeta_mensual', 'Tarjeta mensual', '30 días: reclama 20 créditos cada día (600 en total). No se renueva sola; si compras otra se suman 30 días', 4.99, 0, 'tarjeta'),
-  prod('vip30', 'Pase VIP 30 días', 'No se renueva solo: bono diario de $150 + 10 créditos, reparaciones 30 % más baratas, 1 oferta extra al día, distintivo VIP', 9.99, 0, 'vip'),
+  prod('vip30', 'Pase VIP 30 días', 'No se renueva solo. Según tu nivel VIP: 4 o 5 eventos por día, reparaciones 30 a 50 % más baratas, obras de la sede 10 a 30 % más rápidas, bono diario (dinero, créditos, cables y baterías), 1 oferta extra al día y distintivo VIP. Lo que compras con créditos funciona siempre, con o sin el Pase', 9.99, 0, 'vip'),
   prod('pack_obra_s', 'Pack de obra S', 'Sede oficial: 10 h de aceleradores de obra + 12 cables, 12 placas, 12 paneles LED, 12 credenciales, 12 planos y 1 chip 4K. Contenido fijo.', 1.99, 0, 'pack_obra'),
   prod('pack_obra_m', 'Pack de obra M', 'Sede oficial: 30 h de aceleradores de obra + 32 cables, 32 placas, 32 paneles LED, 32 credenciales, 32 planos y 3 chips 4K. Contenido fijo.', 4.99, 0, 'pack_obra'),
   prod('pack_obra_l', 'Pack de obra L', 'Sede oficial: 80 h de aceleradores de obra + 70 cables, 70 placas, 70 paneles LED, 70 credenciales, 70 planos y 8 chips 4K. Contenido fijo.', 9.99, 0, 'pack_obra'),
@@ -209,6 +209,15 @@ async function cerrar(o, nombre) {
         bien(/360/.test(v ? v.t : ''), 'Web: VIP dice cuántos puntos faltan');
         const of = await o.page.$eval('#tv-vip [data-prod="oferta_vip_2"]', (el) => el.innerText).catch(() => '');
         bien(/900/.test(of) && /\$4,99/.test(of) && /2/.test(of), 'Web: oferta VIP con contenido, precio y compras que quedan');
+      }
+      {
+        // Pase VIP 30 días: la tabla "Con el Pase VIP" por nivel (eventos por día, reparaciones, obras y bono), con tu nivel marcado
+        const pv = await o.page.$eval('#tv-vip [data-prod="vip30"]', (el) => ({ t: el.innerText, filas: el.querySelectorAll('.pv-fila').length,
+          yo: (el.querySelector('.pv-fila.yo') || {}).dataset ? el.querySelector('.pv-fila.yo').dataset.desde : null })).catch(() => null);
+        bien(pv && pv.filas === 5 && /Con el Pase VIP/.test(pv.t) && /VIP 1–2/.test(pv.t) && /VIP 9–10/.test(pv.t), 'Web: el Pase VIP muestra la tabla por nivel (VIP 1–2 … VIP 9–10)' + (pv ? ` [${pv.filas}]` : ''));
+        bien(pv && /4 eventos por día/.test(pv.t) && /5 eventos por día/.test(pv.t) && /−50 %/.test(pv.t) && /bono diario/.test(pv.t), 'Web: …con eventos por día, reparaciones, obras y bono diario');
+        bien(pv && pv.yo === '3', 'Web: …y marca la fila de tu nivel (VIP 4 → fila "VIP 3–4")' + (pv ? ` [${pv.yo}]` : ''));
+        bien(pv && /funciona siempre/.test(pv.t), 'Web: …y dice que lo comprado con créditos funciona siempre');
       }
       if (presentes.includes('js/estrellas.js')) {
         bien(secs.includes('tv-copa'), 'Web: sección Copa y Duelos (personal estrella y Pase de Copa)');

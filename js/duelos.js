@@ -313,7 +313,7 @@
       <div class="sectitle">${esc(T('duelo.exclusivos'))}</div>
       <div class="card" id="dl-inv">${D.inventario_elegible.map((x) => `<div class="dl-elige"><input type="checkbox" id="dli${x.id}" data-id="${x.id}" ${elegidosInv.has(x.id) ? 'checked' : ''}>
           <label for="dli${x.id}"><span class="tile t-amber">${A.icon(x.item)}</span><span class="grow"><b>${esc(x.nombre)}</b> <span class="muted small">#${String(x.serie).padStart(4, '0')}</span>
-          ${x.vip ? `<span class="dl-mini" style="display:block">${esc(T('duelo.vip_guardado'))}</span>` : ''}</span></label></div>`).join('') || `<p class="small muted" style="margin:0">${esc(T('duelo.sin_exclusivos'))}</p>`}</div>
+</span></label></div>`).join('') || `<p class="small muted" style="margin:0">${esc(T('duelo.sin_exclusivos'))}</p>`}</div>
       <button class="btn main" data-dl="guardar-equipo">${A.icon('check', 'sm')} ${esc(T('duelo.guardar'))}</button>
       <button class="btn" data-dl="lobby">${esc(T('duelo.cancelar'))}</button>`;
   }

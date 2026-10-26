@@ -127,21 +127,71 @@ final class Monedero
     /**
      * Gasta créditos en un exclusivo. Devuelve [saldo, entrega|null, equipo del inventario|null].
      * Los equipos (entrega tipo "item") se crean en el inventario del servidor; lo demás sigue siendo una entrega.
-     * Lanza \RuntimeException('...', 402) si no alcanza y ('...', 403) si es VIP y no hay VIP activo.
+     * Lanza \RuntimeException('...', 402) si no alcanza y ('...', 403) si es VIP y no hay VIP activo (solo para canjearlo: después funciona siempre).
      */
     public static function gastar(int $jugador, string $item): array
     {
+        if (str_starts_with($item, 'juego:') || str_starts_with($item, 'personal:')) return self::gastarCombo($jugador, $item);
         $p = Catalogo::premium($item);
         if (!$p) throw new \InvalidArgumentException('Ese artículo no existe en la tienda.', 404);
         if (!$p['activo']) throw new \InvalidArgumentException('Ese artículo no está a la venta por ahora.', 404);
         return Db::tx(function () use ($jugador, $item, $p): array {
-            if (!empty($p['vip']) && !self::vipActivo($jugador)) throw new \RuntimeException('Los equipos VIP se canjean solo con el Pase VIP activo.', 403);
+            // Los equipos VIP se CANJEAN con el Pase VIP activo; después son tuyos y funcionan siempre (también sin el Pase).
+            if (!empty($p['vip']) && !self::vipActivo($jugador)) throw new \RuntimeException('Los equipos VIP se canjean solo con el Pase VIP activo (después son tuyos para siempre).', 403);
             if (self::saldo($jugador) < $p['creditos']) throw new \RuntimeException('No tienes créditos suficientes. Necesitas ' . $p['creditos'] . ' créditos.', 402);
             $saldo = self::mover($jugador, -$p['creditos'], 'gasto', 'premium:' . $item);
             $e = $p['entrega'];
             if ($e['tipo'] === 'item') return [$saldo, null, Inventario::crear($jugador, $e['item'], 'canje', 'creditos:' . $item)];
             $entrega = self::entregarDef($jugador, $e, 'creditos:' . $item);
             return [$saldo, $entrega, null];
+        });
+    }
+
+    /**
+     * Combo con créditos (js/datos.js COMBO_CREDITOS; decisión de Dimitry, oct. 2026): completa un equipo canjeado con créditos.
+     *   "juego:<clave>"  una pieza de la tienda del juego que ese equipo necesita (cámara de sistema, lente, fibra...), aunque
+     *                    con dinero del juego todavía pida más fama. Precio: CatalogoJuego::EQUIPOS[clave]['creditos'].
+     *                    Llega como entrega "equipo" (a la bodega de la partida; vuelve en una partida nueva). No se vende en
+     *                    el mercado y en línea sigue la regla de fama de siempre (Festival/Copa revisan la fama pública).
+     *   "personal:<rol>" una persona de habilidad COMBO['habilidad'] del rol que maneja ese equipo, solo si con tu fama ese
+     *                    rol todavía no aparece entre los candidatos. Precio COMBO['personal'].
+     * Solo piezas del combo de un equipo canjeado con créditos que TIENES en tu bodega del servidor (CatalogoJuego::COMBOS),
+     * con tope por pieza (maxPorEquipo / maxPorRol). Devuelve [saldo, entrega, null].
+     */
+    public static function gastarCombo(int $jugador, string $item): array
+    {
+        [$tipo, $clave] = explode(':', $item, 2);
+        $cfg = CatalogoJuego::COMBO;
+        if ($tipo === 'juego') {
+            $eq = CatalogoJuego::EQUIPOS[$clave] ?? null;
+            if ($eq === null || (int) ($eq['creditos'] ?? 0) <= 0) throw new \InvalidArgumentException('Ese equipo no se puede canjear con créditos.', 404);
+            $costo = (int) $eq['creditos'];
+            $campo = 'equipos';
+            $tope = (int) $cfg['maxPorEquipo'];
+            $def = ['tipo' => 'equipo', 'item' => $clave, 'cantidad' => 1];
+            $nombre = (string) $eq['nombre'];
+        } else {
+            $clave = CatalogoJuego::ROL_ALIAS[$clave] ?? $clave;
+            if (!in_array($clave, CatalogoJuego::ROLES, true)) throw new \InvalidArgumentException('Ese rol no existe.', 404);
+            $fama = (int) (Db::valor('SELECT fama_publica FROM jugadores WHERE id = ?', [$jugador]) ?? 0);
+            if ($fama >= (int) (CatalogoJuego::ROLES_FAMA[$clave] ?? 0)) throw new \RuntimeException('Con tu fama ya puedes contratar ese rol en Personal (con dinero del juego).', 409);
+            $costo = (int) $cfg['personal'];
+            $campo = 'roles';
+            $tope = (int) $cfg['maxPorRol'];
+            // nivel junior: en Duelos el permiso queda como una persona normal (sin ventaja de nivel)
+            $def = ['tipo' => 'personal', 'item' => $clave, 'cantidad' => (int) $cfg['habilidad'], 'nivel' => 'junior'];
+            $nombre = $clave;
+        }
+        return Db::tx(function () use ($jugador, $item, $clave, $campo, $costo, $tope, $def, $nombre): array {
+            $mios = array_column(Db::todas("SELECT DISTINCT item FROM inventario WHERE jugador_id = ? AND estado = 'bodega'", [$jugador]), 'item');
+            $ok = false;
+            foreach ($mios as $m) if (in_array($clave, CatalogoJuego::COMBOS[$m][$campo] ?? [], true)) { $ok = true; break; }
+            if (!$ok) throw new \RuntimeException('Con créditos solo se completa el combo de un equipo que canjeaste con créditos y que está en tu bodega.', 403);
+            $ya = (int) Db::valor('SELECT COUNT(*) FROM entregas WHERE jugador_id = ? AND origen = ?', [$jugador, 'combo:' . $item]);
+            if ($ya >= $tope) throw new \RuntimeException('Ya canjeaste ' . $tope . ' de ' . $nombre . ' con créditos (es el tope del combo).', 409);
+            if (self::saldo($jugador) < $costo) throw new \RuntimeException('No tienes créditos suficientes. Necesitas ' . $costo . ' créditos.', 402);
+            $saldo = self::mover($jugador, -$costo, 'gasto', 'combo:' . $item);
+            return [$saldo, self::entregarDef($jugador, $def, 'combo:' . $item), null];
         });
     }
 
@@ -158,7 +208,10 @@ final class Monedero
         return $v !== null && (int) $v > time();
     }
 
-    /** Bono VIP diario: una vez por día local. Devuelve [saldo, entrega]. */
+    /**
+     * Bono VIP diario: una vez por día local. Crece con el nivel VIP (Vip::PASE: dinero del juego, créditos, cables, baterías y
+     * desde VIP 9 todo el equipo al 100 %). Sin el módulo VIP: $150 + 10 créditos. Devuelve [saldo, entrega del dinero, todas las entregas].
+     */
     public static function bonoVip(int $jugador): array
     {
         Cuentas::exigirActiva($jugador);
@@ -167,9 +220,17 @@ final class Monedero
             $dia = self::diaLocal();
             if (self::bonoReclamadoHoy($jugador)) throw new \RuntimeException('Ya reclamaste el bono VIP de hoy. Vuelve mañana.', 409);
             Db::q('INSERT INTO bonos_vip (jugador_id, dia, creado) VALUES (?, ?, ?)', [$jugador, $dia, time()]);
-            $entrega = self::entregar($jugador, 'dinero', '-', Catalogo::VIP_BONO_DINERO, 'vip_bono:' . $dia);
-            $saldo = self::mover($jugador, Catalogo::VIP_BONO_CREDITOS, 'vip_bono', 'vip_bono:' . $dia);
-            return [$saldo, $entrega];
+            $defs = [['tipo' => 'dinero', 'item' => '-', 'cantidad' => Catalogo::VIP_BONO_DINERO]];
+            $creditos = Catalogo::VIP_BONO_CREDITOS;
+            if (class_exists(Vip::class) && method_exists(Vip::class, 'entregasBono')) {
+                $nivel = 0;
+                try { $nivel = Vip::nivel($jugador); } catch (\Throwable) { $nivel = 0; }
+                $defs = Vip::entregasBono($nivel);
+                $creditos = Vip::pase($nivel)['bono']['creditos'];
+            }
+            $entregas = array_map(fn($e) => self::entregarDef($jugador, $e, 'vip_bono:' . $dia), $defs);
+            $saldo = self::mover($jugador, $creditos, 'vip_bono', 'vip_bono:' . $dia);
+            return [$saldo, $entregas[0], $entregas];
         });
     }
 
