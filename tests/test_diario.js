@@ -29,8 +29,9 @@ function reemplazar(txt, ancla, nuevo, que) {
   return txt.replace(ancla, () => nuevo);
 }
 const leer = (f) => fs.readFileSync(path.join(RAIZ, f), 'utf8');
-const ANCLA_PL = "    pase: ['star', 'inicio.pl.pase'],";
-const uiJs = leer('js/ui.js').includes("diario: ['gift'") ? leer('js/ui.js') : reemplazar(leer('js/ui.js'), ANCLA_PL, "    diario: ['gift', 'inicio.pl.diario'], " + ANCLA_PL.trim(), 'js/ui.js');
+// Inicio ya no tiene filas (PL_INFO): la tarjeta vive en la pizarra de Misiones de la sede (js/hub.js, MAPA diario → misiones)
+const uiJs = leer('js/ui.js');
+const { verEnInicio } = require('./hub_ayuda');
 const conClave = (f, linea) => { const s = leer(f); if (s.includes("inicio.pl.diario")) return s; const a = /(['"]inicio\.pl\.pase['"]\s*:\s*['"][^'"]*['"],)/.exec(s); if (!a) throw new Error('sin inicio.pl.pase en ' + f); return s.replace(a[1], a[1] + ' ' + linea); };
 const esJs = conClave('js/lang/es.js', "'inicio.pl.diario': 'Premio diario',");
 const enJs = conClave('js/lang/en.js', '"inicio.pl.diario": "Daily reward",');
@@ -180,7 +181,7 @@ const hayAviso = (page) => page.evaluate(() => document.getElementById('overlay'
 const esperarAviso = (page, ms) => page.waitForFunction(() => document.getElementById('overlay').classList.contains('on') && !!document.querySelector('#modal [data-diario="aviso"]'), null, { timeout: ms || 10000 }).then(() => true).catch(() => false);
 const desborde = (page) => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
 const modalTxt = (page) => page.evaluate(() => (document.getElementById('overlay').classList.contains('on') ? document.getElementById('modal').innerText : ''));
-const tarjetaTxt = (page) => page.evaluate(() => { const c = document.querySelector('[data-diario="tarjeta"]'); return c ? c.innerText : ''; });
+const tarjetaTxt = async (page) => { await verEnInicio(page, '[data-diario="tarjeta"]', 3000); return page.evaluate(() => { const c = document.querySelector('[data-diario="tarjeta"]'); return c ? c.innerText : ''; }); };
 async function cerrarOtras(page) {
   for (let i = 0; i < 5; i++) {
     const otra = await page.evaluate(() => document.getElementById('overlay').classList.contains('on') && !document.querySelector('#modal [data-diario]'));
@@ -192,7 +193,8 @@ async function cerrarOtras(page) {
 }
 async function fecha(page, f) { await page.evaluate((x) => localStorage.setItem('__prueba_fecha', x), f); }
 async function verTarjeta(page, archivo) {
-  const el = await page.$('[data-pl="diario"]');
+  await verEnInicio(page, '[data-diario="tarjeta"]', 3000);
+  const el = await page.$('#hubSheet [data-diario="tarjeta"]');
   if (!el) return false;
   await el.scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
@@ -213,10 +215,10 @@ async function verTarjeta(page, archivo) {
       bien(!(await esperarAviso(page, 7000)), 'A: partida nueva sin la guía vista: no sale el aviso');
       const t = await tarjetaTxt(page);
       bien(/Día 1 de 7/.test(t) && /Reclamar/.test(t), 'A: la tarjeta de Inicio igual está (Día 1 de 7, Reclamar)');
-      const fila = await page.evaluate(() => { const f = document.querySelector('[data-pl="diario"] .pl-tx b'); return f ? f.textContent : ''; });
-      bien(fila === 'Premio diario', 'A: fila de Inicio con su título (' + fila + ')');
-      const orden = await page.evaluate(() => [...document.querySelectorAll('[data-pl]')].map((x) => x.dataset.pl));
-      bien(orden.indexOf('diario') >= 0 && orden.indexOf('diario') <= 2, 'A: la fila sale arriba en Inicio (' + orden.slice(0, 4).join(', ') + ')');
+      const fila = await page.evaluate(() => ({ lugar: (document.getElementById('hubSheet') || {}).dataset.lugar, aviso: (document.querySelector('.hs[data-hub="misiones"] .hs-b') || {}).textContent }));
+      bien(fila.lugar === 'misiones' && fila.aviso === '!', 'A: en Inicio está en la pizarra de Misiones, que avisa "!" (' + JSON.stringify(fila) + ')');
+      const orden = await page.evaluate(() => [...document.querySelectorAll('#hubSheet .hub-sh-cuerpo > .card')].map((x) => x.dataset.diario ? 'diario' : x.className));
+      bien(orden[0] === 'diario', 'A: el premio diario sale primero en la hoja (' + orden.slice(0, 3).join(', ') + ')');
       await ctx.close();
     }
 
@@ -283,6 +285,7 @@ async function verTarjeta(page, archivo) {
       bien(!(await hayAviso(page)), 'B: "Más tarde" lo cierra');
       bien(!(await esperarAviso(page, 6000)), 'B: y no vuelve a insistir ese día');
       const a3 = await S(page);
+      await verEnInicio(page, '[data-diario="tarjeta"] [data-acc="reclamar"]', 4000);
       await page.click('[data-diario="tarjeta"] [data-acc="reclamar"]');
       await page.waitForTimeout(400);
       const d3 = await S(page);
@@ -403,6 +406,7 @@ async function verTarjeta(page, archivo) {
       await page.evaluate(() => { const d = window.Diario.servidor.datos; d.reclamado_hoy = false; d.dia = 3; d.premios[2].estado = 'hoy'; });
       await page.evaluate(() => window.__game && document.querySelector('nav button[data-tab="inicio"]').click());
       await page.waitForTimeout(300);
+      await verEnInicio(page, '[data-diario="tarjeta"] [data-acc="reclamar"]', 4000);
       await page.click('[data-diario="tarjeta"] [data-acc="reclamar"]');
       await page.waitForTimeout(800);
       bien(srv.posts === 3 && /ya reclamaste/i.test(await page.textContent('#toast')) && /Listo por hoy/.test(await tarjetaTxt(page)), 'E: 409 ya_reclamado: mensaje amable y vuelve a lo del servidor');

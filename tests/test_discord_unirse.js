@@ -84,7 +84,8 @@ async function abrir(browser, caso, guardada) {
   return { ctx, page, errores };
 }
 const desborde = (page) => page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
-const botonEn = (page, tab) => page.$(`#tab-${tab} [data-act="discord-unirse"]`);
+// En Inicio el botón vive en la hoja "Más" de la sede (js/hub.js): se abre primero
+const botonEn = async (page, tab) => { if (tab === 'inicio') await require('./hub_ayuda').abrirLugar(page, 'mas'); return page.$(`#tab-${tab} [data-act="discord-unirse"]`); };
 async function irTienda(page) {
   await page.click('nav button[data-tab="tienda"]');
   await page.waitForSelector('#tab-tienda .tv-trust', { timeout: 8000 });
@@ -98,7 +99,7 @@ async function irTienda(page) {
     {
       const { ctx, page, errores } = await abrir(browser, {}, guardada);
       const b = await botonEn(page, 'inicio');
-      bien(!!b, '1: Inicio tiene "Únete a nuestro Discord"');
+      bien(!!b, '1: Inicio (Más) tiene "Únete a nuestro Discord"');
       bien(b && /Únete a nuestro Discord/.test(await b.innerText()), '1: el botón dice "Únete a nuestro Discord"');
       const junto = await page.evaluate(() => { const b = document.querySelector('#tab-inicio [data-act="discord-unirse"]'); const s = document.querySelector('#tab-inicio [data-act="soporte"]'); return !s || s.nextElementSibling === b; });
       bien(junto, '1: está justo debajo de "Ayuda y soporte"');

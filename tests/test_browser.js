@@ -138,9 +138,10 @@ const { chromium } = require('playwright');
     if (await ov.count()) await ov.first().click(); else break;
   }
 
-  // El registro completo se abre desde Inicio
+  // El registro completo se abre desde Inicio (en la oficina de la Historia, dentro de la sede: js/hub.js)
   await click('nav button[data-tab="inicio"]');
-  await click('[data-act="tab"][data-tab="registro"]');
+  if (!(await require('./hub_ayuda').verEnInicio(page, '[data-act="tab"][data-tab="registro"]'))) fail('Inicio: no se encontró el botón del registro');
+  await click('#hubSheet [data-act="tab"][data-tab="registro"]');
   await shot('11_registro');
   await click('nav button[data-tab="inicio"]');
   await shot('12_inicio_final');

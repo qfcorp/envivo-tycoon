@@ -473,12 +473,14 @@ if (!process.argv.includes('--navegador')) {
   await shot('06_resultado_taxi'); await noHScroll('resultado');
   await page.locator('#modal [data-act="after-result"]').click(); await page.waitForTimeout(300); await cerrar();
 
-  /* --- Fila "Flota" de Inicio sin vehículos y con la van --- */
+  /* --- "Flota" en la sede de Inicio (el garaje, js/hub.js) sin vehículos y con la van --- */
+  const { verEnInicio } = require('./hub_ayuda');
+  const hojaFlota = async () => { await verEnInicio(page, '.mov-flota'); return ((await page.textContent('#hubSheet .hub-sh-t').catch(() => '')) + ' · ' + (await page.textContent('#hubSheet .mov-flota').catch(() => ''))).replace(/\s+/g, ' '); };
   await page.locator('nav button[data-tab="inicio"]').click(); await page.waitForTimeout(250);
-  if (!(await page.locator('.pl[data-pl="flota"]').count())) errs.push('no está la fila Flota en Inicio');
-  const resumen0 = await page.locator('.pl[data-pl="flota"] .pl-tx').textContent().catch(() => '');
-  if (!/Flota y movilización/.test(resumen0) || !/taxi/.test(resumen0)) errs.push('título/resumen de la fila Flota: ' + resumen0);
-  await page.locator('.mov-flota').first().scrollIntoViewIfNeeded(); await shot('07_flota_vacia', '.pl[data-pl="flota"]');
+  if (!(await page.locator('.hs[data-hub="flota"]').count())) errs.push('no está el garaje (Flota) en la sede de Inicio');
+  const resumen0 = await hojaFlota();
+  if (!/Flota y movilización/.test(resumen0) || !/taxi/.test(resumen0)) errs.push('título/resumen de la hoja Flota: ' + resumen0);
+  await page.locator('.mov-flota').first().scrollIntoViewIfNeeded(); await shot('07_flota_vacia', '#hubSheet .hub-sh');
   // Comprar la van desde Bodega (categoría vehicle)
   await page.locator('.mov-flota [data-acc="tienda"]').click(); await page.waitForTimeout(400);
   const catOn = await page.evaluate(() => { const b = document.querySelector('[data-act="cat"].on'); return b ? b.dataset.k : ''; });
@@ -488,12 +490,14 @@ if (!process.argv.includes('--navegador')) {
   else errs.push('la van no está en la tienda de vehículos');
   if (!(await st()).equip.some((e) => e.type === 'veh_van_pasajeros_usada')) errs.push('no se compró la van');
   await page.locator('nav button[data-tab="inicio"]').click(); await page.waitForTimeout(250);
+  if (!(await page.evaluate(() => !!document.querySelector('.hub-svg [data-cuarto="flota"] svg')))) errs.push('la van no se ve en el garaje de la sede');
+  const resumen1 = await hojaFlota();
   await page.locator('.mov-flota').first().scrollIntoViewIfNeeded();
-  const resumen1 = await page.locator('.pl[data-pl="flota"] .pl-tx').textContent().catch(() => '');
   if (!/1 vehículo · \$5\/día/.test(resumen1)) errs.push('resumen de la flota con la van: ' + resumen1);
+  await shot('08_flota_van', '#hubSheet .hub-sh');
+  await verEnInicio(page, '.costbox');   // los gastos de hoy: en "Tu sede"
   const gastos = await page.locator('.costbox').textContent().catch(() => '');
   if (!/vehículos \$5/i.test(gastos)) errs.push('los gastos de hoy no muestran los vehículos: ' + gastos);
-  await shot('08_flota_van', '.pl[data-pl="flota"]');
 
   /* --- Evento 2: con la van propia rotulada --- */
   await abrirPrep('barrial');
@@ -536,9 +540,9 @@ if (!process.argv.includes('--navegador')) {
     await page.waitForFunction(() => window.I18N.idioma === 'en', null, { timeout: 5000 }).catch(() => errs.push('no cambió a inglés'));
     await page.waitForTimeout(400);
     await page.locator('nav button[data-tab="inicio"]').click(); await page.waitForTimeout(250);
-    const en = await page.locator('.pl[data-pl="flota"]').textContent().catch(() => '');
-    if (!/Fleet & transport/.test(en) || !/vehicle/.test(en)) errs.push('fila Flota en inglés: ' + en.slice(0, 120));
-    await page.locator('.mov-flota').first().scrollIntoViewIfNeeded(); await shot('15_flota_en', '.pl[data-pl="flota"]');
+    const en = await hojaFlota();
+    if (!/Fleet & transport/.test(en) || !/vehicle/.test(en)) errs.push('hoja Flota en inglés: ' + en.slice(0, 120));
+    await page.locator('.mov-flota').first().scrollIntoViewIfNeeded(); await shot('15_flota_en', '#hubSheet .hub-sh');
   }
   await browser.close();
   ok(!!r1 && r1.transporte && r1.transporte.eleccion && !r1.transporte.vehiculos.length, `evento 1 fue en taxi (${r1 && r1.transporte && r1.transporte.eleccion}, $${r1 && r1.transporte && r1.transporte.total})`);

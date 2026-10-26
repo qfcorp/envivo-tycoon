@@ -214,7 +214,7 @@ async function cerrar(o, nombre) {
       await o.page.click('#tv-crecer [data-prod="fondo_crecimiento"] [data-act="comprar"]');
       await o.page.waitForTimeout(500);
       bien(o.srv.ordenes.includes('fondo_crecimiento'), 'Web: Comprar el fondo → POST /api/orden {producto: fondo_crecimiento}');
-      bien(!(await o.page.$('[data-imp="inicio"]')), 'Web: sin nada por reclamar no hay tarjeta en Inicio');
+      bien(!(await o.page.$('[data-imp="inicio"]')) && !(await o.page.evaluate(() => window.Hub && window.Hub.buscar('[data-imp="inicio"]'))), 'Web: sin nada por reclamar no hay tarjeta en Inicio');
       await cerrar(o, 'Web');
     }
 
@@ -223,7 +223,7 @@ async function cerrar(o, nombre) {
       const o = await abrir(browser, { imp: { nivel: 9, fondo: true, tarjeta: true, permanente: true, obreros: 3 } });
       await o.page.waitForTimeout(900);
       await o.page.click('nav button[data-tab="inicio"]');
-      await o.page.waitForSelector('[data-imp="inicio"]', { timeout: 5000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-imp="inicio"]', 5000);   // en la sede de Inicio (js/hub.js)
       const ini = await o.page.$eval('[data-imp="inicio"]', (el) => el.innerText).catch(() => '');
       bien(/15/.test(ini) && /2/.test(ini), 'Comprado: Inicio muestra la tarjeta semanal y los 2 premios del fondo para reclamar');
       await fotoSel(o.page, '[data-imp="inicio"]', 'inicio');
@@ -259,7 +259,7 @@ async function cerrar(o, nombre) {
       const o = await abrir(browser, { imp: { nivel: 3 }, sede: { ocupada: true } });
       await o.page.waitForTimeout(800);
       await o.page.click('nav button[data-tab="inicio"]');
-      await o.page.waitForSelector('.sd-card.sd-of', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '.sd-card.sd-of', 8000);   // en la sede de Inicio (js/hub.js)
       await o.page.evaluate(() => { window.__game.state.money = 50000; });
       await o.page.click('.sd-card.sd-of');
       await o.page.waitForSelector('#modal .sd-modal.sd-of', { timeout: 5000 }).catch(() => {});

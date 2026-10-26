@@ -120,7 +120,7 @@ function servidorFalso() {
   const pedidos = () => page.evaluate(() => window.__sedeFalsa.pedidos.slice());
   await page.waitForSelector('#overlay.on');
   await page.locator('[data-act="close"]').first().click();
-  await page.waitForSelector('.sd-card');
+  if (!(await require('./hub_ayuda').verEnInicio(page, '.sd-card', 30000))) throw new Error('no apareció la tarjeta de la sede en Inicio (Tu sede)');
   ok(!(await page.locator('.sd-card.sd-of').count()), 'sin cuenta la tarjeta no debería ser la oficial');
   // En español (el navegador de prueba puede venir en inglés)
   if (await page.evaluate(() => !!(window.I18N && window.I18N.setIdioma))) {
@@ -137,7 +137,7 @@ function servidorFalso() {
     window.Api.estado = Object.assign({}, window.Api.estado || {}, { logueado: true, jugador: { id: 7, email: 'a@b.c', nombre: 'Prueba' }, tienda: { productos: [], premium: [] } });
   });
   await page.locator('nav button[data-tab="inicio"]').click();
-  await page.waitForSelector('.sd-card.sd-of .sd-lv', { timeout: 8000 });
+  if (!(await require('./hub_ayuda').verEnInicio(page, '.sd-card.sd-of .sd-lv', 8000))) throw new Error('no apareció la sede oficial en Inicio (Tu sede)');
   await page.waitForFunction(() => window.__sedeFalsa.pedidos.some((p) => p.ruta === '/migrar'), null, { timeout: 5000 }).catch(() => errs.push('no mandó la sede local (migrar)'));
   await page.waitForTimeout(300);
   let ps = await pedidos();
@@ -219,7 +219,7 @@ function servidorFalso() {
   // Sin cuenta otra vez: vuelve la sede local (nivel 3), como siempre
   await page.evaluate(() => { window.Api.estado = Object.assign({}, window.Api.estado, { logueado: false, jugador: null }); });
   await page.locator('nav button[data-tab="inicio"]').click();
-  await page.waitForSelector('.sd-card:not(.sd-of)');
+  if (!(await require('./hub_ayuda').verEnInicio(page, '.sd-card:not(.sd-of)', 30000))) throw new Error('no volvió la sede local en Inicio (Tu sede)');
   const loc = await page.evaluate(() => { const s = window.__game.state; return { nivel: s.sede.nivel, oficial: !!s.sede.oficial, guardada: !!s.sedeLocal, cables: s.sede.materiales.cables }; });
   ok(loc.nivel === 3 && !loc.oficial && !loc.guardada && loc.cables === 25, 'no volvió la sede local: ' + JSON.stringify(loc));
   await page.locator('.sd-card').scrollIntoViewIfNeeded();
@@ -253,6 +253,7 @@ function servidorFalso() {
     let vueltas = 0;
     while (Date.now() - t0 < 30000) {   // 30 s repintando (cambiar de pestaña) y abriendo la ventana de la sede
       await p2.locator('nav button[data-tab="' + (vueltas % 2 ? 'inicio' : 'personal') + '"]').click();
+      if (vueltas % 10 === 5) await p2.evaluate(() => window.Hub && window.Hub.abrir('sede'));   // la tarjeta vive en "Tu sede" (js/hub.js)
       if (vueltas % 10 === 5 && await p2.locator('.sd-card').count()) { await p2.locator('.sd-card .sd-head').first().click().catch(() => {}); await p2.locator('#modal [data-act="close"]').first().click().catch(() => {}); }
       vueltas++;
       await p2.waitForTimeout(250);

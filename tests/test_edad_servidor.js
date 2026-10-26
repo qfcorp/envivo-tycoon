@@ -160,7 +160,7 @@ async function cerrar(o, nombre) {
     /* ---- 1. Servidor nuevo (día 2) ---- */
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.nuevo)));
-      await o.page.waitForSelector('[data-srv="tarjeta"] [data-eds="boton"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-srv="tarjeta"] [data-eds="boton"]', 8000);   // "Tu servidor": en la antena de la sede (js/hub.js)
       const b = await texto(o.page, '[data-eds="boton"]');
       bien(b.includes('Calendario del servidor') && b.includes('Día 2') && b.includes('Lo próximo: Duelo de Productoras · mañana'), 'Nuevo: botón en "Tu servidor" con "Día 2" y "Lo próximo: Duelo de Productoras · mañana" → ' + b);
       await sinDesborde(o.page, 'Nuevo (tarjeta)');
@@ -220,7 +220,7 @@ async function cerrar(o, nombre) {
     /* ---- 2. Veterano: sin candados; la Copa muestra el tema del día ---- */
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.veterano)));
-      await o.page.waitForSelector('[data-eds="boton"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-eds="boton"]', 8000);
       bien((await texto(o.page, '[data-eds="boton"]')).includes('Ya está todo abierto en tu servidor.'), 'Veterano: el botón dice "Ya está todo abierto"');
       await o.page.click('nav button[data-tab="online"]');
       await o.page.waitForTimeout(400);

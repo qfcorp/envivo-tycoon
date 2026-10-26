@@ -598,6 +598,7 @@
     if (bo) bo.textContent = avisosOnline() || '';
     if (tab !== 'online' && montado) desmontarOnline();
     anVista();
+    if (tab !== 'inicio' && window.Hub) window.Hub.cerrar();
     ({ inicio: renderInicio, clientes: renderClientes, personal: renderPersonal, bodega: renderBodega, tienda: renderTienda, registro: renderRegistro, online: renderOnline })[tab]();
     if (S.gameOver && !$('overlay').classList.contains('on')) showGameOver();
     else avisoCuentaTal();
@@ -665,128 +666,62 @@
       : bk && bk.enPeligro ? strip(T('inicio.peligro', { m: lim, n: bk.graceLeft }))
       : bk && bk.mananaPeligro ? strip(T('inicio.manana_peligro', { g: `<b class="num">${M(G.dailyCost(S))}</b>`, m: lim }))
       : S.money < 0 ? strip(T('inicio.en_rojo', { m: lim })) : '';
-    $('tab-inicio').innerHTML = `${rojo}${stripDanos()}
-      <div class="card hqcard">${A.hq(S)}
-        <div class="in">
-          <div class="row between prod-nom-row">${S.productora
-            ? `<b class="prod-nom">${esc(S.productora)}</b><button class="btn sm prod-nom-btn" data-act="nombre" aria-label="${esc(T('inicio.nombre_cambiar'))}">✎</button>`
-            : `<button class="btn sm prod-nom-btn" data-act="nombre" style="width:100%">${I('flag', 'sm')}${T('inicio.nombre_poner')}</button>`}</div>
-          <div class="row wrap small">
-            <span class="tag">${I('people')}${T('inicio.personas', { n: S.staff.length })}</span>
-            <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
-            <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
-            ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
-          </div>
-          ${costBox}
-          ${tHoy ? `<div class="small turno-hoy" style="margin:2px 0 8px">${I('calendar', 'sm')} ${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}${AY('dia')}</div>` : ''}
-          <button class="btn main" data-act="tab" data-tab="clientes">${I('clients')}${T('inicio.ver_ofertas', { n: S.contracts.length })}</button>
-          <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
-        </div>
-      </div>
-      ${installCard()}
-      ${plegablesInicio(story)}
-      <button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
-      ${soporteBtn()}${unirseDiscordBtn()}
-      ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}
-      <button class="btn" data-act="new-game" style="margin-bottom:20px">${I('refresh')}${T('inicio.nueva')}</button>`;
+    // La productora por dentro (js/hub.js): cada cuarto es un botón; debajo, qué hacer ahora, el capítulo, el turno de hoy y cerrar el día
+    const turnoTxt = tHoy ? `${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}` : '';
+    const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox, turnoTxt)) : `<div class="card hqcard">${A.hq(S)}</div>`;
+    $('tab-inicio').innerHTML = `${rojo}${hubHtml}
+      ${tHoy ? `<div class="small turno-hoy hub-turno">${I('calendar', 'sm')} ${turnoTxt}${AY('dia')}</div>` : ''}
+      <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
   }
 
-  /* ---------- Inicio plegable: cada bloque es una fila (ícono, título, resumen) que se abre al tocarla ----------
-     Así Inicio no muestra todo de una. "Nuevo" sale cuando cambió algo desde la última vez que se abrió esa fila
-     (títulos o botones para reclamar/jugar). Lo abierto se recuerda en este celular. Para pruebas: {"*":true} abre todo. */
-  const PL_ABIERTOS = 'envivo_inicio_abiertos', PL_VISTOS = 'envivo_inicio_vistos';
-  const PL_INFO = {
-    cuenta: ['cloud', 'avisoc.t'], temporadas: ['calendar', 'inicio.pl.temporadas'], sede: ['home', 'inicio.pl.sede'],
-    servidores: ['globe', 'inicio.pl.servidores'], decoracion: ['planta', 'inicio.pl.decoracion'], copa: ['crown', 'inicio.pl.copa'], vip: ['vip', 'inicio.pl.vip'],
-    pase: ['star', 'inicio.pl.pase'], estrellas: ['sparkle', 'inicio.pl.estrellas'], historia: ['flag', 'historia.tag'],
-    flota: ['unidad_movil', 'inicio.pl.flota'],
-    logros: ['gem', 'inicio.pl.logros'],
-    misiones: ['target', 'inicio.pl.misiones'],
-    diario: ['gift', 'inicio.pl.diario'],
-    visitas: ['home', 'inicio.pl.visitas'],
-    ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
-  };
-  function plFirma(html) {
-    // Lo que cuenta como "nuevo": los títulos y los botones principales (sin números, que cambian solos: días, montos)
-    try {
-      const t = document.createElement('template');
-      t.innerHTML = html;
-      const tit = [...t.content.querySelectorAll('h2,h3,.story-tag')].map((e) => e.textContent.trim());
-      const bot = [...t.content.querySelectorAll('.btn.main:not([disabled]),.btn.green:not([disabled])')].map((e) => (e.dataset.act || e.dataset.acc || '') + e.textContent.replace(/[\d.,$%:+\-]+/g, '').trim());
-      const s = tit.concat(bot).join('|');
-      if (!s) return '';
-      let h = 0;
-      for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-      return String(h);
-    } catch (e) { return ''; }
-  }
-  function plResumen(html) {
-    try {
-      const t = document.createElement('template');
-      t.innerHTML = html;
-      const xs = [...t.content.querySelectorAll('h2,h3')].map((e) => e.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean);
-      if (xs.length) return xs.join(' · ');
-      // Sin títulos (sede, servidor...): las primeras palabras de la tarjeta, sin los botones
-      t.content.querySelectorAll('button,script,style,svg').forEach((e) => e.remove());
-      const tx = t.content.textContent.replace(/\s+/g, ' ').trim();
-      return tx.length > 60 ? tx.slice(0, 58) + '…' : tx;
-    } catch (e) { return ''; }
-  }
-  // En las pruebas automáticas (navegador controlado) todo abierto, salvo que la prueba diga otra cosa
-  const plAbiertos = () => lsGet(PL_ABIERTOS) || (navigator.webdriver ? { '*': true } : {});
-  function plegablesInicio(story) {
-    const ab = plAbiertos(), vis = lsGet(PL_VISTOS) || {};
-    let cambio = false;
-    const filas = [];
-    const fila = (id, html, o) => {
-      if (!html) return;
-      const info = PL_INFO[id] || [(o && o.icono) || 'box', ''];
-      const abierta = ab['*'] === true || (ab[id] != null ? !!ab[id] : !!(o && o.abierta));
-      const f = o && o.sinNuevo ? '' : plFirma(html);
-      if (abierta && f && vis[id] !== f) { vis[id] = f; cambio = true; }
-      const nuevo = !abierta && f && vis[id] !== f;
-      const titulo = (o && o.titulo) || (info[1] ? T(info[1]) : id);
-      const resumen = (o && o.resumen != null) ? o.resumen : plResumen(html);
-      filas.push(`<div class="pl ${abierta ? 'abierta' : ''} ${o && o.tono ? 'pl-' + o.tono : ''}" data-pl="${esc(id)}">
-        <button class="pl-cab" data-act="pl" data-k="${esc(id)}" aria-expanded="${abierta}">
-          <span class="pl-ic">${I(info[0], 'sm')}</span>
-          <span class="pl-tx"><b>${esc(titulo)}</b>${resumen ? `<small>${esc(resumen)}</small>` : ''}</span>
-          ${nuevo ? `<span class="pl-nuevo">${T('inicio.nuevo')}</span>` : ''}
-          <span class="pl-fl" aria-hidden="true">&#8250;</span>
-        </button>
-        <div class="pl-cuerpo">${html}</div></div>`);
-    };
-    fila('cuenta', cuentaCard(), { tono: 'amber', resumen: T('cuenta.crea_gratis') });
+  /* ---------- Datos para el hub de Inicio (js/hub.js) ----------
+     Los módulos (window.EnVivoInicio) se pintan igual que antes; el hub los pone en su lugar de la sede
+     ({ hub: 'misiones' | 'sala' | ... } al registrarse, o js/hub.js MAPA; si no, en "Más"). */
+  function datosHub(story, costBox, turnoTxt) {
     const ctx = ctxInicio();
-    modulosInicio().forEach((m) => {
-      if (typeof m.tarjeta !== 'function') return;
-      let h = '';
-      try { h = m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); h = ''; }
-      fila(m.id, h, typeof m.fila === 'function' ? m.fila(ctx) : undefined);   // el módulo puede dar {titulo, icono, abierta, tono, resumen}
+    const modulos = modulosInicio().map((m) => {
+      let html = '';
+      if (typeof m.tarjeta === 'function') { try { html = m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); html = ''; } }
+      // Título para su hoja: el de siempre de Inicio ('inicio.pl.<id>', traducido) o el que dé el módulo
+      let titulo = '';
+      try { const kt = 'inicio.pl.' + m.id, tt = T(kt); titulo = tt && tt !== kt ? tt : typeof m.titulo === 'function' ? m.titulo(ctx) : typeof m.fila === 'function' ? ((m.fila(ctx) || {}).titulo || '') : ''; } catch (e) { titulo = ''; }
+      return { id: m.id, hub: m.hub, html, titulo };
     });
     const ch = G.CHAPTERS[S.chapter];
-    fila('historia', story, { abierta: !S.storyDone && S.chapter === 0,
-      resumen: S.storyDone ? T('historia.completada') : `${TL(ch.title)} · ${TL(ch.progress(S))}` });
-    const ult = S.log[0];
-    fila('ultimo', `<div class="card log">${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}
-        <button class="btn sm" data-act="tab" data-tab="registro" style="margin-top:10px">${I('log', 'sm')} ${T('inicio.ver_registro')}</button></div>`,
-      { resumen: ult ? `${T('comun.dia_n', { n: ult.day })} · ${gtx(ult, ult.text)}` : '' });
-    // "Lo último" es nuevo cuando cambia la última línea
-    if (ult) { const k = 'u' + ult.day + (ult.text || '').length; const i = filas.length - 1; const abierta = ab['*'] === true || !!ab.ultimo;
-      if (abierta) { if (vis.ultimo !== k) { vis.ultimo = k; cambio = true; } } else if (vis.ultimo !== k) filas[i] = filas[i].replace('<span class="pl-fl"', `<span class="pl-nuevo">${T('inicio.nuevo')}</span><span class="pl-fl"`); }
-    fila('ayuda', `<div class="card small muted">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`, { sinNuevo: true, resumen: '' });
-    if (cambio) lsSet(PL_VISTOS, vis);
-    return `<div class="pls">${filas.join('')}</div>`;
-  }
-  function plAlternar(id) {
-    const ab = plAbiertos();
-    if (ab['*'] === true) return;
-    const el = document.querySelector(`.pl[data-pl="${id}"]`);
-    ab[id] = !(el && el.classList.contains('abierta'));
-    lsSet(PL_ABIERTOS, ab);
-    snd.play('tap');
-    render();
-    if (ab[id]) { const n = document.querySelector(`.pl[data-pl="${id}"]`); if (n && n.scrollIntoView) try { n.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); } catch (e) { /* nada */ } }
+    const ult = `<div class="card log"><h3 style="margin-bottom:6px">${T('inicio.ultimo')}</h3>${S.log.slice(0, 6).map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}
+        <button class="btn sm" data-act="tab" data-tab="registro" style="margin-top:10px">${I('log', 'sm')} ${T('inicio.ver_registro')}</button></div>`;
+    const ayuda = `<div class="card small muted hub-ayuda">${T('inicio.ayuda_texto', { clientes: `<b>${T('nav.clientes')}</b>`, bodega: `<b>${T('nav.bodega')}</b>`, m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`;
+    const local = `<div class="card"><div class="row between prod-nom-row">${S.productora
+        ? `<b class="prod-nom">${esc(S.productora)}</b><button class="btn sm prod-nom-btn" data-act="nombre" aria-label="${esc(T('inicio.nombre_cambiar'))}">✎</button>`
+        : `<button class="btn sm prod-nom-btn" data-act="nombre" style="width:100%">${I('flag', 'sm')}${T('inicio.nombre_poner')}</button>`}</div>
+        <div class="row wrap small">
+          <span class="tag">${I('people')}${T('inicio.personas', { n: S.staff.length })}</span>
+          <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
+          <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
+          ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
+        </div>${costBox}${turnoTxt ? `<div class="small turno-hoy" style="margin-top:8px">${I('calendar', 'sm')} ${turnoTxt}</div>` : ''}</div>`;
+    const mas = `${installCard()}<button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
+      ${soporteBtn()}${unirseDiscordBtn()}
+      ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}
+      <button class="btn" data-act="new-game">${I('refresh')}${T('inicio.nueva')}</button>`;
+    let vehiculos = 0, vehTipo = '', trofeos = 0, misHechas = 0;
+    try { const fl = G.flota ? G.flota(S) : []; vehiculos = fl.length; vehTipo = fl.length ? fl[fl.length - 1].type : ''; } catch (e) { vehiculos = 0; }
+    try { trofeos = window.Logros && window.Logros.resumen ? window.Logros.resumen(S).hechos : Math.floor(S.stats.fiveStars / 2); } catch (e) { trofeos = 0; }
+    try { misHechas = Math.min(3, (S.stats.events || 0)); } catch (e) { misHechas = 0; }
+    const cams = S.equip.filter((e) => { const it = G.CATALOG[e.type]; return it && it.cat === 'cam' && !['dron4k', 'grua'].includes(e.type); });
+    let etapa = 0;
+    try { etapa = Math.max(0, Math.min(3, G.venue(S).nivel)); } catch (e) { etapa = 0; }
+    return {
+      S, A, T, I, esc, M, ctx, toast, snd: () => snd.play('tap'),
+      etapa, local: venueName(), nombre: (S.productora || '').trim(),
+      modulos, extras: { historia: story, ultimo: ult, ayuda, local, cuenta: cuentaCard(), mas },
+      ofertas: S.contracts.length, danos: equiposEnRiesgo().length, dnstrip: stripDanos(),
+      logueado: !!(Api.logueado && Api.logueado()), tutorial: tutorialHecho(),
+      equipos: S.equip.length, camTipo: cams.length ? cams[cams.length - 1].type : 'cam_basic', vehiculos, vehTipo, personas: S.staff.length, trofeos, misHechas,
+      personaje: charOf(S.storyDone ? 0 : S.chapter),
+      cap: S.storyDone ? { tag: T('historia.modo'), titulo: '', objetivo: T('historia.completada') }
+        : { tag: T('historia.tag'), titulo: TL(ch.title), objetivo: TL(ch.goal), progreso: TL(ch.progress(S)) },
+    };
   }
 
   /* ---------- Nombre de la productora (S.productora): sale en el letrero del local y en los vehículos ---------- */
@@ -2600,7 +2535,6 @@
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
       case 'cuenta-info': avisoCuenta(); break;
       case 'cuenta-borrar': if (window.Cuenta) window.Cuenta.abrirBorrar({ openModal, closeModal, toast, snd, alBorrar: () => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; if (window.Chat) window.Chat.refrescar(); render(); } }); break;
-      case 'pl': plAlternar(el.dataset.k); break;
       case 'nombre': abrirNombre(); break;
       case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
       case 'idioma': abrirIdiomas(); break;
@@ -2843,4 +2777,6 @@
   if (I18 && I18.listo && typeof I18.listo.then === 'function') I18.listo.then(arrancar, arrancar);
   else arrancar();
   window.__game = { get state() { return S; } }; // para las pruebas automáticas
+  // js/hub.js (con defer) pinta Inicio otra vez al llegar, si la primera pantalla salió sin él
+  window.EnVivoRepintar = () => { if (S && tab === 'inicio' && !VI) render(); };
 })();

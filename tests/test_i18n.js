@@ -182,7 +182,8 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
       for (const t of TABS.slice(1)) { await page.click(`nav button[data-tab="${t}"]`); await mirar(t); }
       // El registro completo se abre desde Inicio (su lugar en la barra lo tiene "En línea")
       await page.click('nav button[data-tab="inicio"]');
-      await page.click('[data-act="tab"][data-tab="registro"]');
+      await require('./hub_ayuda').verEnInicio(page, '[data-act="tab"][data-tab="registro"]');   // oficina de la Historia (js/hub.js)
+      await page.click('#hubSheet [data-act="tab"][data-tab="registro"]');
       await mirar('registro');
       // Preparar evento e imprevisto en vivo
       await page.click('nav button[data-tab="clientes"]');
@@ -239,7 +240,8 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
     await page.evaluate(() => window.I18N.setIdioma('es'));
     await page.evaluate(() => { window.I18N.setIdioma('en'); return window.I18N.listo; });
     ok(capT && !capT.startsWith('«TL»'), 'sin traducción de la lógica, el capítulo se muestra tal cual');
-    const h2 = await page.locator('#tab-inicio h2').first().textContent();
+    await require('./hub_ayuda').abrirLugar(page, 'historia');   // el capítulo y lo último: en la oficina de la Historia
+    const h2 = await page.locator('#tab-inicio #hubSheet .hub-sh-cuerpo h2').first().textContent();
     ok(h2.startsWith('«TL»'), `título del capítulo pasa por TL (“${h2}”)`);
     const logs = await page.locator('#tab-inicio .log p').allTextContents();
     ok(logs.length && logs.every((t) => t.includes('«TL»')), 'el registro pasa por TL');

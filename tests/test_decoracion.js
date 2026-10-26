@@ -313,13 +313,12 @@ if (process.argv.includes('--navegador')) (async () => {
     if (modal > 1) errs.push(`${tag}: la ventana se sale por los costados (${modal}px)`);
   };
   const st = () => page.evaluate(() => { const s = window.__game.state; return { money: s.money, items: s.decor.items.map((x) => x.k), day: s.day, im: window.Decoracion.imagen(s) }; });
-  // Abre la fila plegable de la decoración (si está cerrada)
+  // Abre la Sala de la sede de Inicio (js/hub.js), donde vive la tarjeta de la decoración
   const abrirFila = async () => {
-    const card = page.locator('.dc-card');
-    if (!(await card.count())) { errs.push('no aparece la tarjeta de decoración'); return; }
-    if (!(await card.first().isVisible())) { const cab = page.locator('.pl[data-pl="decoracion"] .pl-cab'); if (await cab.count()) await cab.click(); }
-    await card.first().scrollIntoViewIfNeeded();
+    if (!(await require('./hub_ayuda').verEnInicio(page, '.dc-card', 4000))) { errs.push('no aparece la tarjeta de decoración'); return; }
+    await page.locator('.dc-card').first().scrollIntoViewIfNeeded();
   };
+  const cerrarHoja = () => page.evaluate(() => { if (window.Hub) window.Hub.cerrar(); });
   await abrirFila();
   await shot('01_tarjeta_vacia', '.dc-card'); await noHScroll('tarjeta');
   // Decorar: ventana con la tienda
@@ -345,7 +344,7 @@ if (process.argv.includes('--navegador')) (async () => {
   const txt = await page.locator('.dc-card h3').textContent();
   if (!/21\/100 · ofertas \+2%/.test(txt)) errs.push('título de la tarjeta: ' + txt);
   await shot('04_tarjeta', '.dc-card');
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await cerrarHoja(); await page.evaluate(() => window.scrollTo(0, 0));
   if (!(await page.locator('.hqcard svg.hq .decor-capa .dc-vitrina').count())) errs.push('no se ve la decoración sobre la sede');
   await shot('05_sede', '.hqcard');
   // Ofertas mejor pagadas: la misma oferta con y sin decoración
@@ -357,6 +356,7 @@ if (process.argv.includes('--navegador')) (async () => {
   });
   if (!(pago[0] > pago[1])) errs.push('la oferta con decoración no paga más: ' + pago.join(' vs '));
   // Pasan 5 días: las flores se marchitan
+  await cerrarHoja();
   for (let i = 0; i < 5; i++) { await page.evaluate(() => window.scrollTo(0, 0)); await page.locator('[data-act="next-day"]').first().click(); await page.waitForTimeout(250); for (let k = 0; k < 4; k++) { const x = await page.$('#overlay.on [data-act^="close"]'); if (!x) break; await x.click(); await page.waitForTimeout(200); } }
   e = await st();
   if (e.im.marchitas !== 1 || e.im.puntos !== 8) errs.push(`flores marchitas: imagen ${e.im.puntos} (esperado 8), marchitas ${e.im.marchitas}`);
@@ -364,7 +364,7 @@ if (process.argv.includes('--navegador')) (async () => {
   if (!(await page.locator('.dc-card .tag.dc-mal').count())) errs.push('la tarjeta no marca las flores marchitas');
   if (!(await page.locator('.dc-card [data-acc="flores"]').count())) errs.push('falta el botón de cambiar flores');
   await shot('06_marchitas', '.dc-card');
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await cerrarHoja(); await page.evaluate(() => window.scrollTo(0, 0));
   await shot('07_sede_marchitas', '.hqcard');
   await abrirFila();
   await page.locator('.dc-card [data-acc="flores"]').click();

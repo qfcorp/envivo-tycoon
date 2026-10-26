@@ -6,6 +6,7 @@
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
+const { verEnInicio } = require('./hub_ayuda');
 
 const RAIZ = path.resolve(__dirname, '..');
 const OUT = path.join(__dirname, 'capturas');
@@ -33,12 +34,12 @@ const U4a = "        else { lsSet(RES_KEY, null); closeModal(); mus.go('menu'); 
 const U4b = "        else { lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); continuar(); }\n        if (window.Compartir) window.Compartir.trasResultado(ctxInicio());   // calificar tras un 5⭐ (espera a que la pantalla esté libre)\n        break;";
 const U5a = '      ${soporteBtn()}\n      <button class="btn" data-act="new-game" style="margin-bottom:20px">';
 const U5b = "      ${soporteBtn()}\n      ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}\n      <button class=\"btn\" data-act=\"new-game\" style=\"margin-bottom:20px\">";
-const U6a = "m: M(-bankruptAt()) })}</div>`, { sinNuevo: true, resumen: '' });";
-const U6b = "m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`, { sinNuevo: true, resumen: '' });";
+const U6a = "m: M(-bankruptAt()) })}</div>`;";
+const U6b = "m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`;";
 uiJs = reemplazar(uiJs, U3a, U3b, 'js/ui.js (showResult)');
 uiJs = reemplazar(uiJs, U4a, U4b, 'js/ui.js (after-result)');
 uiJs = reemplazar(uiJs, U5a, U5b, 'js/ui.js (renderInicio)');
-uiJs = reemplazar(uiJs, U6a, U6b, 'js/ui.js (fila Ayuda)');
+uiJs = reemplazar(uiJs, U6a, U6b, 'js/ui.js (ayuda de la Historia)');
 // El documento de integración trae exactamente estas líneas
 (function () {
   const md = fs.readFileSync(path.join(RAIZ, 'server/INTEGRAR_COMPARTIR.md'), 'utf8');
@@ -186,6 +187,7 @@ const sinScrollH = (page) => page.evaluate(() => document.documentElement.scroll
       bien(!(await hayModal(page, '.cmp-nov')), 'Partida nueva: no salen las novedades solas');
       bien(await page.evaluate((id) => JSON.parse(localStorage.getItem('envivo_novedades_visto')) === id, NOV_ID), 'Partida nueva: quedan marcadas como vistas');
       await cerrarVentanas(page);
+      await verEnInicio(page, '.cmp-ini [data-acc="wa-ini"]');   // en la hoja "Más" de la sede (js/hub.js)
       const wa = page.locator('#tab-inicio .cmp-ini [data-acc="wa-ini"]');
       bien(await wa.count() === 1, 'Inicio: botón "Compartir por WhatsApp"');
       bien(!(await page.locator('#tab-inicio .cmp-ini [data-acc="img-ini"]').count()), 'Inicio: sin Web Share no sale "Compartir imagen"');
@@ -202,7 +204,8 @@ const sinScrollH = (page) => page.evaluate(() => document.documentElement.scroll
       await page.evaluate(() => { window.Api.estado.ref_codigo = 'ABC-12'; });
       bien(await page.evaluate(() => window.Compartir.enlace()) === 'https://juego.tukanec.com/?ref=ABC-12', 'Si el servidor manda ref_codigo, se usa ese');
       // Fila Ayuda → Novedades (a mano siempre se puede)
-      const nb = page.locator('#tab-inicio [data-pl="ayuda"] [data-acc="nov"]');
+      await verEnInicio(page, '[data-acc="nov"]');   // ayuda: en la oficina de la Historia
+      const nb = page.locator('#tab-inicio #hubSheet[data-lugar="historia"] [data-acc="nov"]');
       bien(await nb.count() === 1, 'Inicio → Ayuda: botón "Novedades"');
       await nb.scrollIntoViewIfNeeded(); await nb.click();
       bien(await hayModal(page, '.cmp-nov li'), 'Novedades desde Ayuda: se abre la ventana');
@@ -287,6 +290,7 @@ const sinScrollH = (page) => page.evaluate(() => document.documentElement.scroll
       // Imagen de Inicio
       await page.click('nav button[data-tab="inicio"]');
       await page.evaluate(() => { window.__compartidos = []; });
+      await verEnInicio(page, '[data-acc="img-ini"]');
       await page.locator('#tab-inicio [data-acc="img-ini"]').click();
       await page.waitForFunction(() => window.__compartidos.length, null, { timeout: 8000 }).catch(() => {});
       const s2 = await page.evaluate(() => window.__compartidos[0] || null);
@@ -327,6 +331,7 @@ const sinScrollH = (page) => page.evaluate(() => document.documentElement.scroll
     {
       const { ctx, page } = await abrir(browser, { tag: 'app', query: '?fecha=2026-11-10&origen=android' });
       await cerrarVentanas(page);
+      await verEnInicio(page, '[data-acc="wa-ini"]');
       await page.locator('#tab-inicio [data-acc="wa-ini"]').click();
       const u = await page.evaluate(() => window.__compartirUltimo);
       bien(u.intent && /^intent:\/\/send\?text=.*scheme=whatsapp;package=com\.whatsapp;S\.browser_fallback_url=https%3A%2F%2Fwa\.me/.test(u.intent), 'App: WhatsApp por intent con wa.me de respaldo');
@@ -361,9 +366,11 @@ const sinScrollH = (page) => page.evaluate(() => document.documentElement.scroll
       await page.waitForTimeout(500);
       await cerrarVentanas(page);
       await page.click('nav button[data-tab="inicio"]');
+      await verEnInicio(page, '[data-acc="wa-ini"]');
       const t = await page.locator('#tab-inicio [data-acc="wa-ini"]').innerText();
       bien(/Share on WhatsApp/.test(t), 'Inglés: "Share on WhatsApp"');
-      await page.locator('#tab-inicio [data-pl="ayuda"] [data-acc="nov"]').click();
+      await verEnInicio(page, '[data-acc="nov"]');
+      await page.locator('#tab-inicio [data-acc="nov"]').click();
       bien(/What's new in EN VIVO/.test(await page.locator('#overlay.on .cmp-nov').innerText()), "Inglés: \"What's new in EN VIVO\"");
       await shot(page, '07_novedades_en');
       await ctx.close();

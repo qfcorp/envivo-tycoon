@@ -176,7 +176,7 @@ const partida = (page) => page.evaluate(() => { try { return JSON.parse(localSto
     {
       const caso = { vip: vip(3, { regalos: JSON.parse(JSON.stringify(REGALOS)), ofertas: [OFERTA] }) };
       const o = await abrir(browser, caso);
-      await o.page.waitForSelector('[data-vip="tarjeta"] [data-vip="regalo"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-vip="tarjeta"] [data-vip="regalo"]', 8000);   // en la sede de Inicio (js/hub.js)
       const t = await texto(o.page, '[data-vip="tarjeta"]');
       bien(/Tu nivel VIP/.test(t) && /VIP 3 · Oro/.test(t) && /Productor asociado/.test(t), 'Tarjeta: "Tu nivel VIP · VIP 3 · Oro · Productor asociado"');
       bien(/219 \/ 300 puntos/.test(t) && /Te faltan 81 puntos para VIP 4/.test(t), 'Tarjeta: avance "219 / 300 puntos · Te faltan 81 puntos para VIP 4"');
@@ -188,6 +188,7 @@ const partida = (page) => page.evaluate(() => { try { return JSON.parse(localSto
       await o.page.click('nav button[data-tab="bodega"]'); await o.page.click('nav button[data-tab="inicio"]');
       await o.page.waitForTimeout(300);
       bien(o.srv.vipPedidos === 1, 'Tarjeta: volver a Inicio no repite la consulta');
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-vip="tarjeta"]', 3000);
       await sinDesborde(o.page, 'Tarjeta');
       await foto(o.page, 'inicio', '[data-vip="tarjeta"]');
 
@@ -279,7 +280,7 @@ const partida = (page) => page.evaluate(() => { try { return JSON.parse(localSto
     {
       const caso = { vip: vip(0, { regalos: [JSON.parse(JSON.stringify(REGALOS[0]))] }) };
       const o = await abrir(browser, caso);
-      await o.page.waitForSelector('[data-vip="tarjeta"] [data-vip="regalo"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-vip="tarjeta"] [data-vip="regalo"]', 8000);   // en la sede de Inicio (js/hub.js)
       const t = await texto(o.page, '[data-vip="tarjeta"]');
       bien(/Aún sin nivel VIP/.test(t) && /Cualquier compra en la tienda te da VIP 1 para siempre/.test(t) && /Regalo de Ballena Andina/.test(t), 'Sin nivel: invita a VIP 1 y muestra el cofre gratis');
       bien(!/regalo VIP del mes/.test(t), 'Sin nivel: sin regalo del mes');
@@ -295,6 +296,7 @@ const partida = (page) => page.evaluate(() => { try { return JSON.parse(localSto
     {
       const caso = { vip: vip(10) };
       const o = await abrir(browser, caso);
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-vip="tarjeta"]', 8000);   // en "Más" de la sede (js/hub.js)
       await o.page.waitForFunction(() => { const c = document.querySelector('[data-vip="tarjeta"]'); return c && /Leyenda/.test(c.textContent); }, null, { timeout: 8000 }).catch(() => {});
       const t = await texto(o.page, '[data-vip="tarjeta"]');
       bien(/VIP 10 · Leyenda/.test(t) && /Mecenas legendario/.test(t) && /¡Llegaste al nivel máximo!/.test(t), 'VIP 10: "Leyenda · Mecenas legendario · ¡Llegaste al nivel máximo!"');
@@ -307,7 +309,7 @@ const partida = (page) => page.evaluate(() => { try { return JSON.parse(localSto
     {
       const o = await abrir(browser, { logueado: false });
       await o.page.waitForTimeout(1200);
-      bien(!(await o.page.$('[data-vip="tarjeta"]')) && o.srv.vipPedidos === 0, 'Sin sesión: no se muestra la tarjeta ni se consulta');
+      bien(!(await o.page.$('[data-vip="tarjeta"]')) && !(await o.page.evaluate(() => window.Hub && window.Hub.buscar('[data-vip="tarjeta"]'))) && o.srv.vipPedidos === 0, 'Sin sesión: no se muestra la tarjeta ni se consulta');
       await cerrar(o, 'Sin sesión');
     }
 
@@ -315,6 +317,7 @@ const partida = (page) => page.evaluate(() => { try { return JSON.parse(localSto
     {
       const caso = { vip: vip(4, { regalos: [JSON.parse(JSON.stringify(REGALOS[1]))] }) };
       const o = await abrir(browser, caso, BASE + '/?lang=en');
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-vip="tarjeta"]', 8000);   // en "Más" de la sede (js/hub.js)
       await o.page.waitForFunction(() => { const c = document.querySelector('[data-vip="tarjeta"]'); return c && /Your VIP level/.test(c.textContent) && c.querySelector('[data-vip="regalo"]'); }, null, { timeout: 8000 }).catch(() => {});
       const t = await texto(o.page, '[data-vip="tarjeta"]');
       bien(/VIP 4 · Jade/.test(t) && /Executive Producer/.test(t) && /Gift from an anonymous company/.test(t) && /Open/.test(t), 'Inglés: tarjeta traducida');

@@ -158,7 +158,7 @@ async function cerrar(o, nombre) {
     /* ---- 1. Servidor sano ---- */
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.sano)));
-      await o.page.waitForSelector('[data-srv="tarjeta"] [data-salud]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-srv="tarjeta"] [data-salud]', 8000);   // en la sede de Inicio (js/hub.js)
       const t = await texto(o.page, '[data-srv="tarjeta"]');
       bien(/Tu servidor/i.test(t) && t.includes('Servidor 2 · Guayaquil') && t.includes('Universo Andino'), 'Sano: muestra "Tu servidor: Servidor 2 · Guayaquil · Universo Andino"');
       bien(await o.page.$eval('[data-srv="tarjeta"] [data-salud]', (el) => el.dataset.salud + '|' + el.textContent.trim()).catch(() => '') === 'sano|Sano', 'Sano: insignia "Sano"');
@@ -168,6 +168,7 @@ async function cerrar(o, nombre) {
       await o.page.click('nav button[data-tab="bodega"]'); await o.page.click('nav button[data-tab="inicio"]');
       await o.page.waitForTimeout(300);
       bien(o.srv.opcionesPedidas === pedidas && pedidas === 1, `Sano: volver a Inicio no repite la consulta (pedidas: ${o.srv.opcionesPedidas})`);
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-srv="tarjeta"]', 3000);
       await sinDesborde(o.page, 'Sano');
       await foto(o.page, 'sano', '[data-srv="tarjeta"]');
       await cerrar(o, 'Sano');
@@ -176,7 +177,7 @@ async function cerrar(o, nombre) {
     /* ---- 2. Poca actividad con sugerencia + ventana de mudanza ---- */
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.bajo)));
-      await o.page.waitForSelector('[data-ext="servidores"][data-acc="mudar"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-ext="servidores"][data-acc="mudar"]', 8000);   // en la sede de Inicio (js/hub.js)
       bien(await o.page.$eval('[data-salud]', (el) => el.dataset.salud + '|' + el.textContent.trim()).catch(() => '') === 'bajo|Poca actividad', 'Bajo: insignia "Poca actividad"');
       const b = await texto(o.page, '[data-ext="servidores"][data-acc="mudar"]');
       bien(b.includes('Mudarte gratis a Servidor 1 · Quito (más activo)'), 'Bajo: botón "Mudarte gratis a Servidor 1 · Quito (más activo)"');
@@ -200,7 +201,7 @@ async function cerrar(o, nombre) {
     /* ---- 3. No se puede mudar (con motivo) ---- */
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.no_puede)));
-      await o.page.waitForSelector('[data-srv="no-puede"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-srv="no-puede"]', 8000);   // en la sede de Inicio (js/hub.js)
       bien(await o.page.$eval('[data-salud]', (el) => el.dataset.salud + '|' + el.textContent.trim()).catch(() => '') === 'abandono|En abandono', 'No puede: insignia "En abandono"');
       const t = await texto(o.page, '[data-srv="no-puede"]');
       bien(/no puedes mudarte/i.test(t) && t.includes('Eres presidente de una asociación con miembros'), 'No puede: muestra el motivo');
@@ -216,7 +217,7 @@ async function cerrar(o, nombre) {
     {
       const caso = JSON.parse(JSON.stringify(CASOS.traslado));
       const o = await abrir(browser, caso);
-      await o.page.waitForSelector('[data-ext="servidores"][data-acc="mudar"]', { timeout: 8000 });
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-ext="servidores"][data-acc="mudar"]', 8000);
       await o.page.click('[data-ext="servidores"][data-acc="mudar"]');
       await o.page.click('#overlay.on [data-acc="confirmar"]');
       await o.page.waitForSelector('#overlay.on [data-srv="error"]', { timeout: 4000 }).catch(() => {});
@@ -255,7 +256,7 @@ async function cerrar(o, nombre) {
       const visto = await o.page.evaluate(() => { try { return localStorage.getItem('envivo_avisos_fusion_vistos'); } catch (e) { return null; } });
       bien(visto && visto.includes('Servidor 3 · Cuenca|Servidor 1 · Quito|2026-10-20'), 'Fusión: queda guardado en localStorage');
       await o.page.reload({ waitUntil: 'domcontentloaded' });
-      await o.page.waitForSelector('[data-srv="tarjeta"]', { timeout: 8000 }).catch(() => {});
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-srv="tarjeta"]', 8000);   // en la sede de Inicio (js/hub.js)
       await o.page.waitForTimeout(1500);
       bien(!(await o.page.$('#overlay.on [data-srv="aviso-fusion"]')), 'Fusión: al recargar el juego no sale otra vez');
       await cerrar(o, 'Fusión');
@@ -282,13 +283,14 @@ async function cerrar(o, nombre) {
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.sin_sesion)));
       await o.page.waitForTimeout(1200);
-      bien(!(await o.page.$('[data-srv="tarjeta"]')) && o.srv.opcionesPedidas === 0, 'Sin sesión: no se muestra la tarjeta ni se consulta el servidor');
+      bien(!(await o.page.$('[data-srv="tarjeta"]')) && !(await o.page.evaluate(() => window.Hub && window.Hub.buscar('[data-srv="tarjeta"]'))) && o.srv.opcionesPedidas === 0, 'Sin sesión: no se muestra la tarjeta ni se consulta el servidor');
       await cerrar(o, 'Sin sesión');
     }
 
     /* ---- 7. Inglés ---- */
     {
       const o = await abrir(browser, JSON.parse(JSON.stringify(CASOS.bajo)), BASE + '/?lang=en');
+      await require('./hub_ayuda').verEnInicio(o.page, '[data-srv="tarjeta"]', 8000);
       await o.page.waitForFunction(() => { const c = document.querySelector('[data-srv="tarjeta"]'); return c && /Your server/.test(c.textContent) && c.querySelector('[data-acc="mudar"]'); }, null, { timeout: 8000 }).catch(() => {});
       const t = await texto(o.page, '[data-srv="tarjeta"]');
       bien(/Your server/.test(t) && /Low activity/.test(t) && /Move for free to Servidor 1 · Quito \(more active\)/.test(t), 'Inglés: tarjeta traducida');

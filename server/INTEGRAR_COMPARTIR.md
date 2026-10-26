@@ -99,7 +99,7 @@ por:
         break;
 ```
 
-### 5. `js/ui.js` — `renderInicio()`: los botones de compartir en Inicio. Reemplazar:
+### 5. `js/ui.js` — `datosHub()` (hoja "Más" de la sede de Inicio): los botones de compartir. Reemplazar:
 ```js
       ${soporteBtn()}
       <button class="btn" data-act="new-game" style="margin-bottom:20px">
@@ -111,13 +111,13 @@ por:
       <button class="btn" data-act="new-game" style="margin-bottom:20px">
 ```
 
-### 6. `js/ui.js` — `plegablesInicio()`, fila Ayuda: el botón "Novedades". Reemplazar:
+### 6. `js/ui.js` — `datosHub()`, tarjeta de ayuda (oficina de la Historia en la sede): el botón "Novedades". Reemplazar:
 ```js
-m: M(-bankruptAt()) })}</div>`, { sinNuevo: true, resumen: '' });
+m: M(-bankruptAt()) })}</div>`;
 ```
 por:
 ```js
-m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`, { sinNuevo: true, resumen: '' });
+m: M(-bankruptAt()) })}${window.Compartir ? window.Compartir.ayuda() : ''}</div>`;
 ```
 
 Los clics no necesitan cambios: los botones llevan `data-ext="compartir" data-acc="…"` y `js/compartir.js` se registra en

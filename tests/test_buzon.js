@@ -118,11 +118,14 @@ const sinDesborde = (p) => p.evaluate(() => document.documentElement.scrollWidth
   const vipAlto = await p.evaluate(() => { const v = document.getElementById('vipBadge'); v.hidden = false; const h = document.querySelector('header .brand').getBoundingClientRect().height; const r = document.getElementById('langBtn').getBoundingClientRect().right; v.hidden = true; return { h, r }; });
   ok(vipAlto.h <= 40 && vipAlto.r <= 390, 'Con la insignia VIP: sigue en una línea (' + Math.round(vipAlto.h) + ' px)');
   // Aviso en Inicio
-  await p.waitForSelector('[data-buzon-inicio]', { timeout: 6000 }).catch(() => {});
+  // (en la sede de Inicio, js/hub.js: el buzón de la vereda avisa "!" y su hoja trae el regalo)
+  await p.waitForFunction(() => { const b = document.querySelector('.hs[data-hub="buzon"]'); return b && !b.classList.contains('lock') && b.querySelector('.hs-b'); }, null, { timeout: 6000 }).catch(() => {});
+  ok(await p.evaluate(() => { const b = document.querySelector('.hs[data-hub="buzon"] .hs-b'); return !!b && b.textContent === '!'; }), 'Aviso en Inicio: el buzón de la sede avisa "!"');
+  await require('./hub_ayuda').verEnInicio(p, '[data-buzon-inicio]', 6000);
   ok(await p.locator('[data-buzon-inicio]').count() === 1, 'Aviso en Inicio: "Tienes 1 regalo por reclamar"');
-  ok(/1 regalo por reclamar/.test(await p.textContent('.pl[data-pl="buzon"] .pl-cab').catch(() => '')) && /Perdón por la caída/.test(await p.textContent('[data-buzon-inicio]').catch(() => '')), '…con el título "Buzón", el resumen y el regalo');
-  await p.locator('[data-buzon-inicio]').scrollIntoViewIfNeeded();
+  ok(/Buzón/.test(await p.textContent('#hubSheet .hub-sh-t').catch(() => '')) && /Perdón por la caída/.test(await p.textContent('[data-buzon-inicio]').catch(() => '')), '…con el título "Buzón" y el regalo');
   await p.screenshot({ path: path.join(CAP, 'buzon_inicio_390.png') });
+  await p.evaluate(() => window.Hub && window.Hub.cerrar());
   // La barra fija: al bajar, el sobre sigue a la vista
   await p.evaluate(() => window.scrollTo(0, 900));
   await p.waitForTimeout(200);

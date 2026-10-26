@@ -579,12 +579,13 @@
     if (typeof local === 'string') { const i = LOCALES.indexOf(local); if (i >= 0) return i; }
     return nivelLocal(s);
   }
-  function capa(s, local, ctx) {
+  // rect [x, y, w, h] (opcional): dibuja la sala en ese cuarto (la sede por dentro de Inicio, js/hub.js) en vez de la vitrina
+  function capa(s, local, ctx, rect) {
     try {
       if (!s || !s.decor || !Array.isArray(s.decor.items) || !s.decor.items.length) return '';
       const L = lista(s).filter((x) => x.activo);
       if (!L.length) return '';
-      const F = FACHADA[etapaDe(s, local)];
+      const F = Array.isArray(rect) && rect.length === 4 ? { vit: rect, cuarto: true } : FACHADA[etapaDe(s, local)];
       const noche = (Number(s.day) || 1) % 2 === 0;
       const [x, y, w, h] = F.vit;
       let k = h / 80;
@@ -592,14 +593,14 @@
       const tx = x + (w - 200 * k) / 2, ty = y + h - 80 * k;
       const id = uid();
       const piso = ty + 60 * k;
-      const lineas = F.garaje ? '' : [1, 2].map((i) => `<path d="M${x + (w * i) / 3} ${y}v${h}" stroke="#4a5568" stroke-width="1.2" opacity=".7"/>`).join('');
+      const lineas = F.garaje || F.cuarto ? '' : [1, 2].map((i) => `<path d="M${x + (w * i) / 3} ${y}v${h}" stroke="#4a5568" stroke-width="1.2" opacity=".7"/>`).join('');
       const out = `<g class="dc-vitrina"><defs><clipPath id="${id}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath></defs>
         <g clip-path="url(#${id})">${fondoSala(x, y, w, h, piso, noche)}
           <g transform="translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${k.toFixed(4)})">${piezas(s, ctx)}</g>
-          <path d="M${x} ${y}h${w * 0.35}l-${w * 0.22} ${h}H${x}z" fill="#fff" opacity="${noche ? 0.04 : 0.1}"/></g>
-        ${lineas}<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#4a5568" stroke-width="1.6"/>
+          ${F.cuarto ? '' : `<path d="M${x} ${y}h${w * 0.35}l-${w * 0.22} ${h}H${x}z" fill="#fff" opacity="${noche ? 0.04 : 0.1}"/>`}</g>
+        ${lineas}${F.cuarto ? '' : `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#4a5568" stroke-width="1.6"/>`}
         ${F.garaje ? `<rect x="${x}" y="${y - 4}" width="${w}" height="5" fill="#2a2e37"/><path d="M${x} ${y + 1}h${w}" stroke="#ffd27a" stroke-width=".8" opacity=".5"/>` : ''}
-        ${noche ? `<ellipse cx="${x + w / 2}" cy="143" rx="${w * 0.45}" ry="3.5" fill="#ffd27a" opacity=".14"/>` : ''}</g>`;
+        ${noche && !F.cuarto ? `<ellipse cx="${x + w / 2}" cy="143" rx="${w * 0.45}" ry="3.5" fill="#ffd27a" opacity=".14"/>` : ''}</g>`;
       return `<g class="decor-capa">${out}</g>`;
     } catch (e) { return ''; }
   }

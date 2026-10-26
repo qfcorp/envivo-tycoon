@@ -163,9 +163,9 @@
       { k: 'f_mov', el: () => enModal('#movSec .mov-hd') || enModal('#movSec') },
       { k: 'f_app', el: () => enModal('.mov-app') },
     ] },
-    // Fila "Sede" de Inicio (abierta) → ventana de mejoras
+    // Hoja "Tu sede" de Inicio abierta (el letrero de la sede, js/hub.js) → ventana de mejoras
     sede: { tab: 'inicio', modalOk: '.sd-modal', pasos: [
-      { k: 's_abrir', tocar: true, el: () => enTab('inicio', '.pl[data-pl="sede"].abierta .sd-card') },
+      { k: 's_abrir', tocar: true, el: () => enTab('inicio', '#hubSheet .sd-card') },
       { k: 's_mejora', el: () => enModal('.sd-modal .sd-item') },
       { k: 's_mats', el: () => enModal('.sd-modal .sd-mats') },
       { k: 's_obra', el: () => enModal('.sd-modal .sd-obra') },
@@ -430,10 +430,10 @@
     raf = (root.requestAnimationFrame || ((f) => setTimeout(f, 16)))(() => { raf = 0; vigilar(); });
   }
 
-  /* ---------- Inicio → Ayuda: "Ver guías otra vez" ---------- */
+  /* ---------- Inicio → Historia → Ayuda: "Ver guías otra vez" ---------- */
   let okHasta = 0;
   function botonAyuda() {
-    const c = $('.pl[data-pl="ayuda"] .pl-cuerpo');
+    const c = $('#hubSheet .hub-ayuda');   // la ayuda vive en la oficina de la Historia (js/hub.js)
     if (!c) return;
     let b = c.querySelector('[data-guias="reset"]');
     if (!b) {

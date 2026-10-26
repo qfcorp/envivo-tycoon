@@ -1930,5 +1930,7 @@
   }
 
   const hasIcon = (name) => Object.prototype.hasOwnProperty.call(P, name) || Object.prototype.hasOwnProperty.call(ALIAS, name);
-  root.Art = { icon, hasIcon, portrait, hq, scene, item, avatar, rarity, RARITIES, SUBTIPOS, subtipo: (t, o) => { try { return subtipoOf(t, o); } catch (e) { return 'case'; } }, PORTRAIT_NAMES };
+  root.Art = { icon, hasIcon, portrait, hq, scene, item, avatar, rarity, RARITIES, SUBTIPOS, subtipo: (t, o) => { try { return subtipoOf(t, o); } catch (e) { return 'case'; } }, PORTRAIT_NAMES,
+    // Piezas para dibujar la sede por dentro (js/hub.js): las mismas de Art.hq
+    _k: { U, uid, lin, esc, FONT_D, FONT_B, vanSide, sceneCam, droneSmall, vidaSede, cosmeticosSede, ensureShared, sharedDefs, catalogItem } };
 })(typeof window !== 'undefined' ? window : globalThis);

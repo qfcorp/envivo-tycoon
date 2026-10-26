@@ -252,6 +252,7 @@ const franjaDice = (ini, n) => (n ? new RegExp('^' + n + ' equipos? necesita').t
       // Flota (vehículo) desde Inicio
       if (P.vehId) {
         await page.click('nav button[data-tab="inicio"]'); await page.waitForTimeout(200);
+        await require('./hub_ayuda').verEnInicio(page, `[data-ext="flota"][data-acc="reparar"][data-id="${P.vehId}"]`, 3000);   // en el garaje de la sede
         const bv = await page.$(`[data-ext="flota"][data-acc="reparar"][data-id="${P.vehId}"]`);
         if (bv) {
           await bv.click(); await page.waitForTimeout(250);
