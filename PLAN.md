@@ -283,3 +283,4 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   - El precio de reparación cobrado ahora es igual al mostrado (equipos un 25 % más baratos de reparar).
   - Textos nuevos solo en español; `node tools/pendientes_traduccion.js` lista lo que falta traducir.
   - Pruebas: servidor 106/0 y 53 pruebas del juego en verde.
+- 2026-10-26: decisión de Dimitry: bodega al doble (40 → 80 equipos) y personal +50 % (12 → 18 personas). Bot sin cambios (4,5 % quiebras en historia).

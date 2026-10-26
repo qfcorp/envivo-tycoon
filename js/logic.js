@@ -81,8 +81,8 @@
     bankrupt: { perDailyCost: 3, pendingDays: 4, graceDays: 2 },
     tutorialEvents: 3,           // los 3 primeros eventos son suaves (1 imprevisto, sin sorpresas)
     maxContracts: 7,
-    maxStaff: 12,                // personas en la productora (contándote a ti)
-    maxEquip: 40,                // equipos en la bodega
+    maxStaff: 18,                // personas en la productora (contándote a ti)
+    maxEquip: 80,                // equipos en la bodega
     candidates: 5,
     // Gastos fijos de cada día (ver dailyCost)
     daily: {

@@ -76,8 +76,8 @@
 
   /* ---------- Límites (de la lógica si los exporta) ---------- */
   const BAL = () => G.BALANCE || {};
-  const maxStaff = () => { try { if (G.maxStaff && S) return G.maxStaff(S); } catch (e) { /* abajo */ } return BAL().maxStaff || 12; };
-  const maxEquip = () => { try { if (G.maxEquip && S) return G.maxEquip(S); } catch (e) { /* abajo */ } return BAL().maxEquip || 30; };
+  const maxStaff = () => { try { if (G.maxStaff && S) return G.maxStaff(S); } catch (e) { /* abajo */ } return BAL().maxStaff || 18; };
+  const maxEquip = () => { try { if (G.maxEquip && S) return G.maxEquip(S); } catch (e) { /* abajo */ } return BAL().maxEquip || 80; };
   // Límite de quiebra: crece con los gastos diarios (G.bankruptLimit); con una lógica vieja, el fijo
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
   const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
