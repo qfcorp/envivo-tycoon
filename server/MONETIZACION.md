@@ -11,7 +11,14 @@ tiene **techo**. Los precios en dinero real los fija el Centro de Control (`prod
 - Partes y topes: `sede` (Sede oficial, hasta **+6**), `estrella` (Personal estrella, hasta **+6**), total **máx. +12**
   puntos de calidad (≈ 20–25 % sobre una calidad típica de 50–60). Constante `Ventajas::TOPE = 12`, editable en `ajustes`
   (`ventajas_tope`).
-- Los equipos exclusivos/VIP ya cuentan dentro de la jugada (no suman al bono).
+- Los equipos exclusivos/VIP ya cuentan dentro de la jugada (no suman al bono). Desde oct. 2026 los equipos VIP funcionan
+  SIEMPRE (con o sin el Pase VIP) y se cobran del bono: `Ventajas::recorteVip($bono, $equip)` resta `Ventajas::PUNTOS_VIP`
+  (cámara y switcher VIP 2, satélite 1; todo VIP = 11). Medido: todo VIP + bono máximo recortado = +21,5 % en copa.
+- Pase VIP (30 días): ventajas de comodidad según el nivel VIP (`Vip::PASE`, misma tabla en `js/premium.js`): más eventos
+  por día en la historia, reparaciones más baratas, obras de la sede más cortas y bono diario más grande. Nada da poder en
+  Copa, Duelos, Liga ni Festival.
+- Combo con créditos: lo que necesita un equipo canjeado con créditos se completa con créditos (`POST /api/gastar`
+  `juego:<clave>` / `personal:<rol>`, `Monedero::gastarCombo`); en línea la pieza sigue pidiendo su fama.
 - **Copa**: puntos de preparación = calidad validada + bono (+ estrellas extra como hoy); en los cruces, cada equipo del
   plantel lleva `bono` y `batalla.js` lo suma a la calidad de su partido (campo opcional `bono` por equipo, 0..12).
 - **Duelos**: el bono se suma a la calidad del retador y del fantasma; el emparejamiento sugiere rivales con **poder parecido**.

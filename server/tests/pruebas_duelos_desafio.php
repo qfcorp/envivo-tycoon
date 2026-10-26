@@ -303,9 +303,12 @@ $eqC = json_decode((string) Db::valor('SELECT equipo_json FROM duelo_equipos WHE
 $contr = Duelos::contrato(1, 'medio');
 $sinVip = Duelos::armarIntento($eqC, $contr, 5, false, $JC);
 $conVip = Duelos::armarIntento($eqC, $contr, 5, true, $JC);
-check('Sin VIP activo, la cámara VIP no va al duelo (el validador la rechazaría)', [false, 'vip_cam8k'], [in_array('vip_cam8k', array_column($sinVip['equipo']['equip'], 'type'), true), $conVip['equipo']['equip'][0]['type']]);
+// Lo comprado con diamantes funciona SIEMPRE (decisión de Dimitry, oct. 2026): sin el Pase VIP la cámara VIP también va
+check('Sin el Pase VIP, la cámara VIP también va al duelo (en la posición principal, igual que con el Pase)', [true, 'vip_cam8k', 'vip_cam8k', false],
+    [in_array('vip_cam8k', array_column($sinVip['equipo']['equip'], 'type'), true), $sinVip['equipo']['equip'][0]['type'], $conVip['equipo']['equip'][0]['type'], Monedero::vipActivo($JC)]);
 $v = Repeticion::validar($sinVip + ['decisiones' => $jugar($sinVip)['decisiones']]);
-check('…y ese intento es válido para el validador', true, $v['valido']);
+check('…y ese intento (con la cámara VIP, sin Pase) es válido para el validador', true, $v['valido']);
+check('…y la cámara VIP se cobra del bono de ventajas (Ventajas::recorteVip: 2 puntos)', [10, 2], [\EnVivo\Ventajas::recorteVip(12, $sinVip['equipo']['equip']), \EnVivo\Ventajas::puntosVip($sinVip['equipo']['equip'])]);
 Db::q("UPDATE inventario SET estado = 'publicado' WHERE id = ?", [$gruaB['id']]);
 $eqB = json_decode((string) Db::valor('SELECT equipo_json FROM duelo_equipos WHERE jugador_id = ?', [$JB]), true);
 check('Equipo publicado en el mercado después de registrarlo: ya no va al duelo', false, in_array('grua', array_column(Duelos::armarIntento($eqB, $contr, 5, false, $JB)['equipo']['equip'], 'type'), true));

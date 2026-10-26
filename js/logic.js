@@ -272,6 +272,8 @@
   }
   // Gastos fijos en dólares de las extensiones (decoración: café, agua, luz). No los toca multGastos.
   function extSuma(s, nombre) { let n = 0; cadaExt(s, nombre, (h) => { const v = Number(h(s)); if (isFinite(v) && v > 0) n += v; }); return Math.round(n); }
+  // Turnos (eventos) por día en el modo historia: 3 + lo que den las extensiones (Pase VIP: +1 o +2), nunca más de 5
+  function franjasDia(s) { return clamp(BALANCE.dia.franjas + extLimite(s, 'turnos'), 1, 5); }
   function maxStaff(s) { return BALANCE.maxStaff + extLimite(s, 'staff'); }
   function maxEquip(s) { return BALANCE.maxEquip + extLimite(s, 'equip'); }
   function migrarExt(s) { cadaExt(s, 'migrar', (h) => h(s)); return s; }
@@ -998,7 +1000,7 @@
      gastos (gastos fijos de hoy, se cobran al cerrar el día), parte (lo que le toca a cada evento de hoy, null sin eventos),
      conOtro (lo que le tocaría a cada uno con un evento más; null si ya no quedan turnos), pagos, ganancia } */
   function turnoDia(s) {
-    const H = hoyDe(s), max = BALANCE.dia.franjas;
+    const H = hoyDe(s), max = franjasDia(s);
     const g = dailyCost(s), n = H.n;
     return { n, max, libres: Math.max(0, max - n), turno: Math.min(n, max - 1), gastos: g,
       parte: n ? Math.round(g / n) : null, conOtro: n < max ? Math.round(g / (n + 1)) : null, pagos: H.pagos, ganancia: H.ganancia };
@@ -1024,7 +1026,7 @@
       if (opts.travel && R0 && typeof R0 === 'object') { R0.gastos += gasto; R0.dias = (R0.dias || 1) + 1; R0.resultado = R0.ganancia - R0.gastos; }
       else {
         s.resumenDia = { dia: cerrado, eventos: H.n, pagos: H.pagos, ganancia: H.ganancia, gastos: gasto, dias: 1,
-          resultado: H.ganancia - gasto, lista: H.eventos.slice(0, BALANCE.dia.franjas) };
+          resultado: H.ganancia - gasto, lista: H.eventos.slice(0, 5) };
       }
       s.hoy = { dia: s.day, n: 0, pagos: 0, ganancia: 0, eventos: [] };
     }
@@ -1457,6 +1459,29 @@
     });
     return out;
   }
+  /* Combo con créditos (js/datos.js COMBO_CREDITOS): las piezas de la tienda y los roles que puede necesitar un equipo
+     (lo que pide y lo que piden esas piezas, hasta 3 niveles). Es una lista amplia (todas las opciones que sirven, no solo
+     la más barata). El servidor usa lo mismo (server/bin/catalogo_juego.php → CatalogoJuego::COMBOS). { equipos, roles } */
+  function opcionesDependencia(req) {
+    const d = DEPS[req];
+    return d ? Object.keys(CATALOG).filter((k) => enTienda(k) && d.da(CATALOG[k])).sort() : [];
+  }
+  function comboDe(type) {
+    const equipos = new Set(), roles = new Set();
+    let cola = [type];
+    const visto = new Set([type]);
+    for (let n = 0; n < 3 && cola.length; n++) {
+      const sig = [];
+      cola.forEach((t) => ((CATALOG[t] && CATALOG[t].requiere) || []).forEach((req) => {
+        const rol = ROLE_KEYS.includes(normRole(req)) ? normRole(req) : null;
+        if (rol) { roles.add(rol); return; }
+        opcionesDependencia(req).forEach((k) => { equipos.add(k); if (!visto.has(k)) { visto.add(k); sig.push(k); } });
+      }));
+      cola = sig;
+    }
+    return { equipos: [...equipos].sort(), roles: [...roles].sort() };
+  }
+  const creditosJuego = (k) => (CATALOG[k] && enTienda(k) && typeof D.creditosJuego === 'function' ? D.creditosJuego(CATALOG[k].price) : 0);
   // La cámara de la tienda que mejor cubre una posición de ese perfil y que ya puedes comprar (fama), sin lentes ni
   // accesorios aparte: la que mejor encaja y, entre iguales, la más barata. null si ninguna encaja mejor que `minFit`.
   function camaraParaPerfil(s, perfil, minFit) {
@@ -2311,7 +2336,7 @@
     if (!staff.length) return { ok: false, msg: tx('msg.lleva_persona') };
     if (!equip.some((e) => itemOf(e).cat === 'cam')) return { ok: false, msg: tx('msg.lleva_camara') };
     // Ya usaste los turnos de hoy (no debería pasar: el día se cierra solo al usar el último)
-    if (!esIntento(s) && hoyDe(s).n >= BALANCE.dia.franjas) return { ok: false, msg: tx('msg.dia_lleno', { n: BALANCE.dia.franjas }) };
+    if (!esIntento(s) && hoyDe(s).n >= franjasDia(s)) return { ok: false, msg: tx('msg.dia_lleno', { n: franjasDia(s) }) };
     staff.forEach((p) => { p.role = normRole(p.role); if (!p.tier) p.tier = 'junior'; });
     if (esIntento(s)) s.intento = true; // se queda marcado para todo el intento (finishEvent cambia stats y día)
     if (contract.internacional) {
@@ -2600,12 +2625,12 @@
     } else {
       // Varios eventos por día: este evento usa un turno (mañana, tarde o noche). El día se cierra solo al usar el
       // último turno o con un evento que ocupa el día entero; si no, sigue el mismo día (los gastos fijos se cobran al cerrar).
-      const H = hoyDe(s), DIA = BALANCE.dia;
+      const H = hoyDe(s), DIA = BALANCE.dia, FR = franjasDia(s);
       H.n++; H.pagos += pay; H.ganancia += result.net;
       H.eventos.push({ t: c.type, e: stars, g: result.net });
       const jornada = jornadaCompleta(c);
-      const cierra = jornada || H.n >= DIA.franjas;
-      result.dia = { turno: H.n - 1, n: H.n, max: DIA.franjas, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
+      const cierra = jornada || H.n >= FR;
+      result.dia = { turno: H.n - 1, n: H.n, max: FR, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
       if (cierra) {
         if (jornada && !c.internacional) log(s, 'log.dia_completo', { evento: { k: 'ev.' + c.type } });
         nextDay(s);
@@ -2818,7 +2843,7 @@
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, lenteFaltante, dependencias, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
@@ -2828,7 +2853,7 @@
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
     // Extensiones
-    registrarExtension, extensiones, esIntento, extActivas, extSuma, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
+    registrarExtension, extensiones, franjasDia, esIntento, extActivas, extSuma, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
     registrarImprevisto, incAyuda, itemOf,
     // Movilización y flota
     planTransporte, distanciaKm, bultosDe, flota, flotaDe, esVehiculoFlota, tarifaApp, desgasteVehiculo, vehiclesDaily, publicidadFlota, topeTransporte,

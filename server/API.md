@@ -72,8 +72,10 @@ así una pestaña vieja (la computadora que quedó abierta mientras se jugaba en
 Sin créditos suficientes → 402 con error.
 
 ## Bono VIP diario (requiere sesión y VIP activo)
-`POST /api/vip/bono` → `{ "ok": true, "creditos": 260, "entrega": { "tipo": "dinero", "cantidad": 150, ... } }`
-Una vez por día (zona America/Guayaquil). Da $150 del juego (entrega) + 10 créditos.
+`POST /api/vip/bono` → `{ "ok": true, "creditos": 260, "entrega": { "tipo": "dinero", "cantidad": 150, ... }, "entregas": [ ... ] }`
+Una vez por día (zona America/Guayaquil). Crece con el nivel VIP (`Vip::PASE`): VIP 1–2 $150 + 10 créditos + 1 cable;
+VIP 3–4 $250 + 10 + 2 cables + 1 batería; VIP 5–6 $400 + 15 + 2 + 2; VIP 7–8 $600 + 15 + 3 + 3; VIP 9–10 $800 + 20 + 4 + 4 +
+todo el equipo al 100 %. `entrega` es la del dinero; `entregas` trae todas.
 
 ## Comprar con dinero real (requiere sesión)
 1. `POST /api/orden` `{ "producto": "creditos_700" }` → `{ "ok": true, "url": "/pago.php?o=<token>" }`
@@ -115,7 +117,7 @@ Exclusivos con créditos (nombres de js/datos.js; costo editable en el Centro de
 | `dron4k` | DGI Inspira 3X Cine (dron) Exclusivo | 450 |
 | `grua` | Grúa telescópica de 12 m con cabeza remota | 650 |
 | `unidad_movil` | Sprinto OB equipada (4 a 6 cámaras) | 900 |
-| `vip_cam8k`, `vip_switcher`, `vip_satelital` | Equipos VIP (solo con VIP activo) | 800, 1000, 700 |
+| `vip_cam8k`, `vip_switcher`, `vip_satelital` | Equipos VIP (se canjean con el Pase VIP activo; después funcionan siempre) | 800, 1000, 700 |
 | `ex_*` (14) | Edición Exclusiva: un equipo top por categoría (lentes, soportes, repeticiones, gráficos, monitor, audio, micrófonos, intercom, encoder, internet, video inalámbrico, fibra, lluvia, maletas). Ver MONETIZACION.md §5 | 100 a 950 |
 
 ---

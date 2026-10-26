@@ -254,7 +254,7 @@ alquiler por evento (service) = esa misma fórmula ÷ 3
 
 - **Regla de diseño:** todo lo necesario para la historia (cámara de sistema, lentes box, servidor de repetición, unidad móvil alquilada) se compra **con dinero del juego**. Si se vende con créditos, el juego se vuelve "pagar para ganar".
 - **Exclusivo (créditos)**, coherente con los premium actuales: `dron_dgi_inspira_3x` (= dron4k), `pw_kummins_22kva` (= generador), `veh_sprinto_ob_equipada` (= unidad_movil). La grúa premium actual equivale a `srv_grua_telescopica` comprada en propiedad. Son atajos y espectáculo, no requisitos.
-- **VIP:** `srv_aranacam`, `gfx_vizart_ar` (publicidad virtual / realidad aumentada) y `veh_trailer_ob_uhd20` como "trofeo" de fin de juego. Funcionan solo con VIP activo, igual que hoy.
+- **VIP:** `srv_aranacam`, `gfx_vizart_ar` (publicidad virtual / realidad aumentada) y `veh_trailer_ob_uhd20` como "trofeo" de fin de juego. Se canjean con el Pase VIP activo y después funcionan siempre (con o sin el Pase).
 - Sugerencia: el resto de la rareza `elite` se desbloquea por **fama** (por ejemplo calidad 5 con fama 55+, calidad 6 con fama 70+).
 
 ## Montajes realistas por tipo de evento

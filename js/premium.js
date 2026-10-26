@@ -3,7 +3,9 @@
    - Agrega los equipos exclusivos al catálogo (no se pueden comprar con dinero del juego,
      ni vender, solo se consiguen en la tienda con créditos).
    - Aplica las "entregas" que manda el servidor (cada una UNA sola vez por partida).
-   - Efectos del Pase VIP: reparaciones 30 % más baratas y 1 oferta extra al día.
+   - Efectos del Pase VIP (según el nivel VIP, tabla PASE_VIP): más eventos por día (modo historia), reparaciones más
+     baratas (30 a 50 %) y 1 oferta extra al día. El bono diario y las obras más rápidas los da el servidor (server/src/Vip.php).
+   - Los equipos VIP canjeados funcionan siempre, con o sin el Pase VIP.
    El saldo de créditos y el VIP los decide SIEMPRE el servidor (server/API.md).
    ========================================================= */
 (function (root) {
@@ -25,7 +27,7 @@
     generador:    { name: 'Kummins 22 kVA diésel insonorizado', icon: 'generador', creditos: 250, cat: 'power', subtipo: 'generador_diesel', q: 4, price: 0, minRep: 0, rareza: 'exclusivo', durabilidad: 5,
                     eventos: ['ligapro', 'concierto', 'final', 'lanzamiento_autos'], premium: true, repairBase: 900,
                     desc: 'Generador silencioso para estadios y conciertos: si se va la luz, tú sigues al aire.' },
-    // Solo VIP: se canjean con VIP activo y funcionan solo mientras el VIP esté activo
+    // Solo VIP: se canjean con el Pase VIP activo y después funcionan SIEMPRE (con o sin el Pase)
     vip_cam8k:     { name: 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', icon: 'cam_cine', creditos: 800, cat: 'cam', subtipo: 'sistema_4k', q: 6, price: 0, minRep: 0, rareza: 'vip', durabilidad: 5,
                      requiere: ['lente_b4', 'cable_fibra_smpte', 'shader'], incluyeLente: true, incluyeFibra: true, eventos: ['final', 'ligapro'], premium: true, vip: true, repairBase: 4000,
                      desc: 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.' },
@@ -36,10 +38,32 @@
                      eventos: ['final', 'internacional_host', 'internacional_unilateral'], premium: true, vip: true, repairBase: 2500,
                      desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
   };
-  const DURABLES = ['item', 'personal'];   // se vuelven a entregar si empiezas partida nueva
-  const VIP_DESCUENTO = 0.3;
+  const DURABLES = ['item', 'equipo', 'personal'];   // se vuelven a entregar si empiezas partida nueva
+  const VIP_DESCUENTO = 0.3;   // descuento base del Pase VIP (VIP 1); crece con el nivel (PASE_VIP)
+
+  /* Ventajas del Pase VIP de 30 días por nivel VIP ("desde" ese nivel; con el Pase activo y nivel 0 cuenta como VIP 1).
+     MISMA tabla que server/src/Vip.php (Vip::PASE): tests/pruebas_vip.php revisa que sean iguales.
+     turnos: eventos por día en el modo historia (sin Pase: 3). descuento: % menos al reparar. obra: % menos de tiempo en las
+     obras de la Sede oficial (servidor). bono: bono diario (servidor). Nada de esto da poder en Copa, Duelos, Liga ni Festival. */
+  const PASE_VIP = [
+    { desde: 1, turnos: 4, descuento: 30, obra: 10, bono: { dinero: 150, creditos: 10, cable: 1, battery: 0, reparar: false } },
+    { desde: 3, turnos: 4, descuento: 35, obra: 15, bono: { dinero: 250, creditos: 10, cable: 2, battery: 1, reparar: false } },
+    { desde: 5, turnos: 5, descuento: 40, obra: 20, bono: { dinero: 400, creditos: 15, cable: 2, battery: 2, reparar: false } },
+    { desde: 7, turnos: 5, descuento: 45, obra: 25, bono: { dinero: 600, creditos: 15, cable: 3, battery: 3, reparar: false } },
+    { desde: 9, turnos: 5, descuento: 50, obra: 30, bono: { dinero: 800, creditos: 20, cable: 4, battery: 4, reparar: true } },
+  ];
+  const TURNOS_BASE = 3;
+  function pase(nivel) {
+    const n = Math.max(1, Math.min(10, Math.floor(Number(nivel) || 0)));
+    let o = PASE_VIP[0];
+    PASE_VIP.forEach((f) => { if (n >= f.desde) o = f; });
+    return Object.assign({ nivel: n }, o);
+  }
 
   let vipActivo = false;
+  let vipNivel = 0;
+  // Ventajas que tocan ahora (null sin el Pase VIP activo)
+  const paseActual = () => (vipActivo ? pase(vipNivel) : null);
 
   function estado(s) {
     if (!s.premium || typeof s.premium !== 'object') s.premium = {};
@@ -74,7 +98,8 @@
   const repairCostLogica = G.repairCost;
   function costoReparar(e) {
     const c = Math.max(0, repairCostLogica(e) || 0);
-    return vipActivo ? Math.round(c * (1 - VIP_DESCUENTO)) : c;
+    const p = paseActual();
+    return p ? Math.round(c * (100 - p.descuento) / 100) : c;
   }
 
   const buyOriginal = G.buy;
@@ -105,54 +130,12 @@
     return { ok: true, msg: tx('msg.quedo_nuevo') };
   };
 
-  /* ---------- Equipos VIP: guardados si el VIP no está activo ---------- */
+  /* ---------- Equipos VIP: funcionan SIEMPRE ----------
+     Decisión de Dimitry (oct. 2026): "lo comprado con diamantes se debe quedar". Los equipos VIP se canjean con el Pase VIP
+     activo, pero después son tuyos y funcionan siempre (modo historia y en línea), con o sin el Pase. El Pase VIP da otras
+     ventajas (PASE_VIP, abajo). bloqueado() queda por compatibilidad y siempre dice que no. */
   const esVip = (type) => !!(G.CATALOG[type] && G.CATALOG[type].vip);
-  const bloqueado = (e) => esVip(e.type) && !vipActivo;
-  const suggestOriginal = G.suggestLoadout;
-  G.suggestLoadout = function (s, contractId) {
-    const r = suggestOriginal(s, contractId);
-    if (vipActivo) return r;
-    // Sin VIP: quitar los equipos VIP y completar con lo mejor que quede de la misma categoría
-    const quitados = r.equipIds.map((id) => s.equip.find((e) => e.id === id)).filter((e) => e && bloqueado(e));
-    let ids = r.equipIds.filter((id) => !quitados.some((e) => e.id === id));
-    quitados.forEach((q) => {
-      const cat = G.CATALOG[q.type].cat;
-      const alt = s.equip.filter((e) => G.CATALOG[e.type].cat === cat && !bloqueado(e) && !ids.includes(e.id))
-        .sort((a, b) => (G.CATALOG[b.type].q * 100 + b.condition) - (G.CATALOG[a.type].q * 100 + a.condition))[0];
-      if (alt) ids.push(alt.id);
-    });
-    return { staffIds: r.staffIds, equipIds: ids };
-  };
-  // Lo que ve el jugador al preparar (calidad y plan de cámaras) es lo mismo que pasa al salir al aire: sin el Pase VIP
-  // activo, los equipos VIP no cuentan y las cámaras VIP salen en "no se pueden usar" con su motivo (sin_vip).
-  // Solo se envuelven las funciones públicas (las que usa la pantalla); la lógica por dentro y el validador no cambian.
-  const esCamara = (e) => !!(G.CATALOG[e.type] && G.CATALOG[e.type].cat === 'cam');
-  const bloqVip = (e) => ({ equipId: e.id, tipo: e.type, motivo: 'sin_vip', texto: tx('bloq.sin_vip', { item: G.CATALOG[e.type].name }) });
-  function marcarVip(plan, fuera) {
-    if (!plan || !Array.isArray(plan.bloqueados)) return plan;
-    fuera.filter(esCamara).forEach((e) => { if (!plan.bloqueados.some((b) => b.equipId === e.id)) plan.bloqueados.unshift(bloqVip(e)); });
-    return plan;
-  }
-  const qualityOriginal = G.computeQuality;
-  G.computeQuality = function (s, contract, staff, equip) {
-    const fuera = (equip || []).filter((e) => e && bloqueado(e));
-    if (!fuera.length) return qualityOriginal(s, contract, staff, equip);
-    const r = qualityOriginal(s, contract, staff, equip.filter((e) => e && !bloqueado(e)));
-    if (r) marcarVip(r.cameraPlan, fuera);
-    return r;
-  };
-  const planOriginal = G.cameraPlan;
-  G.cameraPlan = function (s, c, equipIds, staffIds) {
-    const ids = equipIds || [];
-    const fuera = s.equip.filter((e) => ids.includes(e.id) && bloqueado(e));
-    if (!fuera.length) return planOriginal(s, c, equipIds, staffIds);
-    return marcarVip(planOriginal(s, c, ids.filter((id) => !fuera.some((e) => e.id === id)), staffIds), fuera);
-  };
-  const startOriginal = G.startEvent;
-  G.startEvent = function (s, contractId, staffIds, equipIds) {
-    const ok = (equipIds || []).filter((id) => { const e = s.equip.find((x) => x.id === id); return e && !bloqueado(e); });
-    return startOriginal(s, contractId, staffIds, ok);
-  };
+  const bloqueado = () => false;
 
   /* ---------- Inventario del servidor (equipos que se pueden intercambiar en el mercado) ---------- */
   // Cada equipo del servidor vive en la partida con srvId. El servidor manda: si ya no está en su
@@ -188,6 +171,14 @@
         const it = G.CATALOG[en.item];
         if (!it) return null;
         if (s.equip.length >= 40) return `No cupo ${it.name} en la bodega.`;
+        s.equip.push({ id: nuevoId(s), type: en.item, condition: 100 });
+        return `Llegó a tu bodega: ${it.name}.`;
+      }
+      case 'equipo': {
+        // Pieza de la tienda canjeada con créditos para completar un combo (POST /api/gastar "juego:<clave>"): va a la bodega
+        // aunque con dinero del juego todavía pida más fama
+        const it = G.CATALOG[en.item];
+        if (!it) return null;
         s.equip.push({ id: nuevoId(s), type: en.item, condition: 100 });
         return `Llegó a tu bodega: ${it.name}.`;
       }
@@ -241,7 +232,15 @@
   }
 
   /* ---------- VIP ---------- */
-  function setVip(activo) { vipActivo = !!activo; }
+  // activo: Pase VIP de 30 días; nivel: nivel VIP 1–10 (para la tabla PASE_VIP). Sin nivel se queda el que ya tenía.
+  function setVip(activo, nivel) {
+    vipActivo = !!activo;
+    if (nivel !== undefined && nivel !== null && isFinite(Number(nivel))) vipNivel = Math.max(0, Math.min(10, Math.floor(Number(nivel))));
+  }
+  // Más eventos por día en el modo historia con el Pase VIP (los intentos en línea nunca usan extensiones)
+  if (typeof G.registrarExtension === 'function') {
+    G.registrarExtension({ id: 'pase_vip', limites: () => { const p = paseActual(); return { turnos: p ? p.turnos - TURNOS_BASE : 0 }; } });
+  }
   // Una oferta extra por día mientras el VIP está activo
   function tickVip(s) {
     const p = estado(s);
@@ -253,6 +252,7 @@
     return false;
   }
 
-  root.Premium = { EXCLUSIVOS, exclusivoDelServidor, aplicarEntregas, prepararPartidaNueva, sincronizarInventario, setVip, tickVip, esPremium, esVip, bloqueado, nombreSerie, costoReparar, get vip() { return vipActivo; } };
+  root.Premium = { EXCLUSIVOS, exclusivoDelServidor, aplicarEntregas, prepararPartidaNueva, sincronizarInventario, setVip, tickVip, esPremium, esVip, bloqueado, nombreSerie, costoReparar,
+    PASE_VIP, pase, paseActual, get vip() { return vipActivo; }, get nivel() { return vipNivel; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Premium;
 })(typeof window !== 'undefined' ? window : globalThis);

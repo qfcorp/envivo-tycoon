@@ -405,6 +405,105 @@ proc_terminate($srv); proc_close($srv);
 $errores = is_file($TMP . '/php_errores.log') ? trim((string) file_get_contents($TMP . '/php_errores.log')) : '';
 check('Sin errores ni avisos de PHP en el servidor', '', $errores);
 
+// =====================================================================
+titulo('Pase VIP (30 días): ventajas por nivel VIP — decisión de Dimitry, oct. 2026');
+check('Tabla: VIP 0/1 → 4 eventos, −30 %, obras −10 %, bono $150 + 10 créditos + 1 cable', [4, 30, 10, 150, 10, 1, 0, false],
+    [Vip::pase(0)['turnos'], Vip::pase(1)['descuento'], Vip::pase(2)['obra'], Vip::pase(1)['bono']['dinero'], Vip::pase(1)['bono']['creditos'], Vip::pase(1)['bono']['cable'], Vip::pase(1)['bono']['battery'], Vip::pase(1)['bono']['reparar']]);
+check('VIP 4 → 4 eventos; VIP 5 → 5 eventos; VIP 10 → −50 %, obras −30 %, bono con todo el equipo al 100 %', [4, 5, 50, 30, true, 20],
+    [Vip::pase(4)['turnos'], Vip::pase(5)['turnos'], Vip::pase(10)['descuento'], Vip::pase(10)['obra'], Vip::pase(10)['bono']['reparar'], Vip::pase(9)['bono']['creditos']]);
+check('El descuento nunca pasa del 50 % y los turnos de 5', [50, 5], [max(array_column(Vip::PASE, 'descuento')), max(array_column(Vip::PASE, 'turnos'))]);
+$NODEV = trim((string) shell_exec('command -v node 2>/dev/null'));
+if ($NODEV !== '') {
+    $js = (string) shell_exec(escapeshellarg($NODEV) . ' -e ' . escapeshellarg('require(process.argv[1]); const P = require(process.argv[2]); process.stdout.write(JSON.stringify(P.PASE_VIP));')
+        . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/js/logic.js') . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/js/premium.js'));
+    check('La tabla del juego (js/premium.js PASE_VIP) es la misma del servidor (Vip::PASE)', Vip::tablaPase(), json_decode($js, true));
+}
+$PV = $nuevoJugador('Pase VIP');
+$activar($PV);
+check('Sin Pase VIP: paseDe = null y la obra dura lo mismo', [null, 3600], [Vip::paseDe($PV), Vip::segundosObra($PV, 3600)]);
+Db::q('UPDATE jugadores SET vip_hasta = ? WHERE id = ?', [time() + 86400 * 10, $PV]);
+check('Pase VIP sin nivel (cuenta como VIP 1): obras −10 % (3600 → 3240 s), mínimo 1 minuto', [1, 3240, 60], [Vip::paseDe($PV)['nivel'], Vip::segundosObra($PV, 3600), Vip::segundosObra($PV, 30)]);
+[$saldo0, $en0, $todas0] = Monedero::bonoVip($PV);
+check('Bono diario VIP 1: $150 (entrega) + 1 cable, +10 créditos', [['dinero', 150], [['dinero', '-', 150], ['consumible', 'cable', 1]], 10],
+    [[$en0['tipo'], $en0['cantidad']], array_map(fn($e) => [$e['tipo'], $e['item'], $e['cantidad']], $todas0), $saldo0]);
+$err = null; try { Monedero::bonoVip($PV); } catch (\RuntimeException $e) { $err = $e->getCode(); }
+check('…otra vez el mismo día -> 409', 409, $err);
+$PV5 = $nuevoJugador('Pase VIP 5');
+$activar($PV5);
+Db::q('INSERT INTO vip_jugadores (jugador_id, nivel, revisado, actualizado) VALUES (?, 5, 0, ?)', [$PV5, time()]);
+Db::q('UPDATE jugadores SET vip_hasta = ? WHERE id = ?', [time() + 86400 * 10, $PV5]);
+[$saldo5, , $todas5] = Monedero::bonoVip($PV5);
+check('Bono diario VIP 5: $400 + 2 cables + 2 baterías, +15 créditos; obras −20 %', [[['dinero', '-', 400], ['consumible', 'cable', 2], ['consumible', 'battery', 2]], 15, 2880],
+    [array_map(fn($e) => [$e['tipo'], $e['item'], $e['cantidad']], $todas5), $saldo5, Vip::segundosObra($PV5, 3600)]);
+Db::q('UPDATE jugadores SET vip_hasta = ? WHERE id = ?', [time() - 60, $PV5]);
+check('Pase vencido: sin ventajas (paseDe null, obra igual) aunque el nivel VIP 5 queda', [null, 3600, 5], [Vip::paseDe($PV5), Vip::segundosObra($PV5, 3600), Vip::nivel($PV5)]);
+$err = null; try { Monedero::bonoVip($PV5); } catch (\RuntimeException $e) { $err = $e->getCode(); }
+check('…y el bono diario pide el Pase (403)', 403, $err);
+check('GET /api/vip trae la tabla del Pase (pase_vip_tabla) y lo que toca con su nivel', [5, 5, 40], [count(Vip::estado($PV5)['pase_vip_tabla']), Vip::estado($PV5)['pase_vip']['turnos'], Vip::estado($PV5)['pase_vip']['descuento']]);
+
+// =====================================================================
+titulo('Equipos VIP: funcionan siempre; cuentan dentro del techo de ventajas (Ventajas::recorteVip)');
+$vipFull = array_map(fn($t) => ['type' => $t], ['vip_cam8k', 'vip_cam8k', 'vip_cam8k', 'vip_cam8k', 'vip_switcher', 'vip_satelital', 'cam_basic']);
+check('Puntos de techo: 4 cámaras VIP + switcher + satélite = 11 (de 12); sin VIP = 0', [11, 0], [Ventajas::puntosVip($vipFull), Ventajas::puntosVip([['type' => 'cam_basic'], ['item' => 'dron4k']])]);
+check('Bono 12 con todo VIP -> 1 · bono 5 -> 0 · sin VIP queda igual', [1, 0, 12], [Ventajas::recorteVip(12, $vipFull), Ventajas::recorteVip(5, $vipFull), Ventajas::recorteVip(12, [['type' => 'cam_basic']])]);
+if ($NODEV !== '') {
+    // Simulación con la lógica real (server/eventos/batalla.js): equipo de copa gratis vs. el mismo con TODO lo VIP y el bono
+    // máximo ya recortado. La ventaja pagada total queda dentro del techo (20–25 %, MONETIZACION.md §1).
+    $sim = <<<'JS'
+'use strict';
+const B = require(process.argv[2]);
+const x = JSON.parse(process.argv[3]);
+let a = 0, b = 0, n = 0;
+for (const t of Object.keys(B.TORNEOS)) for (let s = 1; s <= 6; s++) {
+  const j = B.jugarCruce({ seed: 1000 + s * 7919, torneo: t, planA: Array(5).fill(x.libre), planB: Array(5).fill(Object.assign({}, x.vip, { bono: x.bono })) });
+  if (!j.ok) { console.log(JSON.stringify({ ok: false })); process.exit(1); }
+  j.partidos.forEach((p) => { if (p.casa_a || p.casa_b) { console.log(JSON.stringify({ ok: false, casa: true })); process.exit(1); } a += p.calidad_a; b += p.calidad_b; n++; });
+}
+console.log(JSON.stringify({ ok: true, libre: a / n, vip: b / n }));
+JS;
+    file_put_contents($TMP . '/sim_vip.js', $sim);
+    $st = fn(array $extra) => array_map(fn($p) => $p + ['morale' => 80], array_merge([['role' => 'camarografo', 'skill' => 4, 'owner' => true, 'name' => 'Tú'], ['role' => 'camarografo', 'skill' => 4],
+        ['role' => 'camarografo', 'skill' => 4], ['role' => 'camarografo', 'skill' => 4], ['role' => 'director', 'skill' => 4], ['role' => 'sonidista', 'skill' => 4], ['role' => 'tecnico_transmision', 'skill' => 4]], $extra));
+    $base = ['au_mydas_m33_live', 'mic_shur_slxd25_doble', 'enc_liveyou_solo_pro', 'router4g', 'rep_trikaster_3jugadas', 'ups', 'rain_cobertor_broadcast'];
+    $libre = ['staff' => $st([['role' => 'operador_repeticion', 'skill' => 4]]), 'equip' => array_map(fn($t) => ['type' => $t, 'condition' => 90], array_merge(array_fill(0, 4, 'cam_jvk_gy_hk560'), ['switch_pro'], $base))];
+    $vipEq = ['staff' => $st([['role' => 'shader', 'skill' => 4]]), 'equip' => array_map(fn($t) => ['type' => $t, 'condition' => 90], array_merge(array_fill(0, 4, 'vip_cam8k'), ['vip_switcher', 'vip_satelital'], $base))];
+    $bono = Ventajas::recorteVip(Ventajas::TOPE, $vipEq['equip']);
+    $o = json_decode((string) shell_exec(escapeshellarg($NODEV) . ' ' . escapeshellarg($TMP . '/sim_vip.js') . ' ' . escapeshellarg(dirname(__DIR__) . '/eventos/batalla.js') . ' '
+        . escapeshellarg(json_encode(['libre' => $libre, 'vip' => $vipEq, 'bono' => $bono])) . ' 2>&1'), true);
+    $pct = ($o['ok'] ?? false) ? round(($o['vip'] / $o['libre'] - 1) * 100, 1) : null;
+    printf("  SIM copa: libre %.1f · todo VIP + bono recortado (%d) %.1f → %+.1f %%\n", $o['libre'] ?? 0, $bono, $o['vip'] ?? 0, $pct ?? 0);
+    check('Copa: todo lo VIP + el bono máximo recortado queda dentro del techo (≤ 25 %)', true, $pct !== null && $pct <= 25.0);
+}
+
+// =====================================================================
+titulo('Combo con créditos: lo que necesita un equipo canjeado con créditos (POST /api/gastar "juego:" / "personal:")');
+$CB = $nuevoJugador('Combo AR');
+$activar($CB);
+Db::q('UPDATE jugadores SET fama_publica = 33 WHERE id = ?', [$CB]);
+Monedero::mover($CB, 5000, 'ajuste', 'prueba:combo');
+$gasta = function (int $j, string $item): array { try { [$s, $e] = Monedero::gastar($j, $item); return [200, $s, $e]; } catch (\Throwable $e) { return [$e->getCode(), null, null]; } };
+check('Sin el Vizart AR en la bodega: la cámara de sistema con créditos -> 403 (solo para completar un combo)', 403, $gasta($CB, 'juego:cam_zony_hdk_3200')[0]);
+\EnVivo\Inventario::crear($CB, 'ex_graficos', 'canje', 'creditos:ex_graficos');
+\EnVivo\Inventario::crear($CB, 'dron4k', 'canje', 'creditos:dron4k');
+$precio = \EnVivo\CatalogoJuego::EQUIPOS['cam_zony_hdk_3200']['creditos'];
+[$c1, $s1, $e1] = $gasta($CB, 'juego:cam_zony_hdk_3200');
+check('Con el Vizart AR (fama 33; con dinero pide 45): la Zony HDK-3200 por ' . $precio . ' 💎 llega como entrega "equipo"', [200, 5000 - $precio, 'equipo', 'cam_zony_hdk_3200', 460],
+    [$c1, $s1, $e1['tipo'] ?? null, $e1['item'] ?? null, $precio]);
+check('Su fibra también (pieza de la cadena)', 200, $gasta($CB, 'juego:fib_cable_smpte_100m')[0]);
+check('Una pieza que no es del combo (cam_basic) -> 403 · una que no existe -> 404', [403, 404], [$gasta($CB, 'juego:cam_basic')[0], $gasta($CB, 'juego:cam_nasa')[0]]);
+for ($i = 0; $i < 3; $i++) $gasta($CB, 'juego:cam_zony_hdk_3200');
+check('Tope de 4 por pieza: la 5.ª -> 409', 409, $gasta($CB, 'juego:cam_zony_hdk_3200')[0]);
+check('Personal: con fama 33 el piloto de dron ya aparece en Personal -> 409 (se contrata con dinero)', 409, $gasta($CB, 'personal:piloto_dron')[0]);
+Db::q('UPDATE jugadores SET fama_publica = 5 WHERE id = ?', [$CB]);
+$saldoP = Monedero::saldo($CB);
+[$c2, $s2, $e2] = $gasta($CB, 'personal:piloto_dron');
+check('Con fama 5 (el piloto aparece desde 10): piloto de dron por 150 💎, habilidad 2, nivel junior', [200, $saldoP - 150, 'personal', 'piloto_dron', 2, 'junior'],
+    [$c2, $s2, $e2['tipo'] ?? null, $e2['item'] ?? null, $e2['cantidad'] ?? null, Db::valor('SELECT nivel FROM entregas WHERE id = ?', [$e2['id'] ?? 0])]);
+check('Un rol que el combo no pide (director, fama 0 igual) -> 409 · rol inventado -> 404', [409, 404], [$gasta($CB, 'personal:director')[0], $gasta($CB, 'personal:astronauta')[0]]);
+check('Libro de créditos = saldo (todo pasó por Monedero)', Monedero::saldo($CB), (int) Db::valor('SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos WHERE jugador_id = ?', [$CB]));
+check('Las entregas del combo salen en /api/estado (Monedero::entregas: tipo equipo y personal)', true,
+    count(array_filter(Monedero::entregas($CB), fn($e) => in_array($e['tipo'], ['equipo', 'personal'], true))) >= 6);
+
 echo "\n----------------------------------------\nVIP: $OK correctas · $FALLAS fallas\n";
 if (getenv('GUARDAR_TMP') === '1') echo "Base de la prueba en $TMP\n"; else exec('rm -rf ' . escapeshellarg($TMP));
 exit($FALLAS === 0 ? 0 : 1);

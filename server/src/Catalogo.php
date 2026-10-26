@@ -14,7 +14,7 @@ namespace EnVivo;
  *
  * PREMIUM (exclusivos que se compran con créditos): "creditos" es lo que cuesta y "entrega" lo que recibe el juego.
  *   Los de tipo "item" (equipos) NO se entregan como entrega: se crean en el inventario del servidor (con número de serie)
- *   y se pueden vender en el mercado. Los que llevan 'vip' => true solo se canjean con VIP activo.
+ *   y se pueden vender en el mercado. Los que llevan 'vip' => true solo se canjean con VIP activo (después funcionan siempre).
  *
  * OJO al cambiar un precio: las compras que ya se hicieron guardan su propio valor (no cambian).
  * Los precios, créditos, productos apagados y ofertas por tiempo limitado también se cambian en el Centro de Control
@@ -32,7 +32,7 @@ final class Catalogo
         'bienvenida'    => ['tipo' => 'bienvenida', 'nombre' => 'Oferta de bienvenida', 'detalle' => 'Una sola vez: 150 créditos, un camarógrafo senior de refuerzo por 3 eventos y 3 cables', 'precio' => 0.99, 'creditos' => 150, 'una_vez' => true],
         'inicio'        => ['tipo' => 'inicio', 'nombre' => 'Paquete de inicio', 'detalle' => 'Una sola vez: cámara profesional, 5 cables, 3 baterías, técnico de streaming nivel 3 y 200 créditos', 'precio' => 2.99, 'creditos' => 200, 'una_vez' => true],
         'tarjeta_mensual' => ['tipo' => 'tarjeta', 'nombre' => 'Tarjeta mensual', 'detalle' => '30 días: reclama 20 créditos cada día (600 en total). No se renueva sola; si compras otra se suman 30 días', 'precio' => 4.99, 'creditos' => 0, 'una_vez' => false, 'dias' => 30, 'creditos_dia' => 20],
-        'vip30'         => ['tipo' => 'vip', 'nombre' => 'Pase VIP 30 días', 'detalle' => 'No se renueva solo: bono diario de $150 + 10 créditos, reparaciones 30 % más baratas, 1 oferta extra al día, distintivo VIP', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false, 'dias' => 30],
+        'vip30'         => ['tipo' => 'vip', 'nombre' => 'Pase VIP 30 días', 'detalle' => 'No se renueva solo. Según tu nivel VIP: 4 o 5 eventos por día, reparaciones 30 a 50 % más baratas, obras de la sede 10 a 30 % más rápidas, bono diario (dinero, créditos, cables y baterías), 1 oferta extra al día y distintivo VIP. Lo que compras con créditos funciona siempre, con o sin el Pase', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false, 'dias' => 30],
         // ---- Módulos de monetización (server/MONETIZACION.md §4). "modulo" = clase que lo entrega (por su gancho compra_aprobada):
         //      mientras esa clase no esté instalada, el producto queda apagado y oculto (no se vende ni en la web ni en Google Play).
         //      Google Play usa los MISMOS ids. El contenido es fijo y a la vista (sin cajas sorpresa).
@@ -92,7 +92,7 @@ final class Catalogo
         'dron4k'         => ['nombre' => 'DGI Inspira 3X Cine (dron) Exclusivo', 'detalle' => 'Dron de cine con cámara 4K de lentes cambiables. Tomas aéreas de calidad 5. Necesita piloto de dron.', 'creditos' => 450, 'entrega' => ['tipo' => 'item', 'item' => 'dron4k', 'cantidad' => 1]],
         'grua'           => ['nombre' => 'Grúa telescópica de 12 m con cabeza remota', 'detalle' => 'Barridos de cine sobre el público. Cámara de calidad 4 para las posiciones de grúa o jib.', 'creditos' => 650, 'entrega' => ['tipo' => 'item', 'item' => 'grua', 'cantidad' => 1]],
         'unidad_movil'   => ['nombre' => 'Sprinto OB equipada (4 a 6 cámaras)', 'detalle' => 'Unidad móvil con switcher, audio e intercom adentro. Cuenta como switcher de calidad 4.', 'creditos' => 900, 'entrega' => ['tipo' => 'item', 'item' => 'unidad_movil', 'cantidad' => 1]],
-        // Equipos VIP: se canjean solo con VIP activo; siguen siendo del jugador cuando el VIP vence (el juego los guarda)
+        // Equipos VIP: se canjean solo con el Pase VIP activo; después son del jugador y funcionan SIEMPRE (con o sin el Pase)
         'vip_cam8k'      => ['nombre' => 'Zony HDK-3600 4K HDR Edición VIP (con lente box 107x)', 'detalle' => 'Cadena de cámara de sistema 4K con lente box y fibra incluidos. La mejor imagen del juego (calidad 6). Lleva un shader.', 'creditos' => 800, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_cam8k', 'cantidad' => 1]],
         'vip_switcher'   => ['nombre' => 'Rozz Carbonita Ultra Edición VIP', 'detalle' => 'Switcher de televisión con panel: repeticiones y gráficos de nivel nacional. Calidad 5.', 'creditos' => 1000, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_switcher', 'cantidad' => 1]],
         'vip_satelital'  => ['nombre' => 'Enlace satelital portátil (flyaway) Edición VIP', 'detalle' => 'Tu transmisión sale por satélite: el internet nunca te deja mal.', 'creditos' => 700, 'vip' => true, 'entrega' => ['tipo' => 'item', 'item' => 'vip_satelital', 'cantidad' => 1]],

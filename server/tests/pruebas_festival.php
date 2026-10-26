@@ -176,7 +176,10 @@ $eq = fn(array $staff, array $equip) => ['staff' => $staff, 'equip' => $equip];
 check('Fama 5: habilidad 5 -> 400 habilidad (máximo 3)', [400, 'habilidad'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 5]], [['type' => 'cam_basic']])])), 0, 2));
 check('Fama 5: cámara broadcast 4K (fama 35) -> 400 fama_equipo', [400, 'fama_equipo'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'cam_cine']])])), 0, 2));
 check('Dron 4K que no está en su bodega -> 403 no_es_tuyo', [403, 'no_es_tuyo'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'dron4k']])])), 0, 2));
-check('Equipo VIP sin VIP -> 403 vip_requerido', [403, 'vip_requerido'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'vip_cam8k']])])), 0, 2));
+check('Equipo VIP que no está en su bodega -> 403 no_es_tuyo', [403, 'no_es_tuyo'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'vip_cam8k']])])), 0, 2));
+// Lo comprado con diamantes funciona SIEMPRE (decisión de Dimitry, oct. 2026): el equipo VIP de su bodega va sin el Pase VIP
+\EnVivo\Inventario::crear($baja, 'vip_cam8k', 'canje', 'creditos:vip_cam8k');
+check('Equipo VIP de su bodega SIN el Pase VIP -> se acepta (revisarEquipo)', ['vip_cam8k', false], [Festival::revisarEquipo($baja, $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'vip_cam8k']]), false)['equip'][0]['type'], Monedero::vipActivo($baja)]);
 check('Sin cámara -> 400 sin_camara', [400, 'sin_camara'], array_slice(falla(fn() => Festival::iniciar($baja, ['escenario' => 1, 'equipo' => $eq([['role' => 'cam', 'skill' => 2]], [['type' => 'mics']])])), 0, 2));
 // Catálogo realista (js/datos.js vía CatalogoJuego): los 14 roles, las claves viejas y los 90 equipos del juego
 $rv = Festival::revisarEquipo($baja, $eq([['role' => 'piloto_dron', 'skill' => 2], ['role' => 'cam', 'skill' => 2], ['role' => 'operador_graficos', 'skill' => 1]],

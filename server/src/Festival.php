@@ -105,7 +105,7 @@ final class Festival
         $x = CatalogoJuego::EQUIPOS[$t] ?? null;
         return $x === null ? null : [(string) $x['cat'], (int) $x['fama'], self::MAX_POR_CATEGORIA[$x['cat']] ?? 1];
     }
-    /** Exclusivos del inventario del servidor (hay que tenerlos en la bodega); los vip_* además piden VIP activo. */
+    /** Exclusivos del inventario del servidor (hay que tenerlos en la bodega). Los vip_* funcionan siempre, con o sin Pase VIP. */
     public const EQUIPOS_SERVIDOR = [
         'dron4k' => 'cam', 'grua' => 'cam', 'vip_cam8k' => 'cam', 'unidad_movil' => 'switcher', 'vip_switcher' => 'switcher',
         'generador' => 'power', 'vip_satelital' => 'internet',
@@ -360,10 +360,11 @@ final class Festival
 
     /**
      * Revisa y normaliza el personal y los equipos que el jugador manda al festival. El servidor fija ánimo y estado.
-     * Exclusivos: solo los que tiene en la bodega del servidor; VIP: además con VIP activo; equipos del juego: según fama.
+     * Exclusivos y VIP: solo los que tiene en la bodega del servidor (lo comprado con créditos funciona siempre, sin pedir el
+     * Pase VIP: decisión de Dimitry, oct. 2026); equipos del juego: según fama. $vip ya no cambia nada (se deja por compatibilidad).
      * Personal sobre el tope de su fama: solo tantos como personas premium recibió (entregas "personal").
      */
-    public static function revisarEquipo(int $j, mixed $eq, bool $vip): array
+    public static function revisarEquipo(int $j, mixed $eq, bool $vip = false): array
     {
         Fallo::si(!is_array($eq) || !is_array($eq['staff'] ?? null) || !is_array($eq['equip'] ?? null), 'Elige el personal y los equipos que vas a mandar.', 400, ['codigo' => 'equipo']);
         $staff = array_values($eq['staff']);
@@ -407,7 +408,6 @@ final class Festival
                 Fallo::si($cuenta[$t] > $max, 'Máximo ' . $max . ' de ' . $nom . ' por escenario.', 400, ['codigo' => 'equipo', 'item' => $t]);
             } else {
                 $cat = self::EQUIPOS_SERVIDOR[$t];
-                Fallo::si(str_starts_with($t, 'vip_') && !$vip, 'Los equipos VIP solo se pueden llevar con el Pase VIP activo.', 403, ['codigo' => 'vip_requerido', 'item' => $t]);
                 $tiene = (int) Db::valor("SELECT COUNT(*) FROM inventario WHERE jugador_id = ? AND item = ? AND estado = 'bodega'", [$j, $t]);
                 Fallo::si($cuenta[$t] > $tiene, 'No tienes ' . ($cuenta[$t] > 1 ? $cuenta[$t] . ' de ' : '') . Catalogo::nombreEquipo($t) . ' en tu bodega.', 403, ['codigo' => 'no_es_tuyo', 'item' => $t]);
             }

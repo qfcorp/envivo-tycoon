@@ -505,7 +505,8 @@ final class Copas
                 unset($e);
             }
             // Bono de ventajas pagadas (MONETIZACION.md §1, techo +12): batalla.js lo suma a la calidad del partido de ese equipo
-            foreach ($p as &$e) $e['bono'] = self::bonoVentajas((int) $e['jugador_id'], 'copa_cruce:' . $cruce['id']);
+            // Los equipos VIP (funcionan siempre) cuentan dentro del mismo techo: se cobran del bono (Ventajas::recorteVip)
+            foreach ($p as &$e) $e['bono'] = Ventajas::recorteVip(self::bonoVentajas((int) $e['jugador_id'], 'copa_cruce:' . $cruce['id']), (array) ($e['equip'] ?? []));
             unset($e);
             if ($casa !== null) while (count($p) < self::PLANTEL) $p[] = $casa;   // copias del equipo mediano en los lugares vacíos
             return $p;

@@ -212,7 +212,6 @@ const malos = {
   'evento inventado': (() => { const x = clon(h0); x.contrato.type = 'mundial'; return x; })(),
   'dificultad 9': (() => { const x = clon(h0); x.contrato.diff = 9; return x; })(),
   'duelo sin calidad rival': (() => { const x = clon(h0); x.contrato.rival = true; delete x.contrato.rivalQuality; return x; })(),
-  'equipo VIP sin VIP': (() => { const x = clon(h0); x.vip = false; x.equipo.equip.push({ type: Object.keys(G.CATALOG).find((k) => G.CATALOG[k].vip) || 'cam_basic', condition: 100 }); return x; })(),
   '__proto__ en el personal': (() => { const x = JSON.parse(JSON.stringify(h0).replace('"role":', '"__proto__":{"skill":5},"role":')); return x; })(),
   'fama 500': Object.assign(clon(h0), { contexto: { fama: 500 } }),
   'repuesto inventado': Object.assign(clon(h0), { contexto: { stock: { oro: 3 } } }),
@@ -221,10 +220,19 @@ const malos = {
 Object.keys(malos).forEach((k) => {
   const v = V.validate(malos[k]);
   if (k === '__proto__ en el personal') { ok(!Object.prototype.skill, '__proto__ contaminó Object.prototype'); return; }
-  if (k === 'equipo VIP sin VIP' && !Object.keys(G.CATALOG).some((x) => G.CATALOG[x].vip)) return;
   anota('datos mal formados', !v.valido);
   ok(!v.valido && v.detalle.motivo, `datos mal formados "${k}" se aceptaron`);
 });
+// Equipos VIP SIN el Pase VIP (vip: false): valen igual (lo comprado con créditos funciona siempre; decisión de Dimitry, oct. 2026)
+{
+  const vipK = Object.keys(G.CATALOG).find((k) => G.CATALOG[k].vip);
+  if (vipK) {
+    const x = Object.assign(clon(h0), { vip: false, cliente_resultado: undefined });
+    x.equipo.equip.push({ type: vipK, condition: 100 });
+    const v = V.validate(x);
+    ok(v.valido === true && v.coincide === null, `un equipo VIP sin el Pase VIP debe valer (${v.detalle && v.detalle.motivo})`);
+  }
+}
 // Sin cliente_resultado: vale el resultado del servidor (coincide = null)
 const sinCliente = V.validate(Object.assign(clon(h0), { cliente_resultado: undefined }));
 ok(sinCliente.valido === true && sinCliente.coincide === null && sinCliente.calidad === honestos[0].v.calidad, 'sin cliente_resultado debe valer el del servidor');

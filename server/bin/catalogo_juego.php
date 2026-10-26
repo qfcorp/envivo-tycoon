@@ -17,13 +17,26 @@ $js = <<<'JS'
 const d = require(process.argv[1]);
 const T = d.TEXTOS;
 const equipos = {};
-for (const [k, v] of Object.entries(d.CATALOGO)) equipos[k] = { cat: v.cat, fama: v.minRep | 0, nombre: T['item.' + k + '.nombre'] || k };
+for (const [k, v] of Object.entries(d.CATALOGO)) equipos[k] = { cat: v.cat, fama: v.minRep | 0, nombre: T['item.' + k + '.nombre'] || k, precio: v.price | 0,
+  creditos: !v.premium && !v.exclusivo && !v.alquiler && d.creditosJuego ? d.creditosJuego(v.price) : 0 };
+// Combo con créditos: las piezas y roles que puede necesitar cada equipo que se canjea con créditos (Game.comboDe)
+const path = require('path');
+const G = require(path.join(path.dirname(process.argv[1]), 'logic.js'));
+require(path.join(path.dirname(process.argv[1]), 'premium.js'));
+const combos = {};
+for (const k of Object.keys(G.CATALOG).sort()) {
+  const x = G.CATALOG[k];
+  if (!(x.premium || x.exclusivo) || !(Number(x.creditos) > 0)) continue;
+  const c = G.comboDe(k);
+  if (c.equipos.length || c.roles.length) combos[k] = c;
+}
 const eventos = {};
 for (const [k, v] of Object.entries(d.EVENTOS)) eventos[k] = { nombre: T['ev.' + k] || k, cams: v.cams, audio: !!v.audio, stream: +v.stream, outdoor: +v.outdoor, diff: v.diff, pay: v.pay, fama: v.minRep | 0, clientes: v.clients };
 const exclusivos = {};
 for (const k of ['dron4k', 'grua', 'unidad_movil', 'generador', 'vip_cam8k', 'vip_switcher', 'vip_satelital'].concat(Object.keys(d.CATALOGO).filter((x) => d.CATALOGO[x].exclusivo)))
   if (T['item.' + k + '.nombre']) exclusivos[k] = { nombre: T['item.' + k + '.nombre'], detalle: T['item.' + k + '.desc'] || '' };
-process.stdout.write(JSON.stringify({ roles: d.ROLES_DATA.map((r) => r.key), alias: d.ROLE_ALIAS, equipos, eventos, exclusivos }));
+process.stdout.write(JSON.stringify({ roles: d.ROLES_DATA.map((r) => r.key), alias: d.ROLE_ALIAS, equipos, eventos, exclusivos, combos, combo: d.COMBO_CREDITOS,
+  rolesFama: Object.fromEntries(d.ROLES_DATA.map((r) => [r.key, r.fama | 0])) }));
 JS;
 $sal = shell_exec(escapeshellarg($node) . ' -e ' . escapeshellarg($js) . ' ' . escapeshellarg($raiz . '/js/datos.js') . ' 2>&1');
 $d = json_decode((string) $sal, true);
@@ -35,7 +48,10 @@ $php = "<?php\ndeclare(strict_types=1);\n\nnamespace EnVivo;\n\n"
     . " * Lo usan Festival y Liga para revisar roles, equipos y tipos de evento que manda el juego.\n */\nfinal class CatalogoJuego\n{\n"
     . '    /** Los roles del juego (claves nuevas). */' . "\n    public const ROLES = " . $v($d['roles']) . ";\n\n"
     . '    /** Claves viejas de rol -> nuevas (el juego todavía las acepta). */' . "\n    public const ROL_ALIAS = " . $v($d['alias']) . ";\n\n"
-    . '    /** Equipos que se compran con dinero del juego: clave => [cat, fama (mínima), nombre]. */' . "\n    public const EQUIPOS = " . $v($d['equipos']) . ";\n\n"
+    . '    /** Equipos que se compran con dinero del juego: clave => [cat, fama (mínima), nombre, precio, creditos (combo con créditos; 0 = no)]. */' . "\n    public const EQUIPOS = " . $v($d['equipos']) . ";\n\n"
+    . '    /** Fama desde la que aparece cada rol entre los candidatos. */' . "\n    public const ROLES_FAMA = " . $v($d['rolesFama']) . ";\n\n"
+    . '    /** Combo con créditos: equipo canjeado con créditos => {equipos, roles} que se pueden canjear para completarlo (Game.comboDe). */' . "\n    public const COMBOS = " . $v($d['combos']) . ";\n\n"
+    . '    /** Reglas del combo con créditos (js/datos.js COMBO_CREDITOS). */' . "\n    public const COMBO = " . $v($d['combo']) . ";\n\n"
     . '    /** Tipos de evento: clave => [nombre, cams [mín, máx], audio, stream, outdoor, diff, pay [mín, máx], fama, clientes]. */' . "\n    public const EVENTOS = " . $v($d['eventos']) . ";\n\n"
     . '    /** Nombres y detalles de los exclusivos que también están en Catalogo::PREMIUM (deben coincidir). */' . "\n    public const EXCLUSIVOS = " . $v($d['exclusivos']) . ";\n}\n";
 

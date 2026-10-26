@@ -486,6 +486,8 @@ final class SedeOficial
     private static function nuevaObra(int $j, string $tipo, string $ed, int $L, int $seg): int
     {
         $t = self::ahora();
+        // Pase VIP activo: la obra dura menos según el nivel VIP (Vip::PASE 'obra', 10 a 30 %); sin el Pase, igual que siempre
+        try { if (class_exists(Vip::class) && method_exists(Vip::class, 'segundosObra')) $seg = Vip::segundosObra($j, $seg); } catch (\Throwable) { /* sin VIP: igual */ }
         Db::q('INSERT INTO sede_obras (jugador_id, tipo, ed, nivel, inicio, duracion, fin) VALUES (?, ?, ?, ?, ?, ?, ?)', [$j, $tipo, $ed, $L, $t, $seg, $t + $seg]);
         return Db::ultimoId();
     }

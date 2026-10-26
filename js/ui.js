@@ -84,7 +84,7 @@
   const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
   // Varios eventos por día: turno de hoy (G.turnoDia). Con una lógica vieja (un evento = un día), null
   const turnoHoy = () => { try { return G.turnoDia && S ? G.turnoDia(S) : null; } catch (e) { return null; } };
-  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(2, Number(i) || 0)));
+  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(4, Number(i) || 0)));   // 3 y 4: turnos extra del Pase VIP
   const esJornada = (c) => { try { return !!(G.jornadaCompleta && G.jornadaCompleta(c)); } catch (e) { return false; } };
 
   /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
@@ -457,7 +457,6 @@
   const itemName = (type) => TL((G.CATALOG[type] || { name: type }).name);
   const roleName = (r) => TL(G.ROLES[r] ? G.ROLES[r].name : r);
   const eventName = (type) => TL((G.EVENT_TYPES[type] || { name: type }).name);
-  const vipBloqueado = (e) => { try { return !!(Pm && Pm.bloqueado && Pm.bloqueado(e)); } catch (err) { return false; } };
   const wageFor = (p, diff) => { try { return G.eventWage ? G.eventWage(p, diff) : p.wage; } catch (e) { return p.wage; } };
   const emptyState = (iconName, title, text) => `<div class="card empty"><div class="ei">${I(iconName)}</div><b>${title}</b><div class="small">${text}</div></div>`;
   const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
@@ -830,7 +829,7 @@
         <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}${T('clientes.visitar')} <span class="muted small">(${T('clientes.visitar_det')})</span></button>
       </div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
-      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}</div></div>` : ''}
+      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}${tHoy.max > 3 ? ` <b>${T('dia.vip_turnos', { n: tHoy.max })}</b>` : ''}</div></div>` : ''}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
@@ -987,7 +986,7 @@
     const fc = Number(it.minRepCreditos) || 0;
     const bloq = S.rep < fc;
     const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
-    // Equipos VIP: con cuenta y sin VIP activo el botón queda bloqueado (el servidor igual lo rechazaría)
+    // Equipos VIP: se CANJEAN con el Pase VIP activo (el servidor igual lo rechazaría); después funcionan siempre
     const sinVip = x.vip && !!(Api.estado && Api.estado.logueado && !Api.estado.vip_activo);
     const cred = x.creditos > 0 ? `<button class="btn ex-cred" data-act="ex-canjear" data-k="${esc(x.id)}" aria-label="${esc(T('bodega.ex_canjear', { n: N(x.creditos) }))}" ${bloq || sinVip ? 'disabled' : ''}>${bloq
       ? `${I('lock', 'sm')} ${T('bodega.ex_fama_cred', { n: fc })}` : sinVip ? `${I('lock', 'sm')} VIP · ${I('gem', 'sm')}<span>${N(x.creditos)}</span>` : `${I('gem', 'sm')}<span>${N(x.creditos)}</span>`}</button>` : '';
@@ -1123,7 +1122,6 @@
       const r = rar(e.type);
       let rc = 0;
       try { rc = G.repairCost(e); } catch (err) { rc = 0; }
-      const off = vipBloqueado(e);
       if (it.alquiler) {
         return `<div class="card gear rf r-${r.key} rented">
         <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
@@ -1139,7 +1137,6 @@
         <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
         <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
         <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
-        ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
         <div class="row2">
@@ -1255,7 +1252,7 @@
     if (bono) lis.push({ html: bono, cls: 'amber', ico: 'gift' });
     return `<div class="card tv-prod ${o.cls || ''}" data-prod="${esc(p.id)}">${o.ribbon ? `<span class="ribbon">${esc(o.ribbon)}</span>` : ''}
       <div class="tv-head">${o.art || itemArt(p.id, 56)}<div class="grow"><h3>${esc(o.nombre || TL(p.nombre))}</h3>${o.sub ? `<div class="small muted">${o.sub}</div>` : ''}</div></div>
-      ${incluye(lis)}${botonCompra(p.id, { usd: p.precio, hecho: o.hecho })}</div>`;
+      ${incluye(lis)}${o.extra || ''}${botonCompra(p.id, { usd: p.precio, hecho: o.hecho })}</div>`;
   }
   function cardCreditos(p) {
     const bono = lineaBono(p);
@@ -1275,7 +1272,7 @@
         case 'materiales': if (I18 && I18.T.has('tienda.mat.' + e.item)) return T('tienda.ent_mat', { n: N(n), mat: T('tienda.mat.' + e.item) }); break;
         case 'acelerador': return T('tienda.obra_acel', { h: N(Math.round(n / 6) / 10) });
         case 'consumible': return `${N(n)} × ${TL((G.CONSUMABLES[e.item] || {}).name || e.item)}`;
-        case 'item': return (n > 1 ? N(n) + ' × ' : '') + itemName(e.item);
+        case 'item': case 'equipo': return (n > 1 ? N(n) + ' × ' : '') + itemName(e.item);
         default: break;
       }
     } catch (err) { /* abajo */ }
@@ -1352,6 +1349,36 @@
       <div class="tv-head">${itemArt(o.producto, 52)}<div class="grow"><h3>${esc(TL(o.nombre || ''))}</h3>${meta ? `<div class="small muted">${meta}</div>` : ''}</div></div>
       ${incluye(lis)}${botonCompra(o.producto, { usd: o.precio })}</div>`;
   }
+  /* Pase VIP (30 días): lo que da según el nivel VIP (Premium.PASE_VIP, misma tabla que el servidor) */
+  const paseDe = (n) => seguro(() => Pm.pase(n), null);
+  function bonoTxtDe(b) {
+    if (!b) return '';
+    const p = [M(b.dinero), T('tienda.pv_creditos', { n: b.creditos })];
+    if (b.cable) p.push(T('tienda.pv_cables', { n: b.cable }));
+    if (b.battery) p.push(T('tienda.pv_baterias', { n: b.battery }));
+    if (b.reparar) p.push(T('tienda.pv_reparar'));
+    return p.join(' + ');
+  }
+  function bonoVipTxt() {
+    const pa = seguro(() => Pm.paseActual(), null) || paseDe(Number((Api.estado || {}).vip_nivel) || 1);
+    return pa ? T('tienda.vip_bono_n', { lista: bonoTxtDe(pa.bono) }) : T('tienda.vip_bono', { m: M(150), n: 10 });
+  }
+  // Tabla "Con el Pase VIP: …" por nivel (en la tarjeta del Pase VIP de la Tienda)
+  function tablaPaseVip() {
+    const filas = seguro(() => Pm.PASE_VIP, null);
+    if (!Array.isArray(filas) || !filas.length) return '';
+    const E = Api.estado || {};
+    const mio = E.logueado ? Math.max(1, Number(E.vip_nivel) || 0) : 0;
+    const rows = filas.map((f, i) => {
+      const hasta = filas[i + 1] ? filas[i + 1].desde - 1 : 10;
+      const rango = hasta > f.desde ? T('tienda.pv_rango', { a: f.desde, b: hasta }) : T('tienda.vip_n', { n: f.desde });
+      const yo = mio >= f.desde && mio <= hasta;
+      return `<li class="pv-fila${yo ? ' yo' : ''}" data-desde="${f.desde}"><b>${esc(rango)}${yo ? ` · ${esc(T('tienda.pv_tu_nivel'))}` : ''}</b>
+        <span>${esc(T('tienda.pv_turnos', { n: f.turnos }))} · ${esc(T('tienda.pv_reparar_pct', { n: f.descuento }))} · ${esc(T('tienda.pv_obra', { n: f.obra }))} · ${esc(T('tienda.pv_bono', { lista: bonoTxtDe(f.bono) }))}</span></li>`;
+    }).join('');
+    return `<div class="pv-tabla"><p class="small"><b>${I('crown', 'sm')} ${esc(T('tienda.pv_titulo'))}</b></p><ul class="pv-lista">${rows}</ul>
+      <p class="small muted tv-nota">${esc(T('tienda.pv_siempre'))}</p></div>`;
+  }
   function seccionVip(log, lista) {
     const V = window.Vip;
     const prods = lista.filter((p) => ['vip', 'tarjeta'].includes(tipoProd(p)));
@@ -1364,7 +1391,8 @@
     }
     const aparte = V ? seguro(() => V.T('modal.pase'), '') : '';
     const html = nivel + ofertas.map(cardOfertaVip).join('') + prods.map((p) => cardProd(p, {
-      cls: p.id === 'vip30' ? 'rf r-vip' : '', ribbon: p.id === 'vip30' ? 'VIP' : '', sub: p.id === 'vip30' && aparte ? esc(aparte) : '' })).join('');
+      cls: p.id === 'vip30' ? 'rf r-vip' : '', ribbon: p.id === 'vip30' ? 'VIP' : '', sub: p.id === 'vip30' && aparte ? esc(aparte) : '',
+      extra: p.id === 'vip30' ? tablaPaseVip() : '' })).join('');
     return seccion('tv-vip', I('crown', 'sm'), T('tienda.sec_vip'), html);
   }
 
@@ -1452,7 +1480,7 @@
     } else {
       const vip = E.vip_activo
         ? `<p class="small" style="color:var(--amber)">${I('crown', 'sm')} ${T('tienda.vip_hasta', { fecha: esc(fechaCorta(E.vip_hasta)) })}</p>
-           ${E.vip_bono_hoy ? `<p class="small muted">${T('tienda.vip_bono_ya')}</p>` : `<button class="btn" data-act="vip-bono" style="border-color:var(--amber)">${I('gift')}${T('tienda.vip_bono', { m: M(150), n: 10 })}</button>`}`
+           ${E.vip_bono_hoy ? `<p class="small muted">${T('tienda.vip_bono_ya')}</p>` : `<button class="btn" data-act="vip-bono" style="border-color:var(--amber)">${I('gift')}${bonoVipTxt()}</button>`}`
         : '';
       cuenta = `<div class="card">
         <div class="row between"><div class="wallet">${I('gem')}<div><div class="big">${N(E.creditos)}</div><div class="small muted">${T('tienda.creditos_lbl')}</div></div></div>
@@ -1601,7 +1629,9 @@
     if (!Pm || !Pm.setVip || !Api.estado) return;
     const E = Api.estado;
     const hasta = E.vip_hasta ? Date.parse(E.vip_hasta) : NaN;
-    Pm.setVip(!!E.logueado && !!E.vip_activo && (isNaN(hasta) || hasta > Date.now()));
+    // El nivel VIP (1–10) decide cuánto da el Pase (Premium.PASE_VIP): el de /api/vip si ya llegó, si no el de /api/estado
+    const nv = seguro(() => (window.Vip && window.Vip.datos && window.Vip.datos.nivel != null ? window.Vip.datos.nivel : E.vip_nivel), E.vip_nivel);
+    Pm.setVip(!!E.logueado && !!E.vip_activo && (isNaN(hasta) || hasta > Date.now()), Number(nv) || 0);
   }
   function aplicarEntregas() {
     syncVip();
@@ -1751,7 +1781,8 @@
     try {
       const r = await Api.bonoVip();
       Api.estado.creditos = r.creditos; Api.estado.vip_bono_hoy = true;
-      if (r.entrega) Api.estado.entregas.push(r.entrega);
+      if (Array.isArray(r.entregas) && r.entregas.length) r.entregas.forEach((en) => Api.estado.entregas.push(en));
+      else if (r.entrega) Api.estado.entregas.push(r.entrega);
       aplicarEntregas(); render();
     } catch (e) { toast(TL(e.message)); snd.play('error'); }
   }
@@ -1774,6 +1805,20 @@
      solo botón: se canjea lo que va con créditos y después se ofrece lo que falta con dinero. */
   // Lo que falta, también lo que necesitan las cosas que se comprarían (la cámara de sistema de un lente box pide su
   // lente B4 y su fibra): se simula la compra y se repite (hasta 3 niveles). Sin repetidos.
+  /* Combo con créditos (js/datos.js COMBO_CREDITOS): si el equipo se canjeó con créditos (o se está por canjear), lo que le
+     falta también se consigue con créditos aunque con dinero pida más fama. Raíces: los equipos de crédito de tu bodega del
+     servidor (srvId) y el que se está canjeando. El servidor revisa lo mismo (CatalogoJuego::COMBOS). */
+  const esDeCredito = (k) => { const x = G.CATALOG[k]; return !!x && !!(x.premium || x.exclusivo) && Number(x.creditos) > 0; };
+  function raicesCredito(extra) {
+    const r = new Set();
+    if (extra && esDeCredito(extra)) r.add(extra);
+    (S.equip || []).forEach((e) => { if (e.srvId !== undefined && esDeCredito(e.type)) r.add(e.type); });
+    return [...r];
+  }
+  function permiteCredito(clave, campo, raiz) {
+    if (!Api.logueado() || !G.comboDe) return false;
+    return raicesCredito(raiz).some((k) => { try { return G.comboDe(k)[campo].includes(clave); } catch (e) { return false; } });
+  }
   function deps(k, extra) {
     if (!G.dependencias || !G.CATALOG[k]) return [];
     try {
@@ -1787,7 +1832,8 @@
           const id = d.req + ':' + (d.rol || '');
           if (visto.has(id)) return;
           visto.add(id); out.push(d);
-          if (d.tipo === 'equipo' && d.key && !d.bloqueado) { sim.equip.push({ id: -2 - out.length, type: d.key, condition: 100 }); sig.push(d.key); }
+          // Se sigue la cadena con lo que se puede conseguir: con dinero (ya desbloqueado) o con créditos (combo)
+          if (d.tipo === 'equipo' && d.key && (!d.bloqueado || permiteCredito(d.key, 'equipos', k))) { sim.equip.push({ id: -2 - out.length, type: d.key, condition: 100 }); sig.push(d.key); }
         }));
         cola = sig;
       }
@@ -1804,24 +1850,44 @@
     return { id: p.id, key, creditos: Number(p.creditos) || 0, ok: Api.logueado() && !sinVip && S.rep >= (Number(it.minRepCreditos) || 0) };
   }
   // Cada cosa que falta, resuelta: con dinero (key comprable), con créditos (premium canjeable) o personal
-  function resolverFaltas(lista) {
+  // raiz: el equipo de crédito que se está canjeando (o cuyo combo se completa); con él, cada pieza que falta y no tiene
+  // Edición Exclusiva se ofrece también con créditos ("juego:<clave>"), aunque con dinero pida más fama; y el personal que
+  // con tu fama todavía no aparece ("personal:<rol>"). Así el combo entero se consigue con 💎 en un solo botón.
+  function resolverFaltas(lista, raiz) {
+    const CC = G.COMBO_CREDITOS || { personal: 150 };
     return lista.map((d) => {
-      if (d.tipo === 'personal') return Object.assign({ nombre: roleName(d.rol) }, d);
-      const cred = (d.creditos || []).map(premiumDe).filter((p) => p && p.ok).sort((a, b) => a.creditos - b.creditos)[0] || null;
+      if (d.tipo === 'personal') {
+        const rf = (G.ROLES[d.rol] && G.ROLES[d.rol].fama) || 0;
+        const cred = rf > S.rep && permiteCredito(d.rol, 'roles', raiz) ? { id: 'personal:' + d.rol, key: null, rol: d.rol, creditos: CC.personal, personal: true, fama: rf } : null;
+        return Object.assign({ nombre: roleName(d.rol), cred }, d);
+      }
+      let cred = (d.creditos || []).map(premiumDe).filter((p) => p && p.ok).sort((a, b) => a.creditos - b.creditos)[0] || null;
       const dinero = d.key && !d.bloqueado ? d.key : null;
+      if (!cred && d.key && permiteCredito(d.key, 'equipos', raiz) && G.creditosJuego(d.key) > 0) {
+        cred = { id: 'juego:' + d.key, key: d.key, creditos: G.creditosJuego(d.key), juego: true, ok: true };
+      }
       return Object.assign({ nombre: itemName(d.key || (cred ? cred.key : d.req)), dinero, cred }, d);
     });
   }
+  const totalCred = (fs) => fs.reduce((a, f) => a + (f.cred ? f.cred.creditos : 0), 0);
+  const btnCanjearFalta = (fs, item, cls) => {
+    const cs = fs.filter((f) => f.cred);
+    if (!cs.length) return '';
+    const n = cs.reduce((a, f) => a + f.cred.creditos, 0), saldo = (Api.estado && Api.estado.creditos) || 0;
+    return `<button class="${cls || 'btn main'}" data-act="combo-canjear" data-k="" data-l="${esc(cs.map((f) => f.cred.id).join(','))}" data-item="${esc(item)}" ${saldo < n ? 'disabled' : ''}>${I('gem', 'sm')}${T('combo.canjear_combo', { n: N(n) })}</button>`
+      + (saldo < n ? `<p class="small" style="color:var(--amber)">${T('combo.faltan_creditos', { n: N(n - saldo) })}</p>` : '');
+  };
   const totalDinero = (fs) => fs.reduce((a, f) => a + (f.dinero ? G.CATALOG[f.dinero].price : 0), 0);
   function lineasFalta(fs) {
     return `<ul class="combo-l">${fs.map((f) => {
       let det;
-      if (f.tipo === 'personal') det = T('combo.personal');
+      if (f.tipo === 'personal') det = f.cred ? T('combo.personal_cred', { n: N(f.cred.creditos), f: f.cred.fama }) : T('combo.personal');
       else {
         const partes = [];
         if (f.dinero) partes.push(T('combo.precio', { m: M(G.CATALOG[f.dinero].price) }));
         else if (f.key) partes.push(T('combo.fama', { n: f.minRep }));
-        if (f.cred) partes.push(partes.length ? T('combo.o_creditos', { n: N(f.cred.creditos) }) : T('combo.solo_creditos', { n: N(f.cred.creditos) }));
+        if (f.cred && f.cred.juego) partes.push(T('combo.o_creditos_juego', { n: N(f.cred.creditos) }));
+        else if (f.cred) partes.push(partes.length ? T('combo.o_creditos', { n: N(f.cred.creditos) }) : T('combo.solo_creditos', { n: N(f.cred.creditos) }));
         det = partes.join(' ');
       }
       const ico = f.tipo === 'personal' ? I(roleIcon(f.rol), 'sm') : itemArt(f.dinero || (f.cred && f.cred.key) || f.key || 'cam_basic', 34, 'mini');
@@ -1837,8 +1903,10 @@
   function ofrecerCombo(k, modo, pid) {
     const it = G.CATALOG[k];
     if (!it) return false;
-    const fs = resolverFaltas(deps(k, modo === 'despues' ? 0 : 1));
+    const fs = resolverFaltas(deps(k, modo === 'despues' ? 0 : 1), modo === 'dinero' ? null : k);
     if (!fs.length) return false;
+    // Comprando con dinero del juego no se ofrecen piezas con créditos (eso es del combo de un equipo de crédito)
+    if (modo === 'dinero') fs.forEach((f) => { if (f.cred && (f.cred.juego || f.cred.personal)) f.cred = null; });
     const soloLente = fs.every((f) => /^lente_/.test(f.req));
     const titulo = modo === 'despues' ? T('combo.t_despues') : soloLente && it.cat === 'cam' ? T('bodega.lente_t') : T('combo.t');
     const plata = fs.filter((f) => f.dinero).map((f) => f.dinero);
@@ -1858,8 +1926,10 @@
         + (saldo < total ? `<p class="small" style="color:var(--amber)">${T('combo.faltan_creditos', { n: N(total - saldo) })}</p>` : '');
       btns += `<button class="btn ${creds.length ? '' : 'main'}" data-act="combo-canjear" data-k="${esc(pid)}" data-l="" data-item="${esc(k)}" ${saldo < base ? 'disabled' : ''}>${T(creds.length ? 'combo.canjear_solo' : 'combo.canjear', { item: esc(itemName(k)), n: N(base) })}</button>`;
       if (plata.length) btns += `<p class="small muted">${T('combo.resto_dinero')}</p>`;
-    } else if (plata.length) {
-      btns += `<button class="btn main" data-act="buy-kit" data-k="" data-l="${esc(plata.join(','))}" ${S.money < conPlata ? 'disabled' : ''}>${T('combo.comprar_falta', { m: M(conPlata) })}</button>`;
+    } else {
+      if (plata.length) btns += `<button class="btn main" data-act="buy-kit" data-k="" data-l="${esc(plata.join(','))}" ${S.money < conPlata ? 'disabled' : ''}>${T('combo.comprar_falta', { m: M(conPlata) })}</button>`;
+      // Lo que no se consigue con dinero (fama) pero sí con créditos: todo junto en un botón
+      btns += btnCanjearFalta(fs, k, plata.length ? 'btn' : 'btn main');
     }
     btns += btnPersonal(fs);
     if (!plata.length && modo !== 'creditos') btns += btnVer(fs);
@@ -1883,7 +1953,9 @@
   }
   // Canjea con créditos (servidor) el producto y, si se pide, los que completan el combo; luego ofrece lo que falta
   async function canjearCombo(pid, extras, item) {
-    const ids = [pid].concat((extras || []).filter(Boolean));
+    const ids = [pid].concat((extras || [])).filter(Boolean);
+    if (!ids.length) return;
+    const enPrep = prep ? prep.id : null;   // desde la preparación: se vuelve a ella con lo nuevo
     closeModal();
     let hechos = 0;
     for (const id of ids) {
@@ -1894,6 +1966,7 @@
     try { await Api.refrescar(); } catch (e) { /* queda lo que ya había */ }
     aplicarEntregas();
     render();
+    if (enPrep !== null && S.contracts.some((c) => c.id === enPrep)) { openPrep(enPrep); return; }
     if (item && hechos === ids.length) ofrecerCombo(item, 'despues');
   }
 
@@ -1943,15 +2016,18 @@
   // elegidas y también las tuyas que no se eligieron porque no funcionarían (así una cámara VIP o una sin lente no
   // "desaparece"). Debajo, los otros equipos elegidos a los que les falta algo (lente box sin cámara de sistema...).
   function arreglo(tipo, equipId) {
-    const fs = resolverFaltas(deps(tipo, 0));
+    const fs = resolverFaltas(deps(tipo, 0), tipo);
     if (!fs.length) return '';
     const plata = fs.filter((f) => f.dinero);
     const m = totalDinero(fs);
     const bloq = fs.filter((f) => f.tipo === 'equipo' && !f.dinero && f.key);
     let h = `<div class="small camav-t">${T('prep.falta_motivo', { que: fs.map((f) => esc(f.nombre)).join(', ') })}</div>`;
-    bloq.forEach((f) => { h += `<div class="small camav-t">${T('prep.falta_fama', { item: esc(itemName(f.key)), n: f.minRep })}</div>`; });
+    // Nunca un callejón sin salida: si con dinero pide más fama pero se consigue con créditos, se dice el precio en 💎
+    bloq.forEach((f) => { h += `<div class="small camav-t">${f.cred ? T('prep.falta_fama_cred', { item: esc(itemName(f.key)), n: f.minRep, c: N(f.cred.creditos) }) : T('prep.falta_fama', { item: esc(itemName(f.key)), n: f.minRep })}</div>`; });
     const bs = [];
     if (plata.length) bs.push(`<button class="btn sm camav-b green" data-act="buy-falta" data-k="${esc(tipo)}" data-id="${equipId || ''}" ${S.money < m ? 'disabled' : ''}>${I('cart', 'sm')}${T('prep.falta_comprar', { m: M(m) })}</button>`);
+    const cc = btnCanjearFalta(fs, tipo, 'btn sm camav-b gold');
+    if (cc) bs.push(cc);
     fs.filter((f) => f.tipo === 'personal').slice(0, 1).forEach((f) => bs.push(`<button class="btn sm camav-b" data-act="ir-personal" data-k="${esc(f.rol)}">${I(roleIcon(f.rol), 'sm')}${T('combo.contratar', { rol: esc(f.nombre) })}</button>`));
     if (!plata.length) { const v = btnVer(fs); if (v) bs.push(v.replace('class="btn"', 'class="btn sm camav-b"')); }
     return h + (bs.length ? `<div class="bq-acc">${bs.join('')}</div>` : '');
@@ -1974,9 +2050,7 @@
     const camHtml = bl.map((b) => {
       const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
       const e = S.equip.find((x) => x.id === b.equipId);
-      const extra = b.motivo === 'sin_vip'
-        ? `<div class="bq-acc"><button class="btn sm camav-b" data-act="ir-pase-vip">${I('crown', 'sm')}${T('prep.ir_pase_vip')}</button></div>`
-        : arreglo(b.tipo, b.equipId);
+      const extra = arreglo(b.tipo, b.equipId);
       return fila(b.tipo, e, b.texto || '', corto, extra);
     }).join('');
     const otrosHtml = otros.map((e) => fila(e.type, e, '', T('prep.bloq.falta'), arreglo(e.type, e.id))).join('');
@@ -2100,11 +2174,10 @@
         <span class="num small" style="text-align:end">${M(w)}${w > p.wage ? `<br><span class="muted" style="font-size:10.5px">+${Math.round((w / p.wage - 1) * 100)}%</span>` : ''}</span></label>`; }).join('');
     const equipHtml = S.equip.map((e) => {
       const it = G.CATALOG[e.type] || { name: e.type };
-      const off = vipBloqueado(e);
-      return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
+      return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;

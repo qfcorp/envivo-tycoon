@@ -45,7 +45,7 @@ Archivos (todos en `server/validador/`):
   Lo que falte se completa con los valores del tipo de evento.
 - `equipo.staff`: `role` de `ROLES`, `skill` 1 a 5, `morale` 0 a 100 (si falta, 80), un solo `owner`. Máximo 12 personas.
 - `equipo.equip`: `type` de `CATALOG` (incluye los exclusivos de `premium.js`), `condition` 1 a 100. Máximo 40.
-  Un equipo VIP solo vale con `"vip": true`.
+  Los equipos VIP valen siempre (con `"vip"` true o false): lo comprado con créditos funciona con o sin el Pase VIP.
 - Campos extra (por ejemplo `tier`, `nivel`, `posicion`) pasan tal cual a la lógica: sirve para la versión realista que viene.
 - `contexto` (opcional): `fama` (la exigencia del cliente depende de ella), `dinero` (algunas opciones piden plata) y
   `stock` de repuestos. Valores por defecto: fama 0, dinero 1000, 1 cable y 1 batería. **Deben ser iguales para todos los
@@ -74,7 +74,7 @@ El estado se arma **nuevo**: modo libre (sin historia), fuera del tutorial, con 
 | `opcion_invalida` | Una decisión no es un número de opción que exista |
 | `opcion_no_disponible` | Eligió una opción bloqueada (por ejemplo "router 4G" sin router) |
 | `faltan_decisiones` / `sobran_decisiones` | No hay una decisión por imprevisto |
-| `decisiones_invalidas`, `semilla_invalida`, `contrato_invalido`, `equipo_invalido`, `equipo_vip_sin_vip`, `contexto_invalido`, `intento_invalido`, `json_invalido` | Datos mal formados |
+| `decisiones_invalidas`, `semilla_invalida`, `contrato_invalido`, `equipo_invalido`, `contexto_invalido`, `intento_invalido`, `json_invalido` | Datos mal formados |
 | `logica_no_determinista` | `js/logic.js` usó `Math.random` durante el evento (error de la lógica, no del jugador) |
 | `logica_no_carga` | `js/logic.js` tiene un error (HTTP 503) |
 

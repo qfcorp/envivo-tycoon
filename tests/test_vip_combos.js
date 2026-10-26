@@ -7,8 +7,13 @@
    Casos:
      vip_activo – canjear la Zony HDK-3600 VIP con créditos: llega a la bodega, sale en la preparación y el plan de cámaras
                   la pone en la posición principal en boxeo, concierto y final (es la mejor).
-     sin_pase   – la misma cámara sin el Pase VIP activo: la preparación la muestra en "no se pueden usar" con el motivo
-                  exacto (Pase VIP, no el nivel) y un botón al Pase VIP; marcarla a mano no cambia el plan (no engaña).
+     sin_pase   – la misma cámara SIN el Pase VIP activo (decisión de Dimitry, oct. 2026: lo comprado con diamantes funciona
+                  siempre): "Elegir lo mejor" la marca, el plan la pone en la principal, no sale en "no se pueden usar" y
+                  sale al aire con ella.
+     fama33     – el caso del dueño: Vizart Motor 3D AR Oro (Exclusivo, créditos) con fama 33 necesita la Zony HDK-3200, que con
+                  dinero pide 45 de fama: la preparación dice el precio en 💎 (nunca solo "se desbloquea con 45 de fama") y
+                  "Canjear todo el combo" la trae (y su fibra) por el servidor; el dron Exclusivo sin piloto ofrece "Contratar".
+     piloto     – con fama 5 el piloto de dron todavía no aparece: el combo del dron ofrece contratar uno ya con 💎 (servidor).
      exclusivo  – lente box Exclusivo canjeado con créditos + cámara de sistema: el plan usa la cámara con el lente box.
      combo      – comprar una cámara que necesita lente ofrece el combo con dinero del juego; canjear el lente box con
                   créditos ofrece lo que falta (cámara, adaptador, soporte con 💎 o dinero) y lo compra; en la
@@ -38,6 +43,11 @@ const PREMIUM = JSON.parse(execFileSync('php', ['-r', `require ${JSON.stringify(
   }
   echo json_encode($m);`], { encoding: 'utf8' }));
 
+// La lógica del juego (para el precio en 💎 de las piezas del combo, igual que el servidor: CatalogoJuego)
+const GL = require(path.join(RAIZ, 'js/logic.js'));
+require(path.join(RAIZ, 'js/premium.js'));
+const precioGasto = (g) => (/^juego:/.test(g) ? GL.creditosJuego(g.slice(6)) : /^personal:/.test(g) ? GL.COMBO_CREDITOS.personal : PREMIUM.find((x) => x.id === g).creditos);
+
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.woff2': 'font/woff2' };
 
 (async () => {
@@ -47,10 +57,10 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
   /* Abre el juego con una partida armada (equipos, personal, ofertas) y el servidor imitado */
   async function abrir(op) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: 'es-EC' });
-    const srv = { creditos: op.creditos === undefined ? 2618 : op.creditos, inventario: (op.inventario || []).map((item, i) => ({ id: 500 + i, item, serie: i + 1, origen: 'canje', estado: 'bodega', nombre: item })), gastos: [], vip: !!op.vip };
+    const srv = { creditos: op.creditos === undefined ? 2618 : op.creditos, inventario: (op.inventario || []).map((item, i) => ({ id: 500 + i, item, serie: i + 1, origen: 'canje', estado: 'bodega', nombre: item })), gastos: [], vip: !!op.vip, entregas: [] };
     const estado = () => ({ ok: true, logueado: true, jugador: { id: 7, nombre: 'QF Producciones', email: 'qf@envivo.test' }, creditos: srv.creditos,
       vip_activo: srv.vip, vip_hasta: srv.vip ? '2026-12-31T00:00:00Z' : null, regalos_pendientes: 0, servidor: { id: 1, nombre: 'Servidor 1' },
-      tienda: { productos: [], premium: PREMIUM }, entregas: [], inventario: srv.inventario, plux: { disponible: true, ambiente: 'produccion' } });
+      tienda: { productos: [], premium: PREMIUM }, entregas: srv.entregas, inventario: srv.inventario, plux: { disponible: true, ambiente: 'produccion' } });
     await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
     await ctx.route(BASE + '/**', async (route) => {
       const req = route.request();
@@ -62,6 +72,21 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
         if (u.pathname === '/api/partida') return json(200, { ok: true, datos: null });
         if (u.pathname === '/api/gastar') {
           let b = null; try { b = JSON.parse(req.postData() || 'null'); } catch (e) { b = null; }
+          // Combo con créditos (Monedero::gastarCombo): piezas de la tienda ("juego:<clave>") y personal ("personal:<rol>")
+          const combo = b && typeof b.item === 'string' ? /^(juego|personal):(.+)$/.exec(b.item) : null;
+          if (combo) {
+            const precio = combo[1] === 'juego' ? GL.creditosJuego(combo[2]) : GL.COMBO_CREDITOS.personal;
+            if (!(precio > 0)) return json(404, { ok: false, error: 'Ese equipo no se puede canjear con créditos.' });
+            const raiz = srv.inventario.some((x) => (GL.comboDe(x.item)[combo[1] === 'juego' ? 'equipos' : 'roles'] || []).includes(combo[2]));
+            if (!raiz) return json(403, { ok: false, error: 'Con créditos solo se completa el combo de un equipo que canjeaste con créditos.' });
+            if (srv.creditos < precio) return json(402, { ok: false, error: 'No te alcanzan los créditos.' });
+            srv.creditos -= precio;
+            srv.gastos.push(b.item);
+            const en = combo[1] === 'juego' ? { id: 900 + srv.gastos.length, tipo: 'equipo', item: combo[2], cantidad: 1, origen: 'combo:' + b.item }
+              : { id: 900 + srv.gastos.length, tipo: 'personal', item: combo[2], cantidad: 2, origen: 'combo:' + b.item };
+            srv.entregas.push(en);
+            return json(200, { ok: true, creditos: srv.creditos, entrega: en });
+          }
           const p = PREMIUM.find((x) => b && x.id === b.item);
           if (!p) return json(404, { ok: false, error: 'Ese producto no existe.' });
           if (p.vip && !srv.vip) return json(403, { ok: false, error: 'Los equipos VIP se canjean solo con el Pase VIP activo.' });
@@ -165,26 +190,74 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       await ctx.close();
     }
 
-    /* ===== sin_pase: la cámara VIP sin el Pase VIP activo ===== */
+    /* ===== sin_pase: la cámara VIP SIN el Pase VIP activo funciona igual (lo comprado con diamantes es tuyo) ===== */
     {
       const { ctx, page } = await abrir({ vip: false, inventario: ['vip_cam8k'], equipos: BASICO, roles: ROLES, eventos: ['boxeo'] });
       await page.waitForFunction(() => window.__game.state.equip.some((e) => e.type === 'vip_cam8k'));
       await preparar(page, 'boxeo');
-      let r = await leer(page);
-      bien(/HDK-3600/.test(r.bloq) && /Pase VIP/.test(r.bloq), 'Sin Pase VIP: la cámara VIP sale en "no se pueden usar" con el motivo (Pase VIP) → ' + r.bloq.slice(0, 160));
-      const ir = page.locator('#modal .bloq [data-act="ir-pase-vip"]');
-      bien(await ir.count() > 0, '…con un botón para activar el Pase VIP');
-      await foto(page, 'vip_03_sin_pase.png', '#modal .bloq');
+      const r = await leer(page);
       const vipId = await page.evaluate(() => window.__game.state.equip.find((e) => e.type === 'vip_cam8k').id);
-      const antes = r.plan.join('|');
-      await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${vipId}"])`).click({ position: { x: 12, y: 12 } });
-      await page.waitForTimeout(150);
-      r = await leer(page);
-      bien(!r.plan.some((p) => /HDK-3600/.test(p)) && r.plan.join('|') === antes, 'Marcarla a mano no la pone en el plan (al aire tampoco se usaría)');
-      await ir.first().click();
+      bien(r.marcadas.includes(vipId), 'Sin Pase VIP: "Elegir lo mejor" marca la cámara VIP');
+      bien(/HDK-3600/.test(r.plan[0] || ''), 'Sin Pase VIP: el plan pone la cámara VIP en la posición principal → ' + (r.plan[0] || '').slice(0, 80));
+      bien(!/HDK-3600/.test(r.bloq) && !/Pase VIP/.test(r.bloq), 'Sin Pase VIP: no sale en "no se pueden usar" ni pide el Pase VIP');
+      bien(await page.locator('#modal [data-act="ir-pase-vip"]').count() === 0, '…y no hay botón "Activar el Pase VIP"');
+      const lista = r.lista.find((l) => /HDK-3600/.test(l)) || '';
+      bien(!/Necesita el Pase VIP/.test(lista), 'En la lista de equipos no dice que necesita el Pase VIP → ' + lista.slice(0, 90));
+      await foto(page, 'vip_03_sin_pase.png', '#modal .pe-cl');
+      await page.click('#modal [data-act="go-live"]');
+      await page.waitForFunction(() => !!window.__game.state.currentEvent, null, { timeout: 8000 });
+      const alAire = await page.evaluate((id) => window.__game.state.currentEvent.equipIds.includes(id), vipId);
+      bien(alAire, 'Sin Pase VIP: sale al aire con la cámara VIP');
+      await ctx.close();
+    }
+
+    /* ===== fama33: el caso del dueño (Vizart AR Exclusivo con fama 33) y el dron sin piloto ===== */
+    {
+      const roles = ROLES.concat(['operador_graficos']);
+      const { ctx, page, srv } = await abrir({ vip: false, rep: 33, inventario: ['ex_graficos', 'dron4k'], equipos: BASICO, roles, eventos: ['final'] });
+      await page.waitForFunction(() => window.__game.state.equip.filter((e) => e.srvId !== undefined).length === 2);
+      await preparar(page, 'final');
+      const txt = await page.evaluate(() => ((document.querySelector('#modal .bloq-otros') || {}).innerText || '').replace(/\s+/g, ' '));
+      bien(/Vizart/.test(txt) && /HDK-3200/.test(txt) && /💎/.test(txt), 'Fama 33: "Les falta algo para funcionar" dice la Zony HDK-3200 con su precio en 💎 → ' + txt.slice(0, 200));
+      bien(!/se desbloquea con 45 de fama\.(?!.*💎)/.test(txt), '…nunca solo "se desbloquea con 45 de fama" sin la opción con 💎');
+      const cc = page.locator('#modal .bloq-otros [data-act="combo-canjear"]');
+      bien(await cc.count() > 0 && /Canjear todo el combo/.test(await cc.first().innerText()), '…con el botón "Canjear todo el combo (N 💎)"');
+      const dron = await page.evaluate(() => ((document.querySelector('#modal .bloq:not(.bloq-otros)') || {}).innerText || '').replace(/\s+/g, ' '));
+      bien(/Inspira/.test(dron) && /piloto/i.test(dron), 'El dron Exclusivo sale sin piloto → ' + dron.slice(0, 140));
+      bien(await page.locator('#modal .bloq [data-act="ir-personal"][data-k="piloto_dron"]').count() > 0, '…con "Contratar Piloto de dron" (abre Personal con el rol elegido)');
+      await foto(page, 'vip_10_combo_fama33.png', '#modal .bloq-otros');
+      const c0 = srv.creditos;
+      await cc.first().click();
+      await page.waitForFunction(() => window.__game.state.equip.some((e) => e.type === 'cam_zony_hdk_3200'), null, { timeout: 8000 });
+      await page.waitForSelector('#modal [data-act="go-live"]');
       await page.waitForTimeout(300);
-      const enVip = await page.evaluate(() => !document.querySelector('#overlay.on') && !!document.getElementById('tv-vip'));
-      bien(enVip, 'El botón lleva a la Tienda, sección VIP (Pase VIP)');
+      bien(srv.gastos.includes('juego:cam_zony_hdk_3200') && srv.creditos === c0 - srv.gastos.reduce((a, g) => a + precioGasto(g), 0),
+        `Canjeó la cámara de sistema con créditos en el servidor (${srv.gastos.join(', ')}; ${c0 - srv.creditos} 💎)`);
+      const t2 = await page.evaluate(() => ((document.querySelector('#modal .bloq-otros') || {}).innerText || '').replace(/\s+/g, ' '));
+      bien(!/Vizart/.test(t2), 'Vuelve a la preparación y el Vizart ya no tiene nada pendiente → ' + (t2 || '(nada)').slice(0, 120));
+      const rep = await page.evaluate(() => window.__game.state.rep);
+      bien(rep === 33, 'La fama no cambió (la cámara llegó por el combo con créditos, sin saltarse la fama de la tienda)');
+      bien(await sinDesborde(page), 'fama33: sin desborde horizontal');
+      await foto(page, 'vip_11_combo_fama33_listo.png', '#modal .pe-cl');
+      await page.click('#modal [data-act="ir-personal"][data-k="piloto_dron"]');
+      await page.waitForTimeout(300);
+      bien(await page.evaluate(() => document.querySelector('#tab-personal.on') !== null), '"Contratar Piloto de dron" abre Personal');
+      await ctx.close();
+    }
+
+    /* ===== piloto: con fama 5 el piloto todavía no aparece → contratar uno ya con 💎 ===== */
+    {
+      const { ctx, page, srv } = await abrir({ vip: false, rep: 5, inventario: ['dron4k'], equipos: BASICO, roles: ROLES, eventos: ['boda'] });
+      await page.waitForFunction(() => window.__game.state.equip.some((e) => e.type === 'dron4k'));
+      await preparar(page, 'boda');
+      const cc = page.locator('#modal .bloq [data-act="combo-canjear"]');
+      const t = await page.evaluate(() => ((document.querySelector('#modal .bloq') || {}).innerText || '').replace(/\s+/g, ' '));
+      bien(/Inspira/.test(t) && /piloto/i.test(t) && await cc.count() > 0, 'Fama 5: el dron sin piloto ofrece contratar uno ya con 💎 → ' + t.slice(0, 160));
+      bien(await page.locator('#modal .bloq [data-act="ir-personal"][data-k="piloto_dron"]').count() > 0, '…y también "Contratar Piloto de dron" en Personal');
+      await foto(page, 'vip_12_piloto_creditos.png', '#modal .bloq');
+      await cc.first().click();
+      await page.waitForFunction(() => window.__game.state.staff.some((p) => p.role === 'piloto_dron'), null, { timeout: 8000 });
+      bien(srv.gastos.includes('personal:piloto_dron'), 'El piloto lo contrató el servidor con créditos (personal:piloto_dron)');
       await ctx.close();
     }
 
@@ -236,12 +309,10 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       await page.click('#overlay.on [data-act="combo-canjear"]');
       await page.waitForFunction(() => window.__game.state.equip.some((e) => e.type === 'ex_lente_box'), null, { timeout: 8000 });
       await page.waitForTimeout(400);
-      bien(srv.gastos.includes('ex_lente_box') && srv.gastos.includes('ex_soporte') && srv.creditos === c0 - srv.gastos.reduce((a, g) => a + PREMIUM.find((x) => x.id === g).creditos, 0), `Canjeó el lente box y el soporte con créditos en el servidor (${srv.gastos.join(', ')})`);
-      // Lo que falta con dinero del juego (cámara de sistema y adaptador)
-      const falta = page.locator('#overlay.on [data-act="buy-kit"]');
-      bien(await falta.count() > 0, 'Después del canje ofrece comprar con dinero lo que todavía falta');
-      await foto(page, 'vip_07_falta_dinero.png');
-      if (await falta.count()) await falta.first().click();
+      await page.waitForFunction(() => window.__game.state.equip.some((e) => e.type === 'adaptador_lente_box'), null, { timeout: 8000 });
+      bien(srv.gastos.includes('ex_lente_box') && srv.gastos.includes('ex_soporte') && srv.gastos.some((g) => /^juego:cam_/.test(g)) && srv.gastos.includes('juego:adaptador_lente_box')
+        && srv.creditos === c0 - srv.gastos.reduce((a, g) => a + precioGasto(g), 0), `"Canjear todo" canjeó el combo entero con créditos en el servidor (${srv.gastos.join(', ')})`);
+      await foto(page, 'vip_07_combo_completo.png');
       await cerrar(page);
       const t3 = await page.evaluate(() => window.__game.state.equip.map((e) => window.Game.CATALOG[e.type].subtipo));
       bien(t3.includes('adaptador_lente_box') && t3.some((x) => x === 'sistema' || x === 'sistema_4k'), 'Compró la cámara de sistema y el adaptador: el lente box ya funciona');
