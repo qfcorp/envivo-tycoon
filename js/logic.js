@@ -65,8 +65,9 @@
   if (!D) throw new Error('Falta js/datos.js: cárgalo antes que js/logic.js');
 
   // v3: catálogo realista, 14 roles, niveles de experiencia, plan de personal y de cámaras, contratos internacionales.
-  // Las partidas v1 y v2 se siguen cargando (los roles viejos se convierten).
-  const SAVE_VERSION = 3;
+  // v4: varios eventos por día (turnos mañana / tarde / noche: s.hoy) y resumen al cerrar el día (s.resumenDia).
+  // Las partidas v1, v2 y v3 se siguen cargando (los roles viejos se convierten; s.hoy se arma solo).
+  const SAVE_VERSION = 4;
 
   /* =========================================================
      BALANCE: todos los números de la economía en un solo lugar.
@@ -81,6 +82,16 @@
     bankrupt: { perDailyCost: 3, pendingDays: 4, graceDays: 2 },
     tutorialEvents: 3,           // los 3 primeros eventos son suaves (1 imprevisto, sin sorpresas)
     maxContracts: 7,
+    // Varios eventos por día (v4): hasta 3 (mañana, tarde y noche) si te alcanza el personal y los equipos.
+    // Los gastos fijos del día se cobran UNA vez, al cerrar el día (botón "Cerrar el día", o solo al usar los 3 turnos).
+    // En el resultado se muestra la parte de esos gastos que le toca a cada evento (repartidos entre los eventos de hoy).
+    dia: {
+      franjas: 3,                // turnos por día: mañana, tarde y noche
+      jornadaDesde: 4,           // eventos de dificultad 4 o más (concierto, LigaPrima, final...) e internacionales ocupan el día entero
+      ofertas: [1, 1],           // ofertas nuevas cada día (al azar entre estos dos; antes 0-1) + 1 con 25 de fama + 1 si tienes pocas
+      pocas: 2,                  // "pocas ofertas": menos que esto
+      llamada: { si: 2, chance: 0.5 }, // al terminar un evento (sin cerrar el día) y con menos de `si` ofertas: a veces llama un cliente
+    },
     maxStaff: 18,                // personas en la productora (contándote a ti)
     maxEquip: 80,                // equipos en la bodega
     candidates: 5,
@@ -136,7 +147,12 @@
             sevFalta: 1.5, sevJusto: 1.15, extraIncident: 1 },
     sensible: 1.6,               // en eventos sensibles (funeral) los errores pesan más
     expectPerRep: 0.16,          // cuanto más famoso eres, más te exige el cliente: -(fama * (esto + expectSmall * (5 - dificultad))) puntos
-    expectSmall: 0.05,           // a una productora famosa no le perdonan nada en un evento chico
+    expectSmall: 0.035,          // a una productora famosa le exigen más en un evento chico (v4: antes 0,05)
+    // La exigencia deja de crecer desde esta fama (v4: con varios eventos por día la fama sube más rápido y, sin tope,
+    // una productora muy famosa ya no podía cumplirle a nadie en los eventos chicos y quebraba). Ver PLAN.md, Bitácora.
+    expectMaxRep: 85,
+    // Los intentos en línea (liga, festival, duelos) usan la exigencia de antes: el servidor los repite igual que siempre
+    expectIntento: { small: 0.05, maxRep: 100 },
     // Las ofertas de la historia vienen con apoyo del personaje (escenario, fibra, luz del estadio...)
     storySupport: { lanzamiento: 14, ligapro: 10, final: 10 },
     expectStoryCap: 4,           // en las ofertas de la historia, lo que exige tu fama resta como mucho esto
@@ -591,6 +607,8 @@
       avisos: [], // cosas importantes que pasaron (Game.takeAvisos)
       capCompletados: [], // capítulos completados que falta mostrar (Game.takeChapterDone)
       lastWorkDay: 1, // último día con evento (para el desgaste de fama)
+      hoy: { dia: 1, n: 0, pagos: 0, ganancia: 0, eventos: [] }, // turnos de hoy (varios eventos por día)
+      resumenDia: null, // resumen del último día cerrado (Game.takeResumenDia)
       intlNext: 0, // día de la próxima oferta internacional (0 = todavía no se programa)
       log: [],
     };
@@ -960,13 +978,56 @@
     return { ok: true, msg: tx('msg.vendido', { monto: money(p) }) };
   }
 
-  /* ---------- Pasar el día ---------- */
+  /* ---------- Turnos del día (v4: varios eventos por día) ----------
+     s.hoy = { dia, n (eventos hechos hoy), pagos, ganancia (suma de lo que dejó cada evento), eventos: [{ t, e, g }] }
+     Se arma solo si falta o es de otro día (partidas viejas, pruebas que cambian s.day a mano). */
+  function hoyDe(s) {
+    if (!s.hoy || typeof s.hoy !== 'object' || s.hoy.dia !== s.day || !Array.isArray(s.hoy.eventos)) {
+      s.hoy = { dia: s.day, n: 0, pagos: 0, ganancia: 0, eventos: [] };
+    }
+    return s.hoy;
+  }
+  // Ocupa el día entero: los internacionales (viajas) y los eventos grandes (dificultad del tipo 4 o más)
+  function jornadaCompleta(c) {
+    if (!c) return false;
+    if (c.internacional) return true;
+    const t = EVENT_TYPES[c.type];
+    return !!t && (t.jornada === true || (t.jornada !== false && (t.diff || 1) >= BALANCE.dia.jornadaDesde));
+  }
+  /* Turno del día para la pantalla: { n (eventos hechos hoy), max, libres, turno (0 mañana, 1 tarde, 2 noche),
+     gastos (gastos fijos de hoy, se cobran al cerrar el día), parte (lo que le toca a cada evento de hoy, null sin eventos),
+     conOtro (lo que le tocaría a cada uno con un evento más; null si ya no quedan turnos), pagos, ganancia } */
+  function turnoDia(s) {
+    const H = hoyDe(s), max = BALANCE.dia.franjas;
+    const g = dailyCost(s), n = H.n;
+    return { n, max, libres: Math.max(0, max - n), turno: Math.min(n, max - 1), gastos: g,
+      parte: n ? Math.round(g / n) : null, conOtro: n < max ? Math.round(g / (n + 1)) : null, pagos: H.pagos, ganancia: H.ganancia };
+  }
+  /* Resumen del último día cerrado (la pantalla lo muestra una vez):
+     { dia, eventos, pagos, ganancia, gastos (gastos fijos cobrados; con días de viaje, todos), dias, resultado, lista } */
+  function takeResumenDia(s) { const r = s && s.resumenDia ? s.resumenDia : null; if (s) s.resumenDia = null; return r; }
+
+  /* ---------- Pasar el día (cerrar el día) ---------- */
   function nextDay(s, opts) {
     if (s.gameOver) return;
     opts = opts || {};
+    const intento = esIntento(s);
+    const H = intento ? null : hoyDe(s);
+    const cerrado = s.day;
     s.day++;
     s.daily = { redes: 0, anuncio: 0 };
-    s.money -= dailyCost(s);
+    const gasto = dailyCost(s);
+    s.money -= gasto;
+    if (!intento) {
+      // Resumen del día que se cierra (los días de viaje de un internacional se suman al mismo resumen)
+      const R0 = s.resumenDia;
+      if (opts.travel && R0 && typeof R0 === 'object') { R0.gastos += gasto; R0.dias = (R0.dias || 1) + 1; R0.resultado = R0.ganancia - R0.gastos; }
+      else {
+        s.resumenDia = { dia: cerrado, eventos: H.n, pagos: H.pagos, ganancia: H.ganancia, gastos: gasto, dias: 1,
+          resultado: H.ganancia - gasto, lista: H.eventos.slice(0, BALANCE.dia.franjas) };
+      }
+      s.hoy = { dia: s.day, n: 0, pagos: 0, ganancia: 0, eventos: [] };
+    }
     // Cobros pendientes que llegan hoy
     s.pending = s.pending || [];
     const due = s.pending.filter((p) => p.day <= s.day);
@@ -988,7 +1049,9 @@
     if (!opts.travel) {
       // Nuevas ofertas según la fama
       // (con muy poca fama, por hacer mal los eventos, los clientes dejan de buscarte)
-      const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 && !badStreak(s) ? 1 : 0);
+      // (los intentos en línea usan los números de siempre: el servidor los repite igual que antes)
+      const OF = intento ? [0, 1] : BALANCE.dia.ofertas, pocas = intento ? 2 : BALANCE.dia.pocas;
+      const n = randInt(s, OF[0], OF[1]) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < pocas && !badStreak(s) ? 1 : 0);
       for (let i = 0; i < n; i++) addContract(s);
       cadaExt(s, 'contratosExtra', (h) => h(s));
       // A veces un cliente cancela (nunca las ofertas de la historia ni las internacionales)
@@ -1521,7 +1584,9 @@
     q += add('parte.dificultad', -BALANCE.diffPenalty[clamp(diff, 1, 5)], { n: diff });
     const sup = contract.story ? (BALANCE.storySupport[contract.type] || 0) : 0;
     if (sup) q += add(STORY_SUPPORT_KEY[contract.type] || 'parte.apoyo', sup);
-    let ex = -Math.round((s.rep || 0) * (BALANCE.expectPerRep + BALANCE.expectSmall * (5 - clamp(diff, 1, 5))));
+    // (los intentos en línea, con la exigencia de antes: el servidor los repite igual que siempre)
+    const EXI = esIntento(s) ? BALANCE.expectIntento : { small: BALANCE.expectSmall, maxRep: BALANCE.expectMaxRep || 100 };
+    let ex = -Math.round(Math.min(s.rep || 0, EXI.maxRep) * (BALANCE.expectPerRep + EXI.small * (5 - clamp(diff, 1, 5))));
     // En las ofertas de la historia el cliente te buscó a ti: la fama casi no suma exigencia (si no, ser famoso lo haría más difícil)
     if (contract.story) ex = Math.max(ex, -BALANCE.expectStoryCap);
     if (ex) q += add('parte.fama', ex);
@@ -2245,6 +2310,8 @@
     const equip = s.equip.filter((e) => equipIds.includes(e.id) && CATALOG[e.type]);
     if (!staff.length) return { ok: false, msg: tx('msg.lleva_persona') };
     if (!equip.some((e) => itemOf(e).cat === 'cam')) return { ok: false, msg: tx('msg.lleva_camara') };
+    // Ya usaste los turnos de hoy (no debería pasar: el día se cierra solo al usar el último)
+    if (!esIntento(s) && hoyDe(s).n >= BALANCE.dia.franjas) return { ok: false, msg: tx('msg.dia_lleno', { n: BALANCE.dia.franjas }) };
     staff.forEach((p) => { p.role = normRole(p.role); if (!p.tier) p.tier = 'junior'; });
     if (esIntento(s)) s.intento = true; // se queda marcado para todo el intento (finishEvent cambia stats y día)
     if (contract.internacional) {
@@ -2446,7 +2513,7 @@
     const cubreCliente = tpTotal - transporte;
     s.money += payNow - ev.wages - transporte;
     s.rep = clamp(s.rep + repDelta, 0, 100);
-    s.lastWorkDay = s.day + 1; // el evento ocupa el día
+    s.lastWorkDay = s.day + 1; // hoy se trabajó (al cerrar el día, el día nuevo cuenta como el siguiente a un día con evento)
     // Desgaste de equipos (más en eventos grandes y en equipos frágiles), experiencia y moral del personal
     const view = evView(s);
     const W = BALANCE.wear;
@@ -2526,9 +2593,37 @@
     s.lastResult = result;
     // El premio del capítulo entra antes de pasar el día (así cuenta para la caja frente a la quiebra)
     result.chapterDone = checkChapter(s);
-    nextDay(s);
-    // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
-    for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+    if (esIntento(s)) {
+      // Intentos en línea: igual que siempre (el evento ocupa el día; el servidor lo repite así)
+      nextDay(s);
+      for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+    } else {
+      // Varios eventos por día: este evento usa un turno (mañana, tarde o noche). El día se cierra solo al usar el
+      // último turno o con un evento que ocupa el día entero; si no, sigue el mismo día (los gastos fijos se cobran al cerrar).
+      const H = hoyDe(s), DIA = BALANCE.dia;
+      H.n++; H.pagos += pay; H.ganancia += result.net;
+      H.eventos.push({ t: c.type, e: stars, g: result.net });
+      const jornada = jornadaCompleta(c);
+      const cierra = jornada || H.n >= DIA.franjas;
+      result.dia = { turno: H.n - 1, n: H.n, max: DIA.franjas, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
+      if (cierra) {
+        if (jornada && !c.internacional) log(s, 'log.dia_completo', { evento: { k: 'ev.' + c.type } });
+        nextDay(s);
+        // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
+        for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+        // Lo que se cobró de verdad al cerrar (con los días de viaje, todos esos días)
+        if (s.resumenDia) { result.dia.gastos = s.resumenDia.gastos; result.dia.dias = s.resumenDia.dias || 1; }
+      } else {
+        result.dia.conOtro = Math.round(result.dia.gastos / (H.n + 1));
+        // Con pocas ofertas, a veces llama un cliente con un evento para más tarde
+        const L = DIA.llamada;
+        if (L && s.contracts.length < L.si && !inTutorial(s) && chance(s, L.chance)) {
+          const k = addContract(s);
+          if (k) log(s, 'log.llamada', { cliente: k.client, evento: { k: 'ev.' + k.type } });
+        }
+      }
+      result.dia.parte = Math.round(result.dia.gastos / H.n);
+    }
     if (!result.chapterDone) result.chapterDone = checkChapter(s);
     result.avisos = (s.avisos || []).slice(Math.min(avisos0, (s.avisos || []).length));
     // Fama antes y la que queda de verdad (con lo que sumaron las extensiones y el día que pasó): la que muestra el resultado
@@ -2585,7 +2680,7 @@
   function deserialize(str) {
     try {
       const s = JSON.parse(str);
-      if (!s || !(s.v === 1 || s.v === 2 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
+      if (!s || !(s.v === 1 || s.v === 2 || s.v === 3 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
       // Rellenar campos nuevos en partidas guardadas antes
       s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
       s.stats.best = s.stats.best || {};
@@ -2626,6 +2721,9 @@
       if (typeof s.intlNext !== 'number') s.intlNext = 0;
       if (!Array.isArray(s.avisos)) s.avisos = [];
       if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
+      // v4: turnos del día (una partida vieja empieza el día de hoy sin eventos hechos)
+      hoyDe(s);
+      if (s.resumenDia && typeof s.resumenDia !== 'object') s.resumenDia = null;
       if (s.currentEvent && !s.currentEvent.crewPlan) {
         s.currentEvent.crewPlan = crewPlan(s, s.currentEvent.contract, s.currentEvent.staffIds, s.currentEvent.equipIds);
         s.currentEvent.cameraPlan = cameraPlan(s, s.currentEvent.contract, s.currentEvent.equipIds, s.currentEvent.staffIds);
@@ -2725,6 +2823,8 @@
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
     takeAvisos, takeChapterDone, venue, venueName, qualityRange,
+    // Varios eventos por día
+    turnoDia, jornadaCompleta, takeResumenDia,
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
     // Extensiones

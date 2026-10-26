@@ -57,9 +57,11 @@ sec('Capítulo 0: el taxi del primer evento cuesta $4-6 y el evento nunca pierde
       ok(r.net === r.pay - r.wages - r.travelCost - r.transporte.total, `seed ${seed}: result.net descuenta la movilización`);
       if (k === 0) {
         peorNeto = Math.min(peorNeto, r.net - r.dailyCost);
-        // La caja cambió: pago ahora - sueldos - transporte - gastos del día (y lo que entró del capítulo)
+        // La caja cambió: pago ahora - sueldos - transporte (y lo que entró del capítulo). Varios eventos por día: los gastos
+        // fijos se cobran al cerrar el día (si este evento lo cerró, ya se cobraron)
         const premio = r.chapterDone ? r.chapterDone.reward : 0;
-        ok(s.money === money0 + r.payNow - r.wages - r.transporte.total - r.dailyCost + premio, `seed ${seed}: la caja cuadra con el transporte`);
+        const fijos = r.dia ? (r.dia.cerrado ? r.dia.gastos : 0) : r.dailyCost;
+        ok(s.money === money0 + r.payNow - r.wages - r.transporte.total - fijos + premio, `seed ${seed}: la caja cuadra con el transporte`);
       }
     }
   }

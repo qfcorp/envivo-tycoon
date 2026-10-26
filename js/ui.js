@@ -82,6 +82,10 @@
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
   const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
   const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
+  // Varios eventos por día: turno de hoy (G.turnoDia). Con una lógica vieja (un evento = un día), null
+  const turnoHoy = () => { try { return G.turnoDia && S ? G.turnoDia(S) : null; } catch (e) { return null; } };
+  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(2, Number(i) || 0)));
+  const esJornada = (c) => { try { return !!(G.jornadaCompleta && G.jornadaCompleta(c)); } catch (e) { return false; } };
 
   /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
   const RES_KEY = 'envivo_resultado_pendiente'; // resultado que falta ver (si se recarga en esa pantalla)
@@ -111,6 +115,7 @@
   let catSel = lsGet('envivo_cat') || 'cam';   // categoría elegida en la tienda de equipos
   let rolBuscar = '';      // puesto elegido para buscar personal
   let diaAntes = null;     // dinero antes de descansar (para el resumen del día)
+  let diaCerrado = false;  // en esta sesión se cerró un día (botón, visitar clientes o el último turno): toca su resumen
 
   /* ---------- Módulos de Inicio (temporadas, sede...) ----------
      Un módulo hace window.EnVivoInicio.push({ id, orden, tarjeta(ctx) → html, clic(ctx, accion, el) }).
@@ -633,6 +638,7 @@
     const rent = G.dailyCost ? G.dailyCost(S) : 20 + 4 * (S.staff.length - 1);
     let cb = null;
     try { cb = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null; } catch (e) { cb = null; }
+    const tHoy = turnoHoy();
     const costBox = cb ? `<div class="costbox"><div class="ci">${I('home')}</div><div class="t">
         <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>${AY('gastos')}
         <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}${cb.fijoExt && window.Decoracion ? ` · ${esc(window.Decoracion.t('c_decor', { m: M(cb.fijoExt) }))}` : ''}${cb.vehiculos && window.Movilizacion ? ` · ${esc(window.Movilizacion.t('gasto', { m: M(cb.vehiculos) }))}` : ''}</div>
@@ -672,8 +678,9 @@
             ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
           </div>
           ${costBox}
+          ${tHoy ? `<div class="small turno-hoy" style="margin:2px 0 8px">${I('calendar', 'sm')} ${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}${AY('dia')}</div>` : ''}
           <button class="btn main" data-act="tab" data-tab="clientes">${I('clients')}${T('inicio.ver_ofertas', { n: S.contracts.length })}</button>
-          <button class="btn" data-act="next-day">${I('sleep')}${T('inicio.descansar')} <span class="muted small">(${T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
+          <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>
         </div>
       </div>
       ${installCard()}
@@ -862,18 +869,20 @@
     try { return Object.assign({}, c, { requisitos: G.requisitosInternacional(S, c, S.staff.map((p) => p.id), S.equip.map((e) => e.id)).map((r) => Object.assign({}, r, { texto: TL(r.texto) })) }); } catch (e) { return c; }
   }
   function renderClientes() {
+    const tHoy = turnoHoy();
     const cards = S.contracts.map((c) => {
       const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
+      const todoDia = tHoy && esJornada(c) ? `<span class="tag amber todo-dia">${I('calendar', 'sm')}${T('clientes.todo_dia')}</span>` : '';
       return `<div class="card ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
-        <div style="margin-top:6px">${reqTags(c)}</div>
+        <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
         ${PE ? PE.internacional(intlVista(c)) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
-          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${T('clientes.vence', { n: c.daysLeft })}</span>
+          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${tHoy && c.daysLeft <= 1 ? T('clientes.vence_hoy') : T('clientes.vence', { n: c.daysLeft })}</span>
         </div>
         <button class="btn main" data-act="prep" data-id="${c.id}">${T('clientes.preparar')}</button>
       </div>`;
@@ -886,6 +895,7 @@
         <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}${T('clientes.visitar')} <span class="muted small">(${T('clientes.visitar_det')})</span></button>
       </div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
+      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}</div></div>` : ''}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
@@ -2117,6 +2127,9 @@
     }
     const reqVista = reqs.map((r) => ({ texto: TL(r.texto), ok: r.ok, detalle: r.ok ? '' : r.obligatorio ? T('prep.obligatorio') : T('prep.req_resta') }));
     const intlHtml = PE && c.internacional ? PE.internacional(Object.assign({}, c, { requisitos: reqVista })) : PE ? PE.internacional(c) : '';
+    const tHoy = turnoHoy();
+    const avisoDia = !tHoy ? '' : esJornada(c) ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.jornada')}</p>`
+      : tHoy.libres === 1 ? `<p class="small muted" style="margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.ultimo_turno')}</p>` : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
     const avisos = camAvisosHtml(c, camP, equip);
     const bloqHtml = bloqueadosHtml(camP, c, equip);
@@ -2128,7 +2141,7 @@
     const calcHtml = `${intlHtml}
       <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
         ${puede ? tip : ''}
-        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div></div>
+        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>
       ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
       ${window.Movilizacion ? window.Movilizacion.seccionPrep(ctxInicio(), c, [...prep.staff], [...prep.equip]) : ''}`;
     const tablaHtml = `${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}
@@ -2268,6 +2281,7 @@
     snd.amb(null);
     if (!f.ok) { toast(TL(f.msg)); closeModal(); render(); return; }
     const r = f.result;
+    if (r.dia && r.dia.cerrado) diaCerrado = true;
     AN('evento_terminado', { tipo: ty, estrellas: r.stars, capitulo: S.chapter, dia: S.day });
     const caja = caja0 === null ? null : S.money - caja0;   // cuánto cambió la caja desde que empezó el día
     // Si se recarga en esta pantalla, el resultado se vuelve a mostrar (QA-09)
@@ -2289,21 +2303,51 @@
     return dias.map((d) => `<div class="daycard">${dias.length > 1 ? `<div class="dh">${T('comun.dia_n', { n: d.day })}</div>` : ''}
       ${d.items.map((a) => { const ic = AV_ICON[a.tipo] || ['tip', 'm']; return `<div class="av av-${ic[1]}"><span class="avi">${I(ic[0], 'sm')}</span><span class="t">${esc(noEmoji(gtx(a, a.text)))}</span></div>`; }).join('')}</div>`).join('');
   }
+  // Resumen del día que se cerró en esta sesión (G.takeResumenDia). Uno que quedó en la partida de antes no se muestra.
+  const resDiaPend = () => !!(diaCerrado && S && S.resumenDia && typeof S.resumenDia === 'object');
+  function tomarResDia() {
+    const ok = resDiaPend();
+    diaCerrado = false;
+    let R = null;
+    try { R = G.takeResumenDia ? G.takeResumenDia(S) : null; } catch (e) { R = null; }
+    if (S && S.resumenDia) S.resumenDia = null;
+    return ok ? R : null;
+  }
+  // El bloque del día cerrado: eventos, lo que dejaron, los gastos fijos y el resultado del día (corto)
+  function resDiaHtml(R) {
+    const sgn = (v) => (v >= 0 ? '+' : '-') + M(Math.abs(v));
+    const dias = R.dias || 1;
+    const lista = (Array.isArray(R.lista) ? R.lista : []).map((x) => `<div class="row between small"><span>${esc((G.EVENT_TYPES[x.t] || {}).icon || '')} ${esc(eventName(x.t))} <span style="color:var(--amber)">${'★'.repeat(Math.max(0, Math.min(5, x.e || 0)))}</span></span><span class="num ${x.g >= 0 ? 'up' : 'down'}">${sgn(x.g)}</span></div>`).join('');
+    const consejo = R.eventos === 0 ? `<p class="small muted" style="margin:6px 0 0">${T('dia.descanso')}</p>`
+      : R.resultado >= 0 ? `<p class="small up" style="margin:6px 0 0">${T('dia.bien')}</p>`
+      : R.eventos < 3 && dias === 1 ? `<p class="small muted" style="margin:6px 0 0">${T('dia.consejo_otro', { n: R.eventos + 1, m: M(Math.round(R.gastos / (R.eventos + 1))) })}</p>` : '';
+    return `<div class="resdia" id="resDia">
+      ${R.eventos ? `<div class="small muted" style="margin:4px 0 2px">${T('dia.lista')} · ${T('dia.eventos_hoy', { n: R.eventos })}</div>${lista}` : ''}
+      <table style="margin-top:8px">
+        ${R.eventos ? `<tr><td>${T('dia.ganancia_eventos')}</td><td class="${R.ganancia >= 0 ? 'up' : 'down'}">${sgn(R.ganancia)}</td></tr>` : ''}
+        <tr><td>${dias > 1 ? T('dia.fijos_viaje', { n: dias }) : T('dia.fijos')}${AY('gastos')}</td><td class="down">-${M(R.gastos)}</td></tr>
+        <tr><td><b>${T('dia.resultado')}</b></td><td class="${R.resultado >= 0 ? 'up' : 'down'}"><b>${sgn(R.resultado)}</b></td></tr>
+      </table>${consejo}</div>`;
+  }
   function showResumenDia() {
+    const R = tomarResDia();
     const lista = avisosPend();
-    if (!lista.length) { tomarAvisos(); continuar(); return; }
+    if (!R && !lista.length) { tomarAvisos(); continuar(); return; }
     // Al abrir el juego (no pasó ningún día) solo llegaron avisos de la temporada: un aviso corto en vez de la ventana
     // "Resumen del día" (la oferta ya está en Clientes y la temporada tiene su tarjeta en Inicio)
-    if (!diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
-    const dia = lista[lista.length - 1].day;
-    const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
+    if (!R && !diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
+    // Día sin eventos y sin avisos: basta un aviso corto (sin ventana que cerrar)
+    if (R && !R.eventos && !lista.length) { diaAntes = null; toast(T('dia.cerrado_toast', { n: S.day, m: M(R.gastos) })); continuar(); return; }
+    const dia = R ? R.dia : lista[lista.length - 1].day;
+    const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo)) || (R && R.eventos && R.resultado < 0);
     snd.play(malo ? 'bad' : 'good');
-    const caja = diaAntes && typeof diaAntes.money === 'number' ? S.money - diaAntes.money : null;
+    const caja = !R && diaAntes && typeof diaAntes.money === 'number' ? S.money - diaAntes.money : null;
     diaAntes = null;
     openModal(`<div class="story-tag">${T('dia.resumen')}</div><h2>${T('comun.dia_n', { n: dia })}</h2>
+      ${R ? resDiaHtml(R) : ''}
       ${caja !== null ? `<div class="row between small" style="margin:2px 0 0"><span class="muted">${T('dia.caja')}</span><b class="num ${caja >= 0 ? 'up' : 'down'}">${caja >= 0 ? '+' : '-'}${M(Math.abs(caja))}</b></div>
         <div class="small muted" style="margin-bottom:8px">${T('dia.gastos', { m: M(G.dailyCost ? G.dailyCost(S) : 0) })}</div>` : ''}
-      ${avisosHtml(lista)}
+      ${lista.length ? `${R ? `<div class="sectitle">${T('dia.mientras')}</div>` : ''}${avisosHtml(lista)}` : ''}
       <button class="btn main" data-act="close-dia">${T('comun.continuar')}</button>`);
   }
   // Qué ventana toca después: el evento en curso, el resumen del día, los capítulos completados y la intro del capítulo
@@ -2314,7 +2358,7 @@
     if (S.currentEvent) { showIncident(); return; }
     // Partida nueva: primero la intro del capítulo 1 y después el resumen del día (p. ej. "empezó la temporada")
     if (!capPend().length && !S.chapterSeen && !(S.stats && S.stats.events) && showChapterIntro()) return;
-    if (avisosPend().length) { showResumenDia(); return; }
+    if (avisosPend().length || resDiaPend()) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
     if (S.gameOver) showGameOver();
@@ -2350,16 +2394,20 @@
     // Lo que dejó el evento: pago - sueldos - viaje - gastos fijos del día (QA4). Lo que cambió la caja desde la mañana
     // (incluye compras, cobros que llegaron y la parte que se paga después) va aparte, solo si es distinto.
     const gastoDia = G.dailyCost && typeof r.dailyCost === 'number' ? r.dailyCost : null;
+    // Varios eventos por día (r.dia): lo grande es lo que dejó el evento; los gastos fijos del día van aparte, con la parte
+    // que le toca a este evento (repartidos entre los eventos de hoy). Con una lógica vieja: como antes (todo el día en el evento).
+    const dd = r.dia && typeof r.dia.parte === 'number' ? r.dia : null;
     // De qué son los gastos del día: local, personal y seguro de equipos (solo si cuadra con lo cobrado)
     const gastoDesg = (() => {
       try {
-        const b = gastoDia !== null && G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
-        if (!b || b.total !== gastoDia) return '';
+        const meta = dd ? ((dd.dias || 1) > 1 ? null : dd.gastos) : gastoDia;
+        const b = meta !== null && G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
+        if (!b || b.total !== meta) return '';
         const pers = (b.staff || 0) + (b.payroll || 0);
         return [T('inicio.local', { m: M(b.rent) }), pers ? T('inicio.c_personal', { m: M(pers) }) : '', b.equip ? T('inicio.c_seguro', { m: M(b.equip) }) : '', b.fijoExt && window.Decoracion ? window.Decoracion.t('c_decor', { m: M(b.fijoExt) }) : '', b.vehiculos && window.Movilizacion ? window.Movilizacion.t('gasto', { m: M(b.vehiculos) }) : ''].filter(Boolean).join(' · ');
       } catch (e) { return ''; }
     })();
-    const neto = r.net - (gastoDia || 0);
+    const neto = dd ? r.net : r.net - (gastoDia || 0);
     const sgn = (v) => (v > 0 ? '+' : '') + M(v);
     const quebro = !!S.gameOver;
     const bk = quebro ? null : bkInfo();
@@ -2369,14 +2417,14 @@
     const alerta = quebro ? `<div class="redstrip" role="alert" style="margin-top:10px">${I('bolt', 'sm')}<span>${T('res.quebraste')}</span></div>`
       : bk && bk.enPeligro ? `<div class="redstrip" role="alert" style="margin-top:10px">${I('bolt', 'sm')}<span>${T('res.peligro', { m: `<b class="num">${M(bankruptAt())}</b>`, n: bk.graceLeft })}</span></div>` : '';
     const riesgo = PE ? PE.resumenRiesgo(r.crewPlan || (r.crew && r.crew.plan), { camaras: r.cameraPlan, tipo: ty, nombreEquipo: eqName }) : '';
-    // Lo que pasó mientras tanto (el evento ocupa el día): pagos, renuncias, la rival…
+    // Lo que pasó mientras tanto (si el evento cerró el día): pagos, renuncias, la rival…
     const mientras = fresh || avisosPend().length ? avisosPend() : [];
     openModal(`
       <div class="result-head"><div class="story-tag">${r.stars >= 4 ? T('res.impecable') : r.stars === 3 ? T('res.buen_trabajo') : T('res.terminada')}</div>
       <h2>${esc(noEmoji(TL(r.title)))}</h2></div>
       ${starsBig(r.stars)}
       <div class="bigmoney ${tono} num" id="resNet">${fresh ? (neto >= 0 ? '+' : '-') + M(0) : (neto >= 0 ? '+' : '-') + M(Math.abs(neto))}</div>
-      <div class="small muted" style="text-align:center">${gastoDia !== null ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
+      <div class="small muted" style="text-align:center">${gastoDia !== null && !dd ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
       ${alerta}
       <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}${AY('calidad')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
@@ -2390,11 +2438,12 @@
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
         ${window.Movilizacion ? window.Movilizacion.filaResultado(r, M) : ''}
-        ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
+        ${gastoDia !== null && !dd ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
         <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
       </table>
+      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
@@ -2402,7 +2451,7 @@
         <p class="small"><b>${T('res.calidad_inicial', { n: r.base })}</b></p>
         ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(gtx(i, i.text)))}<br><span class="muted">→ ${esc(gtx(x, x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
       </details>
-      <p class="small muted">${T('res.desgaste')}</p>
+      <p class="small muted">${T(dd ? 'res.desgaste_ev' : 'res.desgaste')}</p>
       ${window.Compartir ? window.Compartir.resultado(r, fresh, ctxInicio()) : ''}
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
     if (!fresh) return;
@@ -2410,6 +2459,23 @@
     if (quebro) return;
     if (r.stars >= 4) confetti(r.stars === 5 ? 28 : 20);
     else if (r.stars === 3) confetti(10);
+  }
+
+  /* Gastos fijos del día en el resultado (varios eventos por día): cuánto son, cuándo se cobran y la parte de este evento.
+     Antes del cierre: "se cobran al cerrar el día; repartidos entre los N eventos de hoy, a este le tocan $Y" y cuánto
+     bajaría con un evento más. Si el evento cerró el día: lo que se cobró (con los días de viaje de un internacional). */
+  function fijosRes(r, d, desg, sgn) {
+    const resto = r.net - d.parte;
+    const dias = d.dias || 1;
+    const linea = !d.cerrado ? T('res.fijos_luego', { n: d.n, m: M(d.parte) })
+      : dias > 1 ? T('res.fijos_cobrados_viaje', { d: dias, m: M(d.gastos) }) : T('res.fijos_cobrados', { n: d.n, m: M(d.parte) });
+    return `<div class="paylater fijos-dia" id="resFijos">${I('home', 'sm')} <div class="grow">
+      <b>${dias > 1 ? T('dia.fijos_viaje', { n: dias }) + ': ' + M(d.gastos) : T('res.fijos', { m: M(d.gastos) })}</b>${AY('gastos')}
+      ${desg ? `<div class="small muted" style="font-size:11.5px">${desg}</div>` : ''}
+      <div class="small" style="margin-top:3px">${linea}</div>
+      ${!d.cerrado && typeof d.conOtro === 'number' && d.conOtro < d.parte ? `<div class="small up" id="resFijosOtro">${T('res.fijos_otro', { m: M(d.conOtro) })}</div>` : ''}
+      <div class="row between small" style="margin-top:4px"><span class="muted">${T('res.con_parte')}</span><b class="num ${resto >= 0 ? 'up' : 'down'}">${sgn(resto)}</b></div>
+    </div></div>`;
   }
 
   let capDeCola = false;   // el capítulo que se ve salió de S.capCompletados (se quita al cerrar)
@@ -2740,11 +2806,11 @@
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
       case 'demo-no': confirmCb = null; closeModal(); render(); continuar(); break;
-      case 'next-day': diaAntes = { money: S.money }; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); continuar(); break;
+      case 'next-day': diaAntes = { money: S.money }; diaCerrado = true; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); if (!resDiaPend()) toast(T('comun.dia_n', { n: S.day })); continuar(); break;
       case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
       case 'mkt': {
         const visita = el.dataset.k === 'visitar';
-        if (visita) diaAntes = { money: S.money };
+        if (visita) { diaAntes = { money: S.money }; diaCerrado = true; }
         act(G.marketing(S, el.dataset.k), 'logo');
         if (visita) continuar();
         break;

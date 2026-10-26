@@ -19,6 +19,7 @@ transmitir finales en estadios.
 3. En vivo: imprevistos aleatorios con decisiones.
 4. Resultado: cobras, estrellas del cliente, sube o baja la fama.
 5. Crecer: comprar/reparar equipo, contratar mejor personal, capítulos de historia.
+6. Día: hasta 3 eventos por día (mañana, tarde y noche). Los gastos fijos se cobran una vez, al "Cerrar el día" (o solos al usar los 3 turnos), y se reparten entre los eventos de ese día.
 
 ## 🧱 Tecnología
 
@@ -163,6 +164,21 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-23 (madrugada): mercado y chat (pantallas), soporte solo por correo y dentro del juego, música (7 temas), validador anti-trampas en el servidor (repite cada evento con la misma lógica; 3660 comprobaciones, 100% de resultados falsos detectados) y módulo visual del plan de personal y cámaras por recinto (17 tipos de lugar). Falta conectarlos a la pantalla principal cuando termine la traducción a 10 idiomas.
 - 2026-10-23: realismo en la lógica: catálogo de 90 equipos con marcas parodia (vMax, Blackmagia ATOM, LigaPrima...), 14 roles con plantilla mínima e ideal por evento, niveles Junior a Internacional, plan de cámaras, 5 eventos nuevos y contratos internacionales. Capítulo 4 ahora pide ganar $6.000 en el capítulo (antes juntar $12.000); locales más suaves ($20 / $60 / $120 / $200); un evento grande con 1-2⭐ casi no se cobra; las opciones seguras de los imprevistos cuestan algo. Bot con personal y equipos realistas (400 partidas, 3 semillas): capítulos en días 4 / 21 / 53 / 77 / 108 / 165-176, 6,8% a 8,3% quiebras, 65% a 67,5% termina la historia, pierde el 29,5% a 31% de los duelos, 3,5⭐ promedio en los capítulos 3 a 6. Guardado v3 (las v1 y v2 cargan bien).
 - 2026-10-23 (04:00): todo conectado en la pantalla v6: tienda por categorías, plan de cuadrilla y cámaras, resumen del día, pestaña En línea (Liga, Festival, Duelos, Desafío, vincular Discord), juego completo en 10 idiomas con carga solo del idioma en uso, arreglos de rendimiento y de QA. Servidor v2 con Centro de Control (`/control/`), Discord, Google Play, borrar cuenta, arreglos de la auditoría de seguridad, límites de nginx, respaldos y alertas por Telegram. Pruebas del servidor: más de 1.300 en verde.
+- 2026-10-26: **varios eventos por día** (decisión de Dimitry: "todavía incomoda eso"; antes 1 evento = 1 día y cada evento cargaba todos los gastos fijos, casi todos se veían en pérdida).
+  - Hasta 3 eventos por día (mañana, tarde y noche) con el mismo personal y equipos. Los eventos grandes (dificultad 4 o más: lanzamiento de autos, concierto, LigaPrima, final) y los internacionales cierran el día al terminar (los internacionales además pasan sus días de viaje). Se avisa en Clientes ("Todo el día") y en la preparación.
+  - "Cerrar el día" (antes "Descansar") funciona siempre; los gastos fijos se cobran una sola vez al cerrarlo (también sin eventos). El 3er evento cierra el día solo.
+  - Resultado: la cifra grande es lo que dejó el evento (pago − sueldos − movilización − viaje). Aparte: "Gastos fijos del día $X: se cobran al cerrar el día. Repartidos entre los N eventos de hoy, a este le tocan $Y", cuánto bajaría con un evento más y la ganancia con su parte. La fama ("+N → ahora X") sigue igual; el olvido de fama solo corre al cerrar el día.
+  - Al cerrar el día sale UNA ventana "Resumen del día": eventos, lo que dejaron, gastos fijos, resultado del día y los avisos (temporadas, pagos, renuncias...). Día sin eventos y sin avisos: solo un aviso corto.
+  - Lo diario sigue una vez por día (olvido de fama, ofertas que vencen, cobros pendientes, ánimo, aumentos, quiebra, `alNuevoDia` de sede, decoración, movilización, logros, misiones, temporadas); lo de cada evento sigue por evento. Los intentos en línea (liga, festival, duelos) y el validador del servidor no cambian (el evento ocupa el día y usan la exigencia de antes).
+  - Guardado v4 (`s.hoy`, `s.resumenDia`); las partidas v1-v3 cargan y empiezan el día con 0 eventos.
+  - Balance (bot de `tests/test_logic.js`, 400 partidas; main = antes, semillas 1000 / 5000 / 9000):
+    - Quiebras en la historia: antes 4,5 / 5,3 / 4,5 % → ahora 3,0 / 3,3 / 2,8 %. Modo libre: antes 27,8 / 32,0 / 23,5 % → ahora 8,3 / 10,3 / 10,3 %. Historia completada 97 % (antes 95,5 %).
+    - Solo partir los gastos no alcanzaba: la fama sube más rápido (1,7 eventos por día) y, con la exigencia de la fama, una productora famosa sacaba 1-2⭐ en los eventos chicos y se quedaba sin trabajo (historia 5,5-6,8 %). Cambios: 1 oferta nueva segura cada día (`dia.ofertas` 0-1 → 1), exigencia en eventos chicos `expectSmall` 0,05 → 0,035 y tope `expectMaxRep` 85. Los intentos en línea usan los números de antes (`expectIntento`).
+    - Eventos que se ven en pérdida (ganancia del evento − su parte de los gastos): inicio 4,8 % (antes 5,6 %), historia 8,9 % (antes 10,7 %), libre 17,0 % (antes 27,8 %). Con todo el gasto del día en el evento (como se veía antes) serían 6,0 / 17,7 / 25,4 %.
+    - Días: la historia dura ~79 días (antes ~105; los eventos son los mismos). Estrellas: capítulos 5 y 6 ~4,0⭐ (antes 3,8 / 3,7), capítulos 3-6 3,84⭐; la rival gana el 26,7 % de los duelos.
+    - Jugador "humano" simple (contrata 6 personas, lleva todo lo sugerido, toma lo que sale con 2⭐ o más; 1000 partidas de 60 días): quiebras 21,6 % → 13,6 %.
+    - Topes de la prueba cambiados a propósito: quiebras historia 1-7 % (antes 1-11 %), modo libre máx. 15 % (antes 30 %), estrellas por capítulo hasta 4,1 (antes 3,9) y capítulos 3-6 hasta 3,95 (antes 3,8), historia 70-130 días (antes 90-150), mínimos entre capítulos [0, 6, 10, 10, 15, 15]; nuevo: eventos en pérdida con su parte máx. 8 % al inicio y 15 % en la historia. Sin cambios en las ventajas pagadas.
+  - Textos nuevos solo en español (los otros idiomas los muestran en español hasta la traducción final). Cambiaron de sentido en español y hay que retraducir: ayuda `dia`, `gastos` y `ganancia` (js/ayuda.js). Prueba nueva `tests/test_varios_eventos.js` (capturas `varios_resultado.png` y `varios_resumen.png`).
 
 ## ⏭️ Pendiente (después del demo)
 - [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
@@ -237,28 +253,7 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - PayPal listo pero sin claves.
 - Arreglo de la barra de equipos reparados.
 
-**A medias: "Varios eventos por día" (decisión de Dimitry).**
-- Qué es:
-  - Hasta 3 eventos por día (mañana, tarde, noche).
-  - Los gastos fijos se cobran una sola vez al "Cerrar el día".
-  - Cada resultado muestra la parte de los gastos del día que le toca (prorrateado).
-  - Resumen al cerrar el día.
-  - El balance se reajusta para que no se pierda en casi todos los eventos.
-- Dónde está: rama de GitHub **`wip-varios-eventos`**, commit 00ad439 (NO está en main).
-  - Hay cambios en `logic.js`, `ui.js`, `ayuda.js`, `datos.js`, los textos de los 10 idiomas y `tests/test_logic.js`.
-  - Se cortó cuando iba por la pantalla: Inicio, Clientes y preparación.
-- Falta:
-  - Terminar la pantalla.
-  - Resumen del día.
-  - Revisar los módulos que usan el día:
-    - `alNuevoDia` en sede, decoración, movilización, logros, misiones y temporadas;
-    - que la guía del primer evento siga funcionando.
-  - Que los modos en línea (validador) sigan iguales.
-  - Que las partidas viejas carguen (nueva SAVE_VERSION).
-  - Reajustar el balance con el bot y escribir los números aquí.
-  - `tests/test_varios_eventos.js`.
-  - Todas las pruebas, `dist/`, versión en `sw.js`.
-- Para retomar: `git fetch origin && git checkout -b varios-eventos origin/wip-varios-eventos && git merge main`, y seguir con un ayudante con el mismo encargo.
+**Hecho (26-oct): "Varios eventos por día"** — rama `varios-eventos` (ver Bitácora del 26-oct). Falta que Dimitry lo pruebe en el celular.
 
 **Pendientes de Dimitry (no dependen de programar):**
 - Crear el Discord (`docs/DISCORD_CREAR_SERVIDOR.md`).
