@@ -245,9 +245,9 @@ if (!process.argv.includes('--sin-navegador')) (async () => {
   const out = path.join(__dirname, 'capturas'); fs.mkdirSync(out, { recursive: true });
   let html = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
   if (!/js\/logros\.js/.test(html)) html = html.replace('<script defer src="js/intento.js"></script>', '<script defer src="js/logros.js"></script>\n<script defer src="js/intento.js"></script>');
-  // ui.js con la fila de Inicio (PL_INFO.logros) aunque todavía no se haya integrado
-  let ui = fs.readFileSync(path.join(RAIZ, 'js/ui.js'), 'utf8');
-  if (!/logros:\s*\[/.test(ui)) ui = ui.replace("flota: ['unidad_movil', 'inicio.pl.flota'],", "flota: ['unidad_movil', 'inicio.pl.flota'], logros: ['gem', 'inicio.pl.logros'],");
+  // ui.js tal cual: la tarjeta de Logros vive en la vitrina de la sede de Inicio (js/hub.js)
+  const ui = fs.readFileSync(path.join(RAIZ, 'js/ui.js'), 'utf8');
+  const { verEnInicio } = require('./hub_ayuda');
   // Partida vieja (sin s.logros): capítulo 4, 64 eventos, 12 de 5 estrellas
   const vieja = (() => {
     const s = G.newGame(8); s.chapter = 3; s.day = 70; s.money = 9000; s.rep = 32; s.productora = 'Tukán Producciones';
@@ -280,7 +280,6 @@ if (!process.argv.includes('--sin-navegador')) (async () => {
       sessionStorage.setItem('logros_prueba', '1');
       localStorage.setItem('envivo_lang', 'es'); localStorage.setItem('envivo_tycoon_save_v1', s);
       localStorage.setItem('envivo_aviso_cuenta', '3'); localStorage.setItem('envivo_guia_v1', '"1"');
-      localStorage.setItem('envivo_inicio_abiertos', JSON.stringify({ logros: true }));
     }, save);
     return { ctx, page };
   }
@@ -307,16 +306,17 @@ if (!process.argv.includes('--sin-navegador')) (async () => {
     if (vistos.some((t) => /Logro desbloqueado/.test(t))) errs.push('la partida vieja mostró toasts de cada logro');
     const st = await page.evaluate(() => { const s = window.__game.state; return { hechos: Object.keys(s.logros.hechos).length, resumen: s.logros.resumen, cola: s.logros.porMostrar.length }; });
     if (!(st.hechos >= 8 && st.resumen === 0 && st.cola === 0)) errs.push('estado después de la migración: ' + JSON.stringify(st));
-    // Fila de Inicio
-    const fila = page.locator('.pl[data-pl="logros"]');
-    if (!(await fila.count())) errs.push('no aparece la fila de Inicio "logros"');
+    // Vitrina de Logros en la sede de Inicio: avisa "!" y su hoja trae la tarjeta
+    const aviso = await page.evaluate(() => { const b = document.querySelector('.hs[data-hub="logros"] .hs-b'); return b ? b.textContent : ''; });
+    if (aviso !== '!') errs.push('la vitrina de Logros no avisa "!" con logros por reclamar: ' + aviso);
+    if (!(await verEnInicio(page, '.lo-card'))) errs.push('no aparece la tarjeta de Logros en la sede de Inicio');
     else {
-      const cab = (await fila.locator('.pl-cab').textContent()).replace(/\s+/g, ' ');
-      if (!/Logros y combos/.test(cab) || !new RegExp(st.hechos + '/44 · 0 combos').test(cab)) errs.push('cabecera de la fila: ' + cab);
-      else console.log('  ✔ fila de Inicio: ' + cab.trim());
+      const cab = ((await page.textContent('#hubSheet .hub-sh-t')) + ' ' + (await page.textContent('#hubSheet .lo-card'))).replace(/\s+/g, ' ');
+      if (!/Logros y combos/.test(cab) || !new RegExp(st.hechos + '/44 · 0 combos').test(cab)) errs.push('hoja de Logros: ' + cab);
+      else console.log('  ✔ hoja de Logros en Inicio: ' + cab.trim().slice(0, 60));
     }
     await page.locator('.lo-card').scrollIntoViewIfNeeded();
-    await shot(page, '01_tarjeta', '.pl[data-pl="logros"]'); await noHScroll(page, 'tarjeta');
+    await shot(page, '01_tarjeta', '#hubSheet .hub-sh'); await noHScroll(page, 'tarjeta');
     // Ventana: lista de logros
     await page.locator('.lo-card [data-acc="abrir"].btn').click();
     await page.waitForSelector('#modal .lo-modal');
@@ -393,6 +393,7 @@ if (!process.argv.includes('--sin-navegador')) (async () => {
     // Inglés
     await page.evaluate(async () => { await window.I18N.setIdioma('en'); });
     await page.waitForTimeout(600);
+    await verEnInicio(page, '.lo-card [data-acc="abrir"].btn');
     await page.locator('.lo-card [data-acc="abrir"].btn').click();
     await page.waitForSelector('#modal .lo-modal');
     const titulo = await page.locator('#modal .lo-modal h2').textContent();
@@ -411,6 +412,7 @@ if (!process.argv.includes('--sin-navegador')) (async () => {
     await p2.page.goto(BASE + '/?fecha=2026-10-10');
     await p2.page.waitForTimeout(1600);
     await cerrarVentanas(p2.page);
+    await verEnInicio(p2.page, '.lo-card [data-acc="abrir"].btn');
     await p2.page.locator('.lo-card [data-acc="abrir"].btn').click();
     await p2.page.locator('#modal [data-acc="tab"][data-t="combos"]').click();
     await p2.page.waitForSelector('#modal .lo-fila');

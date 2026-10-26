@@ -93,8 +93,8 @@ if (process.argv.includes('--sin-navegador')) { fin(); } else (async () => {
   const doc = fs.readFileSync(path.join(RAIZ, 'server/INTEGRAR_VISITAS.md'), 'utf8');
   const lineaPl = "    visitas: ['home', 'inicio.pl.visitas'],";
   bien(doc.includes(lineaPl), 'INTEGRAR_VISITAS.md trae la línea de PL_INFO');
-  if (!/visitas: \['home'/.test(ui)) ui = ui.replace("    flota: ['unidad_movil', 'inicio.pl.flota'],\n", "    flota: ['unidad_movil', 'inicio.pl.flota'],\n" + lineaPl + '\n');
-  bien(/visitas: \['home', 'inicio.pl.visitas'\]/.test(ui), 'ui.js tiene el lugar de la línea de PL_INFO');
+  // Inicio ya no tiene filas (PL_INFO): la tarjeta va a la Sala de la sede (js/hub.js)
+  bien(/k: 'sala'[^\n]*mods: \['decoracion', 'visitas'\]/.test(fs.readFileSync(path.join(RAIZ, 'js/hub.js'), 'utf8')), 'js/hub.js pone "visitas" en la Sala de la sede');
   const save = (() => { const s = G.newGame(11); s.chapter = 1; s.day = 9; s.money = 1000; s.productora = 'Tukán Producciones'; return G.serialize(s); })();
 
   const srv = { aplausos: { total: 3, hoy: 1, ya_hoy: false }, permitir: true, entregas: [], posts: [] };
@@ -156,13 +156,11 @@ if (process.argv.includes('--sin-navegador')) { fin(); } else (async () => {
   };
 
   // 1. Inicio: tarjeta con productoras para visitar (se carga sola y vuelve a pintar)
-  await page.waitForSelector('[data-visitas-inicio]', { timeout: 8000 }).catch(() => {});
+  await require('./hub_ayuda').verEnInicio(page, '[data-visitas-inicio]', 8000);
   const card = page.locator('[data-visitas-inicio]');
   bien(await card.count() === 1, 'Inicio: tarjeta "Visita otras productoras"');
   if (await card.count()) {
-    const cab = page.locator('.pl[data-pl="visitas"] .pl-cab');
-    bien(/Visita otras productoras/.test(await cab.textContent()), 'Inicio: la fila plegable tiene su título (PL_INFO + inicio.pl.visitas)');
-    if (!(await card.isVisible())) await cab.click();
+    bien(/Visita otras productoras/.test(await card.locator('h3').textContent()) && (await page.getAttribute('#hubSheet', 'data-lugar')) === 'sala', 'Inicio: la tarjeta (con su título) está en la Sala de la sede');
     await card.scrollIntoViewIfNeeded();
     bien(await card.locator('[data-visitar="42"]').count() === 1 && /MegaCanal/.test(await card.textContent()), 'Inicio: MegaCanal con botón Visitar');
     bien(/5 aplausos \(2 hoy\)/.test(await card.textContent()), 'Inicio: mis aplausos');

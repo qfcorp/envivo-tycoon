@@ -219,7 +219,9 @@ async function navegador() {
       };
       await cerrar();
       const tag = fecha.slice(5).replace('-', '');
-      ok(await page.$('#tab-inicio .temp-card[data-temporada]'), `${fecha}: tarjeta de temporada en Inicio`);
+      ok(await require('./hub_ayuda').verEnInicio(page, '.temp-card[data-temporada]', 4000) && await page.$('#tab-inicio .temp-card[data-temporada]'), `${fecha}: tarjeta de temporada en Inicio (pizarra de Misiones)`);
+      // (en la partida nueva manda el primer evento; después, el evento especial va antes que los premios)
+      ok(/especial|primer evento/i.test(await page.textContent('#tab-inicio .hub-ahora').catch(() => '')), `${fecha}: "qué hacer ahora" avisa del evento especial (o del primer evento)`);
       ok((await page.evaluate(() => window.__game.state.temporada.fecha)) === fecha, `${fecha}: la fecha quedó guardada en la partida`);
       // Para llegar al premio en la prueba: dinero de sobra y el progreso a uno de la meta
       const key = await page.evaluate(() => { const s = window.__game.state; const c = s.contracts.find((x) => x.temporada); s.money = 60000;
@@ -228,6 +230,7 @@ async function navegador() {
       await page.reload();
       await page.waitForFunction(() => window.__game && window.__game.state && document.querySelector('#tab-inicio .card'));
       await cerrar();
+      await require('./hub_ayuda').verEnInicio(page, `.temp-card[data-temporada="${key}"] [data-acc="oferta"]`, 4000);
       await page.screenshot({ path: cap(tag + '_inicio') });
       const tarjeta = await page.$(`#tab-inicio .temp-card[data-temporada="${key}"] [data-acc="oferta"]`);
       ok(tarjeta, `${fecha}: botón "Ver la oferta especial"`);
@@ -279,7 +282,7 @@ async function navegador() {
     const page = await ctx.newPage();
     await page.goto(`http://localhost:${port}/index.html?fecha=2026-10-23`);
     await page.waitForFunction(() => window.__game && window.__game.state && document.querySelector('#tab-inicio .card'));
-    ok(await page.$('#tab-inicio .temp-prox'), '23 oct: aviso "Próximo evento especial"');
+    ok(await require('./hub_ayuda').verEnInicio(page, '.temp-prox', 4000), '23 oct: aviso "Próximo evento especial"');
     await ctx.close();
   } finally {
     await browser.close();

@@ -271,7 +271,7 @@ async function partida(browser) {
 
     /* 8. Sede oficial: botón "Pedir ayuda" en la obra */
     await page.locator('nav button[data-tab="inicio"]').click().catch(() => {});
-    await page.waitForSelector('.sd-card.sd-of', { timeout: 8000 }).catch(() => {});
+    await require('./hub_ayuda').verEnInicio(page, '.sd-card.sd-of', 8000);   // la tarjeta vive en "Tu sede" (js/hub.js)
     const card = page.locator('.sd-card.sd-of .sd-head').first();
     if (await card.count()) {
       await card.click();

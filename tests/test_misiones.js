@@ -178,6 +178,7 @@ const dinero0 = s.money, cable0 = s.stock.cable || 0;
 /* ---------- 4. Navegador ---------- */
 let chromium = null;
 try { ({ chromium } = require('playwright')); } catch (e) { chromium = null; }
+const { verEnInicio } = require('./hub_ayuda');   // las tarjetas de Inicio viven en la sede (js/hub.js)
 const BASE = 'http://misiones.prueba';
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' };
 async function servir(c) {
@@ -224,9 +225,10 @@ async function juegoSinCuenta(browser, cap) {
   await page.goto(BASE + '/index.html?fecha=2026-11-10', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#overlay.on');
   await page.locator('[data-act="close"]').first().click();
-  await page.waitForSelector('[data-mis="tarjeta"]');
-  const orden = await page.evaluate(() => [...document.querySelectorAll('.pl[data-pl]')].map((e) => e.dataset.pl));
-  ok(orden.indexOf('misiones') >= 0 && (orden.indexOf('sede') < 0 || orden.indexOf('misiones') < orden.indexOf('sede')), 'Fila de Inicio "misiones" (orden 3, antes que la sede): ' + orden.join(' > '));
+  // En Inicio la tarjeta vive en la pizarra de Misiones de la sede (js/hub.js), después del premio diario (orden 2 → 3)
+  ok(await verEnInicio(page, '[data-mis="tarjeta"]', 10000), 'La pizarra de Misiones de la sede trae la tarjeta');
+  const orden = await page.evaluate(() => [...document.querySelectorAll('#hubSheet .hub-sh-cuerpo > *')].map((e) => (e.dataset.mis ? 'misiones' : e.dataset.diario ? 'diario' : e.className)));
+  ok(orden.indexOf('misiones') >= 0 && (orden.indexOf('diario') < 0 || orden.indexOf('diario') < orden.indexOf('misiones')), 'Hoja de Misiones: premio diario y luego misiones (' + orden.join(' > ') + ')');
   const tx = await page.locator('[data-mis="tarjeta"]').textContent();
   ok(/Misiones del día/.test(tx) && /Misiones de la semana/.test(tx) && /Actividad/.test(tx), 'Título, actividad y semanales');
   ok(await page.locator('[data-mis="dia"] .mis-fila').count() === 5 && await page.locator('[data-mis="semana"] .mis-fila').count() === 5, '5 del día y 5 de la semana');
@@ -240,6 +242,7 @@ async function juegoSinCuenta(browser, cap) {
   await page.locator('[data-act="buy-cons"]').first().click();
   ok(await page.evaluate(() => window.__game.state.misiones.d.c.repuesto || 0) === rep0 + 1, 'Botón "+1" de la Bodega cuenta para "Compra un repuesto"');
   await page.locator('nav button[data-tab="inicio"]').click();
+  await verEnInicio(page, '[data-mis="tarjeta"]');
   await page.locator('[data-mis="tarjeta"]').scrollIntoViewIfNeeded();
   await page.waitForTimeout(250);
   await page.screenshot({ path: cap('inicio') });
@@ -250,19 +253,15 @@ async function juegoSinCuenta(browser, cap) {
   ok(/Cofre de 60 puntos/.test(det) && /6 × cables/.test(det) && /3 créditos con cuenta/.test(det) && /Te faltan 60 puntos/.test(det), 'Cofre 60 cerrado: contenido fijo a la vista (' + det.trim().replace(/\s+/g, ' ') + ')');
   await page.locator('[data-mis="actividad"]').scrollIntoViewIfNeeded();
   await page.screenshot({ path: cap('cofre') });
-  // "Nuevo" con la fila cerrada cuando hay algo para reclamar
-  await page.evaluate(() => { localStorage.setItem('envivo_inicio_abiertos', JSON.stringify({ misiones: false })); });
-  await page.locator('nav button[data-tab="bodega"]').click();
-  await page.locator('nav button[data-tab="inicio"]').click();
-  const nuevo0 = await page.locator('.pl[data-pl="misiones"] .pl-nuevo').count();
+  // Aviso "!" en la pizarra de Misiones de la sede cuando hay algo para reclamar
   await page.evaluate(() => { window.Misiones.marcar('evento', 3); });
   await page.locator('nav button[data-tab="bodega"]').click();
   await page.locator('nav button[data-tab="inicio"]').click();
-  ok(await page.locator('.pl[data-pl="misiones"] .pl-nuevo').count() === 1, `"Nuevo" en la fila cerrada cuando una misión se puede reclamar (antes: ${nuevo0})`);
-  await page.locator('.pl[data-pl="misiones"]').scrollIntoViewIfNeeded();
+  const av = await page.evaluate(() => { const b = document.querySelector('.hs[data-hub="misiones"]'); return { t: (b.querySelector('.hs-b') || {}).textContent, aria: b.getAttribute('aria-label') }; });
+  ok(av.t === '!' && /reclamar/.test(av.aria), `"!" en la pizarra de Misiones cuando una misión se puede reclamar (${JSON.stringify(av)})`);
   await page.screenshot({ path: cap('nuevo') });
-  await page.locator('.pl[data-pl="misiones"] .pl-cab').click();
-  ok(await page.locator('.pl[data-pl="misiones"] .pl-nuevo').count() === 0, 'Al abrirla, "Nuevo" se va');
+  await verEnInicio(page, '[data-mision="d:eventos"] [data-acc="reclamar"]');
+  ok(await page.locator('#hubSheet [data-mision="d:eventos"] [data-acc="reclamar"]').count() === 1, 'Al tocar la pizarra se ve el botón para reclamar');
   // Reclamar con el botón
   const din0 = await page.evaluate(() => window.__game.state.money);
   await page.locator('[data-mision="d:eventos"] [data-acc="reclamar"]').scrollIntoViewIfNeeded();
@@ -284,6 +283,7 @@ async function juegoSinCuenta(browser, cap) {
   await page.evaluate(() => { const s = window.__game.state, M = window.Misiones; const m = s.misiones; m.d.ids.forEach((id) => { const d = M.DIA[id]; m.d.c[d.k] = Math.max(m.d.c[d.k] || 0, d.n); }); m.w.ids.slice(0, 2).forEach((id) => { const d = M.SEMANA[id]; m.w.c[d.k] = Math.max(m.w.c[d.k] || 0, d.n); }); });
   await page.locator('nav button[data-tab="bodega"]').click();
   await page.locator('nav button[data-tab="inicio"]').click();
+  await verEnInicio(page, '[data-mis="tarjeta"]');
   await page.locator('[data-mis="tarjeta"]').scrollIntoViewIfNeeded();
   ok(/Reclamar todo \(10\)/.test(await page.locator('[data-acc="todo"]').textContent()), '"Reclamar todo (10)": 4 del día + 2 semanales + 4 cofres');
   await page.screenshot({ path: cap('todo') });
@@ -298,6 +298,7 @@ async function juegoSinCuenta(browser, cap) {
     await page.evaluate(() => window.I18N.setIdioma('en'));
     await page.waitForFunction(() => window.I18N.idioma === 'en', null, { timeout: 5000 }).catch(() => {});
     await page.locator('nav button[data-tab="inicio"]').click();
+    await verEnInicio(page, '[data-mis="tarjeta"]');
     const en = await page.locator('[data-mis="tarjeta"]').textContent();
     ok(/Daily missions/.test(en) && /Weekly missions/.test(en), 'En inglés: "Daily missions" / "Weekly missions"');
     await page.locator('[data-mis="tarjeta"]').scrollIntoViewIfNeeded();
@@ -307,6 +308,7 @@ async function juegoSinCuenta(browser, cap) {
   // 360 de ancho y escritorio
   await page.setViewportSize({ width: 360, height: 780 });
   await page.locator('nav button[data-tab="inicio"]').click();
+  await verEnInicio(page, '[data-mis="tarjeta"]');
   await page.locator('[data-mis="tarjeta"]').scrollIntoViewIfNeeded();
   await sinDesborde(page, '360');
   await page.screenshot({ path: cap('360') });

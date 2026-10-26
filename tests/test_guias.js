@@ -237,11 +237,11 @@ async function recorrer(page, id, pasos, op) {
     await ctx.close();
   }
 
-  /* ===== 4. Sede: fila de Inicio → ventana de mejoras ===== */
+  /* ===== 4. Sede: "Tu sede" en la sede de Inicio (js/hub.js) → ventana de mejoras ===== */
   {
     const { ctx, page } = await abrir(browser, { tag: 'sede' });
-    await page.evaluate(() => { const b = document.querySelector('.pl[data-pl="sede"] .pl-cab'); b.scrollIntoView({ block: 'center' }); b.click(); });
-    await recorrer(page, 'sede', [['s_abrir', '.pl[data-pl="sede"] .sd-card'], ['s_mejora', '#modal .sd-modal .sd-item'], ['s_mats', '#modal .sd-modal .sd-mats'], ['s_obra', '#modal .sd-modal .sd-obra']]);
+    await require('./hub_ayuda').abrirLugar(page, 'sede');
+    await recorrer(page, 'sede', [['s_abrir', '#hubSheet .sd-card'], ['s_mejora', '#modal .sd-modal .sd-item'], ['s_mats', '#modal .sd-modal .sd-mats'], ['s_obra', '#modal .sd-modal .sd-obra']]);
     bien(!!(await page.$('#overlay.on .sd-modal')), 'Al terminar queda abierta la ventana de la sede (el primer toque la abrió de verdad)');
     await ctx.close();
   }
@@ -268,6 +268,7 @@ async function recorrer(page, id, pasos, op) {
   /* ===== 6. Nunca encima de otra ventana; nunca junto con la guía del primer evento ===== */
   {
     const { ctx, page } = await abrir(browser, { tag: 'ventana' });
+    await require('./hub_ayuda').abrirLugar(page, 'mas');   // el idioma está en "Más"
     await page.evaluate(() => document.querySelector('#tab-inicio [data-act="idioma"]').click());
     await page.waitForSelector('#overlay.on');
     await tab(page, 'bodega');
@@ -284,9 +285,10 @@ async function recorrer(page, id, pasos, op) {
     const g = await page.evaluate(() => window.Guia.estado());
     await page.touchscreen.tap(g.x, g.y);   // intro del capítulo → la guía señala Clientes; la fila Sede está abierta
     await page.waitForTimeout(1500);
-    const s = await page.evaluate(() => ({ g: window.Guia.estado().paso, gs: window.Guias.estado().activa, sede: !!document.querySelector('.pl[data-pl="sede"].abierta .sd-card') }));
+    const s = await page.evaluate(() => ({ g: window.Guia.estado().paso, gs: window.Guias.estado().activa, sede: !!document.querySelector('.hs[data-hub="sede"]') }));
     bien(s.g === 'clientes' && s.sede && !s.gs, 'Mientras corre la guía del primer evento no sale ninguna otra (' + JSON.stringify(s) + ')');
     await page.locator('#guia .g-skip').tap();
+    await require('./hub_ayuda').abrirLugar(page, 'sede');   // la hoja "Tu sede" abierta (antes: la fila abierta)
     const st = await esperar(page, "g.activa && g.id === 'sede'");
     bien(st.activa && st.id === 'sede', 'Al cerrar la guía del primer evento ya puede salir la de la Sede');
     await ctx.close();
@@ -303,7 +305,7 @@ async function recorrer(page, id, pasos, op) {
     bien(!(await page.$('#guias')) && !(await est(page)).activa, '"Saltar guía" la cierra');
     bien((await page.evaluate(() => localStorage.getItem('envivo_guias_v1_bodega'))) === '1', '"Saltar guía" queda guardado');
     await tab(page, 'inicio');
-    await page.evaluate(() => { const b = document.querySelector('.pl[data-pl="ayuda"] .pl-cab'); b.click(); });
+    await require('./hub_ayuda').abrirLugar(page, 'historia');   // la ayuda vive en la oficina de la Historia
     await page.waitForSelector('[data-guias="reset"]', { timeout: 3000 }).catch(() => {});
     const b = page.locator('[data-guias="reset"]');
     bien(await b.count() === 1 && /Ver guías otra vez/.test(await b.textContent()), 'Inicio → Ayuda tiene "Ver guías otra vez"');

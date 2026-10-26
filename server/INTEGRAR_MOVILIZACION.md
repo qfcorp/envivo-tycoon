@@ -133,25 +133,10 @@ Cambiar por:
 b.fijoExt && window.Decoracion ? window.Decoracion.t('c_decor', { m: M(b.fijoExt) }) : '', b.vehiculos && window.Movilizacion ? window.Movilizacion.t('gasto', { m: M(b.vehiculos) }) : ''].filter(Boolean).join(' · ');
 ```
 
-### 2g. Inicio plegable: ícono y título de la fila "flota" (PL_INFO) — `js/ui.js`
+### 2g. Inicio: la tarjeta "flota" va en el garaje de la sede
 
-Buscar:
-
-```js
-    ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
-```
-
-Cambiar por:
-
-```js
-    flota: ['unidad_movil', 'inicio.pl.flota'],
-    ultimo: ['log', 'inicio.ultimo'], ayuda: ['tip', 'inicio.ayuda'],
-```
-
-El ícono `unidad_movil` ya existe en js/art.js. El resumen de la fila sale del `<h3>` de la tarjeta:
-"Sin vehículos: vas en taxi" o "2 vehículos · $9/día". El botón "Ver vehículos" abre Bodega en la categoría `vehicle`.
-
-## 3. Textos de la pantalla: `inicio.pl.flota` en js/lang/*.js (obligatorio)
+Ya no hace falta tocar `js/ui.js`: Inicio es la sede por dentro (`js/hub.js`) y su `MAPA` pone el módulo `flota` en el
+cuarto del garaje (el vehículo propio se dibuja ahí). La tarjeta se abre al tocar ese cuarto.
 
 ### es — `js/lang/es.js` — agregar después de la línea `'inicio.pl.decoracion'`
 

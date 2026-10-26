@@ -15,6 +15,7 @@ const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
+const { verEnInicio, abrirLugar } = require('./hub_ayuda');   // las tarjetas de Inicio viven en los lugares de la sede (js/hub.js)
 
 const RAIZ = path.resolve(__dirname, '..');
 const OUT = path.join(__dirname, 'capturas');
@@ -123,7 +124,8 @@ async function partida(browser, cambios) {
         bien(!(await page.$('.ay-velo')), `1: "Entendido" cierra la explicación de ${titulo}`);
       }
       bien((await page.textContent('#hMoney')) === dinero0, '1: tocar la ayuda no cambia el dinero');
-      // El "?" de los gastos de hoy en Inicio
+      // El "?" de los gastos de hoy en Inicio (en "Tu sede")
+      await verEnInicio(page, '.costbox .ay-q', 3000);
       const q = await page.$('.costbox .ay-q');
       bien(!!q, '1: Inicio tiene "?" en los gastos de hoy');
       if (q) { await q.click(); await page.waitForSelector('.ay-velo'); bien(/Gastos del día/.test(await page.textContent('.ay-hoja h3')), '1: el "?" de gastos explica los gastos del día'); await page.click('.ay-velo'); }
@@ -137,7 +139,7 @@ async function partida(browser, cambios) {
     const p2 = await partida(browser, { top: { chapter: 1, day: 4 }, stats: { events: 3 } });
     {
       const { ctx, page, errores } = await abrir(browser, { partida: p2 });
-      bien(!!(await page.$('.aviso-cuenta')), '2: tarjeta "Tu productora está solo en este celular" en Inicio');
+      bien(await verEnInicio(page, '.aviso-cuenta', 4000), '2: tarjeta "Tu productora está solo en este celular" en Inicio (Tu sede)');
       const tarjeta = await page.textContent('.aviso-cuenta');
       bien(/Día 4/.test(tarjeta) && /3 eventos/.test(tarjeta), '2: la tarjeta dice el día y los eventos de la partida');
       await cerrarOtras(page); await esperarAviso(page);
@@ -153,6 +155,7 @@ async function partida(browser, cambios) {
       await page.waitForFunction(() => window.Api && window.Api.estado, null, { timeout: 8000 });
       await cerrarOtras(page); await page.waitForTimeout(2000);
       bien(!/Esto es lo que puedes perder/.test(await modalTxt(page)), '2: al recargar ya no sale sola');
+      await verEnInicio(page, '.aviso-cuenta [data-act="cuenta-info"]', 3000);
       await page.click('.aviso-cuenta [data-act="cuenta-info"]');
       bien(/Esto es lo que puedes perder/.test(await modalTxt(page)), '2: "¿Por qué crear una cuenta?" la abre');
       await page.click('#overlay.on [data-act="cuenta"][data-modo="registro"]');
@@ -175,7 +178,7 @@ async function partida(browser, cambios) {
     {
       const { ctx, page, errores } = await abrir(browser, { partida: p2, logueado: true });
       await cerrarOtras(page); await page.waitForTimeout(2000);
-      bien(!(await page.$('.aviso-cuenta')), '3: con cuenta no hay tarjeta');
+      bien(!(await page.$('.aviso-cuenta')) && !(await page.evaluate(() => window.Hub && window.Hub.buscar('.aviso-cuenta'))), '3: con cuenta no hay tarjeta');
       bien(!/Esto es lo que puedes perder/.test(await modalTxt(page)), '3: con cuenta no sale la ventana');
       bien(errores.length === 0, '3: sin errores de JS' + (errores.length ? ': ' + errores.join(' | ') : ''));
       await ctx.close();
@@ -225,27 +228,20 @@ async function partida(browser, cambios) {
       await ctx.close();
     }
 
-    /* ---------- 7. Inicio plegado: filas con resumen, "Nuevo", abrir/cerrar y se recuerda ---------- */
+    /* ---------- 7. Inicio como sede: la tarjeta de la cuenta vive en "Tu sede" (js/hub.js); se abre y se cierra ---------- */
     {
-      const { ctx, page, errores } = await abrir(browser, { partida: p2, aviso: 3, plegado: true });
+      const { ctx, page, errores } = await abrir(browser, { partida: p2, aviso: 3 });
       await cerrarOtras(page);
-      const filas = await page.$$eval('.pls .pl', (xs) => xs.map((x) => ({ id: x.dataset.pl, abierta: x.classList.contains('abierta'), nuevo: !!x.querySelector('.pl-nuevo'), res: (x.querySelector('.pl-tx small') || {}).textContent || '' })));
-      bien(filas.length >= 4 && filas.every((f) => !f.abierta), '7: Inicio en filas, todas cerradas (' + filas.map((f) => f.id).join(', ') + ')');
-      const h = filas.find((f) => f.id === 'historia');
-      bien(h && /Capítulo 2/.test(h.res), '7: la fila de Historia resume el capítulo: ' + (h && h.res));
-      bien(!!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: la fila de la cuenta dice "Nuevo"');
-      bien(!(await page.isVisible('.aviso-cuenta')), '7: el contenido cerrado no se ve');
-      await page.click('.pl[data-pl="cuenta"] .pl-cab');
-      bien(await page.isVisible('.aviso-cuenta'), '7: al tocar la fila se abre');
-      bien(!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: abierta ya no dice "Nuevo"');
-      await page.screenshot({ path: path.join(OUT, 'ayuda_inicio_plegado.png'), fullPage: true });
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(() => window.Api && window.Api.estado, null, { timeout: 8000 });
-      await cerrarOtras(page); await page.waitForTimeout(300);
-      bien(await page.isVisible('.aviso-cuenta'), '7: al recargar sigue abierta');
-      await page.click('.pl[data-pl="cuenta"] .pl-cab');
-      bien(!(await page.isVisible('.aviso-cuenta')), '7: al tocar otra vez se cierra');
-      bien(!(await page.$('.pl[data-pl="cuenta"] .pl-nuevo')), '7: cerrada sin cambios no vuelve a decir "Nuevo"');
+      bien(!(await page.$('#tab-inicio .pls, #tab-inicio .pl')), '7: Inicio ya no tiene filas plegables');
+      const cap = await page.textContent('#tab-inicio .hub-cap').catch(() => '');
+      bien(/Capítulo 2/.test(cap), '7: debajo de la sede se ve el capítulo: ' + cap.replace(/\s+/g, ' ').trim());
+      bien(!(await page.isVisible('.aviso-cuenta')), '7: la tarjeta de la cuenta no se ve hasta tocar el lugar');
+      bien((await page.evaluate(() => window.Hub.buscar('.aviso-cuenta'))) === 'sede', '7: la tarjeta de la cuenta está en "Tu sede"');
+      await abrirLugar(page, 'sede');
+      bien(await page.isVisible('.aviso-cuenta'), '7: al tocar "Tu sede" se ve');
+      await page.screenshot({ path: path.join(OUT, 'ayuda_inicio_sede.png') });
+      await page.click('#hubSheet [data-hub-cerrar]');
+      bien(!(await page.isVisible('.aviso-cuenta')), '7: al cerrar la hoja ya no se ve');
       bien(!(await desborde(page)), '7: sin desborde horizontal');
       bien(errores.length === 0, '7: sin errores de JS' + (errores.length ? ': ' + errores.join(' | ') : ''));
       await ctx.close();
@@ -256,6 +252,7 @@ async function partida(browser, cambios) {
       const { ctx, page, errores } = await abrir(browser, { partida: p2, aviso: 3 });
       await cerrarOtras(page);
       bien(await page.isHidden('#cGem'), '8: sin cuenta no salen los créditos arriba');
+      await verEnInicio(page, '.prod-nom-btn', 3000);
       await page.click('.prod-nom-btn');
       await page.fill('#prod-nombre', 'Producciones Pichincha');
       await page.click('#formNombre button[type="submit"]');
@@ -264,6 +261,7 @@ async function partida(browser, cambios) {
       bien(await page.evaluate(() => /PRODUCCIONES PICHINCHA/.test(document.querySelector('.hqcard').innerHTML)), '8: el nombre sale en el letrero del local');
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.Api && window.Api.estado, null, { timeout: 8000 }); await cerrarOtras(page);
+      await verEnInicio(page, '.prod-nom', 3000);
       bien((await page.textContent('.prod-nom')) === 'Producciones Pichincha', '8: el nombre se guarda');
       await page.screenshot({ path: path.join(OUT, 'ayuda_nombre.png') });
       bien(errores.length === 0, '8: sin errores de JS' + (errores.length ? ': ' + errores.join(' | ') : ''));

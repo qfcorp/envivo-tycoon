@@ -416,7 +416,8 @@ if (process.argv.includes('--navegador')) (async () => {
   };
   await page.waitForSelector('#overlay.on');
   await page.locator('[data-act="close"]').first().click();
-  await page.waitForSelector('.sd-card');
+  // La tarjeta vive en "Tu sede" (el letrero de la sede de Inicio, js/hub.js)
+  if (!(await require('./hub_ayuda').verEnInicio(page, '.sd-card', 30000))) errs.push('no apareció la tarjeta de la sede en Inicio');
   await page.locator('.sd-card').scrollIntoViewIfNeeded();
   await shot('01_tarjeta'); await noHScroll('tarjeta');
   // Reclamar la entrega del día (una sola vez)
@@ -454,6 +455,7 @@ if (process.argv.includes('--navegador')) (async () => {
     await page.waitForFunction(() => window.I18N.idioma === 'en', null, { timeout: 5000 }).catch(() => errs.push('no cambió a inglés'));
   }
   await page.locator('nav button[data-tab="inicio"]').click();
+  await require('./hub_ayuda').verEnInicio(page, '.sd-card', 4000);
   await page.locator('.sd-card').scrollIntoViewIfNeeded();
   await shot('06_tarjeta_nivel12_en'); await noHScroll('nivel 12');
   await page.locator('.sd-card .sd-head').click();
