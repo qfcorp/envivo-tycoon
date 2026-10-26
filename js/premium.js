@@ -123,6 +123,31 @@
     });
     return { staffIds: r.staffIds, equipIds: ids };
   };
+  // Lo que ve el jugador al preparar (calidad y plan de cámaras) es lo mismo que pasa al salir al aire: sin el Pase VIP
+  // activo, los equipos VIP no cuentan y las cámaras VIP salen en "no se pueden usar" con su motivo (sin_vip).
+  // Solo se envuelven las funciones públicas (las que usa la pantalla); la lógica por dentro y el validador no cambian.
+  const esCamara = (e) => !!(G.CATALOG[e.type] && G.CATALOG[e.type].cat === 'cam');
+  const bloqVip = (e) => ({ equipId: e.id, tipo: e.type, motivo: 'sin_vip', texto: tx('bloq.sin_vip', { item: G.CATALOG[e.type].name }) });
+  function marcarVip(plan, fuera) {
+    if (!plan || !Array.isArray(plan.bloqueados)) return plan;
+    fuera.filter(esCamara).forEach((e) => { if (!plan.bloqueados.some((b) => b.equipId === e.id)) plan.bloqueados.unshift(bloqVip(e)); });
+    return plan;
+  }
+  const qualityOriginal = G.computeQuality;
+  G.computeQuality = function (s, contract, staff, equip) {
+    const fuera = (equip || []).filter((e) => e && bloqueado(e));
+    if (!fuera.length) return qualityOriginal(s, contract, staff, equip);
+    const r = qualityOriginal(s, contract, staff, equip.filter((e) => e && !bloqueado(e)));
+    if (r) marcarVip(r.cameraPlan, fuera);
+    return r;
+  };
+  const planOriginal = G.cameraPlan;
+  G.cameraPlan = function (s, c, equipIds, staffIds) {
+    const ids = equipIds || [];
+    const fuera = s.equip.filter((e) => ids.includes(e.id) && bloqueado(e));
+    if (!fuera.length) return planOriginal(s, c, equipIds, staffIds);
+    return marcarVip(planOriginal(s, c, ids.filter((id) => !fuera.some((e) => e.id === id)), staffIds), fuera);
+  };
   const startOriginal = G.startEvent;
   G.startEvent = function (s, contractId, staffIds, equipIds) {
     const ok = (equipIds || []).filter((id) => { const e = s.equip.find((x) => x.id === id); return e && !bloqueado(e); });

@@ -317,6 +317,7 @@
     'bloq.sin_piloto': '{item} no puede volar sin piloto de dron',
     'bloq.sin_generador': '{item} necesita un generador diésel',
     'bloq.sin_operador_repeticion': '{item} necesita un operador de repeticiones',
+    'bloq.sin_vip': '{item} es un equipo VIP: solo funciona con el Pase VIP activo (el nivel VIP no basta). Sigue siendo tuyo y vuelve a funcionar al activar el Pase VIP',
 
     // Partes de la calidad
     'parte.base': 'Base',
