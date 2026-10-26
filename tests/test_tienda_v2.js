@@ -11,6 +11,8 @@
    También: el atajo a una sección, el hub "En línea" con Estrellas (si el módulo la pinta) y la versión en inglés.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_tienda_v2.js   (capturas en tests/capturas/tienda_v2_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -88,6 +90,7 @@ function fakePlay(precios) {
 
 async function abrir(browser, caso) {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: caso.locale || 'es-EC' });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
@@ -135,7 +138,14 @@ async function abrir(browser, caso) {
   if (caso.play) await page.addInitScript(fakePlay, caso.play);
   if (caso.idioma) await page.addInitScript((c) => { try { localStorage.setItem('envivo_lang', c); } catch (e) { /* nada */ } }, caso.idioma);
   await page.goto(BASE + '/' + (caso.query || ''), { waitUntil: 'domcontentloaded' });
-  try { await page.waitForSelector('#overlay.on [data-act="close"]', { timeout: 4000 }); await page.click('#overlay.on [data-act="close"]'); } catch (e) { /* sin bienvenida */ }
+  // Bienvenida (intro del capítulo) y, en fechas de temporada (Halloween, Navidad…), el resumen del día
+  try { await page.waitForSelector('#overlay.on [data-act="close"], #overlay.on [data-act="close-dia"]', { timeout: 4000 }); } catch (e) { /* sin bienvenida */ }
+  for (let k = 0; k < 5; k++) {
+    const b = page.locator('#overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"], #overlay.on [data-act="close"]');
+    if (!(await b.count())) break;
+    await b.first().click().catch(() => {});
+    await page.waitForTimeout(120);
+  }
   await page.waitForFunction(() => window.Api && window.Api.disponible !== null, null, { timeout: 8000 });
   return { ctx, page, errores, srv };
 }

@@ -8,7 +8,13 @@
    3) Los textos de la lógica pasan por TL(): con una sección `logica` de prueba, los nombres de eventos,
       el imprevisto y sus opciones salen "traducidos".
    Los idiomas distintos del español se cargan de forma perezosa: tras elegir uno se espera I18N.listo.
-   Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_i18n.js */
+   Español primero (PLAN.md): mientras se desarrolla, los textos nuevos se agregan SOLO en js/lang/es.js. Una clave que
+   está en español y falta en otro idioma es un AVISO ("pendiente de traducir: N claves, ej. …") y NO hace fallar la
+   prueba (en pantalla sale en español: nunca la clave). Sigue siendo falla: textos vacíos, {marcadores} distintos,
+   plurales que el idioma no tiene, claves sobrantes (que no están en español) y claves crudas a la vista.
+   TRADUCCION_ESTRICTA=1 vuelve falla lo pendiente (fase final de traducción). Lista completa: node tools/pendientes_traduccion.js
+   Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_i18n.js
+         TRADUCCION_ESTRICTA=1 NODE_PATH=/opt/npm-tools/node_modules node tests/test_i18n.js */
 'use strict';
 const path = require('path');
 const fs = require('fs');
@@ -17,6 +23,17 @@ const ROOT = path.resolve(__dirname, '..');
 let fallas = 0, avisos = 0;
 const ok = (c, m) => { if (!c) { fallas++; console.log('  ✘ ' + m); } return c; };
 const aviso = (m) => { avisos++; console.log('  ⚠ ' + m); };
+// Claves en español que faltan en otro idioma: aviso (o falla con TRADUCCION_ESTRICTA=1)
+const ESTRICTA = process.env.TRADUCCION_ESTRICTA === '1';
+const pendientes = {};
+const pendiente = (code, k) => { (pendientes[code] = pendientes[code] || []).push(k); if (ESTRICTA) ok(false, `${code}: "${k}" falta (pendiente de traducir; TRADUCCION_ESTRICTA=1)`); };
+function avisarPendientes() {
+  const n = Object.values(pendientes).reduce((a, l) => a + l.length, 0);
+  if (!n) return;
+  const ej = Object.entries(pendientes).flatMap(([c, l]) => l.slice(0, 2).map((k) => `${c}:${k}`)).slice(0, 4);
+  const msg = `pendiente de traducir: ${n} claves, ej. ${ej.join(', ')} (${Object.entries(pendientes).map(([c, l]) => c + ' ' + l.length).join(', ')}) · lista: node tools/pendientes_traduccion.js`;
+  if (ESTRICTA) console.log('  ✘ ' + msg); else aviso(msg);
+}
 
 /* ---------- 1) Diccionarios ---------- */
 console.log('1) Diccionarios');
@@ -42,8 +59,9 @@ for (const c of codes) {
   let malos = 0;
   for (const k of claves) {
     const v = d[k];
+    if (v === undefined) { pendiente(c, k); malos++; continue; }   // sin traducir todavía: en pantalla sale el español
     const vs = variantes(v);
-    if (!ok(vs.length && vs.every((x) => typeof x === 'string' && x.trim()), `${c}: "${k}" falta o está vacío`)) { malos++; continue; }
+    if (!ok(vs.length && vs.every((x) => typeof x === 'string' && x.trim()), `${c}: "${k}" está vacío`)) { malos++; continue; }
     const base = typeof es[k] === 'string' ? es[k] : es[k].other;
     for (const x of vs) if (!ok(marc(x) === marc(base), `${c}: "${k}" marcadores ${marc(x) || '-'} ≠ ${marc(base) || '-'}`)) malos++;
     if (v && typeof v === 'object') {
@@ -52,14 +70,24 @@ for (const c of codes) {
     }
   }
   for (const k of Object.keys(d)) ok(k === 'logica' || k in es, `${c}: clave sobrante "${k}"`);
-  console.log(`  ${c}: ${claves.length - malos}/${claves.length} claves`);
+  console.log(`  ${c}: ${claves.length - malos}/${claves.length} claves${pendientes[c] ? ` (${pendientes[c].length} pendientes de traducir)` : ''}`);
 }
+avisarPendientes();
 // Motor: interpolación, plurales y respaldo
 I18N.setIdioma('ru');
 ok(I18N.T('req.camaras', { n: 1 }) === '1 камера' && I18N.T('req.camaras', { n: 3 }) === '3 камеры' && I18N.T('req.camaras', { n: 5 }) === '5 камер', 'plurales del ruso (1/3/5)');
 I18N.setIdioma('en');
 ok(I18N.T('inicio.eventos', { n: 1 }) === '1 event' && I18N.T('inicio.eventos', { n: 2 }) === '2 events', 'plurales del inglés');
 ok(I18N.T('clave.que.no.existe') === 'clave.que.no.existe' && !I18N.T.has('clave.que.no.existe'), 'una clave inexistente devuelve la clave');
+// Español primero: una clave que solo está en español sale en español (con {parámetros} y plurales), nunca la clave
+es['prueba.solo_es'] = 'Solo en español {nombre}';
+es['prueba.solo_es_n'] = { one: '{n} cosa', other: '{n} cosas' };
+ok(I18N.T('prueba.solo_es', { nombre: 'Ana' }) === 'Solo en español Ana' && I18N.T.has('prueba.solo_es'), 'en: una clave que solo está en español sale en español');
+ok(I18N.T('prueba.solo_es_n', { n: 1 }) === '1 cosa' && I18N.T('prueba.solo_es_n', { n: 3 }) === '3 cosas', 'en: plural que solo está en español sale en español');
+D.en['prueba.vacia'] = '';
+es['prueba.vacia'] = 'Respaldo';
+ok(I18N.T('prueba.vacia') === 'Respaldo', 'en: un texto vacío usa el español');
+delete es['prueba.solo_es']; delete es['prueba.solo_es_n']; delete es['prueba.vacia']; delete D.en['prueba.vacia'];
 ok(I18N.TL('Texto sin traducir de la lógica') === 'Texto sin traducir de la lógica', 'TL devuelve el español si no hay traducción');
 D.en.logica['Dron 4K'] = 'Drone 4K';
 ok(I18N.TL('Dron 4K #0007') === 'Drone 4K #0007', 'TL traduce el nombre y deja el número de serie');
@@ -79,6 +107,15 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
   const browser = await chromium.launch();
   const url = 'file://' + path.join(ROOT, 'index.html');
   const TABS = ['inicio', 'clientes', 'personal', 'bodega', 'tienda', 'online'];
+  // Ventanas del arranque: intro del capítulo y, en fechas de temporada (Halloween, Navidad…), el resumen del día
+  const cerrarInicio = async (page) => {
+    for (let k = 0; k < 5; k++) {
+      const b = page.locator('#overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"], #overlay.on [data-act="close"]');
+      if (!(await b.count())) break;
+      await b.first().click();
+      await page.waitForTimeout(120);
+    }
+  };
 
   // Revisa la pantalla visible: claves crudas, marcadores sueltos y desplazamiento horizontal
   const revisar = (page, tag) => page.evaluate((tag) => {
@@ -110,6 +147,8 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
     console.log(`2) Navegador ${vp.width}x${vp.height}`);
     for (const code of codes) {
       const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: vp.width === 390 ? 2 : 1, isMobile: true, hasTouch: true, locale: 'es-EC' });
+      // Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale primero el resumen del día)
+      await ctx.addInitScript(() => { window.__ENVIVO_FECHA = '2026-06-10'; });
       const page = await ctx.newPage();
       const errores = [];
       page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
@@ -121,8 +160,8 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
       const fallos = [];
       const cortes = new Set();
       const mirar = async (donde) => { const r = await revisar(page, `${tag} ${donde}`); fallos.push(...r.errs); r.cortados.forEach((t) => cortes.add(t)); };
-      // La intro del capítulo, en español; luego se cambia el idioma con el botón de la cabecera
-      await page.locator('#overlay.on [data-act="close"]').first().click();
+      // La intro del capítulo (y el resumen del día si empieza una temporada), en español; luego se cambia el idioma
+      await cerrarInicio(page);
       await page.click('#langBtn');
       await page.waitForSelector('#overlay.on [data-act="set-idioma"]');
       await page.click(`#overlay.on [data-act="set-idioma"][data-k="${code}"]`);
@@ -178,13 +217,14 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
     const errores = [];
     page.on('pageerror', (e) => errores.push(e.message));
     await page.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
-    await page.addInitScript(() => { try { localStorage.setItem('envivo_lang', 'en'); } catch (e) { /* nada */ } });
+    // Fecha fija fuera de temporada: en Halloween/Navidad el título de Inicio es el de la temporada, no el del capítulo
+    await page.addInitScript(() => { window.__ENVIVO_FECHA = '2026-06-15'; try { localStorage.setItem('envivo_lang', 'en'); } catch (e) { /* nada */ } });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => window.I18N.listo);
     await page.waitForSelector('#overlay.on');
     await page.waitForFunction(() => window.I18N_LANG && window.I18N_LANG.en, null, { timeout: 10000 });
     const capT = await page.locator('#overlay.on h2').first().textContent();
-    await page.locator('#overlay.on [data-act="close"]').first().click();
+    await cerrarInicio(page);
     // Traducción de prueba: todos los nombres de eventos, clientes y equipos, más el capítulo actual
     await page.evaluate(() => {
       const G = window.Game, L = window.I18N_LANG.en.logica, mark = (s) => { if (s) L[s] = '«TL» ' + s; };
@@ -237,6 +277,7 @@ ok(I18N.mejor('pt-PT') === 'pt-BR' && I18N.mejor('zh-TW') === 'zh-CN' && I18N.me
 })().catch((e) => { console.error('❌', e); process.exit(1); });
 
 function fin() {
+  if (Object.keys(pendientes).length && !ESTRICTA) console.log(`\n⚠ ${Object.values(pendientes).reduce((a, l) => a + l.length, 0)} claves pendientes de traducir (aviso: no es falla; TRADUCCION_ESTRICTA=1 para exigirlas)`);
   if (fallas) { console.error(`\n❌ ${fallas} fallas${avisos ? `, ${avisos} avisos` : ''}`); process.exit(1); }
   console.log(`\n✅ Idiomas OK (${Object.keys(globalThis.I18N_LANG).length} idiomas, ${Object.keys(globalThis.I18N_LANG.es).length - 1} claves)${avisos ? ` · ${avisos} avisos` : ''}`);
 }

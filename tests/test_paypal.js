@@ -11,6 +11,8 @@
    En todos: sin errores de JS, sin desborde horizontal a 390px y sin claves sin traducir.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_paypal.js   (capturas en tests/capturas/paypal_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -52,6 +54,7 @@ function fakePlay(precios) {
 
 async function abrir(browser, caso) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: caso.locale || 'es-EC' });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));

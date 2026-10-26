@@ -7,6 +7,8 @@
    - sin errores de JavaScript ni desplazamiento horizontal. Capturas: tests/capturas/sede_oficial_*.png
    Uso:  node tests/test_sede_oficial.js */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path'), fs = require('fs'), os = require('os');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/npm-tools/node_modules/playwright')); }
@@ -98,6 +100,7 @@ function servidorFalso() {
   const out = path.join(__dirname, 'capturas'); fs.mkdirSync(out, { recursive: true });
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errs = [];
   let n = 0;
@@ -225,6 +228,7 @@ function servidorFalso() {
   // Respuesta sin la forma esperada ({ok:true}) y después errores 500: pocos pedidos en 30 s aunque se repinte mucho
   for (const caso of [{ nombre: 'ok_vacio', code: 200, cuerpo: { ok: true } }, { nombre: 'error_500', code: 500, cuerpo: { ok: false, error: 'x', codigo: 'error_servidor' } }]) {
     const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await ctx2.addInitScript(FECHA_FIJA);
     const p2 = await ctx2.newPage();
     await p2.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
     p2.on('pageerror', (e) => errs.push(caso.nombre + ' pageerror: ' + e.message));

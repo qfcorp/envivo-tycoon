@@ -76,8 +76,8 @@
 
   /* ---------- Límites (de la lógica si los exporta) ---------- */
   const BAL = () => G.BALANCE || {};
-  const maxStaff = () => { try { if (G.maxStaff && S) return G.maxStaff(S); } catch (e) { /* abajo */ } return BAL().maxStaff || 12; };
-  const maxEquip = () => { try { if (G.maxEquip && S) return G.maxEquip(S); } catch (e) { /* abajo */ } return BAL().maxEquip || 30; };
+  const maxStaff = () => { try { if (G.maxStaff && S) return G.maxStaff(S); } catch (e) { /* abajo */ } return BAL().maxStaff || 18; };
+  const maxEquip = () => { try { if (G.maxEquip && S) return G.maxEquip(S); } catch (e) { /* abajo */ } return BAL().maxEquip || 80; };
   // Límite de quiebra: crece con los gastos diarios (G.bankruptLimit); con una lógica vieja, el fijo
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
   const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
@@ -213,31 +213,41 @@
   function nubeMarcar(rev, clave) { nubeInfo = { cuenta: nubeCuenta(), rev, clave }; lsSet(NUBE_KEY, nubeInfo); }
   const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
   const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo'));
+  /* ¿La versión más nueva de la nube la guardó ESTA pestaña y nadie más la tiene abierta? Pasa cuando la respuesta de un
+     guardado no llegó (red lenta del celular, se pasó el tiempo, se cortó) o cuando se revisó la nube justo mientras
+     subía (al volver a la pestaña, cada minuto). Antes eso se tomaba como "otro dispositivo": se dejaba de guardar y
+     "Usar la partida más nueva" volvía a una versión vieja (la fama y las reparaciones del último evento se perdían).
+     Lo que hay en la nube salió de esta misma partida, así que la de aquí es igual o más nueva: se sigue sobre esa versión. */
+  const nubeEsMia = (n) => !!(n && n.guardo && n.guardo === NUBE_DISP && Number.isInteger(n.rev) && (!n.activo || n.activo.dispositivo === NUBE_DISP));
   function nubeLuego() {
     if (!nubeActiva() || cloudPendiente) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
     clearTimeout(nubeT);
     nubeT = setTimeout(subirNube, 4000);
   }
-  async function subirNube(tomar) {
+  async function subirNube(tomar, reintento) {
     if (!nubeActiva() || cloudPendiente || nubeBloqueo || nubeRecargando) return;
     const base = nubeBase();
     if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
-    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar); }               // un guardado a la vez
+    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar, reintento); }    // un guardado a la vez
     clearTimeout(nubeT);
     const datos = G.serialize(S), clave = nubeClave(S);
     nubePendiente = false;
-    let bien = false;
+    let bien = false, otraVez = false;
     nubeSubiendo = (async () => {
       try {
         const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar });
         nubeMarcar(r.rev, clave); nubeEstado = 'ok'; bien = true;
       } catch (e) {
         nubePendiente = true; nubeEstado = 'error';
-        if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
+        const n = e && e.respuesta ? e.respuesta.nube : null;
+        // Un guardado anterior de esta pestaña sí llegó (no llegó la respuesta): se sigue sobre esa versión, una vez
+        if (e && e.codigo === 'partida_desactualizada' && !reintento && nubeEsMia(n) && n.rev > base) { nubeMarcar(n.rev, ''); otraVez = true; }
+        else if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
       }
     })();
     try { await nubeSubiendo; } finally { nubeSubiendo = null; }
+    if (otraVez) return subirNube(tomar, true);
     if (bien && nubePendiente) nubeLuego();   // se guardó algo más mientras subía
   }
   // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
@@ -247,12 +257,21 @@
     if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
     return nubeRevisando;
   }
-  async function nubeRevisar(intentos) {
+  async function nubeRevisar(intentos, vueltas) {
+    // Primero que termine el guardado que está subiendo (si no, su versión nueva parece de "otro dispositivo")
+    if (nubeSubiendo) { try { await nubeSubiendo; } catch (e) { /* nada */ } }
     const base = nubeBase();
     if (base === null) return nubeSinBase();
     let m;
     try { m = await Api.partidaMeta(NUBE_DISP); } catch (e) { return; }   // sin red: se sigue con la del celular
+    // Mientras se preguntaba, esta pestaña subió otra versión: se pregunta otra vez con la versión al día
+    if ((nubeSubiendo || nubeBase() !== base) && (vueltas || 0) < 3) return nubeRevisar(intentos, (vueltas || 0) + 1);
     if (!m.hay || m.rev < base) return nubeSinBase();
+    // La versión nueva es un guardado de esta misma pestaña cuya respuesta no llegó: se sigue sobre ella (y se sube lo de aquí)
+    if (m.rev > base && nubeEsMia(m)) {
+      nubeMarcar(m.rev, '');
+      return nubeLista !== nubeCuenta() ? nubeTomar(intentos) : subirNube();
+    }
     if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeMasNueva();
     if (nubeLista !== nubeCuenta()) return nubeTomar(intentos);              // al día: esta pestaña toma la partida
     if (m.activo && m.activo.dispositivo !== NUBE_DISP) return nubeConflicto();   // otro dispositivo la tomó
@@ -330,6 +349,9 @@
     let r;
     try { r = await Api.partida(); } catch (e) { toast(T('nube.sin_red')); eleccion = () => nubeUsarNueva(); return; }
     const nube = nubeLeer(r);
+    // Aquí hay avance que esa versión no tiene (p. ej. un evento que terminó con el aviso tapado por el resultado):
+    // se pregunta cuál usar, nunca se pisa sin preguntar
+    if (nube && nubeAvance() && nubeClave(nube) !== nubeClave(S)) { closeModal(); nubeElegir(nube, r.datos, r.rev); return; }
     if (nube) { nubeUsar(nube, r.datos, r.rev, true); return; }
     // La otra pestaña no guardó nada todavía: esta toma la partida con la suya
     closeModal(); nubeBloqueo = false; nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); render();
@@ -523,8 +545,8 @@
     return { Api, A, estado: () => S, toast, snd, openModal,
       closeModal: () => { closeModal(); render(); if (Api.disponible && Api.logueado()) Api.refrescar().then(() => render()).catch(() => {}); } };
   }
-  function render() {
-    marcarDia();
+  // Dinero, fama, día y créditos de arriba (también se llama con una ventana abierta: el resultado, una reparación…)
+  function cabecera() {
     $('hMoney').textContent = M(S.money);
     $('hMoney').classList.toggle('neg', S.money < 0);
     $('hRep').textContent = Math.floor(S.rep);
@@ -543,6 +565,10 @@
       if (S.day !== lastHead.d) bump('cDay', true);
     }
     lastHead = { m: S.money, r: Math.floor(S.rep), d: S.day };
+  }
+  function render() {
+    marcarDia();
+    cabecera();
     if (lastTab !== tab) {
       const sec = $('tab-' + tab);
       if (sec && lastTab !== null) { sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter'); }
@@ -933,6 +959,33 @@
     if (I18 && I18.T.has('rq.' + k)) return T('rq.' + k);
     return String(k).replace(/_/g, ' ');
   }
+  /* Para qué sirve cada equipo (item.<clave>.uso): frase corta y sencilla en las tarjetas, la preparación y el "?".
+     El detalle técnico (desc), la calidad y lo que necesita salen en la hoja del "?" (js/ayuda.js). */
+  const usoDe = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it ? TL(it.uso || it.desc || '') : ''; };
+  const usoHtml = (type, cls) => { const u = usoDe(type); return u ? `<div class="${cls || 'ds uso'}">${esc(u)}</div>` : ''; };
+  // El "?" se arma aquí (js/ayuda.js carga después, con defer): ayuda.js atrapa data-ayuda-item y abre la hoja con itemInfo
+  const infoBtn = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it
+    ? `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(type)}" aria-label="${esc(T('equipo.ver', { nombre: TL(it.name || type) }))}">?</button>` : ''; };
+  function itemInfo(type) {
+    const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]);
+    if (!it) return null;
+    const uso = TL(it.uso || '');
+    const tec = TL(it.desc || '');
+    const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
+    const meta = [];
+    if (it.q) meta.push(`${T('bodega.calidad')} ${qPips(it.q)}`);
+    if (rq.length) meta.push(`<b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}`);
+    if (ac.length) meta.push(`<b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}`);
+    if (it.alquiler) meta.push(esc(T('bodega.alquiler_det')));
+    return {
+      titulo: TL(it.name || type),
+      top: `<div class="ay-it-top">${itemArt(type, 56, 'mini')}<h3>${esc(TL(it.name || type))}</h3></div>`,
+      html: `<div class="ay-sub">${T('equipo.para_que')}</div><p class="ay-uso">${esc(uso || tec)}</p>
+        ${uso && tec && tec !== uso ? `<div class="ay-sub">${T('equipo.detalle')}</div><p class="ay-tec">${esc(tec)}</p>` : ''}
+        ${meta.length ? `<div class="ay-meta">${meta.join('<br>')}</div>` : ''}`,
+    };
+  }
+  window.AyudaItemInfo = itemInfo;   // lo usa js/ayuda.js (Ayuda.setItemInfo también sirve)
   function qPips(q) {
     const n = Math.max(0, Math.min(6, q || 0));
     return `<span class="qp" aria-label="${esc(T('bodega.calidad_n', { n }))}">${[1, 2, 3, 4, 5, 6].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -952,10 +1005,10 @@
     const ac = (it.acepta || []).map(rqLabel);
     const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq })
       : it.alquiler ? T('bodega.reservar', { m: M(it.price) }) : M(it.price);
-    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}">
-      <div class="row between">${rtag(k)}</div>
+    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}" data-item="${esc(k)}">
+      <div class="row between">${rtag(k)}${infoBtn(k)}</div>
       <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${it.alquiler ? `<span class="rent rentov" title="${esc(T('bodega.alquiler_det'))}">${I('clock', 'sm')}${T('bodega.alquiler')}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
-      <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+      <div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
       <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -1009,9 +1062,9 @@
         : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
     }
     return `<div class="card gear shopc exq rf r-${x.vip ? 'vip' : 'exclusivo'}" data-ex="${esc(k)}">
-      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span>${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}</div>
+      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span><span class="row" style="gap:0">${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}${infoBtn(k)}</span></div>
       <div class="exq-body"><div class="art">${itemArt(k, 120)}</div>
-        <div><div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+        <div><div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
         <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>${exPerks(it)}</div></div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -1133,9 +1186,9 @@
       const off = vipBloqueado(e);
       if (it.alquiler) {
         return `<div class="card gear rf r-${r.key} rented">
-        <div class="row between">${rtag(e.type)}</div>
+        <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
         <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
         <div class="grow2"></div>
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
@@ -1143,9 +1196,9 @@
       const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
       const rgo = enRiesgo(e);
       return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}">
-        <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
+        <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
         <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
@@ -1437,7 +1490,7 @@
     if (!Api.disponible || !Api.estado) {
       const vitrina = Object.keys(G.CATALOG).filter((k) => G.CATALOG[k].premium).slice(0, 4).map((k) => {
         const r = rar(k);
-        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div><div class="ds">${esc(TL(G.CATALOG[k].desc || ''))}</div></div>`;
+        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}${infoBtn(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div>${usoHtml(k)}</div>`;
       }).join('');
       const aviso = app
         ? `<h3>${T('tienda.sin_conexion_t')}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.sin_conexion')}</p>`
@@ -1757,6 +1810,23 @@
       <div class="card log">${S.log.map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}</div>`;
   }
 
+  /* ---------- Comprar un equipo (y el lente que necesita) ---------- */
+  function comprarEquipo(k) {
+    const r = act(G.buy(S, k), 'buy');
+    if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+  }
+  function pedirLente(k, lf) {
+    const cam = esc(itemName(k)), lente = esc(itemName(lf.key));
+    const total = G.CATALOG[k].price + lf.precio;
+    const kit = !lf.bloqueado
+      ? `<p>${T('bodega.lente_q', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, m: M(lf.precio) })}</p>
+        <button class="btn main" data-act="buy-kit" data-k="${esc(k)}" data-l="${esc(lf.key)}" ${S.money < total ? 'disabled' : ''}>${T('bodega.lente_si', { m: M(total) })}</button>`
+      : `<p>${T('bodega.lente_bloq', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, n: lf.minRep })}</p>`;
+    openModal(`<h2>${T('bodega.lente_t')}</h2>${kit}
+      <button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${T('bodega.lente_solo', { m: M(G.CATALOG[k].price) })}</button>
+      <button class="btn" data-act="close">${T('comun.cancelar')}</button>`);
+  }
+
   /* ---------- Preparar evento ---------- */
   function openPrep(contractId) {
     const c = S.contracts.find((x) => x.id === contractId);
@@ -1808,8 +1878,39 @@
         const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
         const it = G.CATALOG[b.tipo] || {};
         const e = S.equip.find((x) => x.id === b.equipId);
-        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div></div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
+        // Sin lente: qué lente le falta y dónde comprarlo (o con cuánta fama se desbloquea)
+        let lente = '';
+        if (b.motivo === 'sin_lente' && G.lenteFaltante) {
+          const lf = G.lenteFaltante(S, b.tipo, 0) || G.lenteFaltante(S, b.tipo, 1);
+          if (lf && lf.key) {
+            lente = lf.bloqueado ? `<div class="small camav-t">${T('prep.lente_fama', { lente: esc(itemName(lf.key)), n: lf.minRep })}</div>`
+              : `<div class="small camav-t">${T('prep.lente_falta', { lente: esc(itemName(lf.key)), m: M(lf.precio) })}</div>
+                <button class="btn sm camav-b" data-act="ir-bodega" data-k="lens">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`;
+          }
+        }
+        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div>${lente}</div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
       }).join('')}</div>`;
+  }
+  // Avisos de las cámaras: las que elegiste y no se usan (y por qué) y, si una posición obligatoria queda vacía o mal
+  // cubierta, qué cámara ya puedes comprar para ella en la Bodega
+  function camAvisosHtml(c, camP, equip) {
+    if (!camP || !Array.isArray(camP.positions)) return '';
+    const usados = new Set(camP.usados || []);
+    const bloq = new Set((camP.bloqueados || []).map((b) => b.equipId));
+    const out = [];
+    const sobran = equip.filter((e) => isCam(e) && !usados.has(e.id) && !bloq.has(e.id));
+    if (sobran.length) out.push(`<div class="small camav-t">${I('tip', 'sm')} ${T('prep.cam_no_usada', { cams: sobran.map((e) => esc(nmE(e))).join(', ') })}</div>`);
+    if (G.camaraParaPerfil) {
+      const flojas = camP.positions.filter((p) => !p.opcional && (!p.asignado || p.fit < 0.75));
+      for (const p of flojas) {
+        const sug = G.camaraParaPerfil(S, p.perfil, p.asignado ? p.fit : 0);
+        if (!sug || sug.fit < 0.8) continue;
+        out.push(`<div class="small camav-t">${I('role_camarografo', 'sm')} ${T(p.asignado ? 'prep.cam_sugerida' : 'prep.cam_sugerida_vacia', { pos: esc(TL(p.nombre)), ideal: esc(TL(p.ideal || '')), item: `<b>${esc(itemName(sug.key))}</b>`, m: M(sug.precio) })}</div>
+          <button class="btn sm camav-b" data-act="ir-bodega" data-k="cam">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`);
+        break;
+      }
+    }
+    return out.length ? `<div class="camav">${out.join('')}</div>` : '';
   }
   function renderPrep(soloCalculo) {
     const c = S.contracts.find((x) => x.id === prep.id);
@@ -1856,7 +1957,8 @@
     const avisoDia = !tHoy ? '' : esJornada(c) ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.jornada')}</p>`
       : tHoy.libres === 1 ? `<p class="small muted" style="margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.ultimo_turno')}</p>` : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
-    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP);
+    const avisos = camAvisosHtml(c, camP, equip);
+    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP) + avisos;
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
@@ -1892,7 +1994,7 @@
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
@@ -2010,6 +2112,7 @@
     try { resDanos = evEq ? danosFin(evEq.ids, evEq.cid) : null; } catch (e) { resDanos = null; }
     lsSet(RES_KEY, { r, ev: S.stats.events, caja, ty, danos: resDanos });
     showResult(r, caja, true, ty);
+    cabecera();   // la fama y el dinero de arriba ya son los del resultado (antes cambiaban recién al cerrarlo)
   }
 
   /* ---------- Avisos del día (renuncias, pagos, la rival, cancelaciones…) ---------- */
@@ -2027,6 +2130,9 @@
   function showResumenDia() {
     const lista = avisosPend();
     if (!lista.length) { tomarAvisos(); continuar(); return; }
+    // Al abrir el juego (no pasó ningún día) solo llegaron avisos de la temporada: un aviso corto en vez de la ventana
+    // "Resumen del día" (la oferta ya está en Clientes y la temporada tiene su tarjeta en Inicio)
+    if (!diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
     const dia = lista[lista.length - 1].day;
     const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
     snd.play(malo ? 'bad' : 'good');
@@ -2044,6 +2150,8 @@
     if (VI || !S) return;
     if ($('overlay').classList.contains('on')) return;
     if (S.currentEvent) { showIncident(); return; }
+    // Partida nueva: primero la intro del capítulo 1 y después el resumen del día (p. ej. "empezó la temporada")
+    if (!capPend().length && !S.chapterSeen && !(S.stats && S.stats.events) && showChapterIntro()) return;
     if (avisosPend().length) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
@@ -2054,6 +2162,11 @@
   function extrasRes(r) {
     if (!r || !Array.isArray(r.extras) || !r.extras.length) return '';
     return r.extras.map((x) => `<div class="paylater ext">${I((x && x.icon) || 'star', 'sm')} ${esc(gtx(x, x && x.text))}</div>`).join('');
+  }
+  // Fama del resultado: lo que sumó o restó el evento y con cuánta quedas de verdad ("+10 → ahora 23"), la misma de arriba
+  function famaTxt(r) {
+    const d = (r.repDelta >= 0 ? '+' : '') + r.repDelta;
+    return typeof r.fama === 'number' && isFinite(r.fama) ? T('res.fama_ahora', { delta: d, n: `<b class="num">${Math.floor(r.fama)}</b>` }) : d;
   }
   function showResult(r, caja, fresh, ty0) {
     // Con la lógica nueva los capítulos esperan en S.capCompletados; con una vieja, en r.chapterDone
@@ -2121,7 +2234,7 @@
         ${gastoDia !== null && !dd ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
-        <tr><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
+        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
       </table>
       ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
       ${later}
@@ -2500,8 +2613,31 @@
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {
-        const r = act(G.buy(S, el.dataset.k), 'buy');
-        if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+        // Cámara que no graba sin un lente que todavía no tienes: se avisa antes y se ofrece comprar los dos
+        const k = el.dataset.k;
+        const lf = !el.dataset.solo && G.lenteFaltante && G.CATALOG[k] && G.CATALOG[k].cat === 'cam' ? G.lenteFaltante(S, k, 1) : null;
+        if (lf && lf.key) { pedirLente(k, lf); break; }
+        if (el.dataset.solo) closeModal();
+        comprarEquipo(k);
+        break;
+      }
+      case 'buy-kit': {
+        closeModal();
+        const r1 = G.buy(S, el.dataset.k);
+        if (!r1 || !r1.ok) { act(r1, 'buy'); continuar(); break; }
+        const r2 = act(G.buy(S, el.dataset.l), 'buy');
+        const cd = (r2 && r2.chapterDone) || r1.chapterDone;
+        if (cd && !Array.isArray(S.capCompletados)) showChapterDone(cd); else continuar();
+        break;
+      }
+      case 'ir-bodega': {
+        // Desde la preparación: a la categoría de la tienda donde está lo que falta (la oferta sigue en Clientes)
+        e.preventDefault();
+        closeModal(); prep = null;
+        catSel = el.dataset.k || catSel; lsSet('envivo_cat', catSel);
+        tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
+        const te = $('tiendaEq');
+        if (te) { try { te.scrollIntoView({ block: 'start' }); } catch (err) { window.scrollTo(0, 0); } }
         break;
       }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;

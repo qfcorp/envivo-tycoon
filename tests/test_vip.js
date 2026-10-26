@@ -6,6 +6,8 @@
    inglés y diccionarios completos. Revisa que no haya errores de JS ni desborde horizontal.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_vip.js   (capturas en tests/capturas/vip_*.png) */
 'use strict';
+// Fecha fija fuera de las temporadas (en Halloween, Navidad… al abrir sale el resumen del día y llegan contratos especiales)
+const FECHA_FIJA = () => { window.__ENVIVO_FECHA = '2026-06-10'; };
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('playwright');
@@ -77,6 +79,7 @@ if (!pagina.includes('js/vip.js')) throw new Error('No se pudo poner js/vip.js e
 
 async function abrir(browser, caso, url) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', locale: 'es-EC' });
+  await ctx.addInitScript(FECHA_FIJA);
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));

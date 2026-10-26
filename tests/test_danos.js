@@ -44,6 +44,8 @@ async function abrir(browser, caso) {
     }
     return route.fulfill({ status: 404, body: '' });
   });
+  // Fecha fija fuera de las temporadas (en Halloween, Navidad… llegan contratos especiales y cambia el número de Clientes)
+  await page.addInitScript(() => { window.__ENVIVO_FECHA = '2026-06-10'; });
   await page.addInitScript((c) => {
     try {
       if (localStorage.getItem('__prueba_init')) return;

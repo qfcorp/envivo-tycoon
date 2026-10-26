@@ -356,6 +356,11 @@
   .gear .art .itemart{width:100%;max-width:120px;height:auto}
   .gear .nm{font-weight:700;font-size:14px;line-height:1.2;margin-top:6px;overflow-wrap:anywhere}
   .gear .ds{font-size:12px;color:var(--muted);line-height:1.3;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .gear .ds.uso{-webkit-line-clamp:4;color:#b4bdcc}
+  .exq .ds.uso{-webkit-line-clamp:4}
+  .gear .row.between .ay-q,.gear .exq-top .ay-q{margin-inline-start:6px}
+  .pkuso{font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pick .ay-q{width:18px;height:18px;min-width:18px;font-size:11px;margin-inline-start:4px}
   .gear .grow2{flex:1}
   .gear .btn{width:100%;margin-top:8px;padding:9px 6px;font-size:13px}
   .gear .btn.sm{display:block}
@@ -604,6 +609,9 @@
   .bq .small{font-size:11.5px;line-height:1.3}
   .bqr{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:#ffb3b3;background:#3a1519;border:1px solid #5a2026;border-radius:999px;padding:2px 8px;white-space:nowrap}
   .bqr .ico{width:12px;height:12px;margin:0}
+  .camav{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:8px}
+  .camav-t{color:var(--amber);line-height:1.35;margin:4px 0}
+  .camav-b{margin:4px 0 6px}
   .rolwarn{display:flex;align-items:center;gap:8px;font-size:13px;border-radius:10px;padding:8px 10px;margin:-6px 0 6px;background:#2a2210;border:1px solid #5a4214;color:#ffd78a}
   .rolwarn.falta{background:#3a1519;border-color:#5a2026;color:#ffb3b3}
   .rolwarn .ico{flex:none;margin:0}
@@ -25279,6 +25287,10 @@
     "danos.badge": {"one": "{n} equipo para reparar", "other": "{n} equipos para reparar"},
     "danos.chip": "¡Repárame!",
     'bodega.tienda': 'Tienda de equipos',
+    // Para qué sirve cada equipo (botón "?" de las tarjetas y de la preparación). Solo en español hasta la traducción final.
+    'equipo.para_que': '¿Para qué sirve?',
+    'equipo.detalle': 'Detalle técnico',
+    'equipo.ver': 'Para qué sirve {nombre}',
 
     // Tienda
     'tienda.conectando': 'Conectando con la tienda…',
@@ -25414,6 +25426,7 @@
     'res.pago_cliente': 'Pago del cliente',
     'res.sueldos': 'Sueldos del personal',
     'res.ganancia': 'Ganancia',
+    'res.fama_ahora': '{delta} → ahora {n}',
     'res.ver_detalle': 'Ver detalle',
     'res.calidad_inicial': 'Calidad inicial: {n}',
     'res.desgaste': 'El equipo se desgastó un poco y pasó un día.',
@@ -26235,6 +26248,17 @@
     "prep.bloqueados": "Cámaras que no se pueden usar",
     "prep.bloqueados_n": {"one":"{n} cámara","other":"{n} cámaras"},
     "prep.bloq.sin_lente": "Sin lente",
+    "prep.lente_falta": "Le falta un lente: {lente} ({m}) en la Bodega, categoría Lentes.",
+    "prep.lente_fama": "Le falta un lente: {lente}, que se desbloquea con {n} de fama. Mientras tanto lleva otra cámara.",
+    "prep.ir_bodega": "Comprar en la Bodega",
+    "prep.cam_no_usada": "No se usa en este evento: {cams}. No le queda posición o no hay camarógrafo libre para manejarla.",
+    "prep.cam_sugerida": "«{pos}» rinde poco con lo que tienes (lo ideal: {ideal}). Ya puedes comprar {item} ({m}) en la Bodega.",
+    "prep.cam_sugerida_vacia": "«{pos}» se queda sin cámara (lo ideal: {ideal}). Ya puedes comprar {item} ({m}) en la Bodega.",
+    "bodega.lente_t": "Esta cámara necesita lente",
+    "bodega.lente_q": "{cam} no graba sin {lente} y no tienes uno libre. ¿Compras también el lente ({m})?",
+    "bodega.lente_si": "Comprar cámara + lente ({m})",
+    "bodega.lente_solo": "Solo la cámara ({m})",
+    "bodega.lente_bloq": "{cam} no graba sin {lente}, y ese lente se desbloquea con {n} de fama. Hasta entonces no la vas a poder usar.",
     "prep.bloq.sin_fibra": "Sin fibra",
     "prep.bloq.sin_piloto": "Sin piloto",
     "prep.bloq.sin_generador": "Sin generador",
@@ -27254,6 +27278,7 @@
     'item.cam_cine.nombre': "Kanon XF615", 'item.cam_cine.desc': "Sensor 1\", zoom 15x, 12G-SDI (cable largo hasta el switcher), 4K60.",
     'item.cam_jvk_gy_hk560.nombre': "JVK GY-HK560 Conectada", 'item.cam_jvk_gy_hk560.desc': "Sensor 1\", 20x y encoder interno: transmite sola por SRT sin switcher.",
     'item.cam_zony_fz6_cine.nombre': "Zony FZ6 Cine", 'item.cam_zony_fz6_cine.desc': "Full frame, 4K 120p, fondo desenfocado de cine. Para gimbal o estabilizador corporal.",
+    'item.cam_zony_hxr_mk2500.uso': "Cámara al hombro para seguir la acción de cerca; ya trae su lente.", 'item.cam_zony_hxr_mk2500.nombre': "Zony HXR-MK2500 (de hombro)", 'item.cam_zony_hxr_mk2500.desc': "Cámara de hombro de entrada con lente incluido: no necesita lentes aparte. Ideal para entrevistas, la banda de la cancha y el ring.",
     'item.cam_blackmagia_urso_broadcast_g3.nombre': "Blackmagia URSO Broadcast G3", 'item.cam_blackmagia_urso_broadcast_g3.desc': "Al hombro, montura B4: usa lentes ENG de televisión. 4K/6K, SDI.",
     'item.cam_panasonika_aw_uv170.nombre': "Panasonika AW-UV170", 'item.cam_panasonika_aw_uv170.desc': "Robótica broadcast: sensor 1\", 20x, 12G-SDI y fibra, 120p en HD. Táctica o detrás del arco.",
     'item.cam_zony_pxv_z760.nombre': "Zony PXV-Z760", 'item.cam_zony_pxv_z760.desc': "3 sensores 2/3\" 4K, obturador global (sin \"gelatina\" con flashes), 120p en HD. Sin lente.",
@@ -27340,6 +27365,123 @@
     'item.srv_grua_telescopica.nombre': "Grúa de 12 m con operador - servicio", 'item.srv_grua_telescopica.desc': "Barridos sobre el público. Necesita espacio y un operador especializado.",
     'item.srv_unidad_movil_4cam.nombre': "Alquiler de unidad móvil (hasta 4 cámaras)", 'item.srv_unidad_movil_4cam.desc': "Llega con switcher, audio, repetición y técnico. Caro, pero salva un partido si no tienes OB propia.",
     'item.srv_sng_satelital.nombre': "Enlace satelital SNG - servicio", 'item.srv_sng_satelital.desc': "Sube la señal al satélite: no depende del internet del estadio.",
+
+    // Para qué sirve cada equipo: una frase corta y sencilla (máx. 90 caracteres) que se ve en la Bodega, la tienda,
+    // la preparación del evento y el detalle "?". Solo en español mientras se desarrolla (los demás idiomas usan este texto).
+    "item.cam_basic.uso": "Cámara de mano sencilla para grabar misas, bodas y eventos chicos.",
+    "item.cam_pro.uso": "Cámara de mano para bodas y eventos sociales; acepta micrófonos profesionales.",
+    "item.cam_panasonika_aw_uv22.uso": "Cámara robótica fija que se mueve a control remoto: ideal en iglesias y auditorios.",
+    "item.cam_blackmagia_estudio_4k_g3.uso": "Cámara de estudio liviana para escenarios y foros; hay que comprarle un lente.",
+    "item.cam_cine.uso": "Cámara de mano que llega con cable largo hasta el mezclador: para eventos grandes.",
+    "item.cam_jvk_gy_hk560.uso": "Cámara que transmite sola por internet, sin mezclador: notas y ruedas de prensa.",
+    "item.cam_zony_fz6_cine.uso": "Cámara de cine con fondo desenfocado: tomas bonitas con estabilizador.",
+    "item.cam_blackmagia_urso_broadcast_g3.uso": "Cámara de televisión que el camarógrafo lleva al hombro en la cancha o la calle.",
+    "item.cam_panasonika_aw_uv170.uso": "Cámara robótica de TV: va fija detrás del arco o arriba y se maneja a distancia.",
+    "item.cam_zony_pxv_z760.uso": "Cámara de hombro de alta gama que no se deforma con flashes. Necesita un lente.",
+    "item.cam_zony_hdk_3200.uso": "Cámara de estadio que va por fibra; un técnico le iguala el color desde el control.",
+    "item.cam_zony_hdk_3600.uso": "La cámara principal de una final: imagen 4K desde la tribuna con un lente gigante.",
+    "item.cam_zony_hdk_5600_hfr.uso": "Cámara súper lenta: repite goles y jugadas en cámara lenta muy fluida.",
+    "item.cam_fantomas_vio4k.uso": "Graba instantes en cámara ultra lenta para repeticiones espectaculares, no en vivo.",
+    "item.cam_marchall_cv513_pov.uso": "Minicámara fija en el arco, el ring o el auto: toma muy cercana sin camarógrafo.",
+    "item.cam_gopra_heroe13.uso": "Cámara pequeña que va en el casco o el pecho: tomas en movimiento y bajo el agua.",
+    "item.cam_dgi_osmo_bolsillo_3.uso": "Cámara de bolsillo que no tiembla: para caminar y transmitir desde la calle.",
+    "item.cam_celular_gimbal.uso": "Celular con estabilizador: graba y transmite solo, para streams en la calle.",
+    "item.dron_dgi_micro_4_pro.uso": "Dron pequeño para tomas aéreas de apertura; no vuela con viento fuerte.",
+    "item.dron4k.uso": "Dron de cine para tomas aéreas de gran calidad. Lo vuela un piloto de dron.",
+    "item.grua.uso": "Brazo gigante que pasea la cámara por encima del público: tomas de película.",
+    "item.unidad_movil.uso": "Camioneta con sala de control adentro: mezcla cámaras, sonido y comunicación.",
+    "item.generador.uso": "Generador grande y silencioso: mantiene todo encendido si se corta la luz.",
+    "item.vip_cam8k.uso": "La mejor cámara de estadio, con lente gigante y fibra incluidos. Lleva técnico de color.",
+    "item.vip_switcher.uso": "Mezclador de TV: eliges qué cámara sale al aire, con repeticiones y gráficos.",
+    "item.vip_satelital.uso": "Antena que manda tu transmisión por satélite: ya no dependes del internet.",
+    "item.lente_kit_mft.uso": "Lente sencillo para cámaras de estudio livianas: planos medios, no de lejos.",
+    "item.lente_zony_gm_24_75.uso": "Lente para la cámara de cine: fondo desenfocado y poco zoom.",
+    "item.lente_kanon_kx21x8_2.uso": "Lente con zoom para cámara de hombro: acerca a personas a media distancia.",
+    "item.lente_kanon_cx25ex7_5.uso": "Lente con más zoom para cámara de hombro 4K: cancha y tribuna baja.",
+    "item.lente_box_fujinox_xa23x7.uso": "Lente grande de estudio para planos abiertos del escenario, el ring o el set.",
+    "item.lente_box_kanon_digisupra_88.uso": "Lente gigante con mucho zoom: desde la tribuna se ven las caras en la cancha.",
+    "item.lente_box_fujinox_ux108x.uso": "Lente gigante 4K que no tiembla: la toma principal de una final.",
+    "item.lente_box_kanon_uhd_digisupra_125.uso": "El lente con más zoom del juego, con autofoco: ve todo desde muy lejos.",
+    "item.adaptador_lente_box.uso": "Pieza que deja poner un lente gigante en la cámara de estadio.",
+    "item.ex_lente_box.uso": "Lente gigante dorado con muchísimo zoom para la cámara de estadio.",
+    "item.sop_tripode_basico.uso": "Patas para que la cámara no tiemble; al moverla sale un poco a saltos.",
+    "item.sop_manfrotti_504x.uso": "Trípode de cabeza suave: movimientos de cámara lisos con cámaras chicas.",
+    "item.sop_vinter_vector_760.uso": "Trípode pesado que aguanta cámaras con lente gigante; sin él no se pueden usar.",
+    "item.sop_gimbal_dgi_rz4_pro.uso": "Estabilizador de mano: el camarógrafo camina y la imagen no tiembla.",
+    "item.sop_steadikam_aereo_32.uso": "Chaleco con brazo para correr con la cámara sin temblor: salidas y festejos.",
+    "item.sop_jib_proeme_4m.uso": "Grúa pequeña que lleva la cámara por arriba del público.",
+    "item.sop_dolly_riel_6m.uso": "Carrito sobre rieles: la cámara se desliza suave junto al escenario.",
+    "item.ex_soporte.uso": "Trípode pesado dorado para cámaras con lente gigante.",
+    "item.switch_basic.uso": "Computadora que mezcla hasta 3 cámaras, pone gráficos y transmite.",
+    "item.sw_blackmagia_atom_mini_pro.uso": "Mezclador pequeño: eliges con botones qué cámara sale al aire, y transmite.",
+    "item.sw_blackmagia_atom_mini_extremo_iso_g3.uso": "Mezclador de 8 cámaras que además graba cada cámara por separado.",
+    "item.sw_vmax_pro_pc.uso": "Computadora potente que mezcla cámaras, repite jugadas y transmite.",
+    "item.sw_blackmagia_atom_tv_estudio_hd9_iso.uso": "Mezclador de TV para 8 cámaras con cable largo; también habla con el equipo.",
+    "item.switch_pro.uso": "Mezclador grande de TV para muchas cámaras y efectos; se maneja con un panel.",
+    "item.sw_rosco_carbonita_ultra.uso": "Mezclador de canal de TV: muchas cámaras, efectos y sonido en un solo equipo.",
+    "item.sw_glass_valley_kayena.uso": "Mezclador gigante de unidad móvil para decenas de cámaras y gráficos.",
+    "item.rep_vmax_repeticion.uso": "Computadora que guarda las jugadas y las repite en cámara lenta.",
+    "item.rep_trikaster_3jugadas.uso": "Equipo para repetir jugadas en cámara lenta, manejado con una palanca.",
+    "item.rep_evx_xt_nano.uso": "El equipo de repeticiones de la TV deportiva: repite en segundos y no falla.",
+    "item.rep_evx_xt_via.uso": "Repite jugadas de muchas cámaras 4K a la vez, incluidas las súper lentas.",
+    "item.ex_repeticion.uso": "Equipo dorado de repeticiones 4K para las finales.",
+    "item.gfx_kasparcg_pc.uso": "Pone en pantalla el marcador, el reloj, los nombres y los logos.",
+    "item.gfx_rosco_xpresion_go.uso": "Gráficos 3D en pantalla: estadísticas, alineaciones y marcador.",
+    "item.gfx_vizart_ar.uso": "Dibuja gráficos y publicidad virtual sobre la cancha, como en las finales.",
+    "item.ex_graficos.uso": "Gráficos 3D dorados y publicidad virtual sobre la cancha.",
+    "item.mon_blackmagia_multivista_16.uso": "Pantalla que muestra 16 cámaras juntas para que el director vea todo.",
+    "item.mon_referencia_shader.uso": "Pantalla de colores exactos para que todas las cámaras se vean iguales.",
+    "item.ex_monitor.uso": "Pantalla dorada de colores exactos para igualar todas las cámaras.",
+    "item.audio_basic.uso": "Mezcladora de sonido pequeña: junta micrófonos y música para la transmisión.",
+    "item.audio_pro.uso": "Mezcladora digital que se maneja con tablet: más micrófonos y sonido ordenado.",
+    "item.au_behringa_x33_rack.uso": "Mezcladora digital para muchos micrófonos e instrumentos, como en conciertos.",
+    "item.au_mydas_m33_live.uso": "Mezcladora de concierto con muchos controles y sonido de alta calidad.",
+    "item.au_yamaka_kl5.uso": "Mezcladora grande de gira para conciertos con muchos músicos.",
+    "item.au_kalrek_brio_37.uso": "Mezcladora de TV: junta a los narradores con el ambiente del estadio sin fallas.",
+    "item.ex_audio.uso": "Mezcladora dorada de TV para narradores y ambiente del estadio.",
+    "item.mic_shur_sm59.uso": "Micrófono de mano con cable que casi no se rompe: discursos y entrevistas.",
+    "item.mics.uso": "Dos micrófonos de mano sin cable, baratos; a veces se cortan.",
+    "item.mic_shur_slxd25_doble.uso": "Dos micrófonos de mano sin cable que buscan solos una señal limpia.",
+    "item.mic_sennhauser_ewdz_corbatero.uso": "Va en la solapa: graba la voz de quien habla sin cables.",
+    "item.mic_roade_ntg6_boom.uso": "Micrófono en una caña larga: capta voces y ambiente sin salir en cámara.",
+    "item.mic_sennhauser_hmd27.uso": "Audífonos con micrófono para el narrador: tapan el ruido del estadio.",
+    "item.mic_dgi_mike_2.uso": "Micrófono pequeño de solapa sin cables para celular o cámara.",
+    "item.ex_mics.uso": "Dos micrófonos dorados de mano sin cable, con sonido digital.",
+    "item.ic_hollyband_solidkom_c2.uso": "Audífonos para que el director hable con 8 personas del equipo a la vez.",
+    "item.ic_clearkom_freehabla_3.uso": "Comunicación sin cables para todo el equipo en un estadio grande.",
+    "item.ex_intercom.uso": "Comunicación dorada sin cables para 12 personas del equipo.",
+    "item.encoder.uso": "Caja que manda la transmisión a internet, aunque la computadora se cuelgue.",
+    "item.enc_kilovista_p3.uso": "Mochila que junta varios chips de celular para transmitir sin internet fijo.",
+    "item.enc_liveyou_solo_pro.uso": "Mochila que une varias conexiones para transmitir desde cualquier lugar.",
+    "item.enc_liveyou_lu900.uso": "Mochila de TV con 8 chips 5G: transmite hasta 4 cámaras desde donde sea.",
+    "item.ex_encoder.uso": "Mochila dorada con 8 chips 5G para transmitir con calidad de TV.",
+    "item.router4g.uso": "Internet de respaldo por chip de celular, por si falla el del lugar.",
+    "item.ex_internet.uso": "Internet de respaldo dorado con chips de dos compañías a la vez.",
+    "item.tx_hollyband_marte_4k.uso": "Manda la imagen de la cámara sin cable hasta el control (unos 135 m).",
+    "item.tx_terradek_rayo_6.uso": "Imagen sin cable y sin retraso: para cámaras que corren o se mueven en el ring.",
+    "item.ex_wireless.uso": "Imagen dorada sin cable y sin retraso hasta 450 m.",
+    "item.fib_conversor_sdi_fibra.uso": "Lleva la imagen por fibra a kilómetros: cámaras lejos del control.",
+    "item.fib_cable_smpte_100m.uso": "Cable especial que da imagen, energía y comunicación a la cámara de estadio.",
+    "item.ex_cable.uso": "Cable de fibra dorado para la cámara de estadio que aguanta pisadas.",
+    "item.ups.uso": "Batería de respaldo: si se va la luz, el mezclador y la transmisión siguen un rato.",
+    "item.pw_jonda_eu2300i.uso": "Generador pequeño y silencioso para canchas sin luz; no alcanza para luces grandes.",
+    "item.raincover.uso": "Funda que protege una cámara chica de la llovizna.",
+    "item.rain_cobertor_broadcast.uso": "Funda grande que cubre cámara, lente y camarógrafo en lluvias fuertes.",
+    "item.ex_lluvia.uso": "Funda dorada con ventilación para cámara grande y camarógrafo en aguaceros.",
+    "item.case_maletas_pelikano.uso": "Maletas duras: tus equipos se gastan menos al viajar.",
+    "item.ex_maletas.uso": "Maletas doradas con ruedas: tus equipos se gastan menos en los viajes.",
+    "item.veh_sedan_usado.uso": "Auto para 4 personas y equipo chico: llegas sin pagar taxi.",
+    "item.veh_camioneta_carga.uso": "Camioneta para llevar todo el equipo sin pagar fletes.",
+    "item.veh_van_pasajeros_usada.uso": "Van para llevar juntas hasta 12 personas del equipo, con algo de carga.",
+    "item.veh_furgon_carga.uso": "Furgón cerrado para equipo pesado: grúas, rieles y consolas.",
+    "item.veh_sprinto_ob_usada.uso": "Furgoneta para armar una pequeña sala de control con ruedas.",
+    "item.veh_trailer_ob_hd12.uso": "Tráiler con sala de control para 12 cámaras: tu canal de TV con ruedas.",
+    "item.veh_trailer_ob_uhd20.uso": "Tráiler de 20 cámaras 4K para transmitir las finales más grandes.",
+    "item.srv_aranacam.uso": "Cámara colgada de cables que vuela sobre la cancha. Se alquila con su equipo.",
+    "item.srv_cablecam_riel.uso": "Cámara que corre por un riel junto a la cancha o al escenario. Se alquila.",
+    "item.srv_grua_telescopica.uso": "Grúa grande con su operador para tomas sobre el público. Se alquila.",
+    "item.srv_unidad_movil_4cam.uso": "Sala de control con ruedas y técnico, alquilada para un partido.",
+    "item.srv_sng_satelital.uso": "Camión que sube tu señal al satélite. Se alquila para un evento.",
     // Temporadas (eventos especiales por fecha, js/temporadas.js)
     "temp.halloween.nombre": "Halloween",
     "temp.halloween.premio": "Calabazas iluminadas en la entrada",
@@ -27477,6 +27619,9 @@
     cam_cine: { icon: 'cam_pro', cat: 'cam', subtipo: 'camcorder_pro_sdi', q: 3, price: 2550, minRep: 12, rareza: 'profesional', durabilidad: 3, eventos: ['graduacion','lanzamiento','concierto','barrial','prensa'] },
     cam_jvk_gy_hk560: { icon: 'cam_pro', cat: 'cam', subtipo: 'camcorder_streaming', q: 3, price: 2800, minRep: 12, rareza: 'profesional', durabilidad: 3, eventos: ['prensa','barrial','irl','internacional_unilateral'] },
     cam_zony_fz6_cine: { icon: 'cam_pro', cat: 'cam', subtipo: 'cine', q: 3, price: 3150, minRep: 12, rareza: 'profesional', durabilidad: 3, requiere: ['lente_cine'], acepta: ['lente_cine'], eventos: ['boda','lanzamiento','lanzamiento_autos','concierto'] },
+    // Cámara de hombro de entrada con lente incluido: se compra desde el inicio (sin fama), para que las posiciones
+    // "al hombro" de los primeros eventos (prensa, barrial, lucha libre...) se puedan cubrir sin lentes de televisión
+    cam_zony_hxr_mk2500: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 2, price: 1150, minRep: 0, rareza: 'comun', durabilidad: 3, eventos: ['prensa','barrial','lucha_libre','graduacion','boda'] },
     cam_blackmagia_urso_broadcast_g3: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 3, price: 2450, minRep: 12, rareza: 'profesional', durabilidad: 3, requiere: ['lente_b4'], acepta: ['lente_eng'], eventos: ['barrial','concierto','ligapro','boxeo','lucha_libre'] },
     cam_panasonika_aw_uv170: { icon: 'cam_basic', cat: 'cam', subtipo: 'ptz_broadcast', q: 4, price: 5450, minRep: 28, rareza: 'elite', durabilidad: 4, requiere: ['operador_ptz'], eventos: ['concierto','ligapro','final','lanzamiento','lanzamiento_autos'] },
     cam_zony_pxv_z760: { icon: 'cam_pro', cat: 'cam', subtipo: 'eng_hombro', q: 4, price: 12500, minRep: 28, rareza: 'elite', durabilidad: 5, requiere: ['lente_b4'], acepta: ['lente_eng'], eventos: ['ligapro','final','concierto','boxeo','internacional_unilateral'] },
@@ -27825,8 +27970,10 @@
    Datos
      Game.CATEGORIAS   [{ key, nombre, icon }] en el orden de la tienda
      Game.shopByCategory(s) → [{ key, nombre, items: [{ key, ...CATALOG[key], locked, owned }] }]
-     Game.CATALOG[k]   { name, desc, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
+     Game.CATALOG[k]   { name, desc, uso, icon, cat, subtipo, q (1-6), price, minRep, rareza, durabilidad,
                          requiere: [...], acepta: [...], alquiler (bool, se usa en un evento y se va), eventos: [...] }
+                       uso = para qué sirve, en una frase corta y sencilla (item.<clave>.uso, máx. 90 caracteres);
+                       desc = el detalle técnico (item.<clave>.desc)
      Game.ROLES[k]     { key, name, desc, siFalta, icon, wageMul, orden }  (14 roles; las claves viejas
                          cam / dir / audio / stream siguen funcionando como alias ocultos)
      Game.TIERS[k]     { key, name, mul, base, bonus, skill: [min, max] }  junior, semi_senior, senior, internacional
@@ -28125,6 +28272,7 @@
     Object.keys(CATALOG).forEach((k) => {
       if (!Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.nombre')) return; // los de premium.js traen su propio nombre
       CATALOG[k].name = tx('item.' + k + '.nombre'); CATALOG[k].desc = tx('item.' + k + '.desc');
+      if (Object.prototype.hasOwnProperty.call(TEXTOS, 'item.' + k + '.uso')) CATALOG[k].uso = tx('item.' + k + '.uso');
     });
     CATEGORIAS.forEach((c) => { c.nombre = tx('cat.' + c.key); c.name = c.nombre; });
     Object.keys(CONSUMABLES).forEach((k) => { CONSUMABLES[k].name = tx('cons.' + k + '.nombre'); CONSUMABLES[k].desc = tx('cons.' + k + '.desc'); });
@@ -29058,26 +29206,47 @@
     const { ready, blocked } = readyCams(equip, staff);
     const left = ready.slice();
     const usados = [];
-    const assigned = pos.map((p) => {
+    // Operadores: se reparten mientras se eligen las cámaras, así una cámara que se quedaría sin nadie que la maneje
+    // (una PTZ sin operador de robóticas, una segunda cámara sin segundo camarógrafo) no le quita el puesto a otra que sí rinde.
+    let camOps = roleCount(staff, 'camarografo');
+    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
+    const canOp = (r) => (r.needs === 'camarografo' ? camOps > 0 : r.needs === 'operador_ptz' ? ptzCap > 0 : true);
+    // Puntaje de una cámara en una posición: cuánto encaja, su calidad y su estado; si nadie la puede manejar vale
+    // mucho menos (rinde la mitad y además deja sin puesto a una que sí tendría operador)
+    const score = (p, r) => fitOf(p.perfil, r) * (2 + r.effQ) * r.cond * (canOp(r) ? 1 : 0.25);
+    const asg = new Map();
+    const tomar = (p, r) => {
+      left.splice(left.indexOf(r), 1);
+      const operado = canOp(r);
+      if (operado && r.needs === 'camarografo') camOps--;
+      else if (operado && r.needs === 'operador_ptz') ptzCap--;
+      asg.set(p, { r, operado });
+    };
+    // Posiciones obligatorias: cada vez la mejor pareja posición-cámara de todas (así la cámara de hombro va a la
+    // posición al hombro y no a la fija, donde cualquier otra sirve)
+    const pend = pos.filter((p) => !p.opcional);
+    while (pend.length && left.length) {
+      let bp = null, br = null, bs = -1;
+      pend.forEach((p) => left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; bp = p; br = r; } }));
+      if (!br) break;
+      tomar(bp, br);
+      pend.splice(pend.indexOf(bp), 1);
+    }
+    // Tomas extra (opcionales), en orden: con una cámara que encaje y que alguien maneje; sin nadie que la maneje, solo
+    // si encaja casi perfecto (con su trípode o soporte llega a 1: una cámara "dejada" en su sitio rinde la mitad, pero suma como toma extra)
+    pos.filter((p) => p.opcional).forEach((p) => {
       let best = null, bs = -1;
-      left.forEach((r) => {
-        const f = fitOf(p.perfil, r);
-        const sc = f * (2 + r.effQ) * r.cond;
-        if (sc > bs) { bs = sc; best = r; }
-      });
-      if (best && p.opcional && fitOf(p.perfil, best) < 0.5) best = null;
-      if (best) left.splice(left.indexOf(best), 1);
-      return { p, r: best };
+      left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; best = r; } });
+      const f = best ? fitOf(p.perfil, best) : 0;
+      if (best && (canOp(best) ? f >= 0.5 : f >= 0.85)) tomar(p, best);
     });
+    const assigned = pos.map((p) => { const a = asg.get(p); return { p, r: a ? a.r : null, operado: a ? a.operado : false }; });
     // Accesorios: trípodes, gimbal, steadicam, jib y dolly mejoran el ajuste de su posición
     const sup = (f) => equip.filter((e) => f(itemOf(e))).length;
     const S = { tripode: sup((it) => /^tripode/.test(it.subtipo)), gimbal: sup((it) => it.subtipo === 'gimbal'), steadicam: sup((it) => it.subtipo === 'steadicam'),
       jib: sup((it) => it.subtipo === 'jib'), dolly: sup((it) => it.subtipo === 'dolly') };
-    // Operadores
-    let camOps = roleCount(staff, 'camarografo');
-    let ptzCap = roleCount(staff, 'operador_ptz') * 4;
     let sysCams = 0;
-    const out = assigned.map(({ p, r }) => {
+    const out = assigned.map(({ p, r, operado }) => {
       const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional,
         asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, ajuste: 0, operado: false };
       if (!r) return o;
@@ -29088,9 +29257,6 @@
       else if (supOk && p.perfil === 'hombro' && S.steadicam > 0) { S.steadicam--; fit = Math.min(1, fit + 0.15); }
       else if (supOk && p.perfil === 'grua' && S.jib > 0) { S.jib--; fit = Math.max(fit, 0.85); }
       else if (supOk && p.perfil === 'riel' && S.dolly > 0) { S.dolly--; fit = Math.max(fit, 0.85); }
-      let operado = true;
-      if (r.needs === 'camarografo') { if (camOps > 0) camOps--; else operado = false; }
-      else if (r.needs === 'operador_ptz') { if (ptzCap > 0) ptzCap--; else operado = false; }
       if (isSystem(r.it)) sysCams++;
       usados.push(r.e.id); if (r.lens) usados.push(r.lens.id);
       return Object.assign(o, { asignado: r.e.type, equipId: r.e.id, equipo: equipName(r.e), lente: r.lens ? r.lens.type : null,
@@ -29103,6 +29269,37 @@
       ajusteMedio: req.length ? r2(req.reduce((a, p) => a + p.ajuste, 0) / req.length) : 0,
       bloqueados: blocked, usados, sistema: sysCams, sinOperador: req.filter((p) => p.asignado && !p.operado).length,
     };
+  }
+
+  /* ---------- Ayudas para el jugador: qué cámara o qué lente le falta y dónde conseguirlo ---------- */
+  const LENTE_DE = { lente_b4: 'lente_eng', lente_cine: 'lente_cine', lente_mft: 'lente_mft' };
+  const enTienda = (k) => { const it = CATALOG[k]; return it && !it.premium && !it.exclusivo && !it.alquiler; };
+  // El lente que necesita una cámara de ese tipo y que todavía no tienes (o null si no necesita o ya hay uno libre).
+  // extra = 1 cuando la cámara aún no es tuya (antes de comprarla). Devuelve { subtipo, key (el más barato de la tienda),
+  // bloqueado (falta fama), precio }.
+  function lenteFaltante(s, type, extra) {
+    const it = CATALOG[type];
+    if (!it || it.incluyeLente) return null;
+    const rq = (it.requiere || []).find((r) => LENTE_DE[r]);
+    if (!rq) return null;
+    const sub = LENTE_DE[rq];
+    const lentes = s.equip.filter((e) => CATALOG[e.type] && CATALOG[e.type].subtipo === sub).length;
+    const camaras = s.equip.filter((e) => { const c = CATALOG[e.type]; return c && !c.incluyeLente && (c.requiere || []).includes(rq); }).length + (extra || 0);
+    if (lentes >= camaras) return null;
+    const ops = Object.keys(CATALOG).filter((k) => enTienda(k) && CATALOG[k].subtipo === sub)
+      .sort((a, b) => ((CATALOG[a].minRep > s.rep) - (CATALOG[b].minRep > s.rep)) || CATALOG[a].price - CATALOG[b].price);
+    const key = ops[0] || null;
+    return { subtipo: sub, key, bloqueado: key ? CATALOG[key].minRep > s.rep : true, precio: key ? CATALOG[key].price : 0, minRep: key ? CATALOG[key].minRep : 0 };
+  }
+  // La cámara de la tienda que mejor cubre una posición de ese perfil y que ya puedes comprar (fama), sin lentes ni
+  // accesorios aparte: la que mejor encaja y, entre iguales, la más barata. null si ninguna encaja mejor que `minFit`.
+  function camaraParaPerfil(s, perfil, minFit) {
+    const row = FIT[perfil] || FIT.fija;
+    let best = null, bf = typeof minFit === 'number' ? minFit : 0;
+    Object.keys(CATALOG).filter((k) => enTienda(k) && CATALOG[k].cat === 'cam' && CATALOG[k].minRep <= s.rep && !(CATALOG[k].requiere || []).length)
+      .sort((a, b) => CATALOG[a].price - CATALOG[b].price)
+      .forEach((k) => { const f = row[CLASE[CATALOG[k].subtipo]] || 0; if (f > bf + 1e-9) { bf = f; best = k; } });
+    return best ? { key: best, fit: bf, precio: CATALOG[best].price } : null;
   }
 
   /* ---------- Calidad base del evento ---------- */
@@ -30110,6 +30307,7 @@
     if (ev.step < ev.incidents.length) return { ok: false, msg: tx('msg.faltan_imprevistos') };
     const c = ev.contract;
     const t = EVENT_TYPES[c.type];
+    const famaAntes = s.rep;
     const quality = clamp(ev.base + ev.deltas.reduce((a, b) => a + b, 0), 0, 100);
     const B = BALANCE.stars;
     const stars = quality >= B[0] ? 5 : quality >= B[1] ? 4 : quality >= B[2] ? 3 : quality >= B[3] ? 2 : 1;
@@ -30230,6 +30428,9 @@
     for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
     if (!result.chapterDone) result.chapterDone = checkChapter(s);
     result.avisos = (s.avisos || []).slice(Math.min(avisos0, (s.avisos || []).length));
+    // Fama antes y la que queda de verdad (con lo que sumaron las extensiones y el día que pasó): la que muestra el resultado
+    result.famaAntes = famaAntes;
+    result.fama = s.rep;
     return { ok: true, result };
   }
 
@@ -30416,7 +30617,7 @@
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, suggestLoadout, lenteFaltante, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
@@ -35020,7 +35221,7 @@
     'pe.leg.ok': 'Ideal', 'pe.leg.mid': 'Sirve', 'pe.leg.bad': 'No es la ideal', 'pe.leg.off': 'Vacía', 'pe.leg.na': 'Asignada',
     'pe.forma.fija': 'Fija', 'pe.forma.mano': 'Al hombro', 'pe.forma.robot': 'Robótica', 'pe.forma.aerea': 'Aérea',
     'pe.vacia': 'Sin cámara', 'pe.opcional': 'Opcional', 'pe.idealp': 'Ideal: {t}', 'pe.ajuste': 'Ajuste {p}%', 'pe.tocar': 'Toca una cámara para ver cuál va',
-    'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
+    'pe.sinop': 'sin camarógrafo: rinde la mitad', 'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
 
     'pe.intl': 'Contrato internacional', 'pe.intl.pago': '×{m} pago', 'pe.intl.dias': '{n} días de viaje', 'pe.intl.dia': '1 día de viaje',
     'pe.intl.gastos': 'Gastos de viaje {m}', 'pe.intl.bloqueo': 'Mientras viajas no puedes tomar otros contratos.',
@@ -35780,7 +35981,10 @@
       const asg = p.asignado !== undefined ? p.asignado : p.camara !== undefined ? p.camara : p.equip !== undefined ? p.equip : p.assigned;
       let aj = num(p.ajuste != null ? p.ajuste : p.fit != null ? p.fit : p.score);
       if (aj != null && aj > 1) aj = aj / 100;
-      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
+      // fit = qué tan bien encaja la cámara (sin contar si hay quien la maneje); operado === false: nadie la maneja
+      let fit = num(p.fit);
+      if (fit != null && fit > 1) fit = fit / 100;
+      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, fit, sinOp: p.operado === false, eid: p.equipId != null ? p.equipId : null, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
     });
   }
   function camName(a, o) {
@@ -35867,7 +36071,12 @@
       const t = tipoKey(tipoEvento || (plan && (plan.tipo || plan.type)));
       const v = lugar(t), vr = variante(t, v);
       const list = posList(plan, t);
-      list.forEach((p) => { p.asgName = camName(p.asg, o); });
+      // Con el id del equipo se usa el nombre que el jugador ve en su bodega (p. ej. "Cámara de Don Ramiro")
+      list.forEach((p) => {
+        let n = '';
+        if (p.asg != null && p.asg !== false && p.asg !== '' && p.eid != null && o.nombreEquipo) { try { n = o.nombreEquipo(p.eid) || ''; } catch (e) { n = ''; } }
+        p.asgName = n || camName(p.asg, o);
+      });
       placeAll(list, v);
       const u = 'pe' + (++UID).toString(36);
       const cables = o.cables === false || v === 'calle' ? '' : list.map((p) => cable(p, vr)).filter(Boolean).join('');
@@ -35889,8 +36098,11 @@
       const rowsHtml = o.lista === false ? '' : `<div class="pe-cl">${list.map((p) => {
         const k = fitK(p);
         const info = `${T('pe.cam.n', { n: p.n })} · ${p.asgName || vacioTxt(p)}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
+        // "Ideal: ..." solo si la cámara no es la adecuada; si es la adecuada pero nadie la maneja, se dice eso
+        const camMal = p.asgName && p.fit != null ? p.fit < 0.8 : k !== 'ok';
+        const extra = p.asgName && p.sinOp && !camMal ? ' · ' + esc(T('pe.sinop')) : p.ideal && camMal ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : '';
         return `<div class="pe-clr pe-k-${k}" data-pe-cam="${p.n}" data-pe-info="${esc(info)}"><b class="pe-n">${p.n}</b>
-          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${p.ideal && (k !== 'ok') ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</small></div>
+          <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${extra}</small></div>
           <span class="pe-fit">${p.asgName && p.aj != null ? `${Math.round(p.aj * 100)}%<u><i style="width:${Math.round(p.aj * 100)}%"></i></u>` : p.asgName ? '' : '—'}</span></div>`;
       }).join('')}</div>`;
       return `<div class="pe-cams ${esc(o.clase || '')}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${legend}<div class="pe-det" aria-live="polite"></div>${rowsHtml}</div></div>`;
@@ -36190,14 +36402,15 @@
   /* ---------- Catálogo y reglas protegidas ---------- */
   Object.keys(EXCLUSIVOS).forEach((k) => {
     // Los textos viven en js/datos.js (item.<clave>.nombre / .desc) para poder traducirlos
-    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); }
+    if (G.tx && G.TEXTOS && G.TEXTOS['item.' + k + '.nombre']) { EXCLUSIVOS[k].name = G.tx('item.' + k + '.nombre'); EXCLUSIVOS[k].desc = G.tx('item.' + k + '.desc'); if (G.TEXTOS['item.' + k + '.uso']) EXCLUSIVOS[k].uso = G.tx('item.' + k + '.uso'); }
     G.CATALOG[k] = Object.assign({ key: k }, EXCLUSIVOS[k]);
   });
 
+  // El costo sale de la lógica (G.repairCost: repairBase de la Edición Exclusiva, factor de vehículos, alquilados gratis);
+  // aquí solo se aplica el descuento VIP. Así lo que se muestra (Bodega, flota) es lo mismo que se cobra.
+  const repairCostLogica = G.repairCost;
   function costoReparar(e) {
-    const it = G.CATALOG[e.type];
-    const base = it.premium || typeof it.repairBase === 'number' ? it.repairBase : it.price;   // Edición Exclusiva: repairBase propio
-    const c = Math.round(base * 0.4 * (100 - e.condition) / 100);
+    const c = Math.max(0, repairCostLogica(e) || 0);
     return vipActivo ? Math.round(c * (1 - VIP_DESCUENTO)) : c;
   }
 
@@ -37165,31 +37378,41 @@
   function nubeMarcar(rev, clave) { nubeInfo = { cuenta: nubeCuenta(), rev, clave }; lsSet(NUBE_KEY, nubeInfo); }
   const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
   const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo'));
+  /* ¿La versión más nueva de la nube la guardó ESTA pestaña y nadie más la tiene abierta? Pasa cuando la respuesta de un
+     guardado no llegó (red lenta del celular, se pasó el tiempo, se cortó) o cuando se revisó la nube justo mientras
+     subía (al volver a la pestaña, cada minuto). Antes eso se tomaba como "otro dispositivo": se dejaba de guardar y
+     "Usar la partida más nueva" volvía a una versión vieja (la fama y las reparaciones del último evento se perdían).
+     Lo que hay en la nube salió de esta misma partida, así que la de aquí es igual o más nueva: se sigue sobre esa versión. */
+  const nubeEsMia = (n) => !!(n && n.guardo && n.guardo === NUBE_DISP && Number.isInteger(n.rev) && (!n.activo || n.activo.dispositivo === NUBE_DISP));
   function nubeLuego() {
     if (!nubeActiva() || cloudPendiente) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
     clearTimeout(nubeT);
     nubeT = setTimeout(subirNube, 4000);
   }
-  async function subirNube(tomar) {
+  async function subirNube(tomar, reintento) {
     if (!nubeActiva() || cloudPendiente || nubeBloqueo || nubeRecargando) return;
     const base = nubeBase();
     if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
-    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar); }               // un guardado a la vez
+    if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar, reintento); }    // un guardado a la vez
     clearTimeout(nubeT);
     const datos = G.serialize(S), clave = nubeClave(S);
     nubePendiente = false;
-    let bien = false;
+    let bien = false, otraVez = false;
     nubeSubiendo = (async () => {
       try {
         const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar });
         nubeMarcar(r.rev, clave); nubeEstado = 'ok'; bien = true;
       } catch (e) {
         nubePendiente = true; nubeEstado = 'error';
-        if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
+        const n = e && e.respuesta ? e.respuesta.nube : null;
+        // Un guardado anterior de esta pestaña sí llegó (no llegó la respuesta): se sigue sobre esa versión, una vez
+        if (e && e.codigo === 'partida_desactualizada' && !reintento && nubeEsMia(n) && n.rev > base) { nubeMarcar(n.rev, ''); otraVez = true; }
+        else if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
       }
     })();
     try { await nubeSubiendo; } finally { nubeSubiendo = null; }
+    if (otraVez) return subirNube(tomar, true);
     if (bien && nubePendiente) nubeLuego();   // se guardó algo más mientras subía
   }
   // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
@@ -37199,12 +37422,21 @@
     if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
     return nubeRevisando;
   }
-  async function nubeRevisar(intentos) {
+  async function nubeRevisar(intentos, vueltas) {
+    // Primero que termine el guardado que está subiendo (si no, su versión nueva parece de "otro dispositivo")
+    if (nubeSubiendo) { try { await nubeSubiendo; } catch (e) { /* nada */ } }
     const base = nubeBase();
     if (base === null) return nubeSinBase();
     let m;
     try { m = await Api.partidaMeta(NUBE_DISP); } catch (e) { return; }   // sin red: se sigue con la del celular
+    // Mientras se preguntaba, esta pestaña subió otra versión: se pregunta otra vez con la versión al día
+    if ((nubeSubiendo || nubeBase() !== base) && (vueltas || 0) < 3) return nubeRevisar(intentos, (vueltas || 0) + 1);
     if (!m.hay || m.rev < base) return nubeSinBase();
+    // La versión nueva es un guardado de esta misma pestaña cuya respuesta no llegó: se sigue sobre ella (y se sube lo de aquí)
+    if (m.rev > base && nubeEsMia(m)) {
+      nubeMarcar(m.rev, '');
+      return nubeLista !== nubeCuenta() ? nubeTomar(intentos) : subirNube();
+    }
     if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeMasNueva();
     if (nubeLista !== nubeCuenta()) return nubeTomar(intentos);              // al día: esta pestaña toma la partida
     if (m.activo && m.activo.dispositivo !== NUBE_DISP) return nubeConflicto();   // otro dispositivo la tomó
@@ -37282,6 +37514,9 @@
     let r;
     try { r = await Api.partida(); } catch (e) { toast(T('nube.sin_red')); eleccion = () => nubeUsarNueva(); return; }
     const nube = nubeLeer(r);
+    // Aquí hay avance que esa versión no tiene (p. ej. un evento que terminó con el aviso tapado por el resultado):
+    // se pregunta cuál usar, nunca se pisa sin preguntar
+    if (nube && nubeAvance() && nubeClave(nube) !== nubeClave(S)) { closeModal(); nubeElegir(nube, r.datos, r.rev); return; }
     if (nube) { nubeUsar(nube, r.datos, r.rev, true); return; }
     // La otra pestaña no guardó nada todavía: esta toma la partida con la suya
     closeModal(); nubeBloqueo = false; nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); render();
@@ -37475,8 +37710,8 @@
     return { Api, A, estado: () => S, toast, snd, openModal,
       closeModal: () => { closeModal(); render(); if (Api.disponible && Api.logueado()) Api.refrescar().then(() => render()).catch(() => {}); } };
   }
-  function render() {
-    marcarDia();
+  // Dinero, fama, día y créditos de arriba (también se llama con una ventana abierta: el resultado, una reparación…)
+  function cabecera() {
     $('hMoney').textContent = M(S.money);
     $('hMoney').classList.toggle('neg', S.money < 0);
     $('hRep').textContent = Math.floor(S.rep);
@@ -37495,6 +37730,10 @@
       if (S.day !== lastHead.d) bump('cDay', true);
     }
     lastHead = { m: S.money, r: Math.floor(S.rep), d: S.day };
+  }
+  function render() {
+    marcarDia();
+    cabecera();
     if (lastTab !== tab) {
       const sec = $('tab-' + tab);
       if (sec && lastTab !== null) { sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter'); }
@@ -37880,6 +38119,33 @@
     if (I18 && I18.T.has('rq.' + k)) return T('rq.' + k);
     return String(k).replace(/_/g, ' ');
   }
+  /* Para qué sirve cada equipo (item.<clave>.uso): frase corta y sencilla en las tarjetas, la preparación y el "?".
+     El detalle técnico (desc), la calidad y lo que necesita salen en la hoja del "?" (js/ayuda.js). */
+  const usoDe = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it ? TL(it.uso || it.desc || '') : ''; };
+  const usoHtml = (type, cls) => { const u = usoDe(type); return u ? `<div class="${cls || 'ds uso'}">${esc(u)}</div>` : ''; };
+  // El "?" se arma aquí (js/ayuda.js carga después, con defer): ayuda.js atrapa data-ayuda-item y abre la hoja con itemInfo
+  const infoBtn = (type) => { const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]); return it
+    ? `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(type)}" aria-label="${esc(T('equipo.ver', { nombre: TL(it.name || type) }))}">?</button>` : ''; };
+  function itemInfo(type) {
+    const it = G.CATALOG[type] || (G.CONSUMABLES && G.CONSUMABLES[type]);
+    if (!it) return null;
+    const uso = TL(it.uso || '');
+    const tec = TL(it.desc || '');
+    const rq = (it.requiere || []).map(rqLabel), ac = (it.acepta || []).map(rqLabel);
+    const meta = [];
+    if (it.q) meta.push(`${T('bodega.calidad')} ${qPips(it.q)}`);
+    if (rq.length) meta.push(`<b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}`);
+    if (ac.length) meta.push(`<b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}`);
+    if (it.alquiler) meta.push(esc(T('bodega.alquiler_det')));
+    return {
+      titulo: TL(it.name || type),
+      top: `<div class="ay-it-top">${itemArt(type, 56, 'mini')}<h3>${esc(TL(it.name || type))}</h3></div>`,
+      html: `<div class="ay-sub">${T('equipo.para_que')}</div><p class="ay-uso">${esc(uso || tec)}</p>
+        ${uso && tec && tec !== uso ? `<div class="ay-sub">${T('equipo.detalle')}</div><p class="ay-tec">${esc(tec)}</p>` : ''}
+        ${meta.length ? `<div class="ay-meta">${meta.join('<br>')}</div>` : ''}`,
+    };
+  }
+  window.AyudaItemInfo = itemInfo;   // lo usa js/ayuda.js (Ayuda.setItemInfo también sirve)
   function qPips(q) {
     const n = Math.max(0, Math.min(6, q || 0));
     return `<span class="qp" aria-label="${esc(T('bodega.calidad_n', { n }))}">${[1, 2, 3, 4, 5, 6].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -37899,10 +38165,10 @@
     const ac = (it.acepta || []).map(rqLabel);
     const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq })
       : it.alquiler ? T('bodega.reservar', { m: M(it.price) }) : M(it.price);
-    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}">
-      <div class="row between">${rtag(k)}</div>
+    return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}" data-item="${esc(k)}">
+      <div class="row between">${rtag(k)}${infoBtn(k)}</div>
       <div class="art">${itemArt(k, 110)}${owned ? `<span class="owned">×${owned}</span>` : ''}${it.alquiler ? `<span class="rent rentov" title="${esc(T('bodega.alquiler_det'))}">${I('clock', 'sm')}${T('bodega.alquiler')}</span>` : ''}${locked ? `<span class="lockov">${I('lock', 'lg')}</span>` : ''}</div>
-      <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+      <div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
       <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -37956,9 +38222,9 @@
         : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
     }
     return `<div class="card gear shopc exq rf r-${x.vip ? 'vip' : 'exclusivo'}" data-ex="${esc(k)}">
-      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span>${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}</div>
+      <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span><span class="row" style="gap:0">${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}${infoBtn(k)}</span></div>
       <div class="exq-body"><div class="art">${itemArt(k, 120)}</div>
-        <div><div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc || ''))}</div>
+        <div><div class="nm">${esc(TL(it.name))}</div>${usoHtml(k)}
         <div class="qrow">${T('bodega.calidad')} ${qPips(it.q)}</div>${exPerks(it)}</div></div>
       ${rq.length ? `<div class="rq"><b>${T('bodega.necesita')}</b> ${rq.map(esc).join(' · ')}</div>` : ''}
       ${ac.length ? `<div class="rq ac"><b>${T('bodega.acepta')}</b> ${ac.map(esc).join(' · ')}</div>` : ''}
@@ -38080,9 +38346,9 @@
       const off = vipBloqueado(e);
       if (it.alquiler) {
         return `<div class="card gear rf r-${r.key} rented">
-        <div class="row between">${rtag(e.type)}</div>
+        <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
         <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
         <div class="grow2"></div>
         <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
@@ -38090,9 +38356,9 @@
       const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
       const rgo = enRiesgo(e);
       return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}">
-        <div class="row between">${rtag(e.type)}${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}</div>
+        <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
         <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
-        <div class="nm">${esc(nmE(e))}</div>
+        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
         ${off ? `<div class="small" style="color:var(--amber)">${T('bodega.guardado_vip')}</div>` : ''}
         <div class="grow2"></div>
         <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
@@ -38384,7 +38650,7 @@
     if (!Api.disponible || !Api.estado) {
       const vitrina = Object.keys(G.CATALOG).filter((k) => G.CATALOG[k].premium).slice(0, 4).map((k) => {
         const r = rar(k);
-        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div><div class="ds">${esc(TL(G.CATALOG[k].desc || ''))}</div></div>`;
+        return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}${infoBtn(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div>${usoHtml(k)}</div>`;
       }).join('');
       const aviso = app
         ? `<h3>${T('tienda.sin_conexion_t')}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.sin_conexion')}</p>`
@@ -38704,6 +38970,23 @@
       <div class="card log">${S.log.map((l) => `<p><span>${T('comun.dia_n', { n: l.day })}</span>${esc(gtx(l, l.text))}</p>`).join('')}</div>`;
   }
 
+  /* ---------- Comprar un equipo (y el lente que necesita) ---------- */
+  function comprarEquipo(k) {
+    const r = act(G.buy(S, k), 'buy');
+    if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+  }
+  function pedirLente(k, lf) {
+    const cam = esc(itemName(k)), lente = esc(itemName(lf.key));
+    const total = G.CATALOG[k].price + lf.precio;
+    const kit = !lf.bloqueado
+      ? `<p>${T('bodega.lente_q', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, m: M(lf.precio) })}</p>
+        <button class="btn main" data-act="buy-kit" data-k="${esc(k)}" data-l="${esc(lf.key)}" ${S.money < total ? 'disabled' : ''}>${T('bodega.lente_si', { m: M(total) })}</button>`
+      : `<p>${T('bodega.lente_bloq', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, n: lf.minRep })}</p>`;
+    openModal(`<h2>${T('bodega.lente_t')}</h2>${kit}
+      <button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${T('bodega.lente_solo', { m: M(G.CATALOG[k].price) })}</button>
+      <button class="btn" data-act="close">${T('comun.cancelar')}</button>`);
+  }
+
   /* ---------- Preparar evento ---------- */
   function openPrep(contractId) {
     const c = S.contracts.find((x) => x.id === contractId);
@@ -38755,8 +39038,39 @@
         const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
         const it = G.CATALOG[b.tipo] || {};
         const e = S.equip.find((x) => x.id === b.equipId);
-        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div></div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
+        // Sin lente: qué lente le falta y dónde comprarlo (o con cuánta fama se desbloquea)
+        let lente = '';
+        if (b.motivo === 'sin_lente' && G.lenteFaltante) {
+          const lf = G.lenteFaltante(S, b.tipo, 0) || G.lenteFaltante(S, b.tipo, 1);
+          if (lf && lf.key) {
+            lente = lf.bloqueado ? `<div class="small camav-t">${T('prep.lente_fama', { lente: esc(itemName(lf.key)), n: lf.minRep })}</div>`
+              : `<div class="small camav-t">${T('prep.lente_falta', { lente: esc(itemName(lf.key)), m: M(lf.precio) })}</div>
+                <button class="btn sm camav-b" data-act="ir-bodega" data-k="lens">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`;
+          }
+        }
+        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div>${lente}</div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
       }).join('')}</div>`;
+  }
+  // Avisos de las cámaras: las que elegiste y no se usan (y por qué) y, si una posición obligatoria queda vacía o mal
+  // cubierta, qué cámara ya puedes comprar para ella en la Bodega
+  function camAvisosHtml(c, camP, equip) {
+    if (!camP || !Array.isArray(camP.positions)) return '';
+    const usados = new Set(camP.usados || []);
+    const bloq = new Set((camP.bloqueados || []).map((b) => b.equipId));
+    const out = [];
+    const sobran = equip.filter((e) => isCam(e) && !usados.has(e.id) && !bloq.has(e.id));
+    if (sobran.length) out.push(`<div class="small camav-t">${I('tip', 'sm')} ${T('prep.cam_no_usada', { cams: sobran.map((e) => esc(nmE(e))).join(', ') })}</div>`);
+    if (G.camaraParaPerfil) {
+      const flojas = camP.positions.filter((p) => !p.opcional && (!p.asignado || p.fit < 0.75));
+      for (const p of flojas) {
+        const sug = G.camaraParaPerfil(S, p.perfil, p.asignado ? p.fit : 0);
+        if (!sug || sug.fit < 0.8) continue;
+        out.push(`<div class="small camav-t">${I('role_camarografo', 'sm')} ${T(p.asignado ? 'prep.cam_sugerida' : 'prep.cam_sugerida_vacia', { pos: esc(TL(p.nombre)), ideal: esc(TL(p.ideal || '')), item: `<b>${esc(itemName(sug.key))}</b>`, m: M(sug.precio) })}</div>
+          <button class="btn sm camav-b" data-act="ir-bodega" data-k="cam">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`);
+        break;
+      }
+    }
+    return out.length ? `<div class="camav">${out.join('')}</div>` : '';
   }
   function renderPrep(soloCalculo) {
     const c = S.contracts.find((x) => x.id === prep.id);
@@ -38800,7 +39114,8 @@
     const reqVista = reqs.map((r) => ({ texto: TL(r.texto), ok: r.ok, detalle: r.ok ? '' : r.obligatorio ? T('prep.obligatorio') : T('prep.req_resta') }));
     const intlHtml = PE && c.internacional ? PE.internacional(Object.assign({}, c, { requisitos: reqVista })) : PE ? PE.internacional(c) : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
-    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP);
+    const avisos = camAvisosHtml(c, camP, equip);
+    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP) + avisos;
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
@@ -38836,7 +39151,7 @@
       return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''} ${off ? 'vipoff' : ''}">
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
-        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
+        <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${off ? `<div class="small" style="color:var(--amber)">${T('prep.necesita_vip')}</div>` : it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
     const pos = $('modal').scrollTop;
@@ -38954,6 +39269,7 @@
     try { resDanos = evEq ? danosFin(evEq.ids, evEq.cid) : null; } catch (e) { resDanos = null; }
     lsSet(RES_KEY, { r, ev: S.stats.events, caja, ty, danos: resDanos });
     showResult(r, caja, true, ty);
+    cabecera();   // la fama y el dinero de arriba ya son los del resultado (antes cambiaban recién al cerrarlo)
   }
 
   /* ---------- Avisos del día (renuncias, pagos, la rival, cancelaciones…) ---------- */
@@ -38971,6 +39287,9 @@
   function showResumenDia() {
     const lista = avisosPend();
     if (!lista.length) { tomarAvisos(); continuar(); return; }
+    // Al abrir el juego (no pasó ningún día) solo llegaron avisos de la temporada: un aviso corto en vez de la ventana
+    // "Resumen del día" (la oferta ya está en Clientes y la temporada tiene su tarjeta en Inicio)
+    if (!diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
     const dia = lista[lista.length - 1].day;
     const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
     snd.play(malo ? 'bad' : 'good');
@@ -38988,6 +39307,8 @@
     if (VI || !S) return;
     if ($('overlay').classList.contains('on')) return;
     if (S.currentEvent) { showIncident(); return; }
+    // Partida nueva: primero la intro del capítulo 1 y después el resumen del día (p. ej. "empezó la temporada")
+    if (!capPend().length && !S.chapterSeen && !(S.stats && S.stats.events) && showChapterIntro()) return;
     if (avisosPend().length) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
@@ -38998,6 +39319,11 @@
   function extrasRes(r) {
     if (!r || !Array.isArray(r.extras) || !r.extras.length) return '';
     return r.extras.map((x) => `<div class="paylater ext">${I((x && x.icon) || 'star', 'sm')} ${esc(gtx(x, x && x.text))}</div>`).join('');
+  }
+  // Fama del resultado: lo que sumó o restó el evento y con cuánta quedas de verdad ("+10 → ahora 23"), la misma de arriba
+  function famaTxt(r) {
+    const d = (r.repDelta >= 0 ? '+' : '') + r.repDelta;
+    return typeof r.fama === 'number' && isFinite(r.fama) ? T('res.fama_ahora', { delta: d, n: `<b class="num">${Math.floor(r.fama)}</b>` }) : d;
   }
   function showResult(r, caja, fresh, ty0) {
     // Con la lógica nueva los capítulos esperan en S.capCompletados; con una vieja, en r.chapterDone
@@ -39062,7 +39388,7 @@
         ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
-        <tr><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${r.repDelta >= 0 ? '+' : ''}${r.repDelta}</td></tr>
+        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
       </table>
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
@@ -39428,8 +39754,31 @@
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {
-        const r = act(G.buy(S, el.dataset.k), 'buy');
-        if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+        // Cámara que no graba sin un lente que todavía no tienes: se avisa antes y se ofrece comprar los dos
+        const k = el.dataset.k;
+        const lf = !el.dataset.solo && G.lenteFaltante && G.CATALOG[k] && G.CATALOG[k].cat === 'cam' ? G.lenteFaltante(S, k, 1) : null;
+        if (lf && lf.key) { pedirLente(k, lf); break; }
+        if (el.dataset.solo) closeModal();
+        comprarEquipo(k);
+        break;
+      }
+      case 'buy-kit': {
+        closeModal();
+        const r1 = G.buy(S, el.dataset.k);
+        if (!r1 || !r1.ok) { act(r1, 'buy'); continuar(); break; }
+        const r2 = act(G.buy(S, el.dataset.l), 'buy');
+        const cd = (r2 && r2.chapterDone) || r1.chapterDone;
+        if (cd && !Array.isArray(S.capCompletados)) showChapterDone(cd); else continuar();
+        break;
+      }
+      case 'ir-bodega': {
+        // Desde la preparación: a la categoría de la tienda donde está lo que falta (la oferta sigue en Clientes)
+        e.preventDefault();
+        closeModal(); prep = null;
+        catSel = el.dataset.k || catSel; lsSet('envivo_cat', catSel);
+        tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
+        const te = $('tiendaEq');
+        if (te) { try { te.scrollIntoView({ block: 'start' }); } catch (err) { window.scrollTo(0, 0); } }
         break;
       }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
@@ -41457,6 +41806,8 @@
         <div class="vacia">${dibujo(OP_DIB.economico, 92, 42)}<p class="small muted" style="margin:0">${esc(t('vacia'))}</p></div>
         <button class="btn sm" data-ext="flota" data-acc="tienda">${esc(t('tienda'))}</button></div>`;
     }
+    // Lo que se cobra al reparar (G.repairCost, con el descuento VIP si lo hay): lo mismo que dice el botón
+    const costoRep = (v) => { try { const e = (S.equip || []).find((x) => x.id === v.id); return e && G().repairCost ? Math.max(0, G().repairCost(e) || 0) : v.reparar; } catch (err) { return v.reparar; } };
     const filas = fl.map((v) => {
       const cond = Math.max(0, Math.min(100, Math.round(v.condition)));
       const tono = cond < 40 ? 'red' : cond < 60 ? 'amber' : '';
@@ -41464,7 +41815,7 @@
         <div class="tx"><b>${esc(nombreEquipo(v))}</b><small>${esc(t('asientos', { n: num(v.asientos) }))} · ${esc(t('hasta', { n: num(v.carga) }))} · ${esc(t('dia', { m: money(v.mant) }))}</small>
           <div class="bar ${tono}"><i style="width:${cond}%"></i></div>
           <small>${v.enTaller ? `<span class="taller">${esc(t('taller'))}</span> · ` : ''}${esc(t('estado', { n: num(cond) }))}</small>
-          ${v.enTaller || cond < 50 ? `<div><button class="btn sm" data-ext="flota" data-acc="reparar" data-id="${v.id}">${esc(t('reparar', { m: money(v.reparar) }))}</button></div>` : ''}</div></div>`;
+          ${v.enTaller || cond < 50 ? `<div><button class="btn sm" data-ext="flota" data-acc="reparar" data-id="${v.id}">${esc(t('reparar', { m: money(costoRep(v)) }))}</button></div>` : ''}</div></div>`;
     }).join('');
     return `<div class="card mov-flota"><h3>${esc(t(fl.length === 1 ? 'veh1' : 'vehs', { n: num(fl.length), m: money(mantTot) }))}</h3>${filas}
       <button class="btn sm" data-ext="flota" data-acc="tienda">${esc(t('tienda'))}</button></div>`;
@@ -49709,6 +50060,9 @@
    - La explicación sale en una hoja abajo, encima de todo (también encima de una ventana abierta) y se cierra
      tocando en cualquier parte. El toque del "?" no llega a lo que está debajo (no elige ni cierra nada).
    - Textos en los 10 idiomas aquí mismo; idioma = window.I18N.idioma (respaldo: español).
+   - Equipos: window.Ayuda.itemBtn(clave, etiqueta) → "?" con data-ayuda-item="<clave>" que abre "¿Para qué sirve?"
+     del equipo. El contenido lo arma la pantalla (Ayuda.setItemInfo(fn) o window.AyudaItemInfo, fn(clave) → { titulo, html }); sin ella,
+     se usa el nombre y el texto "uso" de Game.CATALOG.
    ===================================================================== */
 (function (root) {
   'use strict';
@@ -49832,6 +50186,15 @@
 .ay-hoja h3{margin:0 0 6px;font-size:16px;color:var(--amber,#ffb020)}
 .ay-hoja p{margin:0 0 10px;font-size:14px;line-height:1.45}
 .ay-hoja button{width:100%}
+.ay-hoja.ay-item{max-height:86vh;overflow-y:auto}
+.ay-hoja .ay-it-top{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.ay-hoja .ay-it-top h3{margin:0;overflow-wrap:anywhere}
+.ay-hoja .ay-it-top .itemart{flex:none}
+.ay-hoja .ay-sub{font-size:12px;font-weight:700;color:var(--muted,#9aa4b5);text-transform:uppercase;letter-spacing:.04em;margin:0 0 2px}
+.ay-hoja .ay-uso{font-size:15px;font-weight:600}
+.ay-hoja .ay-tec{font-size:13px;color:var(--muted,#9aa4b5)}
+.ay-hoja .ay-meta{font-size:12.5px;color:var(--muted,#9aa4b5);margin:-4px 0 12px;line-height:1.5}
+.ay-hoja .ay-meta b{color:var(--text,#e9edf5)}
 @keyframes ay-sube{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.ay-hoja{animation:none}}
 [data-ayuda]:not(.ay-q){cursor:help}`;
@@ -49843,18 +50206,48 @@
     return `<button type="button" class="ay-q" data-ayuda="${esc(k)}" aria-label="${esc(txt('_titulo') + ': ' + txt(k)[0])}">?</button>`;
   }
 
+  /* ---------- Equipos: "¿Para qué sirve?" ---------- */
+  let itemInfo = null;   // fn(clave) → { titulo, html } (la pone js/ui.js)
+  const TL = (s) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(s) : s; } catch (e) { return s; } };
+  const TT = (k, p, def) => { try { if (root.I18N && root.I18N.T && root.I18N.T.has(k)) return root.I18N.T(k, p); } catch (e) { /* abajo */ } return def; };
+  function itemDe(k) {
+    try { const G = root.Game; return (G && G.CATALOG && G.CATALOG[k]) || (G && G.CONSUMABLES && G.CONSUMABLES[k]) || null; } catch (e) { return null; }
+  }
+  function itemBtn(k, etiqueta) {
+    const it = itemDe(k);
+    if (!it) return '';
+    const lbl = etiqueta || TT('equipo.ver', { nombre: TL(it.name || k) }, TL(it.name || k));
+    return `<button type="button" class="ay-q ay-it" data-ayuda-item="${esc(k)}" aria-label="${esc(lbl)}">?</button>`;
+  }
+  function contenidoItem(k) {
+    const fn = itemInfo || (typeof root.AyudaItemInfo === 'function' ? root.AyudaItemInfo : null);
+    if (fn) { try { const r = fn(k); if (r && r.html) return r; } catch (e) { /* abajo */ } }
+    const it = itemDe(k);
+    if (!it) return null;
+    const uso = TL(it.uso || it.desc || '');
+    return { titulo: TL(it.name || k), html: `<div class="ay-sub">${esc(TT('equipo.para_que', null, '¿Para qué sirve?'))}</div><p class="ay-uso">${esc(uso)}</p>` };
+  }
+
   let abierta = null;
   function cerrar() { if (abierta) { abierta.remove(); abierta = null; } }
   function abrir(k) {
     const t = txt(k);
     if (!t || !Array.isArray(t)) return;
+    hoja(`<h3>${esc(t[0])}</h3><p>${esc(t[1])}</p>`);
+  }
+  function abrirItem(k) {
+    const c = contenidoItem(k);
+    if (!c) return;
+    hoja(`${c.top || `<h3>${esc(c.titulo)}</h3>`}${c.html}`, 'ay-item');
+  }
+  function hoja(cuerpo, clase) {
     ponerEstilo();
     cerrar();
     const v = document.createElement('div');
     v.className = 'ay-velo';
     v.setAttribute('role', 'dialog');
     v.setAttribute('aria-modal', 'true');
-    v.innerHTML = `<div class="ay-hoja"><h3>${esc(t[0])}</h3><p>${esc(t[1])}</p><button type="button" class="btn main">${esc(txt('_ok'))}</button></div>`;
+    v.innerHTML = `<div class="ay-hoja ${clase || ''}">${cuerpo}<button type="button" class="btn main">${esc(txt('_ok'))}</button></div>`;
     v.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); cerrar(); });
     document.body.appendChild(v);
     abierta = v;
@@ -49865,15 +50258,16 @@
     ponerEstilo();
     // En captura: el toque en un "?" (o en algo con data-ayuda) no llega al juego
     document.addEventListener('click', (e) => {
-      const el = e.target && e.target.closest ? e.target.closest('[data-ayuda]') : null;
+      const el = e.target && e.target.closest ? e.target.closest('[data-ayuda], [data-ayuda-item]') : null;
       if (!el || (abierta && abierta.contains(el))) return;
       e.stopPropagation(); e.preventDefault();
-      abrir(el.getAttribute('data-ayuda'));
+      if (el.hasAttribute('data-ayuda-item')) abrirItem(el.getAttribute('data-ayuda-item'));
+      else abrir(el.getAttribute('data-ayuda'));
     }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && abierta) { e.stopPropagation(); cerrar(); } }, true);
   }
 
-  root.Ayuda = { btn, abrir, cerrar, claves: () => Object.keys(D.es).filter((k) => k[0] !== '_'), _D: D };
+  root.Ayuda = { btn, abrir, cerrar, itemBtn, abrirItem, setItemInfo: (fn) => { itemInfo = typeof fn === 'function' ? fn : null; }, claves: () => Object.keys(D.es).filter((k) => k[0] !== '_'), _D: D };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
