@@ -1403,6 +1403,60 @@
     const key = ops[0] || null;
     return { subtipo: sub, key, bloqueado: key ? CATALOG[key].minRep > s.rep : true, precio: key ? CATALOG[key].price : 0, minRep: key ? CATALOG[key].minRep : 0 };
   }
+  /* Lo que le falta a un equipo para funcionar, contando lo que ya tienes: lentes, el cuerpo de cámara de un lente, la
+     fibra, el adaptador y el soporte del lente box, el generador, la unidad móvil y el personal que lo maneja.
+     extra = 1 cuando el equipo todavía no es tuyo (antes de comprarlo). Devuelve una lista (vacía si no falta nada):
+       { req, tipo: 'equipo', key (lo más barato de la tienda, primero lo que ya desbloqueaste), precio, minRep, bloqueado,
+         cat (categoría de la Bodega), creditos: [claves que también lo cubren y se canjean con créditos] }
+       { req, tipo: 'personal', rol }
+     No cambia nada del estado. */
+  const LENTE_B4 = (it) => it.subtipo === 'lente_eng';
+  const CAM_SIS = (it) => it.cat === 'cam' && isSystem(it) && !it.incluyeLente;
+  const DEPS = {
+    lente_b4: { da: LENTE_B4, modo: 'suma', salta: (it) => it.incluyeLente },
+    lente_cine: { da: (it) => it.subtipo === 'lente_cine', modo: 'suma', salta: (it) => it.incluyeLente },
+    lente_mft: { da: (it) => it.subtipo === 'lente_mft', modo: 'suma', salta: (it) => it.incluyeLente },
+    cable_fibra_smpte: { da: (it) => it.subtipo === 'cable_fibra_smpte', modo: 'suma', por: 2, salta: (it) => it.incluyeFibra },
+    montura_b4: { da: (it) => it.cat === 'cam' && (it.requiere || []).includes('lente_b4') && !it.incluyeLente, modo: 'suma' },
+    cam_sistema: { da: CAM_SIS, modo: 'max' },
+    cam_sistema_4k: { da: (it) => CAM_SIS(it) && (it.subtipo === 'sistema_4k' || it.subtipo === 'super_lenta'), modo: 'uno' },
+    adaptador_lente_box: { da: (it) => it.subtipo === 'adaptador_lente_box', modo: 'max' },
+    soporte_pesado: { da: (it) => it.subtipo === 'soporte_pesado', modo: 'max' },
+    vehiculo_ob: { da: (it) => isOB(it), modo: 'uno' },
+    generador: { da: (it) => it.subtipo === 'generador_diesel', modo: 'uno' },
+  };
+  function dependencias(s, type, extra) {
+    const it0 = CATALOG[type];
+    if (!it0 || !s) return [];
+    const mios = (s.equip || []).map((e) => CATALOG[e.type]).filter(Boolean);
+    if (extra) mios.push(it0);
+    const out = [];
+    (it0.requiere || []).forEach((req) => {
+      const rol = ROLE_KEYS.includes(normRole(req)) ? normRole(req) : null;
+      if (rol) {
+        if (!(s.staff || []).some((p) => normRole(p.role) === rol)) out.push({ req, tipo: 'personal', rol });
+        return;
+      }
+      const d = DEPS[req];
+      if (!d || (d.salta && d.salta(it0))) return;
+      const piden = mios.filter((it) => (it.requiere || []).includes(req) && !(d.salta && d.salta(it)));
+      let need;
+      if (d.modo === 'suma') need = piden.length;
+      else if (d.modo === 'max') { const g = {}; piden.forEach((it) => { g[it.subtipo] = (g[it.subtipo] || 0) + 1; }); need = Math.max(0, ...Object.values(g)); }
+      else need = piden.length ? 1 : 0;
+      let have = mios.filter((it) => d.da(it)).length * (d.por || 1);
+      // Un lente box también sirve de lente B4 para una cámara de sistema (si hay con qué montarlo)
+      if (req === 'lente_b4' && isSystem(it0)) have += Math.min(mios.filter((it) => it.subtipo === 'lente_box').length, mios.filter(CAM_SIS).length);
+      if (have >= need) return;
+      const ops = Object.keys(CATALOG).filter((k) => enTienda(k) && d.da(CATALOG[k]))
+        .sort((a, b) => ((CATALOG[a].minRep > s.rep) - (CATALOG[b].minRep > s.rep)) || CATALOG[a].price - CATALOG[b].price);
+      const key = ops[0] || null;
+      const creditos = Object.keys(CATALOG).filter((k) => { const x = CATALOG[k]; return (x.premium || x.exclusivo) && !x.vip && Number(x.creditos) > 0 && d.da(x); });
+      out.push({ req, tipo: 'equipo', key, precio: key ? CATALOG[key].price : 0, minRep: key ? CATALOG[key].minRep : 0,
+        bloqueado: key ? CATALOG[key].minRep > s.rep : true, cat: key ? CATALOG[key].cat : (creditos[0] ? CATALOG[creditos[0]].cat : null), creditos });
+    });
+    return out;
+  }
   // La cámara de la tienda que mejor cubre una posición de ese perfil y que ya puedes comprar (fama), sin lentes ni
   // accesorios aparte: la que mejor encaja y, entre iguales, la más barata. null si ninguna encaja mejor que `minFit`.
   function camaraParaPerfil(s, perfil, minFit) {
@@ -2764,7 +2818,7 @@
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, lenteFaltante, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, suggestLoadout, lenteFaltante, dependencias, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,

@@ -158,12 +158,18 @@ async function foto(page, nombre, sel) {
       // Canjear el EVX XT-VIA Oro con créditos
       await categoria(o.page, 'replay');
       await o.page.click('#tab-bodega .exq[data-ex="ex_repeticion"] [data-act="ex-canjear"]');
-      await o.page.waitForSelector('#overlay.on [data-act="confirm-yes"]', { timeout: 4000 });
+      // El servidor de repeticiones necesita un operador: sale el combo (lo que falta y "Solo …"), que es la confirmación
+      const solo = '#overlay.on [data-act="combo-canjear"][data-l=""], #overlay.on [data-act="confirm-yes"]';
+      await o.page.waitForSelector(solo, { timeout: 4000 });
       const q = await o.page.$eval('#overlay.on', (el) => el.innerText);
-      bien(/950/.test(q) && /EVX XT-VIA Oro/.test(q), 'Canjear: pide confirmar con el nombre y los 950 créditos');
+      bien(/950/.test(q) && /EVX XT-VIA Oro/.test(q) && /operador/i.test(q), 'Canjear: confirma con el nombre, los 950 créditos y lo que le falta (operador de repeticiones)');
       await foto(o.page, 'confirmar');
-      await o.page.click('#overlay.on [data-act="confirm-yes"]');
+      await o.page.click(solo);
       await o.page.waitForFunction(() => window.__game.state.equip.some((e) => e.type === 'ex_repeticion' && e.srvId !== undefined), null, { timeout: 6000 }).catch(() => null);
+      // Después del canje avisa otra vez lo que falta (contratar al operador): "Ahora no"
+      await o.page.waitForSelector('#overlay.on [data-act="ir-personal"]', { timeout: 4000 }).catch(() => null);
+      await o.page.click('#overlay.on [data-act="close"]').catch(() => {});
+      await o.page.waitForTimeout(150);
       bien(o.srv.gastos.includes('ex_repeticion') && o.srv.creditos === 5000 - 950, 'Canjear: POST /api/gastar {item: ex_repeticion} y se descuentan 950 créditos');
       const eq = await o.page.evaluate(() => window.__game.state.equip.find((e) => e.type === 'ex_repeticion'));
       bien(!!eq && eq.srvId === 100 && eq.serie === 1, 'Canjear: el equipo llega a la bodega con su número de serie');

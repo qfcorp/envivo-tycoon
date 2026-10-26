@@ -1009,6 +1009,10 @@
   }
   function exCanjear(id) {
     if (!Api.logueado()) { snd.play('tap'); abrirCuenta('registro', T('bodega.ex_cuenta')); return; }
+    // Si el equipo no rinde solo (le falta lente, cámara, soporte...), se ofrece el combo antes de canjear
+    const p = (premiumServidor() || []).find((x) => x.id === id);
+    const key = p && p.entrega && p.entrega.tipo === 'item' ? p.entrega.item : null;
+    if (key && ofrecerCombo(key, 'creditos', id)) { snd.play('tap'); return; }
     canjear(id);
   }
   /* ---------- Equipos dañados: avisos para repararlos (resultado del evento, Inicio, Bodega y preparación) ----------
@@ -1582,7 +1586,7 @@
   async function alConectar(recienEntro) {
     const E = Api.estado;
     if (!E) { render(); return; }
-    if (Pm) Pm.setVip(E.vip_activo);
+    if (Pm) syncVip();
     if (E.logueado) {
       if (recienEntro) { nubeLista = null; nubeBloqueo = false; }   // otra cuenta (o la misma otra vez): revisar desde cero
       await revisarNube('carga');
@@ -1591,7 +1595,16 @@
     render();
   }
 
+  // El Pase VIP lo decide el servidor: cada vez que llega /api/estado (al abrir, después de una compra o un canje) se
+  // copia, así un Pase VIP comprado sin recargar la página (Google Play) activa enseguida los equipos VIP
+  function syncVip() {
+    if (!Pm || !Pm.setVip || !Api.estado) return;
+    const E = Api.estado;
+    const hasta = E.vip_hasta ? Date.parse(E.vip_hasta) : NaN;
+    Pm.setVip(!!E.logueado && !!E.vip_activo && (isNaN(hasta) || hasta > Date.now()));
+  }
   function aplicarEntregas() {
+    syncVip();
     if (!Pm || !Api.estado || !Api.estado.logueado) return;
     const hechos = Pm.aplicarEntregas(S, Api.estado.entregas);
     if (Array.isArray(Api.estado.inventario) && Pm.sincronizarInventario) {
@@ -1727,6 +1740,9 @@
         await Api.refrescar();
         aplicarEntregas();
         render();
+        // Equipo que necesita más cosas: lo que falta para que funcione
+        const en = p.entrega || {};
+        if (en.tipo === 'item' && G.CATALOG[en.item]) ofrecerCombo(en.item, 'despues');
       } catch (e) { toast(TL(e.message)); snd.play('error'); }
     });
   }
@@ -1751,16 +1767,134 @@
     const r = act(G.buy(S, k), 'buy');
     if (r && r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
   }
-  function pedirLente(k, lf) {
-    const cam = esc(itemName(k)), lente = esc(itemName(lf.key));
-    const total = G.CATALOG[k].price + lf.precio;
-    const kit = !lf.bloqueado
-      ? `<p>${T('bodega.lente_q', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, m: M(lf.precio) })}</p>
-        <button class="btn main" data-act="buy-kit" data-k="${esc(k)}" data-l="${esc(lf.key)}" ${S.money < total ? 'disabled' : ''}>${T('bodega.lente_si', { m: M(total) })}</button>`
-      : `<p>${T('bodega.lente_bloq', { cam: `<b>${cam}</b>`, lente: `<b>${lente}</b>`, n: lf.minRep })}</p>`;
-    openModal(`<h2>${T('bodega.lente_t')}</h2>${kit}
-      <button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${T('bodega.lente_solo', { m: M(G.CATALOG[k].price) })}</button>
-      <button class="btn" data-act="close">${T('comun.cancelar')}</button>`);
+  /* ---------- Combos: lo que un equipo necesita para funcionar (G.dependencias) ----------
+     Al comprar con dinero del juego o canjear con créditos algo que no rinde solo (cámara sin lente, lente box sin cámara
+     de sistema, adaptador ni soporte, dron sin piloto...), se ofrece comprarlo todo junto. Los créditos SIEMPRE los
+     descuenta el servidor (/api/gastar, uno por equipo); el dinero del juego, G.buy. Nada mezcla las dos monedas en un
+     solo botón: se canjea lo que va con créditos y después se ofrece lo que falta con dinero. */
+  // Lo que falta, también lo que necesitan las cosas que se comprarían (la cámara de sistema de un lente box pide su
+  // lente B4 y su fibra): se simula la compra y se repite (hasta 3 niveles). Sin repetidos.
+  function deps(k, extra) {
+    if (!G.dependencias || !G.CATALOG[k]) return [];
+    try {
+      const sim = { rep: S.rep, staff: S.staff, equip: S.equip.slice() };
+      if (extra) sim.equip.push({ id: -1, type: k, condition: 100 });
+      const out = [], visto = new Set();
+      let cola = [k];
+      for (let n = 0; n < 3 && cola.length; n++) {
+        const sig = [];
+        cola.forEach((t) => G.dependencias(sim, t, 0).forEach((d) => {
+          const id = d.req + ':' + (d.rol || '');
+          if (visto.has(id)) return;
+          visto.add(id); out.push(d);
+          if (d.tipo === 'equipo' && d.key && !d.bloqueado) { sim.equip.push({ id: -2 - out.length, type: d.key, condition: 100 }); sig.push(d.key); }
+        }));
+        cola = sig;
+      }
+      return out;
+    } catch (e) { return []; }
+  }
+  // El producto de la tienda premium (servidor) que entrega ese equipo, si se puede canjear ahora (fama, Pase VIP)
+  function premiumDe(key) {
+    const srv = premiumServidor();
+    const p = srv ? srv.find((x) => x && x.entrega && x.entrega.tipo === 'item' && x.entrega.item === key) : null;
+    if (!p) return null;
+    const it = G.CATALOG[key] || {};
+    const sinVip = !!p.vip && !(Api.estado && Api.estado.vip_activo);
+    return { id: p.id, key, creditos: Number(p.creditos) || 0, ok: Api.logueado() && !sinVip && S.rep >= (Number(it.minRepCreditos) || 0) };
+  }
+  // Cada cosa que falta, resuelta: con dinero (key comprable), con créditos (premium canjeable) o personal
+  function resolverFaltas(lista) {
+    return lista.map((d) => {
+      if (d.tipo === 'personal') return Object.assign({ nombre: roleName(d.rol) }, d);
+      const cred = (d.creditos || []).map(premiumDe).filter((p) => p && p.ok).sort((a, b) => a.creditos - b.creditos)[0] || null;
+      const dinero = d.key && !d.bloqueado ? d.key : null;
+      return Object.assign({ nombre: itemName(d.key || (cred ? cred.key : d.req)), dinero, cred }, d);
+    });
+  }
+  const totalDinero = (fs) => fs.reduce((a, f) => a + (f.dinero ? G.CATALOG[f.dinero].price : 0), 0);
+  function lineasFalta(fs) {
+    return `<ul class="combo-l">${fs.map((f) => {
+      let det;
+      if (f.tipo === 'personal') det = T('combo.personal');
+      else {
+        const partes = [];
+        if (f.dinero) partes.push(T('combo.precio', { m: M(G.CATALOG[f.dinero].price) }));
+        else if (f.key) partes.push(T('combo.fama', { n: f.minRep }));
+        if (f.cred) partes.push(partes.length ? T('combo.o_creditos', { n: N(f.cred.creditos) }) : T('combo.solo_creditos', { n: N(f.cred.creditos) }));
+        det = partes.join(' ');
+      }
+      const ico = f.tipo === 'personal' ? I(roleIcon(f.rol), 'sm') : itemArt(f.dinero || (f.cred && f.cred.key) || f.key || 'cam_basic', 34, 'mini');
+      return `<li>${ico}<div class="grow"><b>${esc(f.nombre)}</b><div class="small muted">${esc(det)}</div></div></li>`;
+    }).join('')}</ul>`;
+  }
+  const btnPersonal = (fs) => fs.filter((f) => f.tipo === 'personal').slice(0, 2)
+    .map((f) => `<button class="btn" data-act="ir-personal" data-k="${esc(f.rol)}">${I(roleIcon(f.rol), 'sm')}${T('combo.contratar', { rol: esc(f.nombre) })}</button>`).join('');
+  const btnVer = (fs) => { const f = fs.find((x) => x.tipo === 'equipo' && (x.key || x.cred)); const k = f ? (f.key || f.cred.key) : null;
+    return k ? `<button class="btn" data-act="ir-bodega" data-k="${esc(G.CATALOG[k].cat)}" data-item="${esc(k)}">${I('box', 'sm')}${T('combo.ver', { item: esc(itemName(k)) })}</button>` : ''; };
+  /* modo: 'dinero' (antes de comprar con dinero), 'creditos' (antes de canjear; pid = producto premium),
+     'despues' (ya es tuyo: lo que todavía falta) */
+  function ofrecerCombo(k, modo, pid) {
+    const it = G.CATALOG[k];
+    if (!it) return false;
+    const fs = resolverFaltas(deps(k, modo === 'despues' ? 0 : 1));
+    if (!fs.length) return false;
+    const soloLente = fs.every((f) => /^lente_/.test(f.req));
+    const titulo = modo === 'despues' ? T('combo.t_despues') : soloLente && it.cat === 'cam' ? T('bodega.lente_t') : T('combo.t');
+    const plata = fs.filter((f) => f.dinero).map((f) => f.dinero);
+    const conPlata = totalDinero(fs);
+    let btns = '';
+    if (modo === 'dinero') {
+      const total = it.price + conPlata;
+      if (plata.length) btns += `<button class="btn main" data-act="buy-kit" data-k="${esc(k)}" data-l="${esc(plata.join(','))}" ${S.money < total ? 'disabled' : ''}>${soloLente && plata.length === 1 ? T('bodega.lente_si', { m: M(total) }) : T('combo.todo', { m: M(total) })}</button>`;
+      btns += `<button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${soloLente && it.cat === 'cam' ? T('bodega.lente_solo', { m: M(it.price) }) : T(plata.length ? 'combo.solo' : 'combo.comprar', { item: esc(itemName(k)), m: M(it.price) })}</button>`;
+    } else if (modo === 'creditos') {
+      const p = premiumServidor() ? premiumServidor().find((x) => x.id === pid) : null;
+      const base = p ? Number(p.creditos) || 0 : 0;
+      const creds = fs.filter((f) => f.cred).map((f) => f.cred);
+      const total = base + creds.reduce((a, c) => a + c.creditos, 0);
+      const saldo = (Api.estado && Api.estado.creditos) || 0;
+      if (creds.length) btns += `<button class="btn main" data-act="combo-canjear" data-k="${esc(pid)}" data-l="${esc(creds.map((c) => c.id).join(','))}" data-item="${esc(k)}" ${saldo < total ? 'disabled' : ''}>${T('combo.canjear_todo', { n: N(total) })}</button>`
+        + (saldo < total ? `<p class="small" style="color:var(--amber)">${T('combo.faltan_creditos', { n: N(total - saldo) })}</p>` : '');
+      btns += `<button class="btn ${creds.length ? '' : 'main'}" data-act="combo-canjear" data-k="${esc(pid)}" data-l="" data-item="${esc(k)}" ${saldo < base ? 'disabled' : ''}>${T(creds.length ? 'combo.canjear_solo' : 'combo.canjear', { item: esc(itemName(k)), n: N(base) })}</button>`;
+      if (plata.length) btns += `<p class="small muted">${T('combo.resto_dinero')}</p>`;
+    } else if (plata.length) {
+      btns += `<button class="btn main" data-act="buy-kit" data-k="" data-l="${esc(plata.join(','))}" ${S.money < conPlata ? 'disabled' : ''}>${T('combo.comprar_falta', { m: M(conPlata) })}</button>`;
+    }
+    btns += btnPersonal(fs);
+    if (!plata.length && modo !== 'creditos') btns += btnVer(fs);
+    openModal(`<h2>${titulo}</h2><p>${T('combo.intro', { item: `<b>${esc(itemName(k))}</b>` })}</p>${lineasFalta(fs)}
+      ${btns}<button class="btn" data-act="close">${modo === 'despues' ? T('combo.ahora_no') : T('comun.cancelar')}</button>`);
+    return true;
+  }
+  // Compra con dinero del juego una lista de equipos (combo). Devuelve los ids nuevos de la bodega.
+  function comprarLista(keys) {
+    const nuevos = [];
+    let ultimo = null, cd = null;
+    for (const k of keys) {
+      const antes = new Set(S.equip.map((e) => e.id));
+      const r = G.buy(S, k);
+      ultimo = r;
+      if (!r || !r.ok) break;
+      if (r.chapterDone) cd = r.chapterDone;
+      S.equip.forEach((e) => { if (!antes.has(e.id)) nuevos.push(e.id); });
+    }
+    return { nuevos, ultimo, chapterDone: cd };
+  }
+  // Canjea con créditos (servidor) el producto y, si se pide, los que completan el combo; luego ofrece lo que falta
+  async function canjearCombo(pid, extras, item) {
+    const ids = [pid].concat((extras || []).filter(Boolean));
+    closeModal();
+    let hechos = 0;
+    for (const id of ids) {
+      try { await Api.gastar(id); hechos++; } catch (e) { toast(TL(e.message)); snd.play('error'); break; }
+    }
+    if (!hechos) return;
+    snd.play('buy');
+    try { await Api.refrescar(); } catch (e) { /* queda lo que ya había */ }
+    aplicarEntregas();
+    render();
+    if (item && hechos === ids.length) ofrecerCombo(item, 'despues');
   }
 
   /* ---------- Preparar evento ---------- */
@@ -1805,27 +1939,66 @@
       <div class="lbl"><span>${T('duelo.mega_promete')}</span><b class="num">${mega}</b></div><div class="bar mega"><i style="width:${c(mega)}%"></i></div>
       <div class="small muted" style="margin-top:4px">${T('prep.duelo_det_' + k)}</div></div>`;
   }
-  // Cámaras que no se pueden usar (sin lente, sin fibra...) con su motivo
-  function bloqueadosHtml(camP) {
-    const bl = (camP && Array.isArray(camP.bloqueados)) ? camP.bloqueados : [];
-    if (!bl.length) return '';
-    return `<div class="bloq"><div class="pe-hd"><span class="pe-ttl">${T('prep.bloqueados')}</span><span class="pe-sub">${T('prep.bloqueados_n', { n: bl.length })}</span></div>
-      ${bl.map((b) => {
-        const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
-        const it = G.CATALOG[b.tipo] || {};
-        const e = S.equip.find((x) => x.id === b.equipId);
-        // Sin lente: qué lente le falta y dónde comprarlo (o con cuánta fama se desbloquea)
-        let lente = '';
-        if (b.motivo === 'sin_lente' && G.lenteFaltante) {
-          const lf = G.lenteFaltante(S, b.tipo, 0) || G.lenteFaltante(S, b.tipo, 1);
-          if (lf && lf.key) {
-            lente = lf.bloqueado ? `<div class="small camav-t">${T('prep.lente_fama', { lente: esc(itemName(lf.key)), n: lf.minRep })}</div>`
-              : `<div class="small camav-t">${T('prep.lente_falta', { lente: esc(itemName(lf.key)), m: M(lf.precio) })}</div>
-                <button class="btn sm camav-b" data-act="ir-bodega" data-k="lens">${I('box', 'sm')}${T('prep.ir_bodega')}</button>`;
-          }
-        }
-        return `<div class="bq">${itemArt(b.tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL(it.name || b.tipo))}</b><div class="small muted">${esc(TL(b.texto || ''))}</div>${lente}</div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
-      }).join('')}</div>`;
+  // Cámaras que no se pueden usar (sin lente, sin fibra, sin Pase VIP...) con su motivo y cómo arreglarlo. Salen las
+  // elegidas y también las tuyas que no se eligieron porque no funcionarían (así una cámara VIP o una sin lente no
+  // "desaparece"). Debajo, los otros equipos elegidos a los que les falta algo (lente box sin cámara de sistema...).
+  function arreglo(tipo, equipId) {
+    const fs = resolverFaltas(deps(tipo, 0));
+    if (!fs.length) return '';
+    const plata = fs.filter((f) => f.dinero);
+    const m = totalDinero(fs);
+    const bloq = fs.filter((f) => f.tipo === 'equipo' && !f.dinero && f.key);
+    let h = `<div class="small camav-t">${T('prep.falta_motivo', { que: fs.map((f) => esc(f.nombre)).join(', ') })}</div>`;
+    bloq.forEach((f) => { h += `<div class="small camav-t">${T('prep.falta_fama', { item: esc(itemName(f.key)), n: f.minRep })}</div>`; });
+    const bs = [];
+    if (plata.length) bs.push(`<button class="btn sm camav-b green" data-act="buy-falta" data-k="${esc(tipo)}" data-id="${equipId || ''}" ${S.money < m ? 'disabled' : ''}>${I('cart', 'sm')}${T('prep.falta_comprar', { m: M(m) })}</button>`);
+    fs.filter((f) => f.tipo === 'personal').slice(0, 1).forEach((f) => bs.push(`<button class="btn sm camav-b" data-act="ir-personal" data-k="${esc(f.rol)}">${I(roleIcon(f.rol), 'sm')}${T('combo.contratar', { rol: esc(f.nombre) })}</button>`));
+    if (!plata.length) { const v = btnVer(fs); if (v) bs.push(v.replace('class="btn"', 'class="btn sm camav-b"')); }
+    return h + (bs.length ? `<div class="bq-acc">${bs.join('')}</div>` : '');
+  }
+  function bloqueadosHtml(camP, c, equip) {
+    const bl = (camP && Array.isArray(camP.bloqueados)) ? camP.bloqueados.slice() : [];
+    // Tus cámaras que no se eligieron porque no funcionarían con nada de lo que tienes
+    if (c && G.cameraPlan) {
+      try {
+        const sel = new Set((equip || []).map((e) => e.id));
+        const todo = G.cameraPlan(S, c, S.equip.map((e) => e.id), prep ? [...prep.staff] : undefined);
+        (todo.bloqueados || []).forEach((b) => { if (!sel.has(b.equipId) && !bl.some((x) => x.equipId === b.equipId || (x.tipo === b.tipo && x.motivo === b.motivo))) bl.push(b); });
+      } catch (err) { /* sin plan */ }
+    }
+    // Otros equipos elegidos a los que les falta algo para funcionar (no cámaras)
+    const otros = [];
+    (equip || []).forEach((e) => { if (!isCam(e) && !otros.some((x) => x.type === e.type) && deps(e.type, 0).length) otros.push(e); });
+    if (!bl.length && !otros.length) return '';
+    const fila = (tipo, e, texto, corto, extra) => `<div class="bq">${itemArt(tipo, 40, 'mini')}<div class="grow"><b>${esc(e ? nmE(e) : TL((G.CATALOG[tipo] || {}).name || tipo))}</b>${texto ? `<div class="small muted">${esc(TL(texto))}</div>` : ''}${extra}</div><span class="bqr">${I('lock', 'sm')}${esc(corto)}</span></div>`;
+    const camHtml = bl.map((b) => {
+      const corto = b.motivo && I18 && I18.T.has('prep.bloq.' + b.motivo) ? T('prep.bloq.' + b.motivo) : (b.motivo || '').replace(/_/g, ' ');
+      const e = S.equip.find((x) => x.id === b.equipId);
+      const extra = b.motivo === 'sin_vip'
+        ? `<div class="bq-acc"><button class="btn sm camav-b" data-act="ir-pase-vip">${I('crown', 'sm')}${T('prep.ir_pase_vip')}</button></div>`
+        : arreglo(b.tipo, b.equipId);
+      return fila(b.tipo, e, b.texto || '', corto, extra);
+    }).join('');
+    const otrosHtml = otros.map((e) => fila(e.type, e, '', T('prep.bloq.falta'), arreglo(e.type, e.id))).join('');
+    return `${bl.length ? `<div class="bloq"><div class="pe-hd"><span class="pe-ttl">${T('prep.bloqueados')}</span><span class="pe-sub">${T('prep.bloqueados_n', { n: bl.length })}</span></div>${camHtml}</div>` : ''}
+      ${otros.length ? `<div class="bloq bloq-otros"><div class="pe-hd"><span class="pe-ttl">${T('prep.falta_t')}</span><span class="pe-sub">${T('prep.falta_n', { n: otros.length })}</span></div>${otrosHtml}</div>` : ''}`;
+  }
+  // "Comprar lo que falta" desde la preparación: compra con dinero lo que le falta a ese equipo, lo marca junto con lo
+  // nuevo y rehace el plan (la preparación sigue abierta)
+  function comprarFalta(tipo, equipId) {
+    if (!prep) return;
+    const fs = resolverFaltas(deps(tipo, 0)).filter((f) => f.dinero);
+    if (!fs.length) return;
+    const r = comprarLista(fs.map((f) => f.dinero));
+    if (r.ultimo && !r.ultimo.ok) { toast(TL(r.ultimo.msg)); snd.play('error'); }
+    if (r.nuevos.length) {
+      r.nuevos.forEach((id) => prep.equip.add(id));
+      if (equipId) prep.equip.add(equipId);
+      toast(T('prep.falta_compro', { que: fs.slice(0, r.nuevos.length).map((f) => itemName(f.dinero)).join(', ') }));
+      snd.play('buy');
+    }
+    save();
+    renderPrep();
   }
   // Avisos de las cámaras: las que elegiste y no se usan (y por qué) y, si una posición obligatoria queda vacía o mal
   // cubierta, qué cámara ya puedes comprar para ella en la Bodega
@@ -1894,7 +2067,8 @@
       : tHoy.libres === 1 ? `<p class="small muted" style="margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.ultimo_turno')}</p>` : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
     const avisos = camAvisosHtml(c, camP, equip);
-    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP) + avisos;
+    const bloqHtml = bloqueadosHtml(camP, c, equip);
+    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqHtml + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqHtml + avisos;
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
@@ -2585,31 +2759,52 @@
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {
-        // Cámara que no graba sin un lente que todavía no tienes: se avisa antes y se ofrece comprar los dos
+        // Equipo que no rinde sin algo que todavía no tienes (cámara sin lente, lente box sin cámara de sistema...):
+        // se avisa antes y se ofrece comprarlo todo junto (combo)
         const k = el.dataset.k;
-        const lf = !el.dataset.solo && G.lenteFaltante && G.CATALOG[k] && G.CATALOG[k].cat === 'cam' ? G.lenteFaltante(S, k, 1) : null;
-        if (lf && lf.key) { pedirLente(k, lf); break; }
+        if (!el.dataset.solo && ofrecerCombo(k, 'dinero')) break;
         if (el.dataset.solo) closeModal();
         comprarEquipo(k);
         break;
       }
       case 'buy-kit': {
+        // Combo con dinero del juego: data-k (el equipo, puede faltar) + data-l (lo que necesita, separado por comas)
         closeModal();
-        const r1 = G.buy(S, el.dataset.k);
-        if (!r1 || !r1.ok) { act(r1, 'buy'); continuar(); break; }
-        const r2 = act(G.buy(S, el.dataset.l), 'buy');
-        const cd = (r2 && r2.chapterDone) || r1.chapterDone;
-        if (cd && !Array.isArray(S.capCompletados)) showChapterDone(cd); else continuar();
+        const keys = [el.dataset.k].concat((el.dataset.l || '').split(',')).filter(Boolean);
+        const r = comprarLista(keys);
+        act(r.ultimo, 'buy');
+        if (r.chapterDone && !Array.isArray(S.capCompletados)) showChapterDone(r.chapterDone); else continuar();
+        break;
+      }
+      case 'combo-canjear': canjearCombo(el.dataset.k, (el.dataset.l || '').split(','), el.dataset.item || null); break;
+      case 'buy-falta': e.preventDefault(); comprarFalta(el.dataset.k, id); break;
+      case 'ir-pase-vip': {
+        e.preventDefault();
+        closeModal(); prep = null;
+        tab = 'tienda'; vistaTienda = 'tienda'; snd.play('tap'); mus.go('menu'); render();
+        irSeccionTienda('tv-vip');
+        break;
+      }
+      case 'ir-personal': {
+        e.preventDefault();
+        closeModal(); prep = null;
+        rolBuscar = el.dataset.k || rolBuscar;
+        tab = 'personal'; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0);
         break;
       }
       case 'ir-bodega': {
-        // Desde la preparación: a la categoría de la tienda donde está lo que falta (la oferta sigue en Clientes)
+        // Desde la preparación o un combo: a la categoría de la tienda donde está lo que falta (la oferta sigue en Clientes)
         e.preventDefault();
         closeModal(); prep = null;
         catSel = el.dataset.k || catSel; lsSet('envivo_cat', catSel);
         tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
-        const te = $('tiendaEq');
-        if (te) { try { te.scrollIntoView({ block: 'start' }); } catch (err) { window.scrollTo(0, 0); } }
+        const item = el.dataset.item;
+        const q = item && window.CSS && CSS.escape ? CSS.escape(item) : item;
+        const bt = q ? document.querySelector(`#tab-bodega [data-act="buy"][data-k="${q}"]`) : null;
+        const card = q ? (document.querySelector(`#tab-bodega [data-ex="${q}"]`) || (bt && bt.closest('.card'))) : null;
+        const te = card || $('tiendaEq');
+        if (card) card.classList.add('combo-ir');
+        if (te) { try { te.scrollIntoView({ block: card ? 'center' : 'start' }); } catch (err) { window.scrollTo(0, 0); } }
         break;
       }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
