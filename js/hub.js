@@ -636,6 +636,7 @@
   .hub-ahora .ha-fl,.hub-cap .ha-fl{font-size:22px;color:var(--muted);line-height:1}
   .hub-ahora .grow{flex:1;min-width:0}
   .hubcard + .hub-ahora,.hubcard + .redstrip{margin-top:0}
+  .hub-turno{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 8px;padding:0 4px;color:var(--muted)}
   .hub-cap{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:8px 12px 8px 8px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);text-align:start}
   .hub-cap .hc-por{flex:none;line-height:0}.hub-cap .hc-por svg{border-radius:10px}
   .hub-cap .hc-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}

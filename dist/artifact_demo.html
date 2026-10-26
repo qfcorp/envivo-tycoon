@@ -26326,6 +26326,39 @@
     "prep.obligatorio": "Obligatorio: sin esto no puedes salir al aire",
     "prep.req_resta": "Si falta, baja la calidad",
     "dia.gastos": "Incluye los gastos fijos del día ({m})",
+    "inicio.cerrar_dia": "Cerrar el día",
+    "dia.hoy": "Turno de la {turno} · {n} de {max} eventos hoy",
+    "dia.turno.0": "mañana",
+    "dia.turno.1": "tarde",
+    "dia.turno.2": "noche",
+    "dia.parte_cada": "a cada uno le tocan {m} de gastos fijos",
+    "clientes.turnos": {"one": "Hoy te queda {n} turno para eventos.", "other": "Hoy te quedan {n} turnos para eventos."},
+    "clientes.turnos_det": "Hasta 3 eventos al día (mañana, tarde y noche) con el mismo personal y equipos. Los gastos fijos se cobran una vez, al cerrar el día.",
+    "clientes.todo_dia": "Todo el día",
+    "clientes.vence_hoy": "vence hoy",
+    "prep.jornada": "Evento grande: al terminar se cierra el día (los gastos fijos se cobran ahí).",
+    "prep.ultimo_turno": "Es tu último turno de hoy: al terminar se cierra el día.",
+    "res.fijos": "Gastos fijos del día: {m}",
+    "res.fijos_luego": {"one": "Se cobran al cerrar el día. Hoy llevas {n} evento: le tocan {m}.", "other": "Se cobran al cerrar el día. Repartidos entre los {n} eventos de hoy, a este le tocan {m}."},
+    "res.fijos_cobrados": {"one": "Se cobraron al cerrar el día. Hoy hiciste {n} evento: le tocaron {m}.", "other": "Se cobraron al cerrar el día. Repartidos entre los {n} eventos de hoy: {m} a cada uno."},
+    "res.fijos_otro": "Si haces otro evento hoy, bajan a {m} cada uno.",
+    "res.con_parte": "Ganancia con su parte de gastos",
+    "dia.eventos_hoy": {"one": "{n} evento", "other": "{n} eventos"},
+    "dia.ganancia_eventos": "Ganancia de los eventos",
+    "dia.fijos": "Gastos fijos del día",
+    "dia.fijos_viaje": {"one": "Gastos fijos ({n} día)", "other": "Gastos fijos ({n} días, con el viaje)"},
+    "dia.resultado": "Resultado del día",
+    "dia.descanso": "Día de descanso: tu equipo recupera ánimo.",
+    "dia.consejo": "Consejo: si haces más eventos el mismo día, los gastos fijos se reparten entre ellos.",
+    "dia.bien": "¡Día con ganancia!",
+    "res.desgaste_ev": "El equipo se desgastó un poco.",
+    "inicio.cerrar_det": "gastos {m}",
+    "inicio.cerrar_det0": "sin eventos hoy · gastos {m}",
+    "dia.cerrado_toast": "Día {n} · se cobraron los gastos fijos ({m})",
+    "dia.lista": "Eventos de hoy",
+    "dia.consejo_otro": "Con {n} eventos hoy, a cada uno le habrían tocado {m} de gastos fijos.",
+    "dia.jornada_det": "Los eventos grandes (dificultad 4 o más) y los internacionales cierran el día al terminar.",
+    "res.fijos_cobrados_viaje": "Se cobraron al cerrar el día, con los {d} días de viaje: {m} en total.",
     "liga.titulo": "Liga Semanal",
     "liga.cargando": "Abriendo la liga…",
     "liga.reintentar": "Intentar de nuevo",
@@ -26944,6 +26977,9 @@
     'log.redes': 'Publicaste en redes (-$40). Te escribió {cliente}.',
     'log.anuncio': 'Pagaste un anuncio (-$200). Llegaron 2 ofertas mejor pagadas.',
     'log.visitar': 'Pasaste el día visitando clientes en persona.',
+    'log.llamada': '📞 Te llamó {cliente}: quiere una transmisión ({evento}). Mírala en Clientes.',
+    'log.dia_completo': '{evento}: un evento grande cierra el día.',
+    'msg.dia_lleno': 'Ya hiciste {n} eventos hoy. Cierra el día para seguir.',
     'log.contrataste': 'Contrataste a {nombre} ({rol}, {nivel}). Pago inicial {monto}.',
     'log.despediste': 'Despediste a {nombre}.',
     'log.compraste': 'Compraste: {item} ({monto}).',
@@ -28017,8 +28053,9 @@
   if (!D) throw new Error('Falta js/datos.js: cárgalo antes que js/logic.js');
 
   // v3: catálogo realista, 14 roles, niveles de experiencia, plan de personal y de cámaras, contratos internacionales.
-  // Las partidas v1 y v2 se siguen cargando (los roles viejos se convierten).
-  const SAVE_VERSION = 3;
+  // v4: varios eventos por día (turnos mañana / tarde / noche: s.hoy) y resumen al cerrar el día (s.resumenDia).
+  // Las partidas v1, v2 y v3 se siguen cargando (los roles viejos se convierten; s.hoy se arma solo).
+  const SAVE_VERSION = 4;
 
   /* =========================================================
      BALANCE: todos los números de la economía en un solo lugar.
@@ -28033,6 +28070,16 @@
     bankrupt: { perDailyCost: 3, pendingDays: 4, graceDays: 2 },
     tutorialEvents: 3,           // los 3 primeros eventos son suaves (1 imprevisto, sin sorpresas)
     maxContracts: 7,
+    // Varios eventos por día (v4): hasta 3 (mañana, tarde y noche) si te alcanza el personal y los equipos.
+    // Los gastos fijos del día se cobran UNA vez, al cerrar el día (botón "Cerrar el día", o solo al usar los 3 turnos).
+    // En el resultado se muestra la parte de esos gastos que le toca a cada evento (repartidos entre los eventos de hoy).
+    dia: {
+      franjas: 3,                // turnos por día: mañana, tarde y noche
+      jornadaDesde: 4,           // eventos de dificultad 4 o más (concierto, LigaPrima, final...) e internacionales ocupan el día entero
+      ofertas: [1, 1],           // ofertas nuevas cada día (al azar entre estos dos; antes 0-1) + 1 con 25 de fama + 1 si tienes pocas
+      pocas: 2,                  // "pocas ofertas": menos que esto
+      llamada: { si: 2, chance: 0.5 }, // al terminar un evento (sin cerrar el día) y con menos de `si` ofertas: a veces llama un cliente
+    },
     maxStaff: 18,                // personas en la productora (contándote a ti)
     maxEquip: 80,                // equipos en la bodega
     candidates: 5,
@@ -28088,7 +28135,12 @@
             sevFalta: 1.5, sevJusto: 1.15, extraIncident: 1 },
     sensible: 1.6,               // en eventos sensibles (funeral) los errores pesan más
     expectPerRep: 0.16,          // cuanto más famoso eres, más te exige el cliente: -(fama * (esto + expectSmall * (5 - dificultad))) puntos
-    expectSmall: 0.05,           // a una productora famosa no le perdonan nada en un evento chico
+    expectSmall: 0.035,          // a una productora famosa le exigen más en un evento chico (v4: antes 0,05)
+    // La exigencia deja de crecer desde esta fama (v4: con varios eventos por día la fama sube más rápido y, sin tope,
+    // una productora muy famosa ya no podía cumplirle a nadie en los eventos chicos y quebraba). Ver PLAN.md, Bitácora.
+    expectMaxRep: 85,
+    // Los intentos en línea (liga, festival, duelos) usan la exigencia de antes: el servidor los repite igual que siempre
+    expectIntento: { small: 0.05, maxRep: 100 },
     // Las ofertas de la historia vienen con apoyo del personaje (escenario, fibra, luz del estadio...)
     storySupport: { lanzamiento: 14, ligapro: 10, final: 10 },
     expectStoryCap: 4,           // en las ofertas de la historia, lo que exige tu fama resta como mucho esto
@@ -28543,6 +28595,8 @@
       avisos: [], // cosas importantes que pasaron (Game.takeAvisos)
       capCompletados: [], // capítulos completados que falta mostrar (Game.takeChapterDone)
       lastWorkDay: 1, // último día con evento (para el desgaste de fama)
+      hoy: { dia: 1, n: 0, pagos: 0, ganancia: 0, eventos: [] }, // turnos de hoy (varios eventos por día)
+      resumenDia: null, // resumen del último día cerrado (Game.takeResumenDia)
       intlNext: 0, // día de la próxima oferta internacional (0 = todavía no se programa)
       log: [],
     };
@@ -28912,13 +28966,56 @@
     return { ok: true, msg: tx('msg.vendido', { monto: money(p) }) };
   }
 
-  /* ---------- Pasar el día ---------- */
+  /* ---------- Turnos del día (v4: varios eventos por día) ----------
+     s.hoy = { dia, n (eventos hechos hoy), pagos, ganancia (suma de lo que dejó cada evento), eventos: [{ t, e, g }] }
+     Se arma solo si falta o es de otro día (partidas viejas, pruebas que cambian s.day a mano). */
+  function hoyDe(s) {
+    if (!s.hoy || typeof s.hoy !== 'object' || s.hoy.dia !== s.day || !Array.isArray(s.hoy.eventos)) {
+      s.hoy = { dia: s.day, n: 0, pagos: 0, ganancia: 0, eventos: [] };
+    }
+    return s.hoy;
+  }
+  // Ocupa el día entero: los internacionales (viajas) y los eventos grandes (dificultad del tipo 4 o más)
+  function jornadaCompleta(c) {
+    if (!c) return false;
+    if (c.internacional) return true;
+    const t = EVENT_TYPES[c.type];
+    return !!t && (t.jornada === true || (t.jornada !== false && (t.diff || 1) >= BALANCE.dia.jornadaDesde));
+  }
+  /* Turno del día para la pantalla: { n (eventos hechos hoy), max, libres, turno (0 mañana, 1 tarde, 2 noche),
+     gastos (gastos fijos de hoy, se cobran al cerrar el día), parte (lo que le toca a cada evento de hoy, null sin eventos),
+     conOtro (lo que le tocaría a cada uno con un evento más; null si ya no quedan turnos), pagos, ganancia } */
+  function turnoDia(s) {
+    const H = hoyDe(s), max = BALANCE.dia.franjas;
+    const g = dailyCost(s), n = H.n;
+    return { n, max, libres: Math.max(0, max - n), turno: Math.min(n, max - 1), gastos: g,
+      parte: n ? Math.round(g / n) : null, conOtro: n < max ? Math.round(g / (n + 1)) : null, pagos: H.pagos, ganancia: H.ganancia };
+  }
+  /* Resumen del último día cerrado (la pantalla lo muestra una vez):
+     { dia, eventos, pagos, ganancia, gastos (gastos fijos cobrados; con días de viaje, todos), dias, resultado, lista } */
+  function takeResumenDia(s) { const r = s && s.resumenDia ? s.resumenDia : null; if (s) s.resumenDia = null; return r; }
+
+  /* ---------- Pasar el día (cerrar el día) ---------- */
   function nextDay(s, opts) {
     if (s.gameOver) return;
     opts = opts || {};
+    const intento = esIntento(s);
+    const H = intento ? null : hoyDe(s);
+    const cerrado = s.day;
     s.day++;
     s.daily = { redes: 0, anuncio: 0 };
-    s.money -= dailyCost(s);
+    const gasto = dailyCost(s);
+    s.money -= gasto;
+    if (!intento) {
+      // Resumen del día que se cierra (los días de viaje de un internacional se suman al mismo resumen)
+      const R0 = s.resumenDia;
+      if (opts.travel && R0 && typeof R0 === 'object') { R0.gastos += gasto; R0.dias = (R0.dias || 1) + 1; R0.resultado = R0.ganancia - R0.gastos; }
+      else {
+        s.resumenDia = { dia: cerrado, eventos: H.n, pagos: H.pagos, ganancia: H.ganancia, gastos: gasto, dias: 1,
+          resultado: H.ganancia - gasto, lista: H.eventos.slice(0, BALANCE.dia.franjas) };
+      }
+      s.hoy = { dia: s.day, n: 0, pagos: 0, ganancia: 0, eventos: [] };
+    }
     // Cobros pendientes que llegan hoy
     s.pending = s.pending || [];
     const due = s.pending.filter((p) => p.day <= s.day);
@@ -28940,7 +29037,9 @@
     if (!opts.travel) {
       // Nuevas ofertas según la fama
       // (con muy poca fama, por hacer mal los eventos, los clientes dejan de buscarte)
-      const n = randInt(s, 0, 1) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < 2 && !badStreak(s) ? 1 : 0);
+      // (los intentos en línea usan los números de siempre: el servidor los repite igual que antes)
+      const OF = intento ? [0, 1] : BALANCE.dia.ofertas, pocas = intento ? 2 : BALANCE.dia.pocas;
+      const n = randInt(s, OF[0], OF[1]) + (s.rep >= 25 ? 1 : 0) + (s.contracts.length < pocas && !badStreak(s) ? 1 : 0);
       for (let i = 0; i < n; i++) addContract(s);
       cadaExt(s, 'contratosExtra', (h) => h(s));
       // A veces un cliente cancela (nunca las ofertas de la historia ni las internacionales)
@@ -29419,7 +29518,9 @@
     q += add('parte.dificultad', -BALANCE.diffPenalty[clamp(diff, 1, 5)], { n: diff });
     const sup = contract.story ? (BALANCE.storySupport[contract.type] || 0) : 0;
     if (sup) q += add(STORY_SUPPORT_KEY[contract.type] || 'parte.apoyo', sup);
-    let ex = -Math.round((s.rep || 0) * (BALANCE.expectPerRep + BALANCE.expectSmall * (5 - clamp(diff, 1, 5))));
+    // (los intentos en línea, con la exigencia de antes: el servidor los repite igual que siempre)
+    const EXI = esIntento(s) ? BALANCE.expectIntento : { small: BALANCE.expectSmall, maxRep: BALANCE.expectMaxRep || 100 };
+    let ex = -Math.round(Math.min(s.rep || 0, EXI.maxRep) * (BALANCE.expectPerRep + EXI.small * (5 - clamp(diff, 1, 5))));
     // En las ofertas de la historia el cliente te buscó a ti: la fama casi no suma exigencia (si no, ser famoso lo haría más difícil)
     if (contract.story) ex = Math.max(ex, -BALANCE.expectStoryCap);
     if (ex) q += add('parte.fama', ex);
@@ -30143,6 +30244,8 @@
     const equip = s.equip.filter((e) => equipIds.includes(e.id) && CATALOG[e.type]);
     if (!staff.length) return { ok: false, msg: tx('msg.lleva_persona') };
     if (!equip.some((e) => itemOf(e).cat === 'cam')) return { ok: false, msg: tx('msg.lleva_camara') };
+    // Ya usaste los turnos de hoy (no debería pasar: el día se cierra solo al usar el último)
+    if (!esIntento(s) && hoyDe(s).n >= BALANCE.dia.franjas) return { ok: false, msg: tx('msg.dia_lleno', { n: BALANCE.dia.franjas }) };
     staff.forEach((p) => { p.role = normRole(p.role); if (!p.tier) p.tier = 'junior'; });
     if (esIntento(s)) s.intento = true; // se queda marcado para todo el intento (finishEvent cambia stats y día)
     if (contract.internacional) {
@@ -30344,7 +30447,7 @@
     const cubreCliente = tpTotal - transporte;
     s.money += payNow - ev.wages - transporte;
     s.rep = clamp(s.rep + repDelta, 0, 100);
-    s.lastWorkDay = s.day + 1; // el evento ocupa el día
+    s.lastWorkDay = s.day + 1; // hoy se trabajó (al cerrar el día, el día nuevo cuenta como el siguiente a un día con evento)
     // Desgaste de equipos (más en eventos grandes y en equipos frágiles), experiencia y moral del personal
     const view = evView(s);
     const W = BALANCE.wear;
@@ -30424,9 +30527,37 @@
     s.lastResult = result;
     // El premio del capítulo entra antes de pasar el día (así cuenta para la caja frente a la quiebra)
     result.chapterDone = checkChapter(s);
-    nextDay(s);
-    // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
-    for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+    if (esIntento(s)) {
+      // Intentos en línea: igual que siempre (el evento ocupa el día; el servidor lo repite así)
+      nextDay(s);
+      for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+    } else {
+      // Varios eventos por día: este evento usa un turno (mañana, tarde o noche). El día se cierra solo al usar el
+      // último turno o con un evento que ocupa el día entero; si no, sigue el mismo día (los gastos fijos se cobran al cerrar).
+      const H = hoyDe(s), DIA = BALANCE.dia;
+      H.n++; H.pagos += pay; H.ganancia += result.net;
+      H.eventos.push({ t: c.type, e: stars, g: result.net });
+      const jornada = jornadaCompleta(c);
+      const cierra = jornada || H.n >= DIA.franjas;
+      result.dia = { turno: H.n - 1, n: H.n, max: DIA.franjas, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
+      if (cierra) {
+        if (jornada && !c.internacional) log(s, 'log.dia_completo', { evento: { k: 'ev.' + c.type } });
+        nextDay(s);
+        // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
+        for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+        // Lo que se cobró de verdad al cerrar (con los días de viaje, todos esos días)
+        if (s.resumenDia) { result.dia.gastos = s.resumenDia.gastos; result.dia.dias = s.resumenDia.dias || 1; }
+      } else {
+        result.dia.conOtro = Math.round(result.dia.gastos / (H.n + 1));
+        // Con pocas ofertas, a veces llama un cliente con un evento para más tarde
+        const L = DIA.llamada;
+        if (L && s.contracts.length < L.si && !inTutorial(s) && chance(s, L.chance)) {
+          const k = addContract(s);
+          if (k) log(s, 'log.llamada', { cliente: k.client, evento: { k: 'ev.' + k.type } });
+        }
+      }
+      result.dia.parte = Math.round(result.dia.gastos / H.n);
+    }
     if (!result.chapterDone) result.chapterDone = checkChapter(s);
     result.avisos = (s.avisos || []).slice(Math.min(avisos0, (s.avisos || []).length));
     // Fama antes y la que queda de verdad (con lo que sumaron las extensiones y el día que pasó): la que muestra el resultado
@@ -30483,7 +30614,7 @@
   function deserialize(str) {
     try {
       const s = JSON.parse(str);
-      if (!s || !(s.v === 1 || s.v === 2 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
+      if (!s || !(s.v === 1 || s.v === 2 || s.v === 3 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
       // Rellenar campos nuevos en partidas guardadas antes
       s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
       s.stats.best = s.stats.best || {};
@@ -30524,6 +30655,9 @@
       if (typeof s.intlNext !== 'number') s.intlNext = 0;
       if (!Array.isArray(s.avisos)) s.avisos = [];
       if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
+      // v4: turnos del día (una partida vieja empieza el día de hoy sin eventos hechos)
+      hoyDe(s);
+      if (s.resumenDia && typeof s.resumenDia !== 'object') s.resumenDia = null;
       if (s.currentEvent && !s.currentEvent.crewPlan) {
         s.currentEvent.crewPlan = crewPlan(s, s.currentEvent.contract, s.currentEvent.staffIds, s.currentEvent.equipIds);
         s.currentEvent.cameraPlan = cameraPlan(s, s.currentEvent.contract, s.currentEvent.equipIds, s.currentEvent.staffIds);
@@ -30623,6 +30757,8 @@
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
     takeAvisos, takeChapterDone, venue, venueName, qualityRange,
+    // Varios eventos por día
+    turnoDia, jornadaCompleta, takeResumenDia,
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
     // Extensiones
@@ -37255,6 +37391,10 @@
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
   const bkInfo = () => { try { return G.bankruptInfo && S ? G.bankruptInfo(S) : null; } catch (e) { return null; } };
   const isCam = (e) => ((G.CATALOG[e.type] || {}).cat === 'cam');
+  // Varios eventos por día: turno de hoy (G.turnoDia). Con una lógica vieja (un evento = un día), null
+  const turnoHoy = () => { try { return G.turnoDia && S ? G.turnoDia(S) : null; } catch (e) { return null; } };
+  const turnoNom = (i) => T('dia.turno.' + Math.max(0, Math.min(2, Number(i) || 0)));
+  const esJornada = (c) => { try { return !!(G.jornadaCompleta && G.jornadaCompleta(c)); } catch (e) { return false; } };
 
   /* ---------- Datos chicos de la pantalla (aparte de la partida, que es de la lógica) ---------- */
   const RES_KEY = 'envivo_resultado_pendiente'; // resultado que falta ver (si se recarga en esa pantalla)
@@ -37284,6 +37424,7 @@
   let catSel = lsGet('envivo_cat') || 'cam';   // categoría elegida en la tienda de equipos
   let rolBuscar = '';      // puesto elegido para buscar personal
   let diaAntes = null;     // dinero antes de descansar (para el resumen del día)
+  let diaCerrado = false;  // en esta sesión se cerró un día (botón, visitar clientes o el último turno): toca su resumen
 
   /* ---------- Módulos de Inicio (temporadas, sede...) ----------
      Un módulo hace window.EnVivoInicio.push({ id, orden, tarjeta(ctx) → html, clic(ctx, accion, el) }).
@@ -37807,6 +37948,7 @@
     const rent = G.dailyCost ? G.dailyCost(S) : 20 + 4 * (S.staff.length - 1);
     let cb = null;
     try { cb = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null; } catch (e) { cb = null; }
+    const tHoy = turnoHoy();
     const costBox = cb ? `<div class="costbox"><div class="ci">${I('home')}</div><div class="t">
         <b style="font-family:inherit">${esc(venueName() || TL(cb.place))}</b> · ${T('inicio.gastos_hoy')} <b class="neg">${M(cb.total)}</b>${AY('gastos')}
         <div class="small muted">${T('inicio.local', { m: M(cb.rent) })}${cb.staff ? ` · ${T('inicio.c_personal', { m: M(cb.staff + (cb.payroll || 0)) })}` : ''}${cb.equip ? ` · ${T('inicio.c_seguro', { m: M(cb.equip) })}` : ''}${cb.fijoExt && window.Decoracion ? ` · ${esc(window.Decoracion.t('c_decor', { m: M(cb.fijoExt) }))}` : ''}${cb.vehiculos && window.Movilizacion ? ` · ${esc(window.Movilizacion.t('gasto', { m: M(cb.vehiculos) }))}` : ''}</div>
@@ -37833,16 +37975,18 @@
       : bk && bk.enPeligro ? strip(T('inicio.peligro', { m: lim, n: bk.graceLeft }))
       : bk && bk.mananaPeligro ? strip(T('inicio.manana_peligro', { g: `<b class="num">${M(G.dailyCost(S))}</b>`, m: lim }))
       : S.money < 0 ? strip(T('inicio.en_rojo', { m: lim })) : '';
-    // La productora por dentro (js/hub.js): cada cuarto es un botón; debajo, qué hacer ahora, el capítulo y pasar el día
-    const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox)) : `<div class="card hqcard">${A.hq(S)}</div>`;
+    // La productora por dentro (js/hub.js): cada cuarto es un botón; debajo, qué hacer ahora, el capítulo, el turno de hoy y cerrar el día
+    const turnoTxt = tHoy ? `${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}` : '';
+    const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox, turnoTxt)) : `<div class="card hqcard">${A.hq(S)}</div>`;
     $('tab-inicio').innerHTML = `${rojo}${hubHtml}
-      <button class="btn" data-act="next-day">${I('sleep')}${T('inicio.descansar')} <span class="muted small">(${T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
+      ${tHoy ? `<div class="small turno-hoy hub-turno">${I('calendar', 'sm')} ${turnoTxt}${AY('dia')}</div>` : ''}
+      <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
   }
 
   /* ---------- Datos para el hub de Inicio (js/hub.js) ----------
      Los módulos (window.EnVivoInicio) se pintan igual que antes; el hub los pone en su lugar de la sede
      ({ hub: 'misiones' | 'sala' | ... } al registrarse, o js/hub.js MAPA; si no, en "Más"). */
-  function datosHub(story, costBox) {
+  function datosHub(story, costBox, turnoTxt) {
     const ctx = ctxInicio();
     const modulos = modulosInicio().map((m) => {
       let html = '';
@@ -37864,7 +38008,7 @@
           <span class="tag">${I('box')}${T('inicio.equipos', { n: S.equip.length })}</span>
           <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
           ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
-        </div>${costBox}</div>`;
+        </div>${costBox}${turnoTxt ? `<div class="small turno-hoy" style="margin-top:8px">${I('calendar', 'sm')} ${turnoTxt}</div>` : ''}</div>`;
     const mas = `${installCard()}<button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
       ${soporteBtn()}${unirseDiscordBtn()}
       ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}
@@ -37969,18 +38113,20 @@
     try { return Object.assign({}, c, { requisitos: G.requisitosInternacional(S, c, S.staff.map((p) => p.id), S.equip.map((e) => e.id)).map((r) => Object.assign({}, r, { texto: TL(r.texto) })) }); } catch (e) { return c; }
   }
   function renderClientes() {
+    const tHoy = turnoHoy();
     const cards = S.contracts.map((c) => {
       const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
+      const todoDia = tHoy && esJornada(c) ? `<span class="tag amber todo-dia">${I('calendar', 'sm')}${T('clientes.todo_dia')}</span>` : '';
       return `<div class="card ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
-        <div style="margin-top:6px">${reqTags(c)}</div>
+        <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
         ${PE ? PE.internacional(intlVista(c)) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
-          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${T('clientes.vence', { n: c.daysLeft })}</span>
+          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${tHoy && c.daysLeft <= 1 ? T('clientes.vence_hoy') : T('clientes.vence', { n: c.daysLeft })}</span>
         </div>
         <button class="btn main" data-act="prep" data-id="${c.id}">${T('clientes.preparar')}</button>
       </div>`;
@@ -37993,6 +38139,7 @@
         <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}${T('clientes.visitar')} <span class="muted small">(${T('clientes.visitar_det')})</span></button>
       </div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
+      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}</div></div>` : ''}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
@@ -39051,6 +39198,9 @@
     }
     const reqVista = reqs.map((r) => ({ texto: TL(r.texto), ok: r.ok, detalle: r.ok ? '' : r.obligatorio ? T('prep.obligatorio') : T('prep.req_resta') }));
     const intlHtml = PE && c.internacional ? PE.internacional(Object.assign({}, c, { requisitos: reqVista })) : PE ? PE.internacional(c) : '';
+    const tHoy = turnoHoy();
+    const avisoDia = !tHoy ? '' : esJornada(c) ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.jornada')}</p>`
+      : tHoy.libres === 1 ? `<p class="small muted" style="margin:6px 0 0">${I('calendar', 'sm')} ${T('prep.ultimo_turno')}</p>` : '';
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
     const avisos = camAvisosHtml(c, camP, equip);
     const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqueadosHtml(camP) + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqueadosHtml(camP) + avisos;
@@ -39061,7 +39211,7 @@
     const calcHtml = `${intlHtml}
       <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
         ${puede ? tip : ''}
-        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div></div>
+        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>
       ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
       ${window.Movilizacion ? window.Movilizacion.seccionPrep(ctxInicio(), c, [...prep.staff], [...prep.equip]) : ''}`;
     const tablaHtml = `${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}
@@ -39201,6 +39351,7 @@
     snd.amb(null);
     if (!f.ok) { toast(TL(f.msg)); closeModal(); render(); return; }
     const r = f.result;
+    if (r.dia && r.dia.cerrado) diaCerrado = true;
     AN('evento_terminado', { tipo: ty, estrellas: r.stars, capitulo: S.chapter, dia: S.day });
     const caja = caja0 === null ? null : S.money - caja0;   // cuánto cambió la caja desde que empezó el día
     // Si se recarga en esta pantalla, el resultado se vuelve a mostrar (QA-09)
@@ -39222,21 +39373,51 @@
     return dias.map((d) => `<div class="daycard">${dias.length > 1 ? `<div class="dh">${T('comun.dia_n', { n: d.day })}</div>` : ''}
       ${d.items.map((a) => { const ic = AV_ICON[a.tipo] || ['tip', 'm']; return `<div class="av av-${ic[1]}"><span class="avi">${I(ic[0], 'sm')}</span><span class="t">${esc(noEmoji(gtx(a, a.text)))}</span></div>`; }).join('')}</div>`).join('');
   }
+  // Resumen del día que se cerró en esta sesión (G.takeResumenDia). Uno que quedó en la partida de antes no se muestra.
+  const resDiaPend = () => !!(diaCerrado && S && S.resumenDia && typeof S.resumenDia === 'object');
+  function tomarResDia() {
+    const ok = resDiaPend();
+    diaCerrado = false;
+    let R = null;
+    try { R = G.takeResumenDia ? G.takeResumenDia(S) : null; } catch (e) { R = null; }
+    if (S && S.resumenDia) S.resumenDia = null;
+    return ok ? R : null;
+  }
+  // El bloque del día cerrado: eventos, lo que dejaron, los gastos fijos y el resultado del día (corto)
+  function resDiaHtml(R) {
+    const sgn = (v) => (v >= 0 ? '+' : '-') + M(Math.abs(v));
+    const dias = R.dias || 1;
+    const lista = (Array.isArray(R.lista) ? R.lista : []).map((x) => `<div class="row between small"><span>${esc((G.EVENT_TYPES[x.t] || {}).icon || '')} ${esc(eventName(x.t))} <span style="color:var(--amber)">${'★'.repeat(Math.max(0, Math.min(5, x.e || 0)))}</span></span><span class="num ${x.g >= 0 ? 'up' : 'down'}">${sgn(x.g)}</span></div>`).join('');
+    const consejo = R.eventos === 0 ? `<p class="small muted" style="margin:6px 0 0">${T('dia.descanso')}</p>`
+      : R.resultado >= 0 ? `<p class="small up" style="margin:6px 0 0">${T('dia.bien')}</p>`
+      : R.eventos < 3 && dias === 1 ? `<p class="small muted" style="margin:6px 0 0">${T('dia.consejo_otro', { n: R.eventos + 1, m: M(Math.round(R.gastos / (R.eventos + 1))) })}</p>` : '';
+    return `<div class="resdia" id="resDia">
+      ${R.eventos ? `<div class="small muted" style="margin:4px 0 2px">${T('dia.lista')} · ${T('dia.eventos_hoy', { n: R.eventos })}</div>${lista}` : ''}
+      <table style="margin-top:8px">
+        ${R.eventos ? `<tr><td>${T('dia.ganancia_eventos')}</td><td class="${R.ganancia >= 0 ? 'up' : 'down'}">${sgn(R.ganancia)}</td></tr>` : ''}
+        <tr><td>${dias > 1 ? T('dia.fijos_viaje', { n: dias }) : T('dia.fijos')}${AY('gastos')}</td><td class="down">-${M(R.gastos)}</td></tr>
+        <tr><td><b>${T('dia.resultado')}</b></td><td class="${R.resultado >= 0 ? 'up' : 'down'}"><b>${sgn(R.resultado)}</b></td></tr>
+      </table>${consejo}</div>`;
+  }
   function showResumenDia() {
+    const R = tomarResDia();
     const lista = avisosPend();
-    if (!lista.length) { tomarAvisos(); continuar(); return; }
+    if (!R && !lista.length) { tomarAvisos(); continuar(); return; }
     // Al abrir el juego (no pasó ningún día) solo llegaron avisos de la temporada: un aviso corto en vez de la ventana
     // "Resumen del día" (la oferta ya está en Clientes y la temporada tiene su tarjeta en Inicio)
-    if (!diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
-    const dia = lista[lista.length - 1].day;
-    const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo));
+    if (!R && !diaAntes && lista.every((a) => a.tipo === 'temporada')) { toast(noEmoji(gtx(lista[0], lista[0].text))); tomarAvisos(); continuar(); return; }
+    // Día sin eventos y sin avisos: basta un aviso corto (sin ventana que cerrar)
+    if (R && !R.eventos && !lista.length) { diaAntes = null; toast(T('dia.cerrado_toast', { n: S.day, m: M(R.gastos) })); continuar(); return; }
+    const dia = R ? R.dia : lista[lista.length - 1].day;
+    const malo = lista.some((a) => /renuncia|rival|cancelacion|quiebra/.test(a.tipo)) || (R && R.eventos && R.resultado < 0);
     snd.play(malo ? 'bad' : 'good');
-    const caja = diaAntes && typeof diaAntes.money === 'number' ? S.money - diaAntes.money : null;
+    const caja = !R && diaAntes && typeof diaAntes.money === 'number' ? S.money - diaAntes.money : null;
     diaAntes = null;
     openModal(`<div class="story-tag">${T('dia.resumen')}</div><h2>${T('comun.dia_n', { n: dia })}</h2>
+      ${R ? resDiaHtml(R) : ''}
       ${caja !== null ? `<div class="row between small" style="margin:2px 0 0"><span class="muted">${T('dia.caja')}</span><b class="num ${caja >= 0 ? 'up' : 'down'}">${caja >= 0 ? '+' : '-'}${M(Math.abs(caja))}</b></div>
         <div class="small muted" style="margin-bottom:8px">${T('dia.gastos', { m: M(G.dailyCost ? G.dailyCost(S) : 0) })}</div>` : ''}
-      ${avisosHtml(lista)}
+      ${lista.length ? `${R ? `<div class="sectitle">${T('dia.mientras')}</div>` : ''}${avisosHtml(lista)}` : ''}
       <button class="btn main" data-act="close-dia">${T('comun.continuar')}</button>`);
   }
   // Qué ventana toca después: el evento en curso, el resumen del día, los capítulos completados y la intro del capítulo
@@ -39247,7 +39428,7 @@
     if (S.currentEvent) { showIncident(); return; }
     // Partida nueva: primero la intro del capítulo 1 y después el resumen del día (p. ej. "empezó la temporada")
     if (!capPend().length && !S.chapterSeen && !(S.stats && S.stats.events) && showChapterIntro()) return;
-    if (avisosPend().length) { showResumenDia(); return; }
+    if (avisosPend().length || resDiaPend()) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
     if (S.gameOver) showGameOver();
@@ -39283,16 +39464,20 @@
     // Lo que dejó el evento: pago - sueldos - viaje - gastos fijos del día (QA4). Lo que cambió la caja desde la mañana
     // (incluye compras, cobros que llegaron y la parte que se paga después) va aparte, solo si es distinto.
     const gastoDia = G.dailyCost && typeof r.dailyCost === 'number' ? r.dailyCost : null;
+    // Varios eventos por día (r.dia): lo grande es lo que dejó el evento; los gastos fijos del día van aparte, con la parte
+    // que le toca a este evento (repartidos entre los eventos de hoy). Con una lógica vieja: como antes (todo el día en el evento).
+    const dd = r.dia && typeof r.dia.parte === 'number' ? r.dia : null;
     // De qué son los gastos del día: local, personal y seguro de equipos (solo si cuadra con lo cobrado)
     const gastoDesg = (() => {
       try {
-        const b = gastoDia !== null && G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
-        if (!b || b.total !== gastoDia) return '';
+        const meta = dd ? ((dd.dias || 1) > 1 ? null : dd.gastos) : gastoDia;
+        const b = meta !== null && G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
+        if (!b || b.total !== meta) return '';
         const pers = (b.staff || 0) + (b.payroll || 0);
         return [T('inicio.local', { m: M(b.rent) }), pers ? T('inicio.c_personal', { m: M(pers) }) : '', b.equip ? T('inicio.c_seguro', { m: M(b.equip) }) : '', b.fijoExt && window.Decoracion ? window.Decoracion.t('c_decor', { m: M(b.fijoExt) }) : '', b.vehiculos && window.Movilizacion ? window.Movilizacion.t('gasto', { m: M(b.vehiculos) }) : ''].filter(Boolean).join(' · ');
       } catch (e) { return ''; }
     })();
-    const neto = r.net - (gastoDia || 0);
+    const neto = dd ? r.net : r.net - (gastoDia || 0);
     const sgn = (v) => (v > 0 ? '+' : '') + M(v);
     const quebro = !!S.gameOver;
     const bk = quebro ? null : bkInfo();
@@ -39302,14 +39487,14 @@
     const alerta = quebro ? `<div class="redstrip" role="alert" style="margin-top:10px">${I('bolt', 'sm')}<span>${T('res.quebraste')}</span></div>`
       : bk && bk.enPeligro ? `<div class="redstrip" role="alert" style="margin-top:10px">${I('bolt', 'sm')}<span>${T('res.peligro', { m: `<b class="num">${M(bankruptAt())}</b>`, n: bk.graceLeft })}</span></div>` : '';
     const riesgo = PE ? PE.resumenRiesgo(r.crewPlan || (r.crew && r.crew.plan), { camaras: r.cameraPlan, tipo: ty, nombreEquipo: eqName }) : '';
-    // Lo que pasó mientras tanto (el evento ocupa el día): pagos, renuncias, la rival…
+    // Lo que pasó mientras tanto (si el evento cerró el día): pagos, renuncias, la rival…
     const mientras = fresh || avisosPend().length ? avisosPend() : [];
     openModal(`
       <div class="result-head"><div class="story-tag">${r.stars >= 4 ? T('res.impecable') : r.stars === 3 ? T('res.buen_trabajo') : T('res.terminada')}</div>
       <h2>${esc(noEmoji(TL(r.title)))}</h2></div>
       ${starsBig(r.stars)}
       <div class="bigmoney ${tono} num" id="resNet">${fresh ? (neto >= 0 ? '+' : '-') + M(0) : (neto >= 0 ? '+' : '-') + M(Math.abs(neto))}</div>
-      <div class="small muted" style="text-align:center">${gastoDia !== null ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
+      <div class="small muted" style="text-align:center">${gastoDia !== null && !dd ? T('res.neto_evento') : T('res.ganancia_evento')}</div>
       ${alerta}
       <div class="row between" style="margin-top:12px"><span>${T('res.calidad_final')}${AY('calidad')}</span><b class="num">${r.quality}/100</b></div>
       <div class="bar ${r.quality < 40 ? 'red' : r.quality < 55 ? 'amber' : ''}"><i style="width:${r.quality}%"></i></div>
@@ -39323,11 +39508,12 @@
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
         ${window.Movilizacion ? window.Movilizacion.filaResultado(r, M) : ''}
-        ${gastoDia !== null ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
+        ${gastoDia !== null && !dd ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
         ${filaCaja}
         <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
       </table>
+      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
@@ -39335,7 +39521,7 @@
         <p class="small"><b>${T('res.calidad_inicial', { n: r.base })}</b></p>
         ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(gtx(i, i.text)))}<br><span class="muted">→ ${esc(gtx(x, x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
       </details>
-      <p class="small muted">${T('res.desgaste')}</p>
+      <p class="small muted">${T(dd ? 'res.desgaste_ev' : 'res.desgaste')}</p>
       ${window.Compartir ? window.Compartir.resultado(r, fresh, ctxInicio()) : ''}
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
     if (!fresh) return;
@@ -39343,6 +39529,23 @@
     if (quebro) return;
     if (r.stars >= 4) confetti(r.stars === 5 ? 28 : 20);
     else if (r.stars === 3) confetti(10);
+  }
+
+  /* Gastos fijos del día en el resultado (varios eventos por día): cuánto son, cuándo se cobran y la parte de este evento.
+     Antes del cierre: "se cobran al cerrar el día; repartidos entre los N eventos de hoy, a este le tocan $Y" y cuánto
+     bajaría con un evento más. Si el evento cerró el día: lo que se cobró (con los días de viaje de un internacional). */
+  function fijosRes(r, d, desg, sgn) {
+    const resto = r.net - d.parte;
+    const dias = d.dias || 1;
+    const linea = !d.cerrado ? T('res.fijos_luego', { n: d.n, m: M(d.parte) })
+      : dias > 1 ? T('res.fijos_cobrados_viaje', { d: dias, m: M(d.gastos) }) : T('res.fijos_cobrados', { n: d.n, m: M(d.parte) });
+    return `<div class="paylater fijos-dia" id="resFijos">${I('home', 'sm')} <div class="grow">
+      <b>${dias > 1 ? T('dia.fijos_viaje', { n: dias }) + ': ' + M(d.gastos) : T('res.fijos', { m: M(d.gastos) })}</b>${AY('gastos')}
+      ${desg ? `<div class="small muted" style="font-size:11.5px">${desg}</div>` : ''}
+      <div class="small" style="margin-top:3px">${linea}</div>
+      ${!d.cerrado && typeof d.conOtro === 'number' && d.conOtro < d.parte ? `<div class="small up" id="resFijosOtro">${T('res.fijos_otro', { m: M(d.conOtro) })}</div>` : ''}
+      <div class="row between small" style="margin-top:4px"><span class="muted">${T('res.con_parte')}</span><b class="num ${resto >= 0 ? 'up' : 'down'}">${sgn(resto)}</b></div>
+    </div></div>`;
   }
 
   let capDeCola = false;   // el capítulo que se ve salió de S.capCompletados (se quita al cerrar)
@@ -39672,11 +39875,11 @@
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
       case 'demo-no': confirmCb = null; closeModal(); render(); continuar(); break;
-      case 'next-day': diaAntes = { money: S.money }; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); toast(T('comun.dia_n', { n: S.day })); continuar(); break;
+      case 'next-day': diaAntes = { money: S.money }; diaCerrado = true; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); if (!resDiaPend()) toast(T('comun.dia_n', { n: S.day })); continuar(); break;
       case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
       case 'mkt': {
         const visita = el.dataset.k === 'visitar';
-        if (visita) diaAntes = { money: S.money };
+        if (visita) { diaAntes = { money: S.money }; diaCerrado = true; }
         act(G.marketing(S, el.dataset.k), 'logo');
         if (visita) continuar();
         break;
@@ -40528,6 +40731,7 @@
   .hub-ahora .ha-fl,.hub-cap .ha-fl{font-size:22px;color:var(--muted);line-height:1}
   .hub-ahora .grow{flex:1;min-width:0}
   .hubcard + .hub-ahora,.hubcard + .redstrip{margin-top:0}
+  .hub-turno{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 8px;padding:0 4px;color:var(--muted)}
   .hub-cap{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:8px 12px 8px 8px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--text);text-align:start}
   .hub-cap .hc-por{flex:none;line-height:0}.hub-cap .hc-por svg{border-radius:10px}
   .hub-cap .hc-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
@@ -50679,11 +50883,11 @@
       _titulo: 'Ayuda', _ok: 'Entendido',
       dinero: ['Dinero', 'La plata de tu productora. Ganas con cada evento y pagas sueldos y los gastos de cada día. Si te quedas mucho tiempo en rojo, quiebras.'],
       fama: ['Fama', 'Sube cuando un evento te sale bien (3 estrellas o más) y baja cuando sale mal. Con más fama te llegan clientes más grandes que pagan más.'],
-      dia: ['Día', 'Cada evento que haces o cada vez que descansas pasa un día, y se cobran los gastos del día.'],
-      gastos: ['Gastos del día', 'Lo que cuesta mantener tu productora cada día, aunque no trabajes: el local (empiezas en un garaje), una parte del sueldo de tu personal contratado y el seguro de tus equipos. Con más personas y equipos te mudas a un local más grande y los gastos suben.'],
+      dia: ["Día", "Cada día tiene 3 turnos (mañana, tarde y noche): puedes hacer hasta 3 eventos. Los eventos grandes (dificultad 4 o más) y los internacionales cierran el día al terminar. Al cerrar el día (con el botón o al usar los 3 turnos) pasas al día siguiente y se cobran los gastos fijos."],
+      gastos: ["Gastos del día", "Lo que cuesta mantener tu productora cada día, aunque no trabajes: el local (empiezas en un garaje), una parte del sueldo de tu personal contratado y el seguro de tus equipos. Se cobran una sola vez, al cerrar el día, y se reparten entre los eventos de ese día: con más eventos, a cada uno le toca menos. Con más personas y equipos te mudas a un local más grande y los gastos suben."],
       personal: ['Personal del evento', 'Llevas: cuántas personas de ese puesto van al evento. Mínimo: las que hacen falta sí o sí. Ideal: con cuántas sale perfecto. Semáforo: verde está cubierto, naranja puedes ir pero con riesgo, rojo falta el mínimo. "Riesgo 20%" es la probabilidad de que algo falle por no llevar a esa persona.'],
       calidad: ['Calidad', 'Nota de 0 a 100 de cómo salió la transmisión. Depende de tus equipos, tu personal y lo que decides durante el evento en vivo. Más calidad = más estrellas, más pago y más fama.'],
-      ganancia: ['Ganancia', 'Lo que de verdad sumó a tu caja: el pago del cliente menos los sueldos, el viaje (si hubo) y los gastos del día.'],
+      ganancia: ["Ganancia", "Lo que te dejó el evento: el pago del cliente menos los sueldos, la movilización y el viaje (si hubo). Los gastos fijos del día van aparte: se cobran al cerrar el día y se reparten entre los eventos de ese día."],
     },
     en: {
       _titulo: 'Help', _ok: 'Got it',
