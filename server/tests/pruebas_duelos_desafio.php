@@ -308,7 +308,7 @@ check('Sin el Pase VIP, la cámara VIP también va al duelo (en la posición pri
     [in_array('vip_cam8k', array_column($sinVip['equipo']['equip'], 'type'), true), $sinVip['equipo']['equip'][0]['type'], $conVip['equipo']['equip'][0]['type'], Monedero::vipActivo($JC)]);
 $v = Repeticion::validar($sinVip + ['decisiones' => $jugar($sinVip)['decisiones']]);
 check('…y ese intento (con la cámara VIP, sin Pase) es válido para el validador', true, $v['valido']);
-check('…y la cámara VIP ya NO se cobra del bono de ventajas (decisión: lo pagado vale; puntosVip sigue en 2)', [12, 2], [\EnVivo\Ventajas::recorteVip(12, $sinVip['equipo']['equip']), \EnVivo\Ventajas::puntosVip($sinVip['equipo']['equip'])]);
+check('…y la cámara VIP se cobra solo en parte del bono (60 % de sus 2 puntos)', [11, 2], [\EnVivo\Ventajas::recorteVip(12, $sinVip['equipo']['equip']), \EnVivo\Ventajas::puntosVip($sinVip['equipo']['equip'])]);
 Db::q("UPDATE inventario SET estado = 'publicado' WHERE id = ?", [$gruaB['id']]);
 $eqB = json_decode((string) Db::valor('SELECT equipo_json FROM duelo_equipos WHERE jugador_id = ?', [$JB]), true);
 check('Equipo publicado en el mercado después de registrarlo: ya no va al duelo', false, in_array('grua', array_column(Duelos::armarIntento($eqB, $contr, 5, false, $JB)['equipo']['equip'], 'type'), true));

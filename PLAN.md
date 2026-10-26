@@ -301,4 +301,4 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   - La cuenta regresiva del Festival ya no se detiene cuando la pantalla se repinta.
 - PREGUNTA ABIERTA para Dimitry: el equipo VIP comprado con diamantes funciona solo mientras el Pase VIP de 30 días está activo. ¿Se queda así o debe funcionar siempre?
 - 2026-10-26: VIP: lo comprado con diamantes funciona siempre; el Pase VIP da beneficios por nivel (4-5 eventos por día, descuento de reparación 30-50 %, obras más rápidas, bono diario); combos completos con diamantes aunque falte fama; contratar personal con diamantes. Bodega: botón 'Reparar todo' con el costo total.
-- 2026-10-26: decisión de Dimitry: 'si compraron y gastaron dinero, que valga': los equipos VIP ya no se descuentan del bono de ventajas (Ventajas::RECORTE_VIP=false). Medido: todo VIP + bono máximo = +42,5 % en la Copa (antes 21,5 %).
+- 2026-10-26: decisión de Dimitry: lo pagado vale, pero con punto medio: todo VIP + ventaja pagada máxima ≈ +30 % en la Copa (Ventajas::RECORTE_VIP_PARTE = 0.6; medido +29,2 %).

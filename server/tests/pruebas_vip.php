@@ -442,10 +442,10 @@ check('…y el bono diario pide el Pase (403)', 403, $err);
 check('GET /api/vip trae la tabla del Pase (pase_vip_tabla) y lo que toca con su nivel', [5, 5, 40], [count(Vip::estado($PV5)['pase_vip_tabla']), Vip::estado($PV5)['pase_vip']['turnos'], Vip::estado($PV5)['pase_vip']['descuento']]);
 
 // =====================================================================
-titulo('Equipos VIP: funcionan siempre y suman ENCIMA del techo de ventajas (decisión de Dimitry: lo pagado vale)');
+titulo('Equipos VIP: funcionan siempre; todo VIP + bono máximo ≈ +30 % en la Copa (Ventajas::RECORTE_VIP_PARTE)');
 $vipFull = array_map(fn($t) => ['type' => $t], ['vip_cam8k', 'vip_cam8k', 'vip_cam8k', 'vip_cam8k', 'vip_switcher', 'vip_satelital', 'cam_basic']);
 check('Puntos de techo: 4 cámaras VIP + switcher + satélite = 11 (de 12); sin VIP = 0', [11, 0], [Ventajas::puntosVip($vipFull), Ventajas::puntosVip([['type' => 'cam_basic'], ['item' => 'dron4k']])]);
-check('Sin recorte: bono 12 con todo VIP -> 12 · bono 5 -> 5 · sin VIP queda igual', [12, 5, 12], [Ventajas::recorteVip(12, $vipFull), Ventajas::recorteVip(5, $vipFull), Ventajas::recorteVip(12, [['type' => 'cam_basic']])]);
+check('Recorte parcial (60 %): bono 12 con todo VIP -> 5 · bono 5 -> 0 · sin VIP queda igual', [5, 0, 12], [Ventajas::recorteVip(12, $vipFull), Ventajas::recorteVip(5, $vipFull), Ventajas::recorteVip(12, [['type' => 'cam_basic']])]);
 if ($NODEV !== '') {
     // Simulación con la lógica real (server/eventos/batalla.js): equipo de copa gratis vs. el mismo con TODO lo VIP y el bono
     // máximo ya recortado. La ventaja pagada total queda dentro del techo (20–25 %, MONETIZACION.md §1).
@@ -472,7 +472,7 @@ JS;
         . escapeshellarg(json_encode(['libre' => $libre, 'vip' => $vipEq, 'bono' => $bono])) . ' 2>&1'), true);
     $pct = ($o['ok'] ?? false) ? round(($o['vip'] / $o['libre'] - 1) * 100, 1) : null;
     printf("  SIM copa: libre %.1f · todo VIP + bono recortado (%d) %.1f → %+.1f %%\n", $o['libre'] ?? 0, $bono, $o['vip'] ?? 0, $pct ?? 0);
-    check('Copa: todo lo VIP + el bono máximo da una ventaja clara (≥ 20 %, sin tope por decisión del dueño)', true, $pct !== null && $pct >= 20.0);
+    check('Copa: todo lo VIP + el bono máximo ≈ +30 % (entre 25 y 31 %, decisión del dueño)', true, $pct !== null && $pct >= 25.0 && $pct <= 31.0);
 }
 
 // =====================================================================

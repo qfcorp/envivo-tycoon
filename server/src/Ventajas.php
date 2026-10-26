@@ -45,8 +45,10 @@ final class Ventajas
 
     /** Decisión de Dimitry (26-oct-2026): "si compraron y gastaron dinero, que valga". Los equipos VIP ya NO se cobran
      *  del bono de ventajas: suman encima del techo. Se deja la función (y puntosVip) por si algún día se quiere volver. */
-    public const RECORTE_VIP = false;
-    public static function recorteVip(int $bono, array $equip): int { return self::RECORTE_VIP ? max(0, $bono - self::puntosVip($equip)) : $bono; }
+    /** Luego (26-oct, 16:40) pidió un punto medio: todo VIP + la ventaja pagada máxima ≈ +30 % en la Copa.
+     *  Se cobra del bono solo una parte de los puntos VIP (RECORTE_VIP_PARTE); medido en pruebas_vip.php. */
+    public const RECORTE_VIP_PARTE = 0.6;
+    public static function recorteVip(int $bono, array $equip): int { return max(0, $bono - (int) round(self::puntosVip($equip) * self::RECORTE_VIP_PARTE)); }
 
     public static function tope(): int
     {
