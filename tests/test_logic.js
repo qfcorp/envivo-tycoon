@@ -751,16 +751,23 @@ check(medians[0] <= 10, `capítulo 1 debería ser rápido (mediana ${medians[0]}
 // El bot juega mejor que una persona (QA4: una persona cuidadosa tarda más): para el bot, ~70-130 días
 // (v4: con varios eventos por día la historia se acorta en días: antes ~104, ahora ~84; los eventos son los mismos)
 check(medians[NCH - 1] >= 70 && medians[NCH - 1] <= 130, `la historia debería durar ~70-130 días para el bot (mediana ${medians[NCH - 1]})`);
-check(bankRate >= 0.01 && bankRate <= 0.11, `quiebras durante la historia fuera de rango (1-11%): ${(bankRate * 100).toFixed(1)}%`);
-// v4: antes ~20%; con el tope de exigencia por fama (expectMaxRep) bajó a ~15%
-check(bankFree <= 0.25, `demasiadas quiebras en el modo libre (máx. 25% en 400 días): ${(bankFree * 100).toFixed(1)}%`);
+// v4 (26 oct 2026, varios eventos por día): antes (main) historia ~4,8% y modo libre ~28%; ahora historia ~3% y modo
+// libre ~8-10% (1 oferta segura por día y la exigencia de la fama más suave en eventos chicos y con tope).
+// Los topes se bajaron a propósito (ver PLAN.md, Bitácora).
+check(bankRate >= 0.01 && bankRate <= 0.07, `quiebras durante la historia fuera de rango (1-7%): ${(bankRate * 100).toFixed(1)}%`);
+check(bankFree <= 0.15, `demasiadas quiebras en el modo libre (máx. 15% en 400 días): ${(bankFree * 100).toFixed(1)}%`);
 check(winRate >= 0.85, `historia completada fuera de rango (85% o más): ${(winRate * 100).toFixed(1)}%`);
 check(duelLoss >= 0.25, `el bot pierde muy pocos duelos (${(duelLoss * 100).toFixed(1)}%, mínimo 25%)`);
 for (let i = 2; i < NCH; i++) {
   const a = avg(starsByChapter[i]);
-  check(a >= 3.0 && a <= 3.9, `capítulo ${i + 1}: estrellas promedio fuera de rango (3,0-3,9): ${a.toFixed(2)}`);
+  // v4: el tope sube de 3,9 a 4,1 a propósito: una productora famosa ya no saca 1-2 estrellas en cada evento chico
+  // (el dueño: "fácil y nunca frustrante"); los capítulos 5 y 6 quedan en ~4,0
+  check(a >= 3.0 && a <= 4.1, `capítulo ${i + 1}: estrellas promedio fuera de rango (3,0-4,1): ${a.toFixed(2)}`);
 }
-check(lateStars >= 3.0 && lateStars <= 3.8, `estrellas promedio de los capítulos 3-6 fuera de rango (3,0-3,8): ${lateStars.toFixed(2)}`);
+check(lateStars >= 3.0 && lateStars <= 3.95, `estrellas promedio de los capítulos 3-6 fuera de rango (3,0-3,95): ${lateStars.toFixed(2)}`);
+// Lo que pidió el dueño: que casi todos los eventos no se vean en pérdida (ganancia del evento - su parte de los gastos fijos)
+const pierde = (k) => (verPerdida[k] ? verPerdida[k][1] / verPerdida[k][0] : 0);
+check(pierde('inicio') <= 0.08 && pierde('historia') <= 0.15, `demasiados eventos en pérdida con su parte de los gastos (inicio ${(100 * pierde('inicio')).toFixed(1)}%, máx. 8% · historia ${(100 * pierde('historia')).toFixed(1)}%, máx. 15%)`);
 console.log('Eventos que se ven en pérdida (ganancia del evento - su parte de los gastos del día) · antes (todo el gasto del día en el evento):',
   Object.keys(verPerdida).map((k) => `${k} ${(100 * verPerdida[k][1] / verPerdida[k][0]).toFixed(1)}% · antes ${(100 * verPerdida[k][2] / verPerdida[k][0]).toFixed(1)}%`).join(' | '));
 console.log(`Eventos por día (mediana por partida, hasta el fin de la historia o la quiebra): ${median(evPorDia).toFixed(2)}`);

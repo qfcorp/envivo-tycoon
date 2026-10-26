@@ -88,7 +88,7 @@
     dia: {
       franjas: 3,                // turnos por día: mañana, tarde y noche
       jornadaDesde: 4,           // eventos de dificultad 4 o más (concierto, LigaPrima, final...) e internacionales ocupan el día entero
-      ofertas: [0, 1],           // ofertas nuevas cada día (al azar entre estos dos) + 1 con 25 de fama + 1 si tienes pocas
+      ofertas: [1, 1],           // ofertas nuevas cada día (al azar entre estos dos; antes 0-1) + 1 con 25 de fama + 1 si tienes pocas
       pocas: 2,                  // "pocas ofertas": menos que esto
       llamada: { si: 2, chance: 0.5 }, // al terminar un evento (sin cerrar el día) y con menos de `si` ofertas: a veces llama un cliente
     },
@@ -147,10 +147,12 @@
             sevFalta: 1.5, sevJusto: 1.15, extraIncident: 1 },
     sensible: 1.6,               // en eventos sensibles (funeral) los errores pesan más
     expectPerRep: 0.16,          // cuanto más famoso eres, más te exige el cliente: -(fama * (esto + expectSmall * (5 - dificultad))) puntos
-    expectSmall: 0.05,           // a una productora famosa no le perdonan nada en un evento chico
+    expectSmall: 0.035,          // a una productora famosa le exigen más en un evento chico (v4: antes 0,05)
     // La exigencia deja de crecer desde esta fama (v4: con varios eventos por día la fama sube más rápido y, sin tope,
-    // una productora muy famosa ya no podía cumplirle a nadie y quebraba en el modo libre)
-    expectMaxRep: 90,
+    // una productora muy famosa ya no podía cumplirle a nadie en los eventos chicos y quebraba). Ver PLAN.md, Bitácora.
+    expectMaxRep: 85,
+    // Los intentos en línea (liga, festival, duelos) usan la exigencia de antes: el servidor los repite igual que siempre
+    expectIntento: { small: 0.05, maxRep: 100 },
     // Las ofertas de la historia vienen con apoyo del personaje (escenario, fibra, luz del estadio...)
     storySupport: { lanzamiento: 14, ligapro: 10, final: 10 },
     expectStoryCap: 4,           // en las ofertas de la historia, lo que exige tu fama resta como mucho esto
@@ -1528,7 +1530,9 @@
     q += add('parte.dificultad', -BALANCE.diffPenalty[clamp(diff, 1, 5)], { n: diff });
     const sup = contract.story ? (BALANCE.storySupport[contract.type] || 0) : 0;
     if (sup) q += add(STORY_SUPPORT_KEY[contract.type] || 'parte.apoyo', sup);
-    let ex = -Math.round(Math.min(s.rep || 0, BALANCE.expectMaxRep || 100) * (BALANCE.expectPerRep + BALANCE.expectSmall * (5 - clamp(diff, 1, 5))));
+    // (los intentos en línea, con la exigencia de antes: el servidor los repite igual que siempre)
+    const EXI = esIntento(s) ? BALANCE.expectIntento : { small: BALANCE.expectSmall, maxRep: BALANCE.expectMaxRep || 100 };
+    let ex = -Math.round(Math.min(s.rep || 0, EXI.maxRep) * (BALANCE.expectPerRep + EXI.small * (5 - clamp(diff, 1, 5))));
     // En las ofertas de la historia el cliente te buscó a ti: la fama casi no suma exigencia (si no, ser famoso lo haría más difícil)
     if (contract.story) ex = Math.max(ex, -BALANCE.expectStoryCap);
     if (ex) q += add('parte.fama', ex);
@@ -2547,13 +2551,14 @@
       H.eventos.push({ t: c.type, e: stars, g: result.net });
       const jornada = jornadaCompleta(c);
       const cierra = jornada || H.n >= DIA.franjas;
-      result.dia = { turno: H.n - 1, n: H.n, max: DIA.franjas, jornada, cerrado: cierra, gastos: dailyCost(s), parte: 0, conOtro: null };
+      result.dia = { turno: H.n - 1, n: H.n, max: DIA.franjas, jornada, cerrado: cierra, gastos: dailyCost(s), dias: 1, parte: 0, conOtro: null };
       if (cierra) {
         if (jornada && !c.internacional) log(s, 'log.dia_completo', { evento: { k: 'ev.' + c.type } });
         nextDay(s);
-        if (s.resumenDia) result.dia.gastos = s.resumenDia.gastos; // lo que se cobró de verdad al cerrar
         // Días de viaje: no puedes tomar otros contratos (los días pasan solos)
         for (let i = 0; i < result.travelDays && !s.gameOver; i++) { log(s, 'log.viajando', { pais: paisP(c) }); nextDay(s, { travel: true }); }
+        // Lo que se cobró de verdad al cerrar (con los días de viaje, todos esos días)
+        if (s.resumenDia) { result.dia.gastos = s.resumenDia.gastos; result.dia.dias = s.resumenDia.dias || 1; }
       } else {
         result.dia.conOtro = Math.round(result.dia.gastos / (H.n + 1));
         // Con pocas ofertas, a veces llama un cliente con un evento para más tarde

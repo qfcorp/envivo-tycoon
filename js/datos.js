@@ -218,7 +218,7 @@
     'log.anuncio': 'Pagaste un anuncio (-$200). Llegaron 2 ofertas mejor pagadas.',
     'log.visitar': 'Pasaste el día visitando clientes en persona.',
     'log.llamada': '📞 Te llamó {cliente}: quiere una transmisión ({evento}). Mírala en Clientes.',
-    'log.dia_completo': '{evento}: un evento grande ocupa el día entero. Se cerró el día.',
+    'log.dia_completo': '{evento}: un evento grande cierra el día.',
     'msg.dia_lleno': 'Ya hiciste {n} eventos hoy. Cierra el día para seguir.',
     'log.contrataste': 'Contrataste a {nombre} ({rol}, {nivel}). Pago inicial {monto}.',
     'log.despediste': 'Despediste a {nombre}.',
