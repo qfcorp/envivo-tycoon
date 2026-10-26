@@ -1912,7 +1912,7 @@
     if (modo === 'dinero') {
       const total = it.price + conPlata;
       if (plata.length) btns += `<button class="btn main" data-act="buy-kit" data-k="${esc(k)}" data-l="${esc(plata.join(','))}" ${S.money < total ? 'disabled' : ''}>${soloLente && plata.length === 1 ? T('bodega.lente_si', { m: M(total) }) : T('combo.todo', { m: M(total) })}</button>`;
-      btns += `<button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${soloLente && it.cat === 'cam' ? T('bodega.lente_solo', { m: M(it.price) }) : T('combo.solo', { item: esc(itemName(k)), m: M(it.price) })}</button>`;
+      btns += `<button class="btn" data-act="buy" data-k="${esc(k)}" data-solo="1">${soloLente && it.cat === 'cam' ? T('bodega.lente_solo', { m: M(it.price) }) : T(plata.length ? 'combo.solo' : 'combo.comprar', { item: esc(itemName(k)), m: M(it.price) })}</button>`;
     } else if (modo === 'creditos') {
       const p = premiumServidor() ? premiumServidor().find((x) => x.id === pid) : null;
       const base = p ? Number(p.creditos) || 0 : 0;
@@ -1921,7 +1921,7 @@
       const saldo = (Api.estado && Api.estado.creditos) || 0;
       if (creds.length) btns += `<button class="btn main" data-act="combo-canjear" data-k="${esc(pid)}" data-l="${esc(creds.map((c) => c.id).join(','))}" data-item="${esc(k)}" ${saldo < total ? 'disabled' : ''}>${T('combo.canjear_todo', { n: N(total) })}</button>`
         + (saldo < total ? `<p class="small" style="color:var(--amber)">${T('combo.faltan_creditos', { n: N(total - saldo) })}</p>` : '');
-      btns += `<button class="btn ${creds.length ? '' : 'main'}" data-act="combo-canjear" data-k="${esc(pid)}" data-l="" data-item="${esc(k)}" ${saldo < base ? 'disabled' : ''}>${T('combo.canjear_solo', { item: esc(itemName(k)), n: N(base) })}</button>`;
+      btns += `<button class="btn ${creds.length ? '' : 'main'}" data-act="combo-canjear" data-k="${esc(pid)}" data-l="" data-item="${esc(k)}" ${saldo < base ? 'disabled' : ''}>${T(creds.length ? 'combo.canjear_solo' : 'combo.canjear', { item: esc(itemName(k)), n: N(base) })}</button>`;
       if (plata.length) btns += `<p class="small muted">${T('combo.resto_dinero')}</p>`;
     } else if (plata.length) {
       btns += `<button class="btn main" data-act="buy-kit" data-k="" data-l="${esc(plata.join(','))}" ${S.money < conPlata ? 'disabled' : ''}>${T('combo.comprar_falta', { m: M(conPlata) })}</button>`;

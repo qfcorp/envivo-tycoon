@@ -1185,6 +1185,8 @@
     "combo.solo": "Solo {item} ({m})",
     "combo.canjear_todo": "Canjear todo ({n} 💎)",
     "combo.canjear_solo": "Solo {item} ({n} 💎)",
+    "combo.canjear": "Canjear {item} ({n} 💎)",
+    "combo.comprar": "Comprar {item} ({m})",
     "combo.comprar_falta": "Comprar lo que falta ({m})",
     "combo.contratar": "Contratar {rol}",
     "combo.ver": "Ver {item} en la Bodega",
