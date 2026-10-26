@@ -38,7 +38,7 @@
                      eventos: ['final', 'internacional_host', 'internacional_unilateral'], premium: true, vip: true, repairBase: 2500,
                      desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
   };
-  const DURABLES = ['item', 'equipo', 'personal'];   // se vuelven a entregar si empiezas partida nueva
+  const DURABLES = ['item', 'equipo', 'personal', 'personal_intl'];   // se vuelven a entregar si empiezas partida nueva
   const VIP_DESCUENTO = 0.3;   // descuento base del Pase VIP (VIP 1); crece con el nivel (PASE_VIP)
 
   /* Ventajas del Pase VIP de 30 días por nivel VIP ("desde" ese nivel; con el Pase activo y nivel 0 cuenta como VIP 1).
@@ -197,6 +197,31 @@
         s.staff.push({ id: nuevoId(s), name, role, tier, skill, wage: 25 + skill * 18, morale: 100, events: 0,
           eventos_nacionales: 0, eventos_internacionales: 0, premium: true });
         return `Se unió a tu equipo: ${name} (${G.ROLES[role].name}, habilidad ${skill}).`;
+      }
+      case 'curso_intl': {
+        // Capacitación internacional con créditos (POST /api/gastar "curso_intl:<rol>:<id>"): cantidad = id de la persona en
+        // la partida. Si ya no está (otra partida), la recibe la primera de ese rol que todavía no tenga experiencia afuera.
+        const role = G.normRole ? G.normRole(en.item) : en.item;
+        const sinExp = (p) => !(G.isIntlExp ? G.isIntlExp(p) : p.eventos_internacionales > 0);
+        const p = s.staff.find((x) => x.id === Number(en.cantidad) && sinExp(x))
+          || s.staff.filter((x) => (G.normRole ? G.normRole(x.role) : x.role) === role && sinExp(x)).sort((a, b) => b.skill - a.skill)[0];
+        if (!p) return null;
+        if (G.darCursoIntl) G.darCursoIntl(s, p); else { p.eventos_internacionales = 1; p.cursoIntl = true; }
+        const quien = p.owner ? 'Tú' : p.name;
+        return `${quien} terminó la capacitación internacional: ya tiene experiencia internacional.`;
+      }
+      case 'personal_intl': {
+        // Persona con experiencia internacional canjeada con créditos (POST /api/gastar "personal_intl:<rol>"): Semi-senior
+        // (el nivel que se contrata con tu fama; sin ventaja en Duelos), habilidad cantidad, 1 evento internacional
+        if (!G.ROLES[en.item]) return null;
+        const role = G.normRole ? G.normRole(en.item) : en.item;
+        const skill = Math.min(5, Math.max(1, n));
+        const name = G.nuevoNombre ? G.nuevoNombre(s) : `Profesional ${nuevoId(s)}`;
+        const wage = Math.round((G.baseWage ? G.baseWage(role, 'semi_senior', skill) : 60) * 1.1);
+        s.staff.push({ id: nuevoId(s), name, role, tier: 'semi_senior', skill, wage, morale: 100, events: 0,
+          eventos_nacionales: 0, eventos_internacionales: 1, premium: true });
+        (s.contracts || []).forEach((c) => { if (c.internacional && G.requisitosInternacional) c.requisitos = G.requisitosInternacional(s, c, s.staff.map((x) => x.id), s.equip.map((e) => e.id)); });
+        return `Se unió a tu equipo: ${name} (${G.ROLES[role].name}, con experiencia internacional).`;
       }
       case 'dinero': {
         s.money += n;

@@ -98,6 +98,20 @@ function botTurn(s) {
   // Si el equipo está muy cansado, descansa un día (lo que haría una persona)
   const hired = s.staff.filter((p) => !p.owner);
   if (hired.length && hired.reduce((a, p) => a + p.morale, 0) / hired.length < 45 && !s.contracts.some((c) => c.story && c.daysLeft <= 1)) { idle.descanso++; G.nextDay(s); return; }
+  // Contrato internacional sin la experiencia internacional que pide: el camino del juego (Game.ayudaIntl): contratar a un
+  // candidato que ya la tiene, capacitar a alguien del equipo o buscar uno (lo que haría una persona con la plata que tiene)
+  s.contracts.filter((c) => c.internacional).forEach((c) => {
+    const reserve = 1200 + 3 * G.dailyCost(s);
+    G.ayudaIntl(s, c).forEach((f) => {
+      let n = f.falta;
+      f.cand.forEach((id) => {
+        const x = s.candidates.find((k) => k.id === id);
+        if (n > 0 && x && s.money > x.wage * 2 + reserve && G.hire(s, id).ok) { n--; intlUso.contrato++; }
+      });
+      f.curso.forEach((o) => { if (n > 0 && s.money > o.costo + reserve && G.cursoIntl(s, o.id).ok) { n--; intlUso.curso++; } });
+      if (n > 0 && f.disponible && !f.cand.length && s.money > f.buscar + reserve + 400 && G.searchStaffIntl(s, f.rol).ok) intlUso.busca++;
+    });
+  });
   // Elegir el mejor contrato según calidad esperada
   let best = null;
   for (const c of s.contracts) {
@@ -112,6 +126,7 @@ function botTurn(s) {
       });
     }
     if (c.internacional && G.requisitosInternacional(s, c, lo.staffIds, lo.equipIds).some((r) => r.obligatorio && !r.ok)) continue;
+    if (c.internacional && s.money < (c.travelCost || 0)) continue;   // sin plata para el viaje, todavía no
     const staff = s.staff.filter((p) => lo.staffIds.includes(p.id));
     const equip = s.equip.filter((e) => lo.equipIds.includes(e.id));
     if (!equip.some((e) => G.CATALOG[e.type].cat === 'cam')) continue;
@@ -181,6 +196,7 @@ const intlIds = new Set();
 const idle = { descanso: 0, sinOferta: 0, noRinde: 0, falta: 0 }; // por qué el bot no trabajó
 const faltaRol = {};
 let intlSeen = 0, intlPlayed = 0;
+const intlUso = { curso: 0, busca: 0, contrato: 0 };
 
 const GAMES = Number(process.env.GAMES) || 400, MAX_DAYS = 400, SEED = Number(process.env.SEED) || 1000;
 const NCH = G.CHAPTERS.length;
@@ -772,6 +788,8 @@ console.log('Eventos que se ven en pérdida (ganancia del evento - su parte de l
   Object.keys(verPerdida).map((k) => `${k} ${(100 * verPerdida[k][1] / verPerdida[k][0]).toFixed(1)}% · antes ${(100 * verPerdida[k][2] / verPerdida[k][0]).toFixed(1)}%`).join(' | '));
 console.log(`Eventos por día (mediana por partida, hasta el fin de la historia o la quiebra): ${median(evPorDia).toFixed(2)}`);
 console.log(`Quiebras durante la historia ${(bankRate * 100).toFixed(1)}% · en modo libre ${(bankFree * 100).toFixed(1)}% · historia completada ${(winRate * 100).toFixed(1)}%`);
+check(intlUso.curso + intlUso.busca + intlUso.contrato > 0 && intlPlayed > 0, `el bot nunca usó el camino del personal internacional (curso/búsqueda) o nunca jugó un internacional: ${JSON.stringify(intlUso)} · jugados ${intlPlayed}`);
+console.log(`Personal internacional del bot: ${intlUso.curso} capacitaciones · ${intlUso.busca} búsquedas · ${intlUso.contrato} contratados con experiencia internacional`);
 console.log(`Contratos internacionales vistos: ${intlIds.size} · jugados por el bot: ${intlPlayed} · eventos con algún rol en rojo: ${(100 * crewStats.falta / Math.max(1, crewStats.events)).toFixed(1)}% · días sin trabajar: ${JSON.stringify(idle)}`);
 
 if (errors) { console.error(`\n❌ ${errors} errores encontrados`); process.exit(1); }

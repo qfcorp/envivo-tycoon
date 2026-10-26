@@ -45,6 +45,7 @@
    Personal
      persona: { id, name, role, skill, tier, wage, morale, events, eventos_nacionales, eventos_internacionales, owner? }
      Game.searchStaff(s, rol?)  publica una vacante (si das un rol, llegan 2 candidatos de ese rol)
+     Game.cursoIntl(s, id) / searchStaffIntl(s, rol) / ayudaIntl(s, contrato)  personal con experiencia internacional
 
    Movilización y flota (ver la sección MOVILIZACIÓN)
      Game.planTransporte(s, contract, staffIds, equipIds, eleccion?) → { km, personas, bultos, vehiculos, resto, opciones,
@@ -177,7 +178,8 @@
       contestedChapter: 0.4,     // en el capítulo 4 (el de la rival) MegaVisión pelea más contratos
       stealChance: 0.15,
       // calidad de MegaVisión = base + capítulo * perChapter + dificultad * perDiff + azar (entre spread)
-      quality: { base: 38, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95 },
+      quality: { base: 38, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95,
+                 libre: 4 },             // modo libre: MegaVisión también contrata gente con experiencia internacional
       winRep: 3, loseRep: 4,
     },
     // Contratos internacionales: llegan cada cierto tiempo desde el capítulo 4
@@ -220,6 +222,13 @@
     },
     chapter4Earn: 6000,          // capítulo 4: ganancia neta de eventos durante el capítulo
     intl: { fromChapter: 3, first: [10, 20], every: [18, 30], daysLeft: 5, latePayDays: 10 },
+    /* Personal internacional (reporte del dueño, oct. 2026: "¿cómo consigo personal internacional? estoy estancado"):
+       - Capacitación internacional: un Semi-senior o Senior (o tú) hace un curso afuera y queda con experiencia internacional
+         (1 evento internacional en su hoja de vida; el nivel Internacional sigue saliendo solo de eventos de verdad).
+         Costo = sueldo base de un Internacional (150) × peso del rol × cursoFactor (× cursoSemi si es Semi-senior).
+       - Buscar personal internacional: vacante para un puesto que trae SIEMPRE a alguien con experiencia internacional
+         (desde el capítulo 4 o con una oferta internacional en la mesa), sin esperar los 45 de fama. */
+    intlPersonal: { cursoFactor: 3, cursoSemi: 1.25, buscar: 400, wageExtra: 0.1 },
   };
 
   /* ---------- Números aleatorios (con semilla, para poder probar y repetir en el servidor) ---------- */
@@ -576,7 +585,7 @@
   function rivalQualityFor(s, c) {
     const r = BALANCE.rival.quality;
     const ch = s.storyDone ? CHAPTERS.length - 1 : s.chapter;
-    return clamp(Math.round(r.base + r.perChapter * ch + r.perDiff * c.diff + randInt(s, r.spread[0], r.spread[1])), r.min, r.max);
+    return clamp(Math.round(r.base + r.perChapter * ch + r.perDiff * c.diff + (s.storyDone ? r.libre || 0 : 0) + randInt(s, r.spread[0], r.spread[1])), r.min, r.max);
   }
   function inTutorial(s) { return s.stats.events < BALANCE.tutorialEvents; }
 
@@ -926,6 +935,93 @@
     s.money -= 30;
     refreshCandidates(s, role && ROLES[normRole(role)] ? normRole(role) : null);
     return { ok: true, msg: tx('msg.candidatos') };
+  }
+
+  /* ---------- Personal internacional (capacitación y búsqueda) ---------- */
+  // Desde el capítulo 4 (o si ya te llegó una oferta internacional)
+  function intlPersonalDisponible(s) {
+    return !!(s.storyDone || s.chapter >= BALANCE.intl.fromChapter || (s.contracts || []).some((c) => c.internacional));
+  }
+  const round10 = (x) => Math.round(x / 10) * 10;
+  function cursoIntlCosto(p) {
+    const r = ROLES[normRole(p.role)] || ROLES.camarografo;
+    const P = BALANCE.intlPersonal;
+    return round10(TIERS.internacional.base * r.wageMul * P.cursoFactor * ((p.tier || 'junior') === 'semi_senior' ? P.cursoSemi : 1));
+  }
+  // ¿Puede hacer el curso? { ok, motivo (clave de texto) }
+  function puedeCursoIntl(s, p) {
+    if (!p) return { ok: false, motivo: 'msg.ya_no_esta' };
+    if (isIntlExp(p)) return { ok: false, motivo: 'msg.curso_ya' };
+    if (!intlPersonalDisponible(s)) return { ok: false, motivo: 'msg.curso_cap4' };
+    if (tierOf(p).orden < 1) return { ok: false, motivo: 'msg.curso_junior' };
+    return { ok: true };
+  }
+  // Da la experiencia internacional del curso (también la usa la entrega con créditos, js/premium.js)
+  function darCursoIntl(s, p) {
+    p.eventos_internacionales = Math.max(1, p.eventos_internacionales || 0);
+    p.cursoIntl = true;
+    s.contracts.forEach((c) => { if (c.internacional) c.requisitos = requisitosInternacional(s, c, s.staff.map((x) => x.id), s.equip.map((e) => e.id)); });
+  }
+  function cursoIntl(s, staffId) {
+    if (s.currentEvent || s.gameOver) return { ok: false, msg: tx('msg.ahora_no') };
+    const p = s.staff.find((x) => x.id === staffId);
+    const v = puedeCursoIntl(s, p);
+    if (!v.ok) return { ok: false, msg: tx(v.motivo, { nombre: nm(p) }) };
+    const costo = cursoIntlCosto(p);
+    if (s.money < costo) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(costo) }) };
+    s.money -= costo;
+    darCursoIntl(s, p);
+    log(s, 'log.curso_intl', { nombre: nm(p), monto: money(costo) });
+    return { ok: true, msg: tx('msg.curso_listo', { nombre: nm(p) }) };
+  }
+  // Candidato con experiencia internacional (al menos Semi-senior, 1 o 2 eventos afuera; con mucha fama puede ser Internacional)
+  function makeCandidateIntl(s, role) {
+    const c = makeCandidate(s, role);
+    if (c.tier === 'junior') {
+      c.tier = 'semi_senior';
+      c.skill = randInt(s, TIERS.semi_senior.skill[0], TIERS.semi_senior.skill[1]);
+      c.wage = baseWage(role, c.tier, c.skill) + randInt(s, 0, BALANCE.wage.random);
+    }
+    if (!c.eventos_internacionales) c.eventos_internacionales = randInt(s, 1, 2);
+    c.wage = Math.round(c.wage * (1 + BALANCE.intlPersonal.wageExtra));
+    return c;
+  }
+  function searchStaffIntl(s, role) {
+    if (s.currentEvent || s.gameOver) return { ok: false, msg: tx('msg.ahora_no') };
+    if (!intlPersonalDisponible(s)) return { ok: false, msg: tx('msg.curso_cap4') };
+    const r = role && ROLES[normRole(role)] ? normRole(role) : 'director';
+    const costo = BALANCE.intlPersonal.buscar;
+    if (s.money < costo) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(costo) }) };
+    s.money -= costo;
+    refreshCandidates(s, r);
+    const c = makeCandidateIntl(s, r);
+    s.candidates[0] = c;
+    log(s, 'log.busca_intl', { rol: { k: 'rol.' + r + '.nombre' }, monto: money(costo) });
+    return { ok: true, msg: tx('msg.busca_intl', { nombre: c.name }), candidato: c.id };
+  }
+  /* Qué hacer cuando un contrato internacional pide experiencia internacional y no la tienes (nunca un callejón sin salida):
+     [{ key: 'dir_intl'|'equipo_intl', falta (personas), rol (para buscar), curso: [{ id, costo }] (los que pueden hacer el
+       curso, el más barato primero), cand: [ids de candidatos con experiencia internacional], juniors: [ids que primero
+       deben subir a Semi-senior], buscar (costo) }] — vacío si ya cumples. Con todo tu personal. */
+  function ayudaIntl(s, c) {
+    const K = c && c.internacional && INTL_KINDS[c.kind];
+    if (!K) return [];
+    const out = [];
+    const esDir = (p) => normRole(p.role) === 'director';
+    const armar = (key, falta, rol, filtro) => {
+      const sin = s.staff.filter((p) => filtro(p) && !isIntlExp(p));
+      out.push({ key, falta, rol,
+        curso: sin.filter((p) => tierOf(p).orden >= 1).map((p) => ({ id: p.id, costo: cursoIntlCosto(p) })).sort((a, b) => a.costo - b.costo),
+        juniors: sin.filter((p) => tierOf(p).orden < 1).map((p) => p.id),
+        cand: (s.candidates || []).filter((x) => filtro(x) && isIntlExp(x)).map((x) => x.id),
+        buscar: BALANCE.intlPersonal.buscar, disponible: intlPersonalDisponible(s) });
+    };
+    if (K.requisitos.includes('dir_intl') && !s.staff.some((p) => esDir(p) && isIntlExp(p))) armar('dir_intl', 1, 'director', esDir);
+    if (K.requisitos.includes('equipo_intl')) {
+      const n = s.staff.filter((p) => !esDir(p) && isIntlExp(p)).length;
+      if (n < K.intlExtra) armar('equipo_intl', K.intlExtra - n, 'camarografo', (p) => !esDir(p));
+    }
+    return out;
   }
 
   /* ---------- Tienda / bodega ---------- */
@@ -1715,10 +1811,20 @@
       const need = (req[role] || [0, 0])[1];
       if (!need) return;
       const already = staffIds.filter((id) => normRole(s.staff.find((p) => p.id === id).role) === role).length;
+      // En un contrato internacional va primero quien tiene experiencia internacional (es requisito)
+      const pIntl = (p) => (c.internacional && isIntlExp(p) ? 10 : 0);
       s.staff.filter((p) => !p.owner && normRole(p.role) === role)
-        .sort((a, b) => (b.skill + tierBonus(b)) - (a.skill + tierBonus(a)))
+        .sort((a, b) => (b.skill + tierBonus(b) + pIntl(b)) - (a.skill + tierBonus(a) + pIntl(a)))
         .slice(0, Math.max(0, need - already)).forEach((p) => staffIds.push(p.id));
     });
+    // Internacional: si faltan personas con experiencia internacional (además del realizador), se suman las que tengas
+    const KI = c.internacional && INTL_KINDS[c.kind];
+    if (KI && KI.intlExtra) {
+      const esDir = (p) => normRole(p.role) === 'director';
+      const lleva = () => s.staff.filter((p) => staffIds.includes(p.id) && !esDir(p) && isIntlExp(p)).length;
+      s.staff.filter((p) => !staffIds.includes(p.id) && !esDir(p) && isIntlExp(p))
+        .forEach((p) => { if (lleva() < KI.intlExtra) staffIds.push(p.id); });
+    }
     return { staffIds, equipIds };
   }
 
@@ -2845,6 +2951,8 @@
     ROLES, CATALOG, CONSUMABLES, EVENT_TYPES, CHAPTERS, INCIDENTS, CATEGORIAS, TIERS, INTL_KINDS, TEXTOS,
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
+    // Personal internacional
+    cursoIntl, cursoIntlCosto, puedeCursoIntl, darCursoIntl, searchStaffIntl, ayudaIntl, intlPersonalDisponible, isIntlExp, nuevoNombre: staffName, INTL_CREDITOS: D.INTL_CREDITOS,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
     computeQuality, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,

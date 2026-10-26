@@ -504,6 +504,30 @@ check('Libro de créditos = saldo (todo pasó por Monedero)', Monedero::saldo($C
 check('Las entregas del combo salen en /api/estado (Monedero::entregas: tipo equipo y personal)', true,
     count(array_filter(Monedero::entregas($CB), fn($e) => in_array($e['tipo'], ['equipo', 'personal'], true))) >= 6);
 
+// =====================================================================
+titulo('Personal internacional con créditos (POST /api/gastar "curso_intl:<rol>:<id>" / "personal_intl:<rol>")');
+$PI = $nuevoJugador('Intl 33');
+$activar($PI);
+Db::q('UPDATE jugadores SET fama_publica = 33 WHERE id = ?', [$PI]);
+Monedero::mover($PI, 1000, 'ajuste', 'prueba:intl');
+$CI = \EnVivo\CatalogoJuego::INTL;
+[$c1, $s1, $e1] = $gasta($PI, 'curso_intl:director:17');
+check('Curso internacional para la persona 17 (director) por ' . $CI['curso'] . ' 💎: entrega curso_intl, item director, cantidad 17', [200, 1000 - $CI['curso'], 'curso_intl', 'director', 17],
+    [$c1, $s1, $e1['tipo'] ?? null, $e1['item'] ?? null, $e1['cantidad'] ?? null]);
+check('Sin id / id malo -> 400 · rol inventado -> 404', [400, 400, 404],
+    [$gasta($PI, 'curso_intl:director')[0], $gasta($PI, 'curso_intl:director:x1')[0], $gasta($PI, 'curso_intl:astronauta:3')[0]]);
+check('Alias viejo de rol (cam) vale como camarografo', [200, 'camarografo'], (fn($r) => [$r[0], $r[2]['item'] ?? null])($gasta($PI, 'curso_intl:cam:18')));
+[$c2, $s2, $e2] = $gasta($PI, 'personal_intl:director');
+check('Director con experiencia internacional por ' . $CI['personal'] . ' 💎: entrega personal_intl, habilidad ' . $CI['habilidad'] . ', nivel semi_senior', [200, 'personal_intl', 'director', $CI['habilidad'], 'semi_senior'],
+    [$c2, $e2['tipo'] ?? null, $e2['item'] ?? null, $e2['cantidad'] ?? null, Db::valor('SELECT nivel FROM entregas WHERE id = ?', [$e2['id'] ?? 0])]);
+$gasta($PI, 'personal_intl:director');
+check('Tope de ' . $CI['maxPorRol'] . ' por rol: el 3.º -> 409', 409, $gasta($PI, 'personal_intl:director')[0]);
+$sal = Monedero::saldo($PI);
+Monedero::mover($PI, -$sal, 'ajuste', 'prueba:intl0');
+check('Sin créditos -> 402 y no se crea la entrega', [402, 0], [$gasta($PI, 'personal_intl:sonidista')[0], (int) Db::valor("SELECT COUNT(*) FROM entregas WHERE jugador_id = ? AND item = 'sonidista'", [$PI])]);
+check('No da permiso de nivel en Duelos (no es entrega "personal")', 0, (int) Db::valor("SELECT COUNT(*) FROM entregas WHERE jugador_id = ? AND tipo = 'personal'", [$PI]));
+check('Libro de créditos = saldo (personal internacional)', Monedero::saldo($PI), (int) Db::valor('SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos WHERE jugador_id = ?', [$PI]));
+
 echo "\n----------------------------------------\nVIP: $OK correctas · $FALLAS fallas\n";
 if (getenv('GUARDAR_TMP') === '1') echo "Base de la prueba en $TMP\n"; else exec('rm -rf ' . escapeshellarg($TMP));
 exit($FALLAS === 0 ? 0 : 1);

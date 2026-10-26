@@ -664,6 +664,11 @@
   .pasos li{margin:4px 0}
   .pasos a{color:var(--blue)}
   .card .btn.sm + .btn.sm{margin-inline-start:6px}
+  /* Personal internacional: el camino cuando falta experiencia internacional (js/ui.js ayudaIntlHtml) */
+  .intl-ayuda{border-color:#4da3ff66}
+  .intl-fix{display:flex;flex-direction:column;gap:6px}.intl-fix + .intl-fix{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+  .intl-fix > .btn.sm,.intl-op > .btn.sm{white-space:normal;text-align:start;max-width:100%}
+  .intl-op{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 </style>
 </head>
 <body>
@@ -25267,6 +25272,24 @@
     'personal.vacio_t': 'No hay candidatos',
     'personal.vacio': 'Publica una vacante y en un rato llegan hojas de vida.',
     'personal.vacante': 'Publicar vacante ({m})',
+    // Personal internacional (capacitación y búsqueda)
+    'intl.curso': 'Capacitación internacional ({m})',
+    'intl.curso_det': 'Un curso afuera: queda con experiencia internacional para los contratos internacionales.',
+    'intl.curso_cred': 'o ya con {n} 💎',
+    'intl.capacita': 'Capacita a {nombre} ({m})',
+    'intl.buscar': 'Buscar con experiencia internacional ({m})',
+    'intl.buscar_rol': 'Buscar {rol} con experiencia internacional ({m})',
+    'intl.capacitate': 'Capacítate tú ({m})',
+    'intl.buscar_det': 'Llega seguro alguien con experiencia internacional para ese puesto (sin puesto elegido: un realizador).',
+    'intl.personal_cred': '{rol} con experiencia internacional ya: {n} 💎',
+    'intl.personal_cred_gen': 'Contratar ya a alguien con experiencia internacional para ese puesto: {n} 💎',
+    'intl.contratar': 'Contratar a {nombre} ({m})',
+    'intl.llevar': 'Llevar a {nombre}',
+    'intl.falta_t': 'Te falta: {req}',
+    'intl.como': 'Así lo consigues (un toque):',
+    'intl.junior': '{nombre} es Junior: el curso es desde Semi-senior.',
+    'intl.faltan_cred': 'Te faltan {n} 💎',
+    'intl.curso_hecho': 'Capacitación internacional',
 
     // Bodega
     'bodega.guardado_vip': 'Equipo VIP: funciona siempre',
@@ -27105,6 +27128,13 @@
     'msg.necesitas_contratar': 'Necesitas {monto} para contratarle.', 'msg.se_unio': '{nombre} se unió al equipo.',
     'msg.no_se_puede': 'No se puede.', 'msg.despediste': '{nombre} ya no trabaja contigo.',
     'msg.vacante_plata': 'Necesitas $30 para publicar la vacante.', 'msg.candidatos': 'Llegaron nuevos candidatos.',
+    'msg.curso_ya': '{nombre} ya tiene experiencia internacional.',
+    'msg.curso_cap4': 'Lo internacional se abre en el capítulo 4.',
+    'msg.curso_junior': '{nombre} todavía es Junior: el curso internacional es para Semi-senior o Senior. Busca a alguien con experiencia internacional.',
+    'msg.curso_listo': '{nombre} terminó la capacitación internacional: ya tiene experiencia internacional.',
+    'msg.busca_intl': 'Llegó {nombre}, con experiencia internacional.',
+    'log.curso_intl': '{nombre} hizo la capacitación internacional ({monto}).',
+    'log.busca_intl': 'Buscaste {rol} con experiencia internacional ({monto}).',
     'msg.no_existe': 'No existe.', 'msg.fama_para_comprar': 'Necesitas {n} de fama para que te lo vendan.',
     'msg.falta_dinero': 'Te falta dinero ({monto}).', 'msg.bodega_llena': 'Tu bodega está llena.',
     'msg.compraste': 'Compraste {item}.', 'msg.alquilaste': 'Reservaste {item} para tu próximo evento.', 'msg.compraste_n': 'Compraste {n} × {item}.',
@@ -28053,13 +28083,17 @@
      aparece: 150 💎 por una persona de habilidad 2. El servidor usa los MISMOS números (server/src/CatalogoJuego.php,
      generado desde aquí). */
   const COMBO_CREDITOS = { porRaiz: 4, minimo: 30, personal: 150, habilidad: 2, maxPorEquipo: 4, maxPorRol: 2 };
+  /* Personal internacional con créditos (POST /api/gastar): "curso_intl:<rol>:<id>" capacitación internacional ya para esa
+     persona de tu equipo (curso); "personal_intl:<rol>" una persona Semi-senior de habilidad 3 con experiencia internacional
+     (personal, hasta maxPorRol por rol). Ninguna da ventaja en Duelos/Copa (el nivel sigue siendo el que se contrata con tu fama). */
+  const INTL_CREDITOS = { curso: 60, personal: 180, habilidad: 3, maxPorRol: 2 };
   function creditosJuego(precio) {
     const p = Math.max(0, Number(precio) || 0);
     return Math.max(COMBO_CREDITOS.minimo, Math.ceil(COMBO_CREDITOS.porRaiz * Math.sqrt(p) / 10) * 10);
   }
 
   const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE,
-    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, creditosJuego };
+    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, INTL_CREDITOS, creditosJuego };
   if (typeof module !== 'undefined' && module.exports) module.exports = Datos;
   else root.Datos = Datos;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -28113,6 +28147,7 @@
    Personal
      persona: { id, name, role, skill, tier, wage, morale, events, eventos_nacionales, eventos_internacionales, owner? }
      Game.searchStaff(s, rol?)  publica una vacante (si das un rol, llegan 2 candidatos de ese rol)
+     Game.cursoIntl(s, id) / searchStaffIntl(s, rol) / ayudaIntl(s, contrato)  personal con experiencia internacional
 
    Movilización y flota (ver la sección MOVILIZACIÓN)
      Game.planTransporte(s, contract, staffIds, equipIds, eleccion?) → { km, personas, bultos, vehiculos, resto, opciones,
@@ -28245,7 +28280,8 @@
       contestedChapter: 0.4,     // en el capítulo 4 (el de la rival) MegaVisión pelea más contratos
       stealChance: 0.15,
       // calidad de MegaVisión = base + capítulo * perChapter + dificultad * perDiff + azar (entre spread)
-      quality: { base: 38, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95 },
+      quality: { base: 38, perChapter: 3, perDiff: 3, spread: [-6, 8], min: 45, max: 95,
+                 libre: 4 },             // modo libre: MegaVisión también contrata gente con experiencia internacional
       winRep: 3, loseRep: 4,
     },
     // Contratos internacionales: llegan cada cierto tiempo desde el capítulo 4
@@ -28288,6 +28324,13 @@
     },
     chapter4Earn: 6000,          // capítulo 4: ganancia neta de eventos durante el capítulo
     intl: { fromChapter: 3, first: [10, 20], every: [18, 30], daysLeft: 5, latePayDays: 10 },
+    /* Personal internacional (reporte del dueño, oct. 2026: "¿cómo consigo personal internacional? estoy estancado"):
+       - Capacitación internacional: un Semi-senior o Senior (o tú) hace un curso afuera y queda con experiencia internacional
+         (1 evento internacional en su hoja de vida; el nivel Internacional sigue saliendo solo de eventos de verdad).
+         Costo = sueldo base de un Internacional (150) × peso del rol × cursoFactor (× cursoSemi si es Semi-senior).
+       - Buscar personal internacional: vacante para un puesto que trae SIEMPRE a alguien con experiencia internacional
+         (desde el capítulo 4 o con una oferta internacional en la mesa), sin esperar los 45 de fama. */
+    intlPersonal: { cursoFactor: 3, cursoSemi: 1.25, buscar: 400, wageExtra: 0.1 },
   };
 
   /* ---------- Números aleatorios (con semilla, para poder probar y repetir en el servidor) ---------- */
@@ -28644,7 +28687,7 @@
   function rivalQualityFor(s, c) {
     const r = BALANCE.rival.quality;
     const ch = s.storyDone ? CHAPTERS.length - 1 : s.chapter;
-    return clamp(Math.round(r.base + r.perChapter * ch + r.perDiff * c.diff + randInt(s, r.spread[0], r.spread[1])), r.min, r.max);
+    return clamp(Math.round(r.base + r.perChapter * ch + r.perDiff * c.diff + (s.storyDone ? r.libre || 0 : 0) + randInt(s, r.spread[0], r.spread[1])), r.min, r.max);
   }
   function inTutorial(s) { return s.stats.events < BALANCE.tutorialEvents; }
 
@@ -28994,6 +29037,93 @@
     s.money -= 30;
     refreshCandidates(s, role && ROLES[normRole(role)] ? normRole(role) : null);
     return { ok: true, msg: tx('msg.candidatos') };
+  }
+
+  /* ---------- Personal internacional (capacitación y búsqueda) ---------- */
+  // Desde el capítulo 4 (o si ya te llegó una oferta internacional)
+  function intlPersonalDisponible(s) {
+    return !!(s.storyDone || s.chapter >= BALANCE.intl.fromChapter || (s.contracts || []).some((c) => c.internacional));
+  }
+  const round10 = (x) => Math.round(x / 10) * 10;
+  function cursoIntlCosto(p) {
+    const r = ROLES[normRole(p.role)] || ROLES.camarografo;
+    const P = BALANCE.intlPersonal;
+    return round10(TIERS.internacional.base * r.wageMul * P.cursoFactor * ((p.tier || 'junior') === 'semi_senior' ? P.cursoSemi : 1));
+  }
+  // ¿Puede hacer el curso? { ok, motivo (clave de texto) }
+  function puedeCursoIntl(s, p) {
+    if (!p) return { ok: false, motivo: 'msg.ya_no_esta' };
+    if (isIntlExp(p)) return { ok: false, motivo: 'msg.curso_ya' };
+    if (!intlPersonalDisponible(s)) return { ok: false, motivo: 'msg.curso_cap4' };
+    if (tierOf(p).orden < 1) return { ok: false, motivo: 'msg.curso_junior' };
+    return { ok: true };
+  }
+  // Da la experiencia internacional del curso (también la usa la entrega con créditos, js/premium.js)
+  function darCursoIntl(s, p) {
+    p.eventos_internacionales = Math.max(1, p.eventos_internacionales || 0);
+    p.cursoIntl = true;
+    s.contracts.forEach((c) => { if (c.internacional) c.requisitos = requisitosInternacional(s, c, s.staff.map((x) => x.id), s.equip.map((e) => e.id)); });
+  }
+  function cursoIntl(s, staffId) {
+    if (s.currentEvent || s.gameOver) return { ok: false, msg: tx('msg.ahora_no') };
+    const p = s.staff.find((x) => x.id === staffId);
+    const v = puedeCursoIntl(s, p);
+    if (!v.ok) return { ok: false, msg: tx(v.motivo, { nombre: nm(p) }) };
+    const costo = cursoIntlCosto(p);
+    if (s.money < costo) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(costo) }) };
+    s.money -= costo;
+    darCursoIntl(s, p);
+    log(s, 'log.curso_intl', { nombre: nm(p), monto: money(costo) });
+    return { ok: true, msg: tx('msg.curso_listo', { nombre: nm(p) }) };
+  }
+  // Candidato con experiencia internacional (al menos Semi-senior, 1 o 2 eventos afuera; con mucha fama puede ser Internacional)
+  function makeCandidateIntl(s, role) {
+    const c = makeCandidate(s, role);
+    if (c.tier === 'junior') {
+      c.tier = 'semi_senior';
+      c.skill = randInt(s, TIERS.semi_senior.skill[0], TIERS.semi_senior.skill[1]);
+      c.wage = baseWage(role, c.tier, c.skill) + randInt(s, 0, BALANCE.wage.random);
+    }
+    if (!c.eventos_internacionales) c.eventos_internacionales = randInt(s, 1, 2);
+    c.wage = Math.round(c.wage * (1 + BALANCE.intlPersonal.wageExtra));
+    return c;
+  }
+  function searchStaffIntl(s, role) {
+    if (s.currentEvent || s.gameOver) return { ok: false, msg: tx('msg.ahora_no') };
+    if (!intlPersonalDisponible(s)) return { ok: false, msg: tx('msg.curso_cap4') };
+    const r = role && ROLES[normRole(role)] ? normRole(role) : 'director';
+    const costo = BALANCE.intlPersonal.buscar;
+    if (s.money < costo) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(costo) }) };
+    s.money -= costo;
+    refreshCandidates(s, r);
+    const c = makeCandidateIntl(s, r);
+    s.candidates[0] = c;
+    log(s, 'log.busca_intl', { rol: { k: 'rol.' + r + '.nombre' }, monto: money(costo) });
+    return { ok: true, msg: tx('msg.busca_intl', { nombre: c.name }), candidato: c.id };
+  }
+  /* Qué hacer cuando un contrato internacional pide experiencia internacional y no la tienes (nunca un callejón sin salida):
+     [{ key: 'dir_intl'|'equipo_intl', falta (personas), rol (para buscar), curso: [{ id, costo }] (los que pueden hacer el
+       curso, el más barato primero), cand: [ids de candidatos con experiencia internacional], juniors: [ids que primero
+       deben subir a Semi-senior], buscar (costo) }] — vacío si ya cumples. Con todo tu personal. */
+  function ayudaIntl(s, c) {
+    const K = c && c.internacional && INTL_KINDS[c.kind];
+    if (!K) return [];
+    const out = [];
+    const esDir = (p) => normRole(p.role) === 'director';
+    const armar = (key, falta, rol, filtro) => {
+      const sin = s.staff.filter((p) => filtro(p) && !isIntlExp(p));
+      out.push({ key, falta, rol,
+        curso: sin.filter((p) => tierOf(p).orden >= 1).map((p) => ({ id: p.id, costo: cursoIntlCosto(p) })).sort((a, b) => a.costo - b.costo),
+        juniors: sin.filter((p) => tierOf(p).orden < 1).map((p) => p.id),
+        cand: (s.candidates || []).filter((x) => filtro(x) && isIntlExp(x)).map((x) => x.id),
+        buscar: BALANCE.intlPersonal.buscar, disponible: intlPersonalDisponible(s) });
+    };
+    if (K.requisitos.includes('dir_intl') && !s.staff.some((p) => esDir(p) && isIntlExp(p))) armar('dir_intl', 1, 'director', esDir);
+    if (K.requisitos.includes('equipo_intl')) {
+      const n = s.staff.filter((p) => !esDir(p) && isIntlExp(p)).length;
+      if (n < K.intlExtra) armar('equipo_intl', K.intlExtra - n, 'camarografo', (p) => !esDir(p));
+    }
+    return out;
   }
 
   /* ---------- Tienda / bodega ---------- */
@@ -29783,10 +29913,20 @@
       const need = (req[role] || [0, 0])[1];
       if (!need) return;
       const already = staffIds.filter((id) => normRole(s.staff.find((p) => p.id === id).role) === role).length;
+      // En un contrato internacional va primero quien tiene experiencia internacional (es requisito)
+      const pIntl = (p) => (c.internacional && isIntlExp(p) ? 10 : 0);
       s.staff.filter((p) => !p.owner && normRole(p.role) === role)
-        .sort((a, b) => (b.skill + tierBonus(b)) - (a.skill + tierBonus(a)))
+        .sort((a, b) => (b.skill + tierBonus(b) + pIntl(b)) - (a.skill + tierBonus(a) + pIntl(a)))
         .slice(0, Math.max(0, need - already)).forEach((p) => staffIds.push(p.id));
     });
+    // Internacional: si faltan personas con experiencia internacional (además del realizador), se suman las que tengas
+    const KI = c.internacional && INTL_KINDS[c.kind];
+    if (KI && KI.intlExtra) {
+      const esDir = (p) => normRole(p.role) === 'director';
+      const lleva = () => s.staff.filter((p) => staffIds.includes(p.id) && !esDir(p) && isIntlExp(p)).length;
+      s.staff.filter((p) => !staffIds.includes(p.id) && !esDir(p) && isIntlExp(p))
+        .forEach((p) => { if (lleva() < KI.intlExtra) staffIds.push(p.id); });
+    }
     return { staffIds, equipIds };
   }
 
@@ -30913,6 +31053,8 @@
     ROLES, CATALOG, CONSUMABLES, EVENT_TYPES, CHAPTERS, INCIDENTS, CATEGORIAS, TIERS, INTL_KINDS, TEXTOS,
     ROLE_ALIAS, ROLE_KEYS, TIER_KEYS,
     newGame, addContract, addIntlContract, marketing, refreshCandidates, hire, fire, searchStaff,
+    // Personal internacional
+    cursoIntl, cursoIntlCosto, puedeCursoIntl, darCursoIntl, searchStaffIntl, ayudaIntl, intlPersonalDisponible, isIntlExp, nuevoNombre: staffName, INTL_CREDITOS: D.INTL_CREDITOS,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
     computeQuality, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
@@ -36677,7 +36819,7 @@
                      eventos: ['final', 'internacional_host', 'internacional_unilateral'], premium: true, vip: true, repairBase: 2500,
                      desc: 'Tu transmisión sale por satélite: el internet nunca te deja mal.' },
   };
-  const DURABLES = ['item', 'equipo', 'personal'];   // se vuelven a entregar si empiezas partida nueva
+  const DURABLES = ['item', 'equipo', 'personal', 'personal_intl'];   // se vuelven a entregar si empiezas partida nueva
   const VIP_DESCUENTO = 0.3;   // descuento base del Pase VIP (VIP 1); crece con el nivel (PASE_VIP)
 
   /* Ventajas del Pase VIP de 30 días por nivel VIP ("desde" ese nivel; con el Pase activo y nivel 0 cuenta como VIP 1).
@@ -36836,6 +36978,31 @@
         s.staff.push({ id: nuevoId(s), name, role, tier, skill, wage: 25 + skill * 18, morale: 100, events: 0,
           eventos_nacionales: 0, eventos_internacionales: 0, premium: true });
         return `Se unió a tu equipo: ${name} (${G.ROLES[role].name}, habilidad ${skill}).`;
+      }
+      case 'curso_intl': {
+        // Capacitación internacional con créditos (POST /api/gastar "curso_intl:<rol>:<id>"): cantidad = id de la persona en
+        // la partida. Si ya no está (otra partida), la recibe la primera de ese rol que todavía no tenga experiencia afuera.
+        const role = G.normRole ? G.normRole(en.item) : en.item;
+        const sinExp = (p) => !(G.isIntlExp ? G.isIntlExp(p) : p.eventos_internacionales > 0);
+        const p = s.staff.find((x) => x.id === Number(en.cantidad) && sinExp(x))
+          || s.staff.filter((x) => (G.normRole ? G.normRole(x.role) : x.role) === role && sinExp(x)).sort((a, b) => b.skill - a.skill)[0];
+        if (!p) return null;
+        if (G.darCursoIntl) G.darCursoIntl(s, p); else { p.eventos_internacionales = 1; p.cursoIntl = true; }
+        const quien = p.owner ? 'Tú' : p.name;
+        return `${quien} terminó la capacitación internacional: ya tiene experiencia internacional.`;
+      }
+      case 'personal_intl': {
+        // Persona con experiencia internacional canjeada con créditos (POST /api/gastar "personal_intl:<rol>"): Semi-senior
+        // (el nivel que se contrata con tu fama; sin ventaja en Duelos), habilidad cantidad, 1 evento internacional
+        if (!G.ROLES[en.item]) return null;
+        const role = G.normRole ? G.normRole(en.item) : en.item;
+        const skill = Math.min(5, Math.max(1, n));
+        const name = G.nuevoNombre ? G.nuevoNombre(s) : `Profesional ${nuevoId(s)}`;
+        const wage = Math.round((G.baseWage ? G.baseWage(role, 'semi_senior', skill) : 60) * 1.1);
+        s.staff.push({ id: nuevoId(s), name, role, tier: 'semi_senior', skill, wage, morale: 100, events: 0,
+          eventos_nacionales: 0, eventos_internacionales: 1, premium: true });
+        (s.contracts || []).forEach((c) => { if (c.internacional && G.requisitosInternacional) c.requisitos = G.requisitosInternacional(s, c, s.staff.map((x) => x.id), s.equip.map((e) => e.id)); });
+        return `Se unió a tu equipo: ${name} (${G.ROLES[role].name}, con experiencia internacional).`;
       }
       case 'dinero': {
         s.money += n;
@@ -38309,7 +38476,7 @@
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
-        ${PE ? PE.internacional(intlVista(c)) : ''}
+        ${PE ? PE.internacional(intlVista(c)) : ''}${c.internacional ? ayudaIntlHtml(c) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
@@ -38330,6 +38497,90 @@
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
+  /* ---------- Personal internacional: el camino cuando un contrato internacional pide experiencia internacional ----------
+     (reporte del dueño, oct. 2026: "¿cómo consigo personal internacional? estoy estancado, ni con diamantes puedo").
+     Nunca un callejón sin salida: capacitar a alguien de tu equipo (dinero o 💎), contratar a un candidato que ya la tiene,
+     buscar uno (dinero) o traerlo ya (💎). Los 💎 los descuenta SIEMPRE el servidor (/api/gastar "curso_intl:" / "personal_intl:"). */
+  const IC = () => G.INTL_CREDITOS || { curso: 60, personal: 180 };
+  const saldoCred = () => (Api.estado && Api.estado.creditos) || 0;
+  const credBtn = (act, n, label, extra) => (Api.logueado()
+    ? `<button class="btn sm" data-act="${act}" ${extra || ''} ${saldoCred() < n ? 'disabled' : ''}>${I('gem', 'sm')}${label}</button>${saldoCred() < n ? `<span class="small" style="color:var(--amber)">${T('intl.faltan_cred', { n: N(n - saldoCred()) })}</span>` : ''}` : '');
+  // sel: ids que llevas en la preparación (si no, todo tu personal)
+  function ayudaIntlHtml(c, sel) {
+    if (!c || !c.internacional || !G.ayudaIntl) return '';
+    let faltas = [];
+    try { faltas = G.ayudaIntl(S, c); } catch (e) { faltas = []; }
+    const fee = (x) => x.wage * ((BAL().wage && BAL().wage.hireFeeDays) || 2);
+    const persona = (id) => S.staff.find((p) => p.id === id);
+    let html = '';
+    // En la preparación: alguien que ya cumple pero no lo llevas
+    if (sel && G.requisitosInternacional) {
+      let reqs = [];
+      try { reqs = G.requisitosInternacional(S, c, [...sel], [...(prep ? prep.equip : [])]); } catch (e) { reqs = []; }
+      const dirMal = reqs.some((r) => r.key === 'dir_intl' && !r.ok), eqMal = reqs.some((r) => r.key === 'equipo_intl' && !r.ok);
+      const fuera = S.staff.filter((p) => !sel.has(p.id) && G.isIntlExp(p) && ((dirMal && normRole(p.role) === 'director') || (eqMal && normRole(p.role) !== 'director'))).slice(0, 3);
+      if (fuera.length) html += `<div class="intl-fix">${fuera.map((p) => `<button class="btn sm main" data-act="intl-llevar" data-id="${p.id}">${I('check', 'sm')}${T('intl.llevar', { nombre: esc(nmP(p)) })}</button>`).join('')}</div>`;
+    }
+    faltas.forEach((f) => {
+      const req = TL(G.tx('req.' + f.key, f.key === 'equipo_intl' ? { n: f.falta } : null));
+      const rolN = roleName(f.rol).toLowerCase();
+      const btns = [];
+      f.cand.slice(0, 2).forEach((id) => { const x = S.candidates.find((k) => k.id === id); if (x) btns.push(`<button class="btn sm main" data-act="intl-hire" data-id="${x.id}" ${S.money < fee(x) ? 'disabled' : ''}>${I(roleIcon(x.role), 'sm')}${T('intl.contratar', { nombre: esc(TL(x.name)), m: M(fee(x)) })}</button>`); });
+      f.curso.slice(0, 2).forEach((o) => {
+        const p = persona(o.id);
+        btns.push(`<div class="intl-op"><button class="btn sm ${btns.length ? '' : 'main'}" data-act="intl-curso" data-id="${o.id}" ${S.money < o.costo ? 'disabled' : ''}>${I('globe', 'sm')}${p.owner ? T('intl.capacitate', { m: M(o.costo) }) : T('intl.capacita', { nombre: esc(nmP(p)), m: M(o.costo) })}</button>${credBtn('intl-curso-cred', IC().curso, T('intl.curso_cred', { n: N(IC().curso) }), `data-id="${o.id}" data-k="${esc(normRole(p.role))}"`)}</div>`);
+      });
+      if (f.disponible) {
+        btns.push(`<div class="intl-op"><button class="btn sm" data-act="intl-buscar" data-k="${esc(f.rol)}" ${S.money < f.buscar ? 'disabled' : ''}>${I('megaphone', 'sm')}${T('intl.buscar_rol', { rol: esc(rolN), m: M(f.buscar) })}</button>${credBtn('intl-personal-cred', IC().personal, T('intl.personal_cred', { rol: esc(roleName(f.rol)), n: N(IC().personal) }), `data-k="${esc(f.rol)}"`)}</div>`);
+      }
+      const jun = f.juniors.slice(0, 2).map((id) => `<p class="small muted" style="margin:4px 0 0">${T('intl.junior', { nombre: esc(nmP(persona(id))) })}</p>`).join('');
+      html += `<div class="intl-fix" data-intl-falta="${esc(f.key)}"><b class="small">${I('globe', 'sm')} ${T('intl.falta_t', { req: esc(req) })}</b>
+        <div class="small muted" style="margin:2px 0 6px">${T('intl.como')}</div>${btns.join('')}${jun}</div>`;
+    });
+    return html ? `<div class="card intl-ayuda">${html}</div>` : '';
+  }
+  // Toques del camino internacional (Clientes, preparación y Personal)
+  function intlAccion(a, el, id) {
+    const enPrep = prep && !S.currentEvent ? prep.id : null;
+    const volver = () => { save(); if (enPrep !== null && S.contracts.some((c) => c.id === enPrep)) renderPrep(); else render(); };
+    if (a === 'intl-llevar') { if (prep) { prep.staff.add(id); snd.play('tap'); renderPrep(); } return; }
+    if (a === 'intl-curso') {
+      const r = G.cursoIntl(S, id);
+      toast(TL(r.msg)); snd.play(r.ok ? 'hire' : 'error');
+      if (r.ok && prep) prep.staff.add(id);
+      volver(); return;
+    }
+    if (a === 'intl-buscar') {
+      const r = G.searchStaffIntl(S, el.dataset.k || rolBuscar || 'director');
+      toast(TL(r.msg)); snd.play(r.ok ? 'tap' : 'error');
+      volver(); return;
+    }
+    if (a === 'intl-hire') {
+      const r = G.hire(S, id);
+      toast(TL(r.msg)); snd.play(r.ok ? 'hire' : 'error');
+      if (r.ok && prep) prep.staff.add(id);
+      volver(); return;
+    }
+    if (a === 'intl-curso-cred') { canjearIntl('curso_intl:' + (el.dataset.k || 'director') + ':' + id, id); return; }
+    if (a === 'intl-personal-cred') { canjearIntl('personal_intl:' + (el.dataset.k || 'director')); }
+  }
+  // 💎 por el servidor; la entrega llega con /api/estado y se aplica a la partida (js/premium.js). En la preparación se
+  // queda abierta y se lleva a la persona.
+  async function canjearIntl(item, staffId) {
+    const enPrep = prep && !S.currentEvent ? prep.id : null;
+    const antes = new Set(S.staff.map((p) => p.id));
+    try { await Api.gastar(item); } catch (e) { toast(TL(e.message)); snd.play('error'); return; }
+    snd.play('buy');
+    try { await Api.refrescar(); } catch (e) { /* queda lo que ya había */ }
+    aplicarEntregas();
+    if (enPrep !== null && prep && prep.id === enPrep) {
+      if (staffId) prep.staff.add(staffId);
+      S.staff.forEach((p) => { if (!antes.has(p.id)) prep.staff.add(p.id); });
+      save(); renderPrep(); return;
+    }
+    save(); render();
+  }
+
   /* ---------- Personal ---------- */
   // Experiencia: eventos nacionales e internacionales trabajados
   // Nivel (Junior… Internacional) y experiencia: eventos nacionales e internacionales trabajados
@@ -38342,12 +38593,21 @@
   function rolLine(p) {
     return `<div class="rolrow"><span class="roleic">${I(roleIcon(p.role), 'sm')}</span><span class="rn">${esc(roleName(normRole(p.role)))}</span></div>`;
   }
+  // Capacitación internacional en la tarjeta de cada persona (si la puede hacer)
+  function cursoHtml(p) {
+    if (!G.puedeCursoIntl) return '';
+    if (p.cursoIntl) return `<div class="small" style="margin-top:6px;color:var(--blue,#4da3ff)">${I('globe', 'sm')} ${T('intl.curso_hecho')}</div>`;
+    if (!G.puedeCursoIntl(S, p).ok) return '';
+    const costo = G.cursoIntlCosto(p);
+    return `<div class="intl-op" style="margin-top:8px"><button class="btn sm" data-act="intl-curso" data-id="${p.id}" ${S.money < costo ? 'disabled' : ''}>${I('globe', 'sm')}${T('intl.curso', { m: M(costo) })}</button>${credBtn('intl-curso-cred', IC().curso, T('intl.curso_cred', { n: N(IC().curso) }), `data-id="${p.id}" data-k="${esc(normRole(p.role))}"`)}</div>`;
+  }
   function renderPersonal() {
     const ord = (p) => (p.owner ? -1 : ((G.ROLES[normRole(p.role)] || {}).orden || 0));
     const lista = S.staff.slice().sort((a, b) => ord(a) - ord(b) || (b.skill - a.skill));
     const staff = lista.map((p) => `<div class="card staffc">
       <div class="person">${avatarOf(p, 56)}
         <div class="grow who"><h3>${esc(nmP(p))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expLine(p, true)}</div></div>
+      ${cursoHtml(p)}
       ${p.owner ? `<p class="small muted" style="margin:8px 0 0">${T('personal.eres_tu')}</p>` : `
       <div class="small muted" style="margin-top:8px">${T('personal.moral', { n: p.morale })}</div>${condBar(p.morale)}
       <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
@@ -38380,6 +38640,10 @@
         <label class="field" for="rolBuscar">${T('personal.buscar_puesto')}
           <select id="rolBuscar" data-act="rol-buscar"><option value="">${T('personal.cualquier_puesto')}</option>${opciones}</select></label>
         <button class="btn" data-act="search-staff" ${S.money < 30 ? 'disabled' : ''}>${I('megaphone')}${T('personal.vacante', { m: M(30) })}</button>
+        ${G.intlPersonalDisponible && G.intlPersonalDisponible(S) ? (() => { const cb = BAL().intlPersonal ? BAL().intlPersonal.buscar : 400;
+          return `<button class="btn" data-act="intl-buscar" data-k="" ${S.money < cb ? 'disabled' : ''}>${I('globe')}${T('intl.buscar', { m: M(cb) })}</button>
+          <p class="small muted" style="margin:2px 0 6px">${T('intl.buscar_det')}</p>
+          ${credBtn('intl-personal-cred', IC().personal, T('intl.personal_cred_gen', { n: N(IC().personal) }), 'data-k="" data-sel="1"')}`; })() : ''}
       </div><div style="height:12px"></div>`;
   }
 
@@ -39656,7 +39920,7 @@
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
     // Partes que cambian con lo que eliges: arriba (#prepCalc), la tabla del detalle (#prepTabla) y la barra fija (#prepPie)
-    const calcHtml = `${intlHtml}
+    const calcHtml = `${intlHtml}${c.internacional ? ayudaIntlHtml(c, prep.staff) : ''}
       <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
         ${puede ? tip : ''}
         <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>
@@ -40338,6 +40602,12 @@
         break;
       }
       case 'fire': { const p = S.staff.find((x) => x.id === id); if (p) ask(T('personal.despedir_q', { nombre: esc(nmP(p)) }), T('personal.despedir_si'), () => act(G.fire(S, id))); break; }
+      case 'intl-llevar': case 'intl-curso': case 'intl-buscar': case 'intl-hire': case 'intl-curso-cred': case 'intl-personal-cred': {
+        e.preventDefault();
+        if ((a === 'intl-buscar' || a === 'intl-personal-cred') && !el.dataset.k) { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; if (a === 'intl-personal-cred') el.dataset.k = rolBuscar || 'director'; }
+        intlAccion(a, el, id);
+        break;
+      }
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {

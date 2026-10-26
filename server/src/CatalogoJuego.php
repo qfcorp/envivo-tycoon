@@ -1022,6 +1022,14 @@ final class CatalogoJuego
   'maxPorRol' => 2,
 );
 
+    /** Personal internacional con créditos (js/datos.js INTL_CREDITOS): curso_intl:<rol>:<id> y personal_intl:<rol>. */
+    public const INTL = array (
+  'curso' => 60,
+  'personal' => 180,
+  'habilidad' => 3,
+  'maxPorRol' => 2,
+);
+
     /** Tipos de evento: clave => [nombre, cams [mín, máx], audio, stream, outdoor, diff, pay [mín, máx], fama, clientes]. */
     public const EVENTOS = array (
   'misa' => 

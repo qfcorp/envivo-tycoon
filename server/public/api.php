@@ -223,7 +223,7 @@ function api_gastar(): never
         throw $e;
     } catch (\InvalidArgumentException | \RuntimeException $e) {
         $extra = ['creditos' => Monedero::saldo($j)];
-        $combo = str_starts_with(texto_de($in, 'item'), 'juego:') || str_starts_with(texto_de($in, 'item'), 'personal:');
+        $combo = (bool) preg_match('/^(juego|personal|curso_intl|personal_intl):/', texto_de($in, 'item'));
         $cod = match ((int) $e->getCode()) { 402 => 'sin_creditos', 403 => $combo ? 'fuera_de_combo' : 'vip_requerido', 404 => 'no_existe', 409 => $combo ? 'tope_combo' : 'error', default => 'error' };
         if ($cod === 'vip_requerido') $extra['motivo'] = 'vip_requerido';
         Http::error($e->getCode() ?: 400, $e->getMessage(), $extra, $cod);

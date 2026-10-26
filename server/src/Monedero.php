@@ -132,6 +132,7 @@ final class Monedero
     public static function gastar(int $jugador, string $item): array
     {
         if (str_starts_with($item, 'juego:') || str_starts_with($item, 'personal:')) return self::gastarCombo($jugador, $item);
+        if (str_starts_with($item, 'curso_intl:') || str_starts_with($item, 'personal_intl:')) return self::gastarIntl($jugador, $item);
         $p = Catalogo::premium($item);
         if (!$p) throw new \InvalidArgumentException('Ese artículo no existe en la tienda.', 404);
         if (!$p['activo']) throw new \InvalidArgumentException('Ese artículo no está a la venta por ahora.', 404);
@@ -192,6 +193,50 @@ final class Monedero
             if (self::saldo($jugador) < $costo) throw new \RuntimeException('No tienes créditos suficientes. Necesitas ' . $costo . ' créditos.', 402);
             $saldo = self::mover($jugador, -$costo, 'gasto', 'combo:' . $item);
             return [$saldo, self::entregarDef($jugador, $def, 'combo:' . $item), null];
+        });
+    }
+
+    /**
+     * Personal internacional con créditos (js/datos.js INTL_CREDITOS; reporte del dueño, oct. 2026: "¿cómo consigo personal
+     * internacional? ni con diamantes puedo"). Los contratos internacionales piden experiencia internacional y con poca fama
+     * no llegaba nadie así.
+     *   "curso_intl:<rol>:<id>"  capacitación internacional ya para la persona <id> de tu partida (entrega "curso_intl",
+     *                            item = rol, cantidad = id). Precio INTL['curso'].
+     *   "personal_intl:<rol>"    una persona Semi-senior de habilidad INTL['habilidad'] con experiencia internacional (entrega
+     *                            "personal_intl"; tope INTL['maxPorRol'] por rol). No es una entrega "personal": no da permiso
+     *                            de nivel ni de habilidad en Duelos (sin ventaja pagada). Precio INTL['personal'].
+     * Devuelve [saldo, entrega, null].
+     */
+    public static function gastarIntl(int $jugador, string $item): array
+    {
+        $partes = explode(':', $item);
+        $tipo = $partes[0];
+        $cfg = CatalogoJuego::INTL;
+        $rol = CatalogoJuego::ROL_ALIAS[$partes[1] ?? ''] ?? ($partes[1] ?? '');
+        if (!in_array($rol, CatalogoJuego::ROLES, true)) throw new \InvalidArgumentException('Ese rol no existe.', 404);
+        if ($tipo === 'curso_intl') {
+            $id = $partes[2] ?? '';
+            if (count($partes) !== 3 || !ctype_digit($id) || (int) $id < 1 || (int) $id > 1000000) throw new \InvalidArgumentException('Falta la persona que hace el curso.', 400);
+            $costo = (int) $cfg['curso'];
+            $def = ['tipo' => 'curso_intl', 'item' => $rol, 'cantidad' => (int) $id];
+            $tope = 0;
+        } else {
+            if (count($partes) !== 2) throw new \InvalidArgumentException('Ese artículo no existe en la tienda.', 404);
+            $costo = (int) $cfg['personal'];
+            $def = ['tipo' => 'personal_intl', 'item' => $rol, 'cantidad' => (int) $cfg['habilidad'], 'nivel' => 'semi_senior'];
+            $tope = (int) $cfg['maxPorRol'];
+        }
+        $origen = $tipo === 'curso_intl' ? 'intl:curso_intl:' . $rol . ':' . (int) $def['cantidad'] : 'intl:' . $item;
+        return Db::tx(function () use ($jugador, $costo, $def, $tope, $origen, $rol): array {
+            // El curso no tiene tope: los ids son de la partida (una partida nueva repite ids) y el juego solo lo ofrece a
+            // quien todavía no tiene experiencia internacional
+            if ($def['tipo'] !== 'curso_intl') {
+                $ya = (int) Db::valor('SELECT COUNT(*) FROM entregas WHERE jugador_id = ? AND origen = ?', [$jugador, $origen]);
+                if ($ya >= $tope) throw new \RuntimeException('Ya canjeaste ' . $tope . ' personas con experiencia internacional de ese puesto (es el tope).', 409);
+            }
+            if (self::saldo($jugador) < $costo) throw new \RuntimeException('No tienes créditos suficientes. Necesitas ' . $costo . ' créditos.', 402);
+            $saldo = self::mover($jugador, -$costo, 'gasto', $origen);
+            return [$saldo, self::entregarDef($jugador, $def, $origen), null];
         });
     }
 
