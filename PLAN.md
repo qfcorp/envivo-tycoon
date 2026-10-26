@@ -302,3 +302,4 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - PREGUNTA ABIERTA para Dimitry: el equipo VIP comprado con diamantes funciona solo mientras el Pase VIP de 30 días está activo. ¿Se queda así o debe funcionar siempre?
 - 2026-10-26: VIP: lo comprado con diamantes funciona siempre; el Pase VIP da beneficios por nivel (4-5 eventos por día, descuento de reparación 30-50 %, obras más rápidas, bono diario); combos completos con diamantes aunque falte fama; contratar personal con diamantes. Bodega: botón 'Reparar todo' con el costo total.
 - 2026-10-26: decisión de Dimitry: lo pagado vale, pero con punto medio: todo VIP + ventaja pagada máxima ≈ +30 % en la Copa (Ventajas::RECORTE_VIP_PARTE = 0.6; medido +29,2 %).
+- 2026-10-26: lo comprado con diamantes (exclusivo, VIP, premium) no ocupa cupo en la bodega (Game.cuentaBodega).

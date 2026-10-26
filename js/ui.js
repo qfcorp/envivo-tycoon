@@ -77,6 +77,7 @@
   /* ---------- Límites (de la lógica si los exporta) ---------- */
   const BAL = () => G.BALANCE || {};
   const maxStaff = () => { try { if (G.maxStaff && S) return G.maxStaff(S); } catch (e) { /* abajo */ } return BAL().maxStaff || 18; };
+  const enBodega = () => { try { if (G.cuentaBodega && S) return G.cuentaBodega(S); } catch (e) { /* abajo */ } return S ? S.equip.length : 0; };
   const maxEquip = () => { try { if (G.maxEquip && S) return G.maxEquip(S); } catch (e) { /* abajo */ } return BAL().maxEquip || 80; };
   // Límite de quiebra: crece con los gastos diarios (G.bankruptLimit); con una lógica vieja, el fijo
   const bankruptAt = () => { try { if (G.bankruptLimit && S) return G.bankruptLimit(S); } catch (e) { /* abajo */ } return typeof BAL().bankruptAt === 'number' ? BAL().bankruptAt : -300; };
@@ -938,7 +939,7 @@
     const owned = it.owned || 0;
     const rq = (it.requiere || []).map(rqLabel);
     const ac = (it.acepta || []).map(rqLabel);
-    const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq })
+    const label = locked ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}` : llena ? T('bodega.llena', { n: enBodega(), max: maxEq })
       : it.alquiler ? T('bodega.reservar', { m: M(it.price) }) : M(it.price);
     return `<div class="card gear shopc rf r-${r.key} ${locked ? 'locked' : ''}" data-item="${esc(k)}">
       <div class="row between">${rtag(k)}${infoBtn(k)}</div>
@@ -994,7 +995,7 @@
     if (it.exclusivo) {
       const lk = it.minRep > S.rep;
       libre = `<button class="btn sm ex-free ${lk || llena ? '' : 'green'}" data-act="buy" data-k="${esc(k)}" ${lk || llena || S.money < it.price ? 'disabled' : ''}>${lk ? `${I('lock', 'sm')} ${T('bodega.fama_min', { n: it.minRep })}`
-        : llena ? T('bodega.llena', { n: S.equip.length, max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
+        : llena ? T('bodega.llena', { n: enBodega(), max: maxEq }) : T('bodega.ex_con_dinero', { m: M(it.price) })}</button>`;
     }
     return `<div class="card gear shopc exq rf r-${x.vip ? 'vip' : 'exclusivo'}" data-ex="${esc(k)}">
       <div class="exq-top"><span class="exb ${x.vip ? 'vip' : ''}">${I('gem', 'sm')}${x.vip ? 'VIP' : T('bodega.ex_badge')}</span><span class="row" style="gap:0">${owned ? `<span class="num small" style="color:#ffe08a">×${owned}</span>` : ''}${infoBtn(k)}</span></div>
@@ -1155,7 +1156,7 @@
           ${it.premium || delSrv ? `<button class="btn sm" disabled>${delSrv ? T('bodega.ex_mercado') : T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
     }).join('');
     const maxEq = maxEquip();
-    const llena = S.equip.length >= maxEq;
+    const llena = enBodega() >= maxEq;
     const cats = categorias();
     let cur = cats.find((c) => c.key === catSel);
     if (!cur) { cur = cats[0]; catSel = cur ? cur.key : ''; }
@@ -1167,7 +1168,7 @@
     const nota = cur && cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
     $('tab-bodega').innerHTML = `
       <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
-      <div class="sectitle" id="tusEquipos">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: S.equip.length, max: maxEq })}</span>` : ''}</div>
+      <div class="sectitle" id="tusEquipos">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: enBodega(), max: maxEq })}</span>` : ''}</div>
       ${repararTodoBodega()}
       ${mine ? `<div class="ggrid">${mine}</div>` : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
       <p class="small muted">${T('bodega.desgaste')}</p>

@@ -276,6 +276,9 @@
   function franjasDia(s) { return clamp(BALANCE.dia.franjas + extLimite(s, 'turnos'), 1, 5); }
   function maxStaff(s) { return BALANCE.maxStaff + extLimite(s, 'staff'); }
   function maxEquip(s) { return BALANCE.maxEquip + extLimite(s, 'equip'); }
+  /* Lo que ocupa lugar en la bodega: lo comprado con diamantes (exclusivos, VIP, premium) NO cuenta para el tope (decisión de Dimitry) */
+  function esDeDiamantes(e) { const it = CATALOG[e && e.type]; return !!(it && (it.premium || it.vip || it.exclusivo)); }
+  function cuentaBodega(s) { return (s && Array.isArray(s.equip) ? s.equip : []).filter((e) => !esDeDiamantes(e)).length; }
   function migrarExt(s) { cadaExt(s, 'migrar', (h) => h(s)); return s; }
   const pick = (s, arr) => arr[Math.floor(rnd(s) * arr.length)];
   const chance = (s, p) => rnd(s) < p;
@@ -939,7 +942,7 @@
     if (!it) return { ok: false, msg: tx('msg.no_existe') };
     if (it.minRep > s.rep) return { ok: false, msg: tx('msg.fama_para_comprar', { n: it.minRep }) };
     if (s.money < it.price) return { ok: false, msg: tx('msg.falta_dinero', { monto: money(it.price) }) };
-    if (s.equip.length >= maxEquip(s)) return { ok: false, msg: tx('msg.bodega_llena') };
+    if (cuentaBodega(s) >= maxEquip(s)) return { ok: false, msg: tx('msg.bodega_llena') };
     s.money -= it.price;
     s.equip.push({ id: nextId(s), type, condition: 100 });
     log(s, it.alquiler ? 'log.alquilaste' : 'log.compraste', { item: itemP(type), monto: money(it.price) });
@@ -2853,7 +2856,7 @@
     BALANCE, dailyCost, dailyCostBreakdown, eventWage, rivalQualityFor, SAVE_VERSION,
     staffName: nombrePersona, equipName, paisNombre, bankruptLimit, bankruptInfo, payFactor, payMult, demoGame,
     // Extensiones
-    registrarExtension, extensiones, franjasDia, esIntento, extActivas, extSuma, maxStaff, maxEquip, rnd, log, aviso, registrarTipoEvento,
+    registrarExtension, extensiones, franjasDia, esIntento, extActivas, extSuma, maxStaff, maxEquip, cuentaBodega, esDeDiamantes, rnd, log, aviso, registrarTipoEvento,
     registrarImprevisto, incAyuda, itemOf,
     // Movilización y flota
     planTransporte, distanciaKm, bultosDe, flota, flotaDe, esVehiculoFlota, tarifaApp, desgasteVehiculo, vehiclesDaily, publicidadFlota, topeTransporte,

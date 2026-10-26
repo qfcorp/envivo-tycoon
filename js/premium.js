@@ -170,7 +170,7 @@
       case 'item': {
         const it = G.CATALOG[en.item];
         if (!it) return null;
-        if (s.equip.length >= 40) return `No cupo ${it.name} en la bodega.`;
+        // Lo de diamantes no ocupa cupo de bodega (Game.cuentaBodega): llega siempre
         s.equip.push({ id: nuevoId(s), type: en.item, condition: 100 });
         return `Llegó a tu bodega: ${it.name}.`;
       }
