@@ -103,13 +103,21 @@ Todas con sesión; POST con `X-Envivo: 1`. Errores `{ok:false, error, codigo}`.
 - `POST /api/misiones/reclamar {periodo: "d:AAAA-MM-DD" | "s:AAAA-MM-DD" (lunes), clave: id de misión | "cofre20".."cofre100"}`
   → `{ok, periodo, clave, premio: {dinero?, cons?, mat?, creditos?}, creditos_dados, entregas: [entregas materiales],
   xp_pase, tope_alcanzado, creditos (saldo), creditos_hoy, creditos_tope}`.
+  Premios por constancia (F2P, ver `server/MONETIZACION.md` §6): periodo `"s:<lunes>"` + clave `"constancia"` (5 días activos
+  de esa semana) y periodo `"m:AAAA-MM"` + clave `"mes7"` / `"mes14"` / `"mes21"`. La respuesta trae además `equipos`
+  (inventario: el exclusivo del mes), `extra` (`{tipo: obra|estrella|vip|exclusivo, dado, ...}`), `creditos_semana` y
+  `creditos_semana_tope`. Si faltan días: `no_disponible` 409 (con `activos` y `meta`). El GET trae `creditos_semana`,
+  `creditos_semana_tope` y `constancia: {dias: [fechas con cofre60, 45 días], semana: {lunes, activos, meta, premio},
+  mes: {mes, activos, exclusivo}}`; `reclamados` incluye siempre los `"m:"` de este mes y el anterior.
   Códigos: `ya_reclamado` 409 (con `reclamado`), `mision_invalida` 400/404, `periodo_invalido` 400, `misiones_vencidas` 409,
   `falta_periodo` / `falta_clave` 400, `limite_intentos` 429 (60 en 10 min), `cuenta_suspendida` / `cuenta_baneada` 403.
 - Créditos: `movimientos_creditos.motivo = 'misiones'`, ref `misiones:<periodo>:<clave>`. Entregas: origen igual.
 
 ## Ajustes (tabla `ajustes`, Centro de Control)
 
-`misiones_creditos_dia` (10): tope de créditos de misiones por jugador y día del servidor. `0` = sin créditos. Vacío = 10.
+`misiones_creditos_dia` (10): tope de créditos de los cofres del día por jugador y día del servidor. `0` = sin créditos. Vacío = 10.
+`misiones_creditos_semana` (120): tope de TODOS los créditos de misiones (cofres, constancia y ruta del mes) por jugador y
+semana del servidor (lunes a domingo). Vacío = 120.
 
 ## Tabla
 

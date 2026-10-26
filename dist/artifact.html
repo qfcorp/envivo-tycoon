@@ -52385,6 +52385,11 @@
    - Premios FIJOS y visibles: dinero del juego, repuestos, materiales de la sede y un cofre de actividad del día a los
      20/40/60/80/100 puntos (20 por misión del día reclamada). Créditos solo en los cofres de 60 y 100 y solo con cuenta
      (los da el servidor, con tope por día). Sin cuenta todo se aplica en la partida (los materiales a la sede local).
+   - Premios por constancia (para los F2P; MISMA tabla que Misiones.php, economía en server/MONETIZACION.md §6):
+     un "día activo" = abriste el cofre de 60 puntos ese día (s.misiones.h). Con 5 de 7 días de la semana se abre el cofre
+     de constancia (con cuenta trae créditos y el premio de la semana: obra extra 24 h / personal estrella 2 partidos /
+     Pase VIP 1 día) y la ruta del mes da premios a los 7, 14 y 21 días (el de 21: un equipo de Edición Exclusiva
+     permanente, con cuenta). Sin cuenta se dan el dinero y los materiales en la partida. Textos solo en español (TX).
    - Tarjeta de Inicio: window.EnVivoInicio (id "misiones", orden 3). Botones data-ext="misiones" data-acc="…".
    - Textos: español + 9 idiomas aquí mismo (TRAD), registro "tú". Sin I18N, español.
    API: window.Misiones = { tarjeta, clic, marcar, observar, asegurar, elegir, fnv, reclamar, reclamarTodo, puntos,
@@ -52429,6 +52434,18 @@
   const POR = 5, PUNTOS = 20;
   const XP_PASE = { d: 15, s: 40 };
   const MATS = ['cables', 'placas', 'paneles', 'credenciales', 'planos', 'chips'];
+  /* Premios por constancia (los MISMOS que server/src/Misiones.php) */
+  const DIA_ACTIVO = 'cofre60';
+  const CONSTANCIA = { meta: 5, premio: { dinero: 2000, mat: { cables: 10, placas: 10, paneles: 10, chips: 1 }, creditos: 25 } };
+  const PREMIOS_SEMANA = { obra: { horas: 24 }, estrella: { partidos: 2 }, vip: { dias: 1 } };
+  const MES = {
+    7: { dinero: 1500, mat: { planos: 8, credenciales: 8 }, creditos: 20 },
+    14: { dinero: 2500, mat: { paneles: 12, chips: 2 }, creditos: 30 },
+    21: { dinero: 3000, exclusivo: 1 },
+  };
+  const HITOS_MES = [7, 14, 21];
+  const EXCLUSIVOS_MES = ['ex_lluvia', 'ex_maletas', 'ex_cable', 'ex_mics', 'ex_monitor', 'ex_wireless'];
+  const CREDITOS_SEMANA = 120;
   const CLAVES = ['evento', 'estrellas4', 'estrellas5', 'ganar', 'reparar', 'contratar', 'repuesto', 'equipo', 'publicidad', 'en_linea', 'entrega', 'obra'];
 
   /* ---------- Textos ---------- */
@@ -52623,6 +52640,23 @@
     'err.red': '没有网络，请再试一次。', 'err.misiones_vencidas': '这些任务已过期，看看今天的吧。', 'err.mision_invalida': '这个任务已经不可用了。',
     'err.limite_intentos': '操作太频繁，请稍等。', 'err.error': '领取失败，请再试一次。',
   };
+  /* Textos de los premios por constancia: SOLO español (regla de Dimitry: se traducen al final, con la versión aprobada). */
+  const TX = {
+    'f.titulo': 'Premios por constancia', 'f.sub': 'Gratis: solo juega tus misiones',
+    'f.regla': 'Un día cuenta cuando abres el cofre de 60 puntos (3 misiones del día).',
+    'f.semana': 'Cofre de la semana', 'f.semana_meta': 'Juega {n} de los 7 días', 'f.dias': '{n}/{m} días',
+    'f.mes': 'Ruta de {mes}', 'f.mes_meta': 'Días activos este mes: {n}', 'f.hito': '{n} días',
+    'f.premio_semana': 'Premio de la semana', 'f.exclusivo_mes': 'Equipo exclusivo del mes',
+    'f.ps.obra': 'Equipo de obra extra por {n} h', 'f.ps.estrella': 'Personal estrella de la semana ({n} partidos)', 'f.ps.vip': 'Prueba del Pase VIP ({n} día)',
+    'f.solo_cuenta': 'con cuenta', 'f.faltan': 'Faltan {n} días', 'f.reclamar': 'Abrir', 'f.listo': 'Abierto',
+    'f.ok_semana': '¡Cofre de la semana! {lista}', 'f.ok_mes': '¡Premio de {n} días! {lista}', 'f.no_listo': 'Todavía te faltan días activos para ese premio.',
+    'f.pie_cuenta': 'Con tu cuenta también ganas créditos, el premio de la semana y el equipo exclusivo del mes.',
+    'f.tope_semana': 'Esta semana ya llegaste al tope de créditos de las misiones.',
+    'ex.ex_lluvia': 'Cobertor de lluvia Oro', 'ex.ex_maletas': 'Maletas Oro con ruedas', 'ex.ex_cable': 'Fibra SMPTE Oro 150 m',
+    'ex.ex_mics': 'Micrófonos inalámbricos Oro', 'ex.ex_monitor': 'Monitor OLED Oro 24"', 'ex.ex_wireless': 'Video inalámbrico Oro',
+    meses: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+  };
+  const tx = (k, p) => { const v = TX[k] !== undefined ? String(TX[k]) : k; return p ? v.replace(/\{(\w+)\}/g, (m, x) => (p[x] !== undefined && p[x] !== null ? String(p[x]) : m)) : v; };
   const TITULO_PL = { es: 'Misiones', en: 'Missions', 'pt-BR': 'Missões', fr: 'Missions', de: 'Missionen', it: 'Missioni', ru: 'Задания', tr: 'Görevler', id: 'Misi', 'zh-CN': '任务' };
 
   function idioma() { try { const c = root.I18N && root.I18N.idioma; return c && TRAD[c] ? c : 'es'; } catch (e) { return 'es'; } }
@@ -52667,6 +52701,12 @@
     x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7));
     return x.getUTCFullYear() + '-' + pad(x.getUTCMonth() + 1) + '-' + pad(x.getUTCDate());
   }
+  const diaNum = (f) => { const [y, mo, d] = f.split('-').map(Number); return Math.floor(Date.UTC(y, mo - 1, d, 12) / 86400000); };
+  const deNum = (n) => { const x = new Date(n * 86400000 + 43200000); return x.getUTCFullYear() + '-' + pad(x.getUTCMonth() + 1) + '-' + pad(x.getUTCDate()); };
+  const masDias = (f, n) => deNum(diaNum(f) + n);
+  /** Premio de la semana del lunes (rota cada lunes: obra → estrella → vip), igual que Misiones::premioSemana. */
+  function premioSemana(lun) { const k = Object.keys(PREMIOS_SEMANA); const n = Math.floor((diaNum(lun) - 4) / 7); return k[((n % k.length) + k.length) % k.length]; }
+  function exclusivoMes(mes) { const n = Number(mes.slice(0, 4)) * 12 + Number(mes.slice(5, 7)) - 1; return EXCLUSIVOS_MES[n % EXCLUSIVOS_MES.length]; }
   // Segundos hasta la próxima medianoche (dias = 1) o el próximo lunes (dias = días que faltan) del celular
   function hastaMedianoche(dias) {
     const a = new Date();
@@ -52711,11 +52751,18 @@
     let m = s.misiones;
     if (!m || typeof m !== 'object' || m.v !== 1) m = s.misiones = { v: 1, d: null, w: null, b: {} };
     if (!m.b || typeof m.b !== 'object') m.b = {};
+    // Premios por constancia: días activos (cofre de 60 abierto) y la ruta del mes
+    if (!m.h || typeof m.h !== 'object' || Array.isArray(m.h)) m.h = {};
+    const mes = hoy.slice(0, 7);
+    if (!m.mes || typeof m.mes !== 'object' || m.mes.p !== mes || !m.mes.r || typeof m.mes.r !== 'object') { m.mes = { p: mes, r: {} }; st.cambio = true; }
     if (!okPeriodo(m.d) || m.d.p !== hoy) { m.d = nuevoPeriodo('d', hoy, on); st.cambio = true; }
     if (!okPeriodo(m.w) || m.w.p !== lun) { m.w = nuevoPeriodo('s', lun, on); st.cambio = true; }
     // Entró a su cuenta a mitad del día: las mismas que el servidor (el avance se guarda por contador, no se pierde)
     if (on && !m.d.on) { m.d.ids = elegir('d', m.d.p, true); m.d.on = true; st.cambio = true; }
     if (on && !m.w.on) { m.w.ids = elegir('s', m.w.p, true); m.w.on = true; st.cambio = true; }
+    if (m.d.r[DIA_ACTIVO] && !m.h[m.d.p]) { m.h[m.d.p] = 1; st.cambio = true; }
+    const viejo = masDias(hoy, -62);
+    Object.keys(m.h).forEach((f) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || f < viejo) { delete m.h[f]; st.cambio = true; } });
     return m;
   }
   function sumar(m, k, n) {
@@ -52772,7 +52819,7 @@
 
   /* ---------- Avance y premios ---------- */
   const defDe = (tipo, id) => (tipo === 's' ? SEMANA[id] : DIA[id]);
-  const perDe = (m, tipo) => (tipo === 's' ? m.w : m.d);
+  const perDe = (m, tipo) => (tipo === 's' ? m.w : tipo === 'm' ? m.mes : m.d);
   function avance(m, tipo, id) { const d = defDe(tipo, id); const per = perDe(m, tipo); return d ? Math.min(d.n, per.c[d.k] || 0) : 0; }
   function cumplida(m, tipo, id) { const d = defDe(tipo, id); return !!d && avance(m, tipo, id) >= d.n; }
   function puntos(m) { return Math.min(100, Object.keys(m.d.r).filter((k) => DIA[k]).length * PUNTOS); }
@@ -52783,6 +52830,15 @@
     const p = puntos(m) + out.filter((x) => x[0] === 'd').length * PUNTOS;
     HITOS.forEach((h) => { if (!m.d.r['cofre' + h] && p >= h) out.push(['d', 'cofre' + h]); });
     return out;
+  }
+  /* ---------- Premios por constancia ---------- */
+  function activosEntre(m, desde, hasta) { return Object.keys(m.h || {}).filter((f) => f >= desde && f <= hasta).length; }
+  const activosSemana = (m) => activosEntre(m, m.w.p, masDias(m.w.p, 6));
+  const activosMes = (m) => activosEntre(m, m.mes.p + '-01', m.mes.p + '-31');
+  function listoF2p(m, tipo, id) {
+    if (tipo === 's' && id === 'constancia') return activosSemana(m) >= CONSTANCIA.meta;
+    const h = /^mes(\d+)$/.exec(id);
+    return tipo === 'm' && !!h && !!MES[h[1]] && activosMes(m) >= Number(h[1]);
   }
   function M(n) { try { if (st.ctx && typeof st.ctx.M === 'function') return st.ctx.M(n); } catch (e) { /* abajo */ } return '$' + num(n); }
   function iconoMat(m) { try { if (root.Sede && typeof root.Sede.iconoMat === 'function') return root.Sede.iconoMat(m, 16).replace('class="sd-ico"', 'class="sd-ico mis-ico"'); } catch (e) { /* abajo */ } return '🧱'; }
@@ -52818,6 +52874,9 @@
     if (conMateriales && p.mat) sumarMateriales(s, p.mat);
   }
   function premioDe(tipo, id) {
+    if (tipo === 's' && id === 'constancia') return CONSTANCIA.premio;
+    const hm = /^mes(\d+)$/.exec(id);
+    if (tipo === 'm') return hm && MES[hm[1]] ? MES[hm[1]] : null;
     const h = /^cofre(\d+)$/.exec(id);
     if (tipo === 'd' && h) return COFRES[h[1]] || null;
     const d = defDe(tipo, id);
@@ -52828,6 +52887,14 @@
   function repintar() { try { if (st.ctx && typeof st.ctx.render === 'function') st.ctx.render(); } catch (e) { /* nada */ } }
 
   /** Reclama una misión ('d' | 's', id) o un cofre ('d', 'cofre60'). Devuelve {ok, premio, ...} o {ok:false, motivo}. */
+  /** Texto del premio especial de la semana o del exclusivo del mes. */
+  function textoExtra(tipo, id, per) {
+    if (tipo === 's' && id === 'constancia') { const k = premioSemana(per.p); const d = PREMIOS_SEMANA[k]; return tx('f.ps.' + k, { n: d.horas || d.partidos || d.dias }); }
+    if (tipo === 'm' && premioDe('m', id) && premioDe('m', id).exclusivo) return tx('ex.' + exclusivoMes(per.p));
+    return '';
+  }
+  /** Reclama una misión ('d' | 's', id), un cofre ('d', 'cofre60'), la constancia ('s', 'constancia') o un hito del mes
+      ('m', 'mes7'). Devuelve {ok, premio, ...} o {ok:false, motivo}. */
   async function reclamar(tipo, id, opciones) {
     const silencio = opciones && opciones.silencio;
     const s = principal();
@@ -52835,38 +52902,47 @@
     const m = asegurar(s);
     const per = perDe(m, tipo);
     const cofre = /^cofre(\d+)$/.exec(id);
+    const f2p = (tipo === 's' && id === 'constancia') || tipo === 'm';
     const premio = premioDe(tipo, id);
-    if (!premio || (!cofre && per.ids.indexOf(id) < 0)) return { ok: false, motivo: 'no_existe' };
+    if (!premio || (!cofre && !f2p && per.ids.indexOf(id) < 0)) return { ok: false, motivo: 'no_existe' };
     if (per.r[id]) { if (!silencio) aviso(t('ya')); return { ok: false, motivo: 'ya' }; }
-    const listo = cofre ? puntos(m) >= Number(cofre[1]) : cumplida(m, tipo, id);
-    if (!listo) { if (!silencio) { aviso(cofre ? t('faltan', { n: Number(cofre[1]) - puntos(m) }) : t('no_listo')); sonido('error'); } return { ok: false, motivo: 'no_listo' }; }
+    const listo = f2p ? listoF2p(m, tipo, id) : cofre ? puntos(m) >= Number(cofre[1]) : cumplida(m, tipo, id);
+    if (!listo) { if (!silencio) { aviso(f2p ? tx('f.no_listo') : cofre ? t('faltan', { n: Number(cofre[1]) - puntos(m) }) : t('no_listo')); sonido('error'); } return { ok: false, motivo: 'no_listo' }; }
+    const okTxt = (lista) => (tipo === 'm' ? tx('f.ok_mes', { n: id.slice(3), lista }) : f2p ? tx('f.ok_semana', { lista }) : t('ok', { lista }));
     if (logueado()) {
       let j;
-      try { j = await pedir('POST', '/api/misiones/reclamar', { periodo: (tipo === 's' ? 's:' : 'd:') + per.p, clave: id }); }
+      try { j = await pedir('POST', '/api/misiones/reclamar', { periodo: tipo + ':' + per.p, clave: id }); }
       catch (e) {
         if (e.codigo === 'ya_reclamado') { per.r[id] = 1; guardar(); if (!silencio) aviso(t('ya')); return { ok: false, motivo: 'ya' }; }
-        if (!silencio) { aviso(e.message); sonido('error'); }
+        if (!silencio) { aviso(e.codigo === 'no_disponible' ? tx('f.no_listo') : e.message); sonido('error'); }
+        if (e.codigo === 'no_disponible') { st.srvEn = 0; cargarServidor().catch(() => {}); }
         return { ok: false, motivo: e.codigo || 'error', error: e.message };
       }
       const s2 = principal() || s;
       const m2 = asegurar(s2);
       aplicar(s2, premio, false);
       perDe(m2, tipo).r[id] = 1;
+      if (id === DIA_ACTIVO && tipo === 'd') m2.h[per.p] = 1;
       try { if (root.Api && root.Api.estado && typeof j.creditos === 'number') root.Api.estado.creditos = j.creditos; } catch (e) { /* nada */ }
-      if (st.srv) st.srv.creditos_hoy = j.creditos_hoy;
+      if (st.srv) { st.srv.creditos_hoy = j.creditos_hoy; if (typeof j.creditos_semana === 'number') st.srv.creditos_semana = j.creditos_semana; }
       guardar();
       let txt = textoPremio(premio, true, j.creditos_dados || 0);
+      const ex = j.extra && j.extra.dado !== false ? textoExtra(tipo, id, per) : '';
+      if (ex) txt += ' · ' + ex;
       if (j.xp_pase) txt += ' · ' + t('xp', { n: j.xp_pase });
-      if (!silencio) { aviso(t('ok', { lista: txt }) + (j.tope_alcanzado ? ' ' + t('tope') : '')); sonido('buy'); }
-      // Los materiales llegan como entregas (la sede oficial los suma): refrescar /api/estado y aplicar
-      if (Array.isArray(j.entregas) && j.entregas.length && st.ctx && typeof st.ctx.alReclamar === 'function') { try { Promise.resolve(st.ctx.alReclamar(j)).catch(() => {}); } catch (e) { /* luego */ } }
+      if (!silencio) { aviso(okTxt(txt) + (j.tope_alcanzado ? ' ' + (f2p ? tx('f.tope_semana') : t('tope')) : '')); sonido('buy'); }
+      // Los materiales llegan como entregas (la sede oficial los suma), el exclusivo al inventario y el Pase VIP a la cuenta:
+      // refrescar /api/estado y aplicar
+      const refrescar = (Array.isArray(j.entregas) && j.entregas.length) || (Array.isArray(j.equipos) && j.equipos.length) || !!j.extra;
+      if (refrescar && st.ctx && typeof st.ctx.alReclamar === 'function') { try { Promise.resolve(st.ctx.alReclamar(j)).catch(() => {}); } catch (e) { /* luego */ } }
       return { ok: true, premio, txt, servidor: j };
     }
     aplicar(s, premio, true);
     per.r[id] = 1;
+    if (id === DIA_ACTIVO && tipo === 'd') m.h[per.p] = 1;
     guardar();
     const txt = textoPremio(premio, false);
-    if (!silencio) { aviso(t('ok', { lista: txt })); sonido('buy'); }
+    if (!silencio) { aviso(okTxt(txt)); sonido('buy'); }
     return { ok: true, premio, txt };
   }
   async function reclamarTodo() {
@@ -52894,9 +52970,12 @@
     const m = asegurar(s);
     let cambio = false;
     const rec = (j && j.reclamados) || {};
-    [['d', m.d], ['s', m.w]].forEach(([tipo, per]) => {
+    [['d', m.d], ['s', m.w], ['m', m.mes]].forEach(([tipo, per]) => {
       (rec[tipo + ':' + per.p] || []).forEach((k) => { if (!per.r[k]) { per.r[k] = 1; cambio = true; } });
     });
+    // Días activos que cuenta el servidor (otro celular de la misma cuenta)
+    const dias = j && j.constancia && Array.isArray(j.constancia.dias) ? j.constancia.dias : [];
+    dias.forEach((f) => { if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f) && !m.h[f]) { m.h[f] = 1; cambio = true; } });
     return cambio;
   }
   function cargarServidor() {
@@ -52950,6 +53029,28 @@
 .mis-ico{display:inline-block;vertical-align:-3px}
 .mis-pie{font-size:12px;margin:10px 0 0}
 .mis-todo{margin:0 0 10px}
+.mis-f2p{background:linear-gradient(180deg,rgba(255,196,0,.10),transparent 70%),var(--panel2);border:1px solid rgba(255,196,0,.45);border-radius:14px;padding:10px;margin:0 0 10px;min-width:0}
+.mis-f2p-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.mis-f2p-top b{font-size:15px}
+.mis-f2p-top small{color:var(--muted);font-size:12px}
+.mis-f2p-blq{border-top:1px solid var(--line);padding-top:8px;margin-top:8px;min-width:0}
+.mis-f2p-fila{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.mis-f2p-fila .mis-tx{flex:1;min-width:0}
+.mis-f2p-fila b{font-size:14px;overflow-wrap:anywhere}
+.mis-f2p .mis-pr{font-size:12px;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:2px 8px;line-height:1.3}
+.mis-f2p .mis-av{display:flex;align-items:center;gap:6px;margin-top:6px}
+.mis-f2p .mis-av .num{font-size:11px;color:var(--muted);flex:none}
+.mis-f2p .btn{margin:0;min-height:38px;padding:6px 12px;width:auto;flex:none}
+.mis-f2p .mis-ok{font-size:12px;color:var(--green);font-weight:700;white-space:nowrap;flex:none}
+.mis-f2p .mis-falta{font-size:11px;color:var(--muted);white-space:nowrap;flex:none}
+.mis-gold{color:#ffc400;font-weight:600}
+.mis-hitos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.mis-hito{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:6px;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:11px;line-height:1.25;overflow-wrap:anywhere}
+.mis-hito .mis-hn{font-weight:700;font-size:12px}
+.mis-hito.listo{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+.mis-hito.hecho{opacity:.6}
+.mis-hito .btn{min-height:32px;padding:4px 8px;font-size:12px;width:100%}
+.mis-f2p-pie{font-size:11px;margin:8px 0 0}
 `;
     document.head.appendChild(s);
   }
@@ -52988,6 +53089,42 @@
     return `<div class="mis-act" data-mis="actividad"><div class="mis-act-top"><b>${esc(t('actividad'))}</b><span class="num">${p}/100</span></div>
       <div class="mis-bar"><i style="width:${p}%"></i></div><div class="mis-cofres">${tiles}</div><div class="mis-det" data-mis="detalle">${det}</div></div>`;
   }
+  /** Bloque "Premios por constancia": cofre de la semana (5 de 7 días) y ruta del mes (7, 14, 21 días). */
+  function f2pHtml(m, on) {
+    const extra = (txt) => `<span class="${on ? 'mis-gold' : 'muted'}">${on ? '⭐' : '🔒'} ${esc(txt)}${on ? '' : ' · ' + esc(tx('f.solo_cuenta'))}</span>`;
+    const lado = (tipo, id, listo, faltan) => (perDe(m, tipo).r[id] ? `<span class="mis-ok">✓ ${esc(tx('f.listo'))}</span>`
+      : listo ? `<button class="btn green sm" data-ext="misiones" data-acc="${tipo === 'm' ? 'mes' : 'constancia'}" data-k="${esc(id)}" ${st.ocupado ? 'disabled' : ''}>${esc(tx('f.reclamar'))}</button>`
+        : `<span class="mis-falta">${esc(tx('f.faltan', { n: faltan }))}</span>`);
+    // Semana
+    const as = Math.min(CONSTANCIA.meta, activosSemana(m));
+    const ks = premioSemana(m.w.p);
+    const ds = PREMIOS_SEMANA[ks];
+    const prS = partes(CONSTANCIA.premio, on).map((x) => `<span>${x.html}</span>`);
+    prS.push(extra(tx('f.premio_semana') + ': ' + tx('f.ps.' + ks, { n: ds.horas || ds.partidos || ds.dias })));
+    const semana = `<div class="mis-f2p-blq" data-mis="constancia"><div class="mis-f2p-fila"><div class="mis-tx"><b>🗓️ ${esc(tx('f.semana'))}</b>
+        <div class="small muted">${esc(tx('f.semana_meta', { n: CONSTANCIA.meta }))}</div></div>${lado('s', 'constancia', as >= CONSTANCIA.meta, CONSTANCIA.meta - as)}</div>
+      <div class="mis-av"><div class="mis-bar sm"><i style="width:${Math.round(100 * as / CONSTANCIA.meta)}%"></i></div><span class="num">${esc(tx('f.dias', { n: as, m: CONSTANCIA.meta }))}</span></div>
+      <div class="mis-pr">${prS.join('')}</div></div>`;
+    // Mes
+    const am = activosMes(m);
+    const tope = HITOS_MES[HITOS_MES.length - 1];
+    const nomMes = TX.meses[Number(m.mes.p.slice(5, 7)) - 1] || m.mes.p;
+    const hitos = HITOS_MES.map((h) => {
+      const id = 'mes' + h;
+      const hecho = !!m.mes.r[id];
+      const listo = !hecho && am >= h;
+      const p = MES[h];
+      const pr = partes(p, on).map((x) => `<span>${x.html}</span>`);
+      if (p.exclusivo) pr.push(extra(tx('f.exclusivo_mes') + ': ' + tx('ex.' + exclusivoMes(m.mes.p))));
+      return `<div class="mis-hito${hecho ? ' hecho' : listo ? ' listo' : ''}" data-hito="${h}"><span class="mis-hn">${esc(tx('f.hito', { n: h }))}</span>${pr.join('')}${lado('m', id, listo, h - am)}</div>`;
+    }).join('');
+    const mes = `<div class="mis-f2p-blq" data-mis="mes"><div class="mis-f2p-fila"><div class="mis-tx"><b>🏁 ${esc(tx('f.mes', { mes: nomMes }))}</b>
+        <div class="small muted">${esc(tx('f.mes_meta', { n: am }))}</div></div></div>
+      <div class="mis-av"><div class="mis-bar sm"><i style="width:${Math.min(100, Math.round(100 * am / tope))}%"></i></div><span class="num">${esc(tx('f.dias', { n: Math.min(am, tope), m: tope }))}</span></div>
+      <div class="mis-hitos">${hitos}</div></div>`;
+    return `<div class="mis-f2p" data-mis="f2p"><div class="mis-f2p-top"><b>🎁 ${esc(tx('f.titulo'))}</b><small>${esc(tx('f.sub'))}</small></div>
+      ${semana}${mes}<p class="mis-f2p-pie muted">${esc(tx('f.regla'))}${on ? '' : ' ' + esc(tx('f.pie_cuenta'))}</p></div>`;
+  }
   function tarjeta(ctx) {
     st.ctx = ctx || st.ctx;
     const s = principal();
@@ -53005,6 +53142,7 @@
       <h3>${esc(t('titulo'))}</h3>
       ${todo}
       ${cofresHtml(m, on)}
+      ${f2pHtml(m, on)}
       <div class="mis-lista" data-mis="dia">${m.d.ids.map((id) => filaHtml(m, 'd', id, on)).join('')}</div>
       <div class="mis-sub"><b>${esc(t('semana'))}</b><small>${esc(t('renuevan', { t: tiempo(hastaMedianoche(7 - ((new Date().getDay() + 6) % 7))) }))}</small></div>
       <div class="mis-lista" data-mis="semana">${m.w.ids.map((id) => filaHtml(m, 's', id, on)).join('')}</div>
@@ -53025,7 +53163,9 @@
       return;
     }
     if (acc === 'reclamar') { const tp = el && el.getAttribute('data-t') === 's' ? 's' : 'd'; await accion(() => reclamar(tp, k)); return; }
-    if (acc === 'todo') { await accion(() => reclamarTodo()); }
+    if (acc === 'todo') { await accion(() => reclamarTodo()); return; }
+    if (acc === 'constancia') { await accion(() => reclamar('s', 'constancia')); return; }
+    if (acc === 'mes' && /^mes\d{1,2}$/.test(String(k))) { await accion(() => reclamar('m', k)); }
   }
   async function accion(fn) {
     if (st.ocupado) return null;
@@ -53090,6 +53230,7 @@
 
   const Misiones = { tarjeta, clic, marcar, observar, asegurar, elegir, fnv, reclamar, reclamarTodo, porReclamar, puntos, avance, recargar,
     DIA, SEMANA, COFRES, HITOS, PUNTOS, XP_PASE, TRAD, EXT, fechaHoy, lunes, registrar,
+    CONSTANCIA, PREMIOS_SEMANA, MES, HITOS_MES, EXCLUSIVOS_MES, CREDITOS_SEMANA, DIA_ACTIVO, TX, premioSemana, exclusivoMes, activosSemana, activosMes, listoF2p,
     titulo: () => TITULO_PL[idioma()] || TITULO_PL.es, TITULO_PL,
     _st: st };
   root.Misiones = Misiones;
