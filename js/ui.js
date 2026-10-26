@@ -813,7 +813,7 @@
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
-        ${PE ? PE.internacional(intlVista(c)) : ''}
+        ${PE ? PE.internacional(intlVista(c)) : ''}${c.internacional ? ayudaIntlHtml(c) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="row between small" style="margin-top:8px">
           <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
@@ -834,6 +834,90 @@
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
+  /* ---------- Personal internacional: el camino cuando un contrato internacional pide experiencia internacional ----------
+     (reporte del dueño, oct. 2026: "¿cómo consigo personal internacional? estoy estancado, ni con diamantes puedo").
+     Nunca un callejón sin salida: capacitar a alguien de tu equipo (dinero o 💎), contratar a un candidato que ya la tiene,
+     buscar uno (dinero) o traerlo ya (💎). Los 💎 los descuenta SIEMPRE el servidor (/api/gastar "curso_intl:" / "personal_intl:"). */
+  const IC = () => G.INTL_CREDITOS || { curso: 60, personal: 180 };
+  const saldoCred = () => (Api.estado && Api.estado.creditos) || 0;
+  const credBtn = (act, n, label, extra) => (Api.logueado()
+    ? `<button class="btn sm" data-act="${act}" ${extra || ''} ${saldoCred() < n ? 'disabled' : ''}>${I('gem', 'sm')}${label}</button>${saldoCred() < n ? `<span class="small" style="color:var(--amber)">${T('intl.faltan_cred', { n: N(n - saldoCred()) })}</span>` : ''}` : '');
+  // sel: ids que llevas en la preparación (si no, todo tu personal)
+  function ayudaIntlHtml(c, sel) {
+    if (!c || !c.internacional || !G.ayudaIntl) return '';
+    let faltas = [];
+    try { faltas = G.ayudaIntl(S, c); } catch (e) { faltas = []; }
+    const fee = (x) => x.wage * ((BAL().wage && BAL().wage.hireFeeDays) || 2);
+    const persona = (id) => S.staff.find((p) => p.id === id);
+    let html = '';
+    // En la preparación: alguien que ya cumple pero no lo llevas
+    if (sel && G.requisitosInternacional) {
+      let reqs = [];
+      try { reqs = G.requisitosInternacional(S, c, [...sel], [...(prep ? prep.equip : [])]); } catch (e) { reqs = []; }
+      const dirMal = reqs.some((r) => r.key === 'dir_intl' && !r.ok), eqMal = reqs.some((r) => r.key === 'equipo_intl' && !r.ok);
+      const fuera = S.staff.filter((p) => !sel.has(p.id) && G.isIntlExp(p) && ((dirMal && normRole(p.role) === 'director') || (eqMal && normRole(p.role) !== 'director'))).slice(0, 3);
+      if (fuera.length) html += `<div class="intl-fix">${fuera.map((p) => `<button class="btn sm main" data-act="intl-llevar" data-id="${p.id}">${I('check', 'sm')}${T('intl.llevar', { nombre: esc(nmP(p)) })}</button>`).join('')}</div>`;
+    }
+    faltas.forEach((f) => {
+      const req = TL(G.tx('req.' + f.key, f.key === 'equipo_intl' ? { n: f.falta } : null));
+      const rolN = roleName(f.rol).toLowerCase();
+      const btns = [];
+      f.cand.slice(0, 2).forEach((id) => { const x = S.candidates.find((k) => k.id === id); if (x) btns.push(`<button class="btn sm main" data-act="intl-hire" data-id="${x.id}" ${S.money < fee(x) ? 'disabled' : ''}>${I(roleIcon(x.role), 'sm')}${T('intl.contratar', { nombre: esc(TL(x.name)), m: M(fee(x)) })}</button>`); });
+      f.curso.slice(0, 2).forEach((o) => {
+        const p = persona(o.id);
+        btns.push(`<div class="intl-op"><button class="btn sm ${btns.length ? '' : 'main'}" data-act="intl-curso" data-id="${o.id}" ${S.money < o.costo ? 'disabled' : ''}>${I('globe', 'sm')}${p.owner ? T('intl.capacitate', { m: M(o.costo) }) : T('intl.capacita', { nombre: esc(nmP(p)), m: M(o.costo) })}</button>${credBtn('intl-curso-cred', IC().curso, T('intl.curso_cred', { n: N(IC().curso) }), `data-id="${o.id}" data-k="${esc(normRole(p.role))}"`)}</div>`);
+      });
+      if (f.disponible) {
+        btns.push(`<div class="intl-op"><button class="btn sm" data-act="intl-buscar" data-k="${esc(f.rol)}" ${S.money < f.buscar ? 'disabled' : ''}>${I('megaphone', 'sm')}${T('intl.buscar_rol', { rol: esc(rolN), m: M(f.buscar) })}</button>${credBtn('intl-personal-cred', IC().personal, T('intl.personal_cred', { rol: esc(roleName(f.rol)), n: N(IC().personal) }), `data-k="${esc(f.rol)}"`)}</div>`);
+      }
+      const jun = f.juniors.slice(0, 2).map((id) => `<p class="small muted" style="margin:4px 0 0">${T('intl.junior', { nombre: esc(nmP(persona(id))) })}</p>`).join('');
+      html += `<div class="intl-fix" data-intl-falta="${esc(f.key)}"><b class="small">${I('globe', 'sm')} ${T('intl.falta_t', { req: esc(req) })}</b>
+        <div class="small muted" style="margin:2px 0 6px">${T('intl.como')}</div>${btns.join('')}${jun}</div>`;
+    });
+    return html ? `<div class="card intl-ayuda">${html}</div>` : '';
+  }
+  // Toques del camino internacional (Clientes, preparación y Personal)
+  function intlAccion(a, el, id) {
+    const enPrep = prep && !S.currentEvent ? prep.id : null;
+    const volver = () => { save(); if (enPrep !== null && S.contracts.some((c) => c.id === enPrep)) renderPrep(); else render(); };
+    if (a === 'intl-llevar') { if (prep) { prep.staff.add(id); snd.play('tap'); renderPrep(); } return; }
+    if (a === 'intl-curso') {
+      const r = G.cursoIntl(S, id);
+      toast(TL(r.msg)); snd.play(r.ok ? 'hire' : 'error');
+      if (r.ok && prep) prep.staff.add(id);
+      volver(); return;
+    }
+    if (a === 'intl-buscar') {
+      const r = G.searchStaffIntl(S, el.dataset.k || rolBuscar || 'director');
+      toast(TL(r.msg)); snd.play(r.ok ? 'tap' : 'error');
+      volver(); return;
+    }
+    if (a === 'intl-hire') {
+      const r = G.hire(S, id);
+      toast(TL(r.msg)); snd.play(r.ok ? 'hire' : 'error');
+      if (r.ok && prep) prep.staff.add(id);
+      volver(); return;
+    }
+    if (a === 'intl-curso-cred') { canjearIntl('curso_intl:' + (el.dataset.k || 'director') + ':' + id, id); return; }
+    if (a === 'intl-personal-cred') { canjearIntl('personal_intl:' + (el.dataset.k || 'director')); }
+  }
+  // 💎 por el servidor; la entrega llega con /api/estado y se aplica a la partida (js/premium.js). En la preparación se
+  // queda abierta y se lleva a la persona.
+  async function canjearIntl(item, staffId) {
+    const enPrep = prep && !S.currentEvent ? prep.id : null;
+    const antes = new Set(S.staff.map((p) => p.id));
+    try { await Api.gastar(item); } catch (e) { toast(TL(e.message)); snd.play('error'); return; }
+    snd.play('buy');
+    try { await Api.refrescar(); } catch (e) { /* queda lo que ya había */ }
+    aplicarEntregas();
+    if (enPrep !== null && prep && prep.id === enPrep) {
+      if (staffId) prep.staff.add(staffId);
+      S.staff.forEach((p) => { if (!antes.has(p.id)) prep.staff.add(p.id); });
+      save(); renderPrep(); return;
+    }
+    save(); render();
+  }
+
   /* ---------- Personal ---------- */
   // Experiencia: eventos nacionales e internacionales trabajados
   // Nivel (Junior… Internacional) y experiencia: eventos nacionales e internacionales trabajados
@@ -846,12 +930,21 @@
   function rolLine(p) {
     return `<div class="rolrow"><span class="roleic">${I(roleIcon(p.role), 'sm')}</span><span class="rn">${esc(roleName(normRole(p.role)))}</span></div>`;
   }
+  // Capacitación internacional en la tarjeta de cada persona (si la puede hacer)
+  function cursoHtml(p) {
+    if (!G.puedeCursoIntl) return '';
+    if (p.cursoIntl) return `<div class="small" style="margin-top:6px;color:var(--blue,#4da3ff)">${I('globe', 'sm')} ${T('intl.curso_hecho')}</div>`;
+    if (!G.puedeCursoIntl(S, p).ok) return '';
+    const costo = G.cursoIntlCosto(p);
+    return `<div class="intl-op" style="margin-top:8px"><button class="btn sm" data-act="intl-curso" data-id="${p.id}" ${S.money < costo ? 'disabled' : ''}>${I('globe', 'sm')}${T('intl.curso', { m: M(costo) })}</button>${credBtn('intl-curso-cred', IC().curso, T('intl.curso_cred', { n: N(IC().curso) }), `data-id="${p.id}" data-k="${esc(normRole(p.role))}"`)}</div>`;
+  }
   function renderPersonal() {
     const ord = (p) => (p.owner ? -1 : ((G.ROLES[normRole(p.role)] || {}).orden || 0));
     const lista = S.staff.slice().sort((a, b) => ord(a) - ord(b) || (b.skill - a.skill));
     const staff = lista.map((p) => `<div class="card staffc">
       <div class="person">${avatarOf(p, 56)}
         <div class="grow who"><h3>${esc(nmP(p))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expLine(p, true)}</div></div>
+      ${cursoHtml(p)}
       ${p.owner ? `<p class="small muted" style="margin:8px 0 0">${T('personal.eres_tu')}</p>` : `
       <div class="small muted" style="margin-top:8px">${T('personal.moral', { n: p.morale })}</div>${condBar(p.morale)}
       <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
@@ -884,6 +977,10 @@
         <label class="field" for="rolBuscar">${T('personal.buscar_puesto')}
           <select id="rolBuscar" data-act="rol-buscar"><option value="">${T('personal.cualquier_puesto')}</option>${opciones}</select></label>
         <button class="btn" data-act="search-staff" ${S.money < 30 ? 'disabled' : ''}>${I('megaphone')}${T('personal.vacante', { m: M(30) })}</button>
+        ${G.intlPersonalDisponible && G.intlPersonalDisponible(S) ? (() => { const cb = BAL().intlPersonal ? BAL().intlPersonal.buscar : 400;
+          return `<button class="btn" data-act="intl-buscar" data-k="" ${S.money < cb ? 'disabled' : ''}>${I('globe')}${T('intl.buscar', { m: M(cb) })}</button>
+          <p class="small muted" style="margin:2px 0 6px">${T('intl.buscar_det')}</p>
+          ${credBtn('intl-personal-cred', IC().personal, T('intl.personal_cred_gen', { n: N(IC().personal) }), 'data-k="" data-sel="1"')}`; })() : ''}
       </div><div style="height:12px"></div>`;
   }
 
@@ -2160,7 +2257,7 @@
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
     // Partes que cambian con lo que eliges: arriba (#prepCalc), la tabla del detalle (#prepTabla) y la barra fija (#prepPie)
-    const calcHtml = `${intlHtml}
+    const calcHtml = `${intlHtml}${c.internacional ? ayudaIntlHtml(c, prep.staff) : ''}
       <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
         ${puede ? tip : ''}
         <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>
@@ -2842,6 +2939,12 @@
         break;
       }
       case 'fire': { const p = S.staff.find((x) => x.id === id); if (p) ask(T('personal.despedir_q', { nombre: esc(nmP(p)) }), T('personal.despedir_si'), () => act(G.fire(S, id))); break; }
+      case 'intl-llevar': case 'intl-curso': case 'intl-buscar': case 'intl-hire': case 'intl-curso-cred': case 'intl-personal-cred': {
+        e.preventDefault();
+        if ((a === 'intl-buscar' || a === 'intl-personal-cred') && !el.dataset.k) { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; if (a === 'intl-personal-cred') el.dataset.k = rolBuscar || 'director'; }
+        intlAccion(a, el, id);
+        break;
+      }
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
       case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
       case 'buy': {

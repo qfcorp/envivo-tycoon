@@ -280,6 +280,13 @@
     'msg.necesitas_contratar': 'Necesitas {monto} para contratarle.', 'msg.se_unio': '{nombre} se unió al equipo.',
     'msg.no_se_puede': 'No se puede.', 'msg.despediste': '{nombre} ya no trabaja contigo.',
     'msg.vacante_plata': 'Necesitas $30 para publicar la vacante.', 'msg.candidatos': 'Llegaron nuevos candidatos.',
+    'msg.curso_ya': '{nombre} ya tiene experiencia internacional.',
+    'msg.curso_cap4': 'Lo internacional se abre en el capítulo 4.',
+    'msg.curso_junior': '{nombre} todavía es Junior: el curso internacional es para Semi-senior o Senior. Busca a alguien con experiencia internacional.',
+    'msg.curso_listo': '{nombre} terminó la capacitación internacional: ya tiene experiencia internacional.',
+    'msg.busca_intl': 'Llegó {nombre}, con experiencia internacional.',
+    'log.curso_intl': '{nombre} hizo la capacitación internacional ({monto}).',
+    'log.busca_intl': 'Buscaste {rol} con experiencia internacional ({monto}).',
     'msg.no_existe': 'No existe.', 'msg.fama_para_comprar': 'Necesitas {n} de fama para que te lo vendan.',
     'msg.falta_dinero': 'Te falta dinero ({monto}).', 'msg.bodega_llena': 'Tu bodega está llena.',
     'msg.compraste': 'Compraste {item}.', 'msg.alquilaste': 'Reservaste {item} para tu próximo evento.', 'msg.compraste_n': 'Compraste {n} × {item}.',
@@ -1228,13 +1235,17 @@
      aparece: 150 💎 por una persona de habilidad 2. El servidor usa los MISMOS números (server/src/CatalogoJuego.php,
      generado desde aquí). */
   const COMBO_CREDITOS = { porRaiz: 4, minimo: 30, personal: 150, habilidad: 2, maxPorEquipo: 4, maxPorRol: 2 };
+  /* Personal internacional con créditos (POST /api/gastar): "curso_intl:<rol>:<id>" capacitación internacional ya para esa
+     persona de tu equipo (curso); "personal_intl:<rol>" una persona Semi-senior de habilidad 3 con experiencia internacional
+     (personal, hasta maxPorRol por rol). Ninguna da ventaja en Duelos/Copa (el nivel sigue siendo el que se contrata con tu fama). */
+  const INTL_CREDITOS = { curso: 60, personal: 180, habilidad: 3, maxPorRol: 2 };
   function creditosJuego(precio) {
     const p = Math.max(0, Number(precio) || 0);
     return Math.max(COMBO_CREDITOS.minimo, Math.ceil(COMBO_CREDITOS.porRaiz * Math.sqrt(p) / 10) * 10);
   }
 
   const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE,
-    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, creditosJuego };
+    EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, INTL_CREDITOS, creditosJuego };
   if (typeof module !== 'undefined' && module.exports) module.exports = Datos;
   else root.Datos = Datos;
 })(typeof window !== 'undefined' ? window : globalThis);

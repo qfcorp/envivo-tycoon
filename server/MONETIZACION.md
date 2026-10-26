@@ -19,6 +19,11 @@ tiene **techo**. Los precios en dinero real los fija el Centro de Control (`prod
   Copa, Duelos, Liga ni Festival.
 - Combo con créditos: lo que necesita un equipo canjeado con créditos se completa con créditos (`POST /api/gastar`
   `juego:<clave>` / `personal:<rol>`, `Monedero::gastarCombo`); en línea la pieza sigue pidiendo su fama.
+- Personal internacional con créditos (`POST /api/gastar`, `Monedero::gastarIntl`, precios en `js/datos.js` INTL_CREDITOS →
+  `CatalogoJuego::INTL`): `curso_intl:<rol>:<id>` (60 💎, capacitación internacional ya para la persona `<id>` de la partida;
+  entrega `curso_intl`) y `personal_intl:<rol>` (180 💎, Semi-senior de habilidad 3 con experiencia internacional, tope 2 por
+  rol; entrega `personal_intl`). Solo destraban los contratos internacionales de la historia: no son entregas `personal`, así
+  que no dan permiso de nivel ni de habilidad en Duelos.
 - **Copa**: puntos de preparación = calidad validada + bono (+ estrellas extra como hoy); en los cruces, cada equipo del
   plantel lleva `bono` y `batalla.js` lo suma a la calidad de su partido (campo opcional `bono` por equipo, 0..12).
 - **Duelos**: el bono se suma a la calidad del retador y del fantasma; el emparejamiento sugiere rivales con **poder parecido**.

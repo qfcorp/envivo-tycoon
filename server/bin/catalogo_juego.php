@@ -35,7 +35,7 @@ for (const [k, v] of Object.entries(d.EVENTOS)) eventos[k] = { nombre: T['ev.' +
 const exclusivos = {};
 for (const k of ['dron4k', 'grua', 'unidad_movil', 'generador', 'vip_cam8k', 'vip_switcher', 'vip_satelital'].concat(Object.keys(d.CATALOGO).filter((x) => d.CATALOGO[x].exclusivo)))
   if (T['item.' + k + '.nombre']) exclusivos[k] = { nombre: T['item.' + k + '.nombre'], detalle: T['item.' + k + '.desc'] || '' };
-process.stdout.write(JSON.stringify({ roles: d.ROLES_DATA.map((r) => r.key), alias: d.ROLE_ALIAS, equipos, eventos, exclusivos, combos, combo: d.COMBO_CREDITOS,
+process.stdout.write(JSON.stringify({ roles: d.ROLES_DATA.map((r) => r.key), alias: d.ROLE_ALIAS, equipos, eventos, exclusivos, combos, combo: d.COMBO_CREDITOS, intl: d.INTL_CREDITOS,
   rolesFama: Object.fromEntries(d.ROLES_DATA.map((r) => [r.key, r.fama | 0])) }));
 JS;
 $sal = shell_exec(escapeshellarg($node) . ' -e ' . escapeshellarg($js) . ' ' . escapeshellarg($raiz . '/js/datos.js') . ' 2>&1');
@@ -52,6 +52,7 @@ $php = "<?php\ndeclare(strict_types=1);\n\nnamespace EnVivo;\n\n"
     . '    /** Fama desde la que aparece cada rol entre los candidatos. */' . "\n    public const ROLES_FAMA = " . $v($d['rolesFama']) . ";\n\n"
     . '    /** Combo con créditos: equipo canjeado con créditos => {equipos, roles} que se pueden canjear para completarlo (Game.comboDe). */' . "\n    public const COMBOS = " . $v($d['combos']) . ";\n\n"
     . '    /** Reglas del combo con créditos (js/datos.js COMBO_CREDITOS). */' . "\n    public const COMBO = " . $v($d['combo']) . ";\n\n"
+    . '    /** Personal internacional con créditos (js/datos.js INTL_CREDITOS): curso_intl:<rol>:<id> y personal_intl:<rol>. */' . "\n    public const INTL = " . $v($d['intl']) . ";\n\n"
     . '    /** Tipos de evento: clave => [nombre, cams [mín, máx], audio, stream, outdoor, diff, pay [mín, máx], fama, clientes]. */' . "\n    public const EVENTOS = " . $v($d['eventos']) . ";\n\n"
     . '    /** Nombres y detalles de los exclusivos que también están en Catalogo::PREMIUM (deben coincidir). */' . "\n    public const EXCLUSIVOS = " . $v($d['exclusivos']) . ";\n}\n";
 
