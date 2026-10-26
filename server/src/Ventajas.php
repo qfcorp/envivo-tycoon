@@ -43,8 +43,10 @@ final class Ventajas
         return $n;
     }
 
-    /** Bono de ventajas después de cobrar los equipos VIP que lleva el equipo (nunca menos de 0). */
-    public static function recorteVip(int $bono, array $equip): int { return max(0, $bono - self::puntosVip($equip)); }
+    /** Decisión de Dimitry (26-oct-2026): "si compraron y gastaron dinero, que valga". Los equipos VIP ya NO se cobran
+     *  del bono de ventajas: suman encima del techo. Se deja la función (y puntosVip) por si algún día se quiere volver. */
+    public const RECORTE_VIP = false;
+    public static function recorteVip(int $bono, array $equip): int { return self::RECORTE_VIP ? max(0, $bono - self::puntosVip($equip)) : $bono; }
 
     public static function tope(): int
     {
