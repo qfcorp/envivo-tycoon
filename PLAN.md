@@ -304,3 +304,17 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - 2026-10-26: decisión de Dimitry: lo pagado vale, pero con punto medio: todo VIP + ventaja pagada máxima ≈ +30 % en la Copa (Ventajas::RECORTE_VIP_PARTE = 0.6; medido +29,2 %).
 - 2026-10-26: lo comprado con diamantes (exclusivo, VIP, premium) no ocupa cupo en la bodega (Game.cuentaBodega).
 - 2026-10-26: pedido de Dimitry ("a los F2P demos regalos si hacen misiones"): **premios por constancia** en la hoja de Misiones (la pizarra de Inicio). Un día cuenta cuando abres el cofre de 60 puntos. **Cofre de la semana** con 5 de 7 días: $2.000 + materiales y, con cuenta, 25 créditos + el **premio de la semana** (rota cada lunes: equipo de obra extra 24 h → personal estrella 2 partidos → prueba del Pase VIP 1 día). **Ruta del mes**: 7 días (20 créditos + materiales), 14 días (30 créditos + materiales), 21 días (un **equipo de Edición Exclusiva permanente**, rota cada mes entre los 6 más baratos). Sin cuenta: dinero y materiales. Barras de avance de la semana y del mes. Topes: 10 créditos/día (cofres del día, igual) y nuevo 120/semana (`misiones_creditos_semana`). Economía: un F2P constante pasa de ~240 a ~400 créditos/mes (≈ $3,20; el paquete más barato es 250 por $1,99; la Tarjeta mensual da 600 por $4,99). Ventajas en línea sin cambios. Detalle en `server/MONETIZACION.md` §6. Pruebas: `server/tests/pruebas_misiones.php` y `tests/test_misiones_f2p.js`.
+
+## ⏸️ FIN DEL DÍA (lunes 26-oct-2026, 17:15)
+Todo está en main y probado (servidor 106/0, 56 pruebas del juego).
+- Hecho hoy:
+  - Varios eventos por día con gastos prorrateados.
+  - Inicio nuevo (la productora por dentro).
+  - Bodega 80, personal 18.
+  - Botón "Reparar todo".
+  - Lo de diamantes funciona siempre y no ocupa bodega.
+  - Combos completos con diamantes.
+  - Pase VIP por niveles.
+  - Ventaja pagada ≈ +30 %.
+  - Regalos F2P por misiones (cofre semanal, premio de la semana, ruta del mes).
+- Próximo: lo que Dimitry encuentre al probar en el celular. Después, la traducción final (`node tools/pendientes_traduccion.js`) y la publicación.
