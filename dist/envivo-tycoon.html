@@ -31518,6 +31518,9 @@
     // Después de un evento: (dificultad + 1) × factor por estrellas × (1 + nivel × porNivel)
     evento: { estrellas: [0, 0.3, 0.6, 1, 1.35, 1.7], porNivel: 0.03, cincoExtra: 2, cincoChip: 0.4, dueloExtra: 3, dueloChip: 1, intlChip: 1 },
     reciclar: { porPrecio: 300, max: 14, min: 1, chipDesdeQ: 4, gastado: 40 },
+    // Con cuenta, lo que falta se compra con créditos (💎) en la sede oficial: por material común y por chip 4K.
+    // Los MISMOS números que server/src/SedeOficial.php (CREDITO_MATERIAL / CREDITO_CHIP; la prueba del servidor los compara).
+    diamantes: { material: 3, chip: 30 },
     // Bonos (chicos): por cada mejora del edificio
     bono: {
       control: 0.4, estudio: 0.45, movil: 0.45,   // puntos de calidad (se redondea hacia abajo)
@@ -31861,15 +31864,15 @@
     es: {
       of_titulo: 'Sede oficial', of_tag: 'Oficial', of_info: 'Cuenta en la Copa y los Duelos: +{n} de calidad', of_conectando: 'Conectando con tu sede oficial…',
       of_fuentes: 'En tu sede oficial los materiales salen de la entrega diaria, los eventos en línea, la Copa, las ayudas y los packs.',
-      of_acelerar: 'Terminar ya · {n} créditos', of_acelerar_q: '¿Terminar ya {que}? Cuesta {n} créditos (tienes {c}).', of_acelerar_si: 'Terminar ya',
+      of_acelerar: 'Terminar ya con 💎 ({n})', of_acelerar_q: '¿Terminar ya {que}? Cuesta {n} 💎 (tienes {c}).', of_acelerar_si: 'Terminar ya',
       of_acelerado: 'Obra terminada: {que}', of_acel: 'Aceleradores: {t}', of_usar_acel: 'Usar aceleradores', of_acel_ok: 'Usaste {t} de aceleradores',
       of_ayudas_t: 'Ayuda a tu asociación', of_ayudas_info: 'Cada ayuda le quita 1 % o 5 minutos a una obra (máximo {m} por obra) y te da 1 material.',
       of_ayudas_nada: 'Nadie de tu asociación tiene obras para ayudar ahora.', of_sin_asoc: 'Únete a una asociación para dar y recibir ayudas.',
       of_ayudar: 'Ayudar', of_ayuda_ok: 'Ayudaste: −{t}', of_ayuda_premio: 'Ayudaste: −{t}. Recibiste {lista}', of_ayudas_hoy: 'Hoy: {n}/{m} ayudas',
       of_ayudas_obra: 'Ayudas {n}/{m}', of_migrado: 'Tu sede pasó a tu cuenta: nivel {n}', of_migrado_tope: 'Tu sede pasó a tu cuenta con tope: nivel {n}',
       of_t_h: '{h} h', of_t_hm: '{h} h {m} min', of_t_m: '{m} min', of_t_0: 'menos de 1 min', of_cofre_vuelve: 'Entrega reclamada · vuelve en {t}',
-      of_red: 'No se pudo conectar con tu sede oficial. Intenta de nuevo.', of_costo_cambio: 'El costo cambió: ahora son {n} créditos.',
-      of_sin_creditos: 'Te faltan créditos: necesitas {n}.', of_ya_ayudaste: 'Ya ayudaste en esa obra.', of_ayudas_completas: 'Esa obra ya recibió todas las ayudas.',
+      of_red: 'No se pudo conectar con tu sede oficial. Intenta de nuevo.', of_costo_cambio: 'El costo cambió: ahora son {n} 💎.',
+      of_sin_creditos: 'Te faltan 💎: necesitas {n}.', of_ya_ayudaste: 'Ya ayudaste en esa obra.', of_ayudas_completas: 'Esa obra ya recibió todas las ayudas.',
       of_tope_dia: 'Ya diste todas tus ayudas de hoy. Vuelve mañana.', of_espera: 'Espera a que termine la acción anterior.',
     },
     en: {
@@ -32000,12 +32003,24 @@
     },
   };
   Object.keys(TRAD_OF).forEach((c) => { if (TRAD[c]) Object.assign(TRAD[c], TRAD_OF[c]); });
+  /* Mejorar con 💎 (pedido de Dimitry, oct. 2026). Textos solo en español (regla del dueño): todos los idiomas los usan
+     hasta que se traduzcan (t() los busca aquí si no están en TRAD). */
+  const TX_ES = {
+    dm_materiales: 'Completar materiales con 💎 ({n})', dm_ya: 'Mejorar ya con 💎 ({n})', dm_terminar: 'Terminar ya con 💎',
+    dm_cuenta: 'con cuenta', dm_faltan: 'Te faltan {n} 💎', dm_si_mat: 'Comprar y empezar', dm_si_ya: 'Mejorar ya',
+    dm_materiales_q: 'Te falta: {lista}. ¿Comprarlo con {n} 💎 (tienes {c}) y empezar la obra ({d})?',
+    dm_ya_q: '¿Mejorar ya {que}? Lo que falta ({lista}): {m} 💎 · Terminar ya ({d}): {a} 💎 · Total: {n} 💎 (tienes {c}).',
+    dm_ya_q_sin: '¿Mejorar ya {que}? Terminar ya ({d}): {n} 💎 (tienes {c}).',
+    dm_ok_mat: 'Compraste lo que faltaba con 💎 y empezó la obra: {que} ({d})', dm_ok_ya: '¡Listo con 💎!: {que}',
+    dm_cuenta_t: 'Los 💎 se usan con cuenta',
+    dm_cuenta_info: 'Para completar materiales o terminar obras con 💎 necesitas una cuenta: así tus 💎 y tu sede quedan guardados en el servidor. Sin cuenta, tu sede avanza igual con materiales y tiempo.',
+  };
   const PREF = 'sedehq.';
   function idioma() { try { const c = root.I18N && root.I18N.idioma; return c && TRAD[c] ? c : 'es'; } catch (e) { return 'es'; } }
   function fill(str, p) { return p ? String(str).replace(/\{(\w+)\}/g, (m, k) => (p[k] !== undefined && p[k] !== null ? String(p[k]) : m)) : String(str); }
   function t(key, p) {
     const d = TRAD[idioma()];
-    const v = d && Object.prototype.hasOwnProperty.call(d, key) ? d[key] : TRAD.es[key];
+    const v = d && Object.prototype.hasOwnProperty.call(d, key) ? d[key] : TRAD.es[key] !== undefined ? TRAD.es[key] : TX_ES[key];
     return fill(v === undefined ? key : v, p);
   }
   // Las claves también van a los textos del juego (para result.extras y bonoCalidad con { k, p }):
@@ -32114,6 +32129,14 @@
     if (q) Object.keys(q).forEach((x) => { const v = q[x]; if (v && typeof v === 'object' && typeof v.k === 'string') q[x] = tx(v.k.indexOf(PREF) === 0 ? v.k.slice(PREF.length) : v.k, v.p); });
     return t(k, q);
   }
+  // Créditos (💎) por los materiales que faltan (AJUSTE.diamantes, igual que el servidor)
+  function precioDm(falta) {
+    const P = AJUSTE.diamantes;
+    return Object.keys(falta || {}).reduce((a, m) => a + Math.max(0, falta[m] | 0) * (m === 'chips' ? P.chip : MATS.includes(m) ? P.material : 0), 0);
+  }
+  // Sin cuenta pero con servidor: los botones de 💎 se ven con candado ("con cuenta"); sin servidor (archivo suelto), no
+  function hayServidor() { try { return !!(root.Api && root.Api.disponible === true); } catch (e) { return false; } }
+  const botonCandado = (txt) => `<button class="btn sd-btn sd-dm-lock" data-ext="sede" data-acc="dm_cuenta">🔒 ${esc(txt)} · ${esc(t('dm_cuenta'))}</button>`;
   function faltantes(s, mat) {
     const have = est(s).materiales, out = {};
     Object.keys(mat).forEach((m) => { if ((have[m] || 0) < mat[m]) out[m] = mat[m] - (have[m] || 0); });
@@ -32418,6 +32441,9 @@
   .sd-of-ayuda{display:flex;align-items:center;gap:8px}
   .sd-of-ayuda .grow{flex:1;min-width:0;overflow-wrap:anywhere}
   #modal .sd-of-ayuda .btn{margin:0;flex:none}
+  #modal .sd-of-btns .btn{white-space:normal;text-align:center}
+  .sd-dm-lock{border-style:dashed;opacity:.85}
+  .sd-dm-falta{flex:1 1 100%;color:var(--amber)}
   `;
   function ponerCss() {
     try {
@@ -32484,19 +32510,23 @@
     if (!e.max) {
       lista = e.mejoras.map((m) => {
         const p = puede(s, m.costo);
-        const btn = m.hecha ? `<span class="tag" style="margin-top:8px">✓ ${esc(t('listo'))}</span>`
+        const lock = !hayServidor() ? '' : m.obra ? botonCandado(t('dm_terminar'))
+          : !m.hecha && Object.keys(m.falta).length ? botonCandado(t('dm_materiales', { n: precioDm(m.falta) })) : '';
+        const btn = (m.hecha ? `<span class="tag" style="margin-top:8px">✓ ${esc(t('listo'))}</span>`
           : m.obra ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: diasTxt(Math.max(1, m.diasFalta)) }))}</span>`
           : `<button class="btn ${p.ok && libre ? 'main' : ''} sd-btn" data-ext="sede" data-acc="mejorar" data-ed="${m.ed}">${esc(t('mejorar'))}</button>
-             ${!libre ? `<div class="small muted">${esc(t('sin_equipo'))}</div>` : ''}`;
+             ${!libre ? `<div class="small muted">${esc(t('sin_equipo'))}</div>` : ''}`) + (lock ? `<div class="sd-of-btns">${lock}</div>` : '');
         return `<div class="sd-item${m.hecha ? ' done' : ''}"><div class="sd-head">${iconoEd(m.ed, 30)}<div class="grow"><b>${esc(t('ed.' + m.ed))}</b> <span class="small muted">${esc(t('ed_nivel', { n: m.nivelEd }))}${m.hecha ? '' : ' → ' + (m.nivelEd + 1)}</span>
           <div class="small muted">${esc(t('desc.' + m.ed))}</div></div></div>${m.hecha || m.obra ? '' : chipsCosto(s, m.costo, ctx)}${btn}</div>`;
       }).join('');
       const sd = e.sede;
       const reqOk = sd.req.every((r) => r.ok);
       const todas = e.hechas === e.mejoras.length;
-      const btn = sd.obra ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: diasTxt(Math.max(1, sd.diasFalta)) }))}</span>`
+      const lockS = !hayServidor() ? '' : sd.obra ? botonCandado(t('dm_terminar'))
+        : todas && reqOk && Object.keys(sd.falta).length ? botonCandado(t('dm_materiales', { n: precioDm(sd.falta) })) : '';
+      const btn = (sd.obra ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: diasTxt(Math.max(1, sd.diasFalta)) }))}</span>`
         : `<button class="btn ${todas && reqOk && libre && puede(s, sd.costo).ok ? 'main' : ''} sd-btn" data-ext="sede" data-acc="subir">${esc(t('subir', { n: e.objetivo }))}</button>
-           ${!todas ? `<div class="small muted">${esc(t('faltan_mejoras', { h: e.hechas, n: e.mejoras.length }))}</div>` : ''}`;
+           ${!todas ? `<div class="small muted">${esc(t('faltan_mejoras', { h: e.hechas, n: e.mejoras.length }))}</div>` : ''}`) + (lockS ? `<div class="sd-of-btns">${lockS}</div>` : '');
       lista += `<div class="sd-item" style="border-color:var(--amber)"><div class="sd-head">${iconoEd('sede', 30)}<div class="grow"><b>${esc(t('ed.sede'))}</b> <span class="small muted">→ ${esc(t('nivel', { n: e.objetivo }))}</span>
         ${sd.req.length ? `<div class="sd-req small"><span class="muted">${esc(t('req_titulo'))}:</span>${sd.req.map((r) => `<span class="tag ${r.ok ? '' : 'red'}">${r.ok ? '✓' : '✗'} ${esc(t(r.k, r.p))}</span>`).join('')}</div>` : ''}
         </div></div>${sd.obra ? '' : chipsCosto(s, sd.costo, ctx)}${btn}</div>`;
@@ -32513,6 +32543,19 @@
       ${bl.length ? bl.map((b) => `<div class="sd-bono">${iconoEd(b.ed, 20)}<span>${esc(b.txt)}</span></div>`).join('') : `<div class="small muted">${esc(t('sin_bonos'))}</div>`}`;
     return `<div class="sd-modal">${head}${lista}${bonosHtml}${recHtml}
       <button class="btn" data-act="close" style="margin-top:14px">✕</button></div>`;
+  }
+  // Sin cuenta: por qué los 💎 piden cuenta, y los botones de siempre para crearla o entrar (los maneja js/ui.js)
+  function modalCuenta() {
+    return `<div class="sd-modal"><div class="row between"><h2 style="margin:0">💎 ${esc(t('dm_cuenta_t'))}</h2><button class="btn sm" data-act="close" aria-label="×">✕</button></div>
+      <p class="small">${esc(t('dm_cuenta_info'))}</p>
+      <button class="btn main" data-act="cuenta" data-modo="registro">${esc(tCuenta('cuenta.crear', 'Crear cuenta'))}</button>
+      <button class="btn" data-act="cuenta" data-modo="entrar" style="margin-top:8px">${esc(tCuenta('cuenta.ya_tengo_entrar', 'Ya tengo cuenta: entrar'))}</button>
+      <button class="btn" data-ext="sede" data-acc="abrir" style="margin-top:8px">← ${esc(t('modal_titulo'))}</button></div>`;
+  }
+  // Textos de la cuenta del juego (js/lang), si están
+  function tCuenta(k, def) {
+    try { const v = root.I18N && root.I18N.T ? root.I18N.T(k) : null; if (v && v !== k) return v; } catch (e) { /* español */ }
+    return def;
   }
   let ultimo = { k: '', t: 0 };
   function clic(ctx, accion, el) {
@@ -32537,6 +32580,7 @@
       case 'cofre': r = reclamarCofre(s); break;
       case 'mejorar': r = mejorar(s, el && el.getAttribute('data-ed')); break;
       case 'subir': r = subirNivel(s); break;
+      case 'dm_cuenta': ctx.openModal(modalCuenta()); return;
       case 'reciclar': {
         const idn = Number(el && el.getAttribute('data-id'));
         const it = reciclables(s).find((x) => x.e.id === idn);
@@ -32650,6 +32694,8 @@
     const sd = j && j.sede;
     if (!sd || typeof sd !== 'object' || typeof sd.nivel !== 'number' || !Array.isArray(sd.obras) || !sd.materiales || !sd.cofre) return false;
     OF.estado = j; OF.sync = Date.now(); OF.error = ''; OF.errorEn = 0;
+    // Los 💎 de arriba (Api.estado.creditos) quedan al día después de gastar en la sede
+    try { if (typeof j.creditos === 'number' && root.Api && root.Api.estado && root.Api.estado.logueado) root.Api.estado.creditos = j.creditos; } catch (e) { /* sin Api */ }
     if (typeof j.ahora === 'number') OF.offset = j.ahora * 1000 - Date.now();
     const s = estadoDe(ctx);
     if (s && enOficial(s)) ponerCache(s, j);
@@ -32766,6 +32812,22 @@
     parts.push(`<span class="sd-c">⏱ ${esc(fmt(seg))}</span>`);
     return `<div class="sd-cost">${parts.join('')}</div>`;
   }
+  /** Lo que cuesta con 💎 una mejora (o la sede principal) de la vista del servidor: {mat, ya, seg}. */
+  function preciosDm(it) {
+    const mat = typeof it.creditos_materiales === 'number' ? it.creditos_materiales : precioDm(it.falta);
+    const seg = typeof it.segundos_obra === 'number' ? it.segundos_obra : it.segundos;
+    return { mat, ya: typeof it.creditos_ya === 'number' ? it.creditos_ya : mat + costoAc(seg), seg };
+  }
+  /** Botones de 💎 (con cuenta): "Completar materiales" si falta algo (necesita equipo libre) y "Mejorar ya" (no lo necesita). */
+  function botonesDm(j, it, ed, libre) {
+    const P = preciosDm(it), saldo = j.creditos || 0, falta = Object.keys(it.falta || {}).length > 0;
+    const b = [];
+    if (falta) b.push(`<button class="btn ${libre ? 'main' : ''} sd-btn" data-ext="sede" data-acc="dm_mat" data-ed="${esc(ed)}" data-costo="${P.mat}"${!libre || saldo < P.mat ? ' disabled' : ''}>${esc(t('dm_materiales', { n: P.mat }))}</button>`);
+    b.push(`<button class="btn sd-btn" data-ext="sede" data-acc="dm_ya" data-ed="${esc(ed)}" data-costo="${P.ya}"${saldo < P.ya ? ' disabled' : ''}>⚡ ${esc(t('dm_ya', { n: P.ya }))}</button>`);
+    const minimo = falta && libre ? Math.min(P.mat, P.ya) : P.ya;
+    if (saldo < minimo) b.push(`<span class="small sd-dm-falta">${esc(t('dm_faltan', { n: minimo - saldo }))}</span>`);
+    return `<div class="sd-of-btns">${b.join('')}</div>`;
+  }
   function modalOficial(ctx) {
     const s = estadoDe(ctx), j = OF.estado;
     const cerrar = `<div class="row between"><h2 style="margin:0">${esc(t('modal_titulo'))}</h2><button class="btn sm" data-act="close" aria-label="×">✕</button></div>`;
@@ -32797,7 +32859,7 @@
         const btn = m.hecha ? `<span class="tag" style="margin-top:8px">✓ ${esc(t('listo'))}</span>`
           : o ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: fmt(restante(o)) }))}</span>`
           : `<button class="btn ${ok && libre ? 'main' : ''} sd-btn" data-ext="sede" data-acc="mejorar" data-ed="${m.ed}">${esc(t('mejorar'))}</button>
-             ${!libre ? `<div class="small muted">${esc(t('sin_equipo'))}</div>` : ''}`;
+             ${!libre ? `<div class="small muted">${esc(t('sin_equipo'))}</div>` : ''}${botonesDm(j, m, m.ed, libre)}`;
         return `<div class="sd-item${m.hecha ? ' done' : ''}"><div class="sd-head">${iconoEd(m.ed, 30)}<div class="grow"><b>${esc(t('ed.' + m.ed))}</b> <span class="small muted">${esc(t('ed_nivel', { n: m.nivel_ed }))}${m.hecha ? '' : ' → ' + (m.nivel_ed + 1)}</span>
           <div class="small muted">${esc(t('desc.' + m.ed))}</div></div></div>${m.hecha || o ? '' : costoOf(m.mat, have, m.segundos)}${btn}</div>`;
       }).join('');
@@ -32805,7 +32867,7 @@
       const todas = e.hechas === e.mejoras.length;
       const btn = ox ? `<span class="tag amber" style="margin-top:8px">${esc(t('en_obra', { d: fmt(restante(ox)) }))}</span>`
         : `<button class="btn ${x.listo && libre && !Object.keys(x.falta || {}).length ? 'main' : ''} sd-btn" data-ext="sede" data-acc="subir">${esc(t('subir', { n: e.objetivo }))}</button>
-           ${!todas ? `<div class="small muted">${esc(t('faltan_mejoras', { h: e.hechas, n: e.mejoras.length }))}</div>` : ''}`;
+           ${!todas ? `<div class="small muted">${esc(t('faltan_mejoras', { h: e.hechas, n: e.mejoras.length }))}</div>` : ''}${x.listo ? botonesDm(j, x, 'sede', libre) : ''}`;
       lista += `<div class="sd-item" style="border-color:var(--amber)"><div class="sd-head">${iconoEd('sede', 30)}<div class="grow"><b>${esc(t('ed.sede'))}</b> <span class="small muted">→ ${esc(t('nivel', { n: e.objetivo }))}</span>
         ${x.req.length ? `<div class="sd-req small"><span class="muted">${esc(t('req_titulo'))}:</span>${x.req.map((r) => `<span class="tag ${r.ok ? '' : 'red'}">${r.ok ? '✓' : '✗'} ${esc(t(r.k, r.p))}</span>`).join('')}</div>` : ''}
         </div></div>${ox ? '' : costoOf(x.mat, have, x.segundos)}${btn}</div>`;
@@ -32849,7 +32911,7 @@
         return despues ? despues(r) : null;
       }).catch((e) => {
         aviso(e && e.message); error();
-        if (e && ['costo_cambio', 'ya_terminada', 'obra_no_existe', 'en_obra', 'ya_hecha', 'cofre_ya'].includes(e.codigo)) return cargar(ctx, true);
+        if (e && ['costo_cambio', 'ya_terminada', 'obra_no_existe', 'en_obra', 'ya_hecha', 'cofre_ya', 'sin_creditos', 'faltan_materiales', 'sin_obrero'].includes(e.codigo)) return cargar(ctx, true);
         return null;
       }).then(() => {
         OF.ocupado = false;
@@ -32879,6 +32941,22 @@
         const ir = () => hacer(pedir('POST', '/api/sede/acelerar', { obra_id: id, confirmar_costo: costo }), () => t('of_acelerado', { que }));
         // Siempre se muestra el costo antes de cobrar
         if (ctx.ask) ctx.ask(esc(t('of_acelerar_q', { que, n: costo, c: j.creditos })), esc(t('of_acelerar_si')), () => { ir(); });
+        else ir();
+        return;
+      }
+      case 'dm_mat': case 'dm_ya': {
+        const ed = attr('data-ed'), e = j.sede.etapa;
+        const it = !e ? null : ed === 'sede' ? e.sede : e.mejoras.find((x) => x.ed === ed);
+        if (!it) return;
+        const ya = accion === 'dm_ya', P = preciosDm(it), n = ya ? P.ya : P.mat;
+        const que = t('ed.' + ed), d = fmt(P.seg), lista = listaTxt(it.falta || {});
+        if ((j.creditos || 0) < n) { aviso(t('of_sin_creditos', { n })); error(); return; }
+        const cuerpo = Object.assign(ed === 'sede' ? {} : { clave: ed }, { diamantes: ya ? 'ya' : 'materiales', confirmar_costo: n });
+        const ir = () => hacer(pedir('POST', ed === 'sede' ? '/api/sede/subir' : '/api/sede/mejorar', cuerpo), () => (ya ? t('dm_ok_ya', { que }) : t('dm_ok_mat', { que, d })));
+        // Siempre se muestra el total antes de cobrar
+        const q = !ya ? t('dm_materiales_q', { lista, n, c: j.creditos, d })
+          : P.mat > 0 ? t('dm_ya_q', { que, lista, m: P.mat, d, a: P.ya - P.mat, n, c: j.creditos }) : t('dm_ya_q_sin', { que, d, n, c: j.creditos });
+        if (ctx.ask) ctx.ask(esc(q), esc(t(ya ? 'dm_si_ya' : 'dm_si_mat')), () => { ir(); });
         else ir();
         return;
       }
@@ -32921,7 +32999,7 @@
     if (root.I18N && root.I18N.onChange) root.I18N.onChange(registrarTextos);
   } catch (e) { /* sin documento */ }
 
-  const Sede = { AJUSTE, MATS, TRAD, EXT, TARJETA, requisito, edificiosDe, costo, etapa, mejorar, subirNivel, reclamarCofre, cofreDisponible,
+  const Sede = { AJUSTE, MATS, TRAD, EXT, TARJETA, requisito, edificiosDe, costo, etapa, precioDm, mejorar, subirNivel, reclamarCofre, cofreDisponible,
     reciclar, reciclables, bonos, listaBonos, nivelEdificio, actualizar, migrar, nuevo, tarjeta, modalHtml, clic, registrar, t, iconoMat, iconoEd,
     // Sede oficial (servidor)
     oficial: { enOficial, cargar, modalOficial, costoAc, fmt, ponerCache, salirOficial, get estado() { return OF.estado; }, get ayudas() { return OF.ayudas; },

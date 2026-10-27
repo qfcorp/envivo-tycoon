@@ -124,8 +124,8 @@ abajo ya tienen texto propio en `js/sede.js` (10 idiomas), así que no hace falt
 | Ruta | Método | Cuerpo | Respuesta |
 |---|---|---|---|
 | `/api/sede` | GET | — | `{ok, ahora, dia, sede:{nivel, max, materiales, aceleradores_min, mejoras, obreros, etapa, obras[], cofre, bono_competencia, migracion}, creditos, reglas}` |
-| `/api/sede/mejorar` | POST | `{clave}` (edificio) | vista |
-| `/api/sede/subir` | POST | `{}` | vista |
+| `/api/sede/mejorar` | POST | `{clave}` (edificio); con 💎: `+ {diamantes:'materiales' o 'ya', confirmar_costo}` | vista (con 💎: `{costo, costo_materiales, costo_acelerar, comprado, obra_id}` + vista) |
+| `/api/sede/subir` | POST | `{}`; con 💎: `{diamantes, confirmar_costo}` | vista (con 💎: igual que mejorar) |
 | `/api/sede/cofre` | POST | `{}` | `{bolsa}` + vista |
 | `/api/sede/acelerar` | POST | `{obra_id, confirmar_costo}` o `{obra_id, usar:'aceleradores'}` | `{costo, minutos}` + vista |
 | `/api/sede/ayudar` | POST | `{jugador_id, obra_id}` | `{segundos, premio, lista}` |
@@ -161,6 +161,14 @@ los de capítulo/historia son del juego local.
 **Acelerar:** `max(5, ceil(segundos que faltan / 360))` créditos (1 cada 6 min). La vista y la ventana muestran el costo;
 el juego manda `confirmar_costo` y el servidor cobra el costo de ese momento (si subió: 409 `costo_cambio`). Débito con
 `Monedero::mover($j, -costo, 'sede_acelerar', 'sede_obra:<id>')` (libro de créditos).
+
+**Con 💎 (créditos):** cada mejora de la etapa y la sede principal traen `segundos_obra` (duración con el VIP),
+`creditos_materiales` (lo que falta × 3, chips × 30) y `creditos_ya` (eso + `costoAcelerar(segundos_obra)`); `reglas` trae
+`credito_material` y `credito_chip`. `diamantes:'materiales'` compra lo que falta y empieza la obra (necesita equipo libre);
+`'ya'` además la termina en el acto (no necesita equipo libre). Mismos errores que acelerar (`confirmar_costo` 400,
+`costo_cambio` 409, `sin_creditos` 402) y `datos_invalidos` 400 si `diamantes` no es válido. Débitos
+`Monedero::mover($j, -n, 'sede_materiales' | 'sede_acelerar', 'sede_obra:<id>')`; lo comprado entra a `sede_libro` con
+motivo `creditos`. Precios y razones: `server/MONETIZACION.md` §1.
 
 **Ayudas:** −1 % de la obra o 5 min (lo mayor), máximo 10 por obra, una por persona y obra, 30 por persona y día;
 las primeras 10 del día le dan 1 material común al que ayuda. Cada ayuda suma XP del Pase (`Pase::sumarXp($ayudante, Pase::XP['obra_ayuda'], 'obra_ayuda', 'obra:<id>')`,

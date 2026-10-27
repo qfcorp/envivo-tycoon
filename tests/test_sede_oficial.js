@@ -158,7 +158,7 @@ function servidorFalso() {
   await page.waitForSelector('#modal [data-acc="ayudar"]', { timeout: 5000 }).catch(() => errs.push('no cargó la lista de ayudas'));
   const costoVisto = Number(await page.locator('#modal [data-acc="acelerar"][data-obra="41"]').getAttribute('data-costo'));
   ok(costoVisto >= 75 && costoVisto <= 76, 'costo de acelerar 7,5 h debería ser 75 créditos: ' + costoVisto);
-  ok(/75 créditos|76 créditos/.test(await page.locator('#modal [data-acc="acelerar"][data-obra="41"]').innerText()), 'el botón no muestra el costo');
+  ok(/Terminar ya con 💎 \(7[56]\)/.test(await page.locator('#modal [data-acc="acelerar"][data-obra="41"]').innerText()), 'el botón no muestra el costo');
   ok(/Cuenta en la Copa y los Duelos: \+2/.test(await page.locator('#modal .sd-of-info').innerText()), 'falta el bono de competencia');
   ok(await page.locator('#modal [data-acc="acel_min"]').count() === 2, 'faltan los botones de usar aceleradores');
   await shot('02_modal'); await noHScroll('ventana oficial');
@@ -167,7 +167,7 @@ function servidorFalso() {
   await page.locator('#modal [data-acc="acelerar"][data-obra="41"]').click();
   await page.waitForSelector('#modal [data-act="confirm-yes"]');
   const pregunta = await page.locator('#modal').innerText();
-  ok(pregunta.includes(String(costoVisto) + ' créditos') && pregunta.includes('300'), 'la confirmación no muestra el costo y el saldo: ' + pregunta.replace(/\s+/g, ' '));
+  ok(pregunta.includes(String(costoVisto) + ' 💎') && pregunta.includes('300'), 'la confirmación no muestra el costo y el saldo: ' + pregunta.replace(/\s+/g, ' '));
   ps = await pedidos();
   ok(!ps.some((p) => p.ruta === '/acelerar'), 'cobró antes de confirmar');
   await shot('03_confirmar'); await noHScroll('confirmar');

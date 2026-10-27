@@ -150,6 +150,80 @@ check('Acelerar una obra terminada -> 409 ya_terminada', [409, 'ya_terminada'], 
 check('Sin aceleradores guardados -> 409 sin_aceleradores', [409, 'sin_aceleradores'], falla(fn() => SO::acelerar($A, $v['sede']['obras'][1]['id'], null, 'aceleradores')));
 
 // =====================================================================
+titulo('Mejorar con 💎: completar materiales y "Mejorar ya" (confirmar_costo, libro, sin cobrar dos veces)');
+check('Precio: 3 créditos por material común y 30 por chip 4K', [3, 30, 36, 0], [SO::CREDITO_MATERIAL, SO::CREDITO_CHIP, SO::precioMateriales(['cables' => 2, 'chips' => 1]), SO::precioMateriales(['oro' => 9])]);
+// Con 💎 sueltos nunca sale más barato que el pack con dinero real (créditos del paquete del mismo precio: 250 / 700 / 1.500)
+$porPack = [];
+foreach (['pack_obra_s' => 250, 'pack_obra_m' => 700, 'pack_obra_l' => 1500] as $pk => $cred) $porPack[] = SO::precioMateriales(SO::PACKS[$pk]['mat']) + intdiv(SO::PACKS[$pk]['acelera_min'], 6) >= $cred;
+check('Lo de cada pack comprado con 💎 sueltos cuesta más que los créditos del mismo precio (el pack sigue siendo lo más barato)', [true, true, true], $porPack);
+if ($NODE !== '') {
+    $jsd = json_decode((string) shell_exec(escapeshellarg($NODE) . ' -e ' . escapeshellarg('process.stdout.write(JSON.stringify(require(process.argv[1]).AJUSTE.diamantes))') . ' ' . escapeshellarg(dirname(__DIR__, 2) . '/js/sede.js') . ' 2>/dev/null'), true);
+    check('js/sede.js AJUSTE.diamantes = mismos precios que el servidor', ['material' => SO::CREDITO_MATERIAL, 'chip' => SO::CREDITO_CHIP], $jsd);
+}
+$D = $nuevo('Diamantes', 40);
+$nivel($D, 5);
+$e6d = SO::edificiosDe(6);
+$dar($D, ['cables' => 5, 'placas' => 5, 'paneles' => 5, 'credenciales' => 5, 'planos' => 5]);
+$v = SO::vista($D);
+$m0 = $v['sede']['etapa']['mejoras'][0];
+check('La vista trae lo que cuesta con 💎: materiales que faltan y "ya" (+ terminar la obra con la duración real)',
+    [SO::precioMateriales($m0['falta']), SO::precioMateriales($m0['falta']) + SO::costoAcelerar(SO::segundosObra($D, $m0['segundos'])), SO::segundosObra($D, $m0['segundos']), SO::CREDITO_MATERIAL, SO::CREDITO_CHIP],
+    [$m0['creditos_materiales'], $m0['creditos_ya'], $m0['segundos_obra'], $v['reglas']['credito_material'], $v['reglas']['credito_chip']]);
+check('…y la sede principal también', SO::precioMateriales($v['sede']['etapa']['sede']['falta']), $v['sede']['etapa']['sede']['creditos_materiales']);
+$cm0 = $m0['creditos_materiales'];
+check('Forma de pago desconocida -> 400 datos_invalidos', [400, 'datos_invalidos'], falla(fn() => SO::mejorar($D, $e6d[0], 'gratis', 999)));
+check('Con 💎 sin confirmar_costo -> 400 confirmar_costo (con el costo)', [400, 'confirmar_costo', $cm0], (function () use ($D, $e6d) { $e = fallo(fn() => SO::mejorar($D, $e6d[0], 'materiales', null)); return [$e?->getCode(), $e?->extra['codigo'] ?? null, $e?->extra['costo'] ?? null]; })());
+check('Confirmando menos -> 409 costo_cambio', [409, 'costo_cambio', $cm0], (function () use ($D, $e6d, $cm0) { $e = fallo(fn() => SO::mejorar($D, $e6d[0], 'materiales', $cm0 - 1)); return [$e?->getCode(), $e?->extra['codigo'] ?? null, $e?->extra['costo'] ?? null]; })());
+$antes = $mat($D);
+check('Sin créditos -> 402 sin_creditos', [402, 'sin_creditos'], falla(fn() => SO::mejorar($D, $e6d[0], 'materiales', $cm0)));
+check('…y no cambió nada (sin obra, mismos materiales, saldo 0)', [0, $antes, 0], [count(SO::vista($D)['sede']['obras']), $mat($D), Monedero::saldo($D)]);
+Monedero::mover($D, 3000, 'compra', 'prueba');
+$r = SO::mejorar($D, $e6d[0], 'materiales', $cm0);
+$c0 = SO::costo(6, $e6d[0]);
+check('Completar materiales con 💎: cobra exacto lo que falta y empieza la obra', [$cm0, $cm0, 0, 3000 - $cm0, 1, $e6d[0]],
+    [$r['costo'], $r['costo_materiales'], $r['costo_acelerar'], $r['creditos'], count($r['sede']['obras']), $r['sede']['obras'][0]['ed']]);
+check('…lo comprado es lo que faltaba y los materiales de la receta quedan en 0', [$m0['falta'], true],
+    [$r['comprado'], (function () use ($r, $c0, $antes) { foreach ($c0['mat'] as $k => $q) if ($r['sede']['materiales'][$k] !== max(0, $antes[$k] - $q)) return false; return true; })()]);
+check('…libro de créditos: sede_materiales con ref sede_obra:<id>', [-$cm0, 'sede_obra:' . $r['obra_id']],
+    (function () use ($D) { $m = Db::fila("SELECT * FROM movimientos_creditos WHERE jugador_id = ? AND motivo = 'sede_materiales'", [$D]); return [(int) ($m['cambio'] ?? 0), $m['ref'] ?? null]; })());
+check('…libro de la sede: lo comprado entra con motivo creditos', array_sum($m0['falta']), (int) Db::valor("SELECT COALESCE(SUM(cambio), 0) FROM sede_libro WHERE jugador_id = ? AND motivo = 'creditos'", [$D]));
+check('…y la suma del libro de créditos sigue igual al saldo', true, $libroOk($D));
+$saldo = Monedero::saldo($D);
+check('La misma petición otra vez -> 409 en_obra y no cobra dos veces', [409, 'en_obra', $saldo], array_merge(falla(fn() => SO::mejorar($D, $e6d[0], 'materiales', $cm0)), [Monedero::saldo($D)]));
+// Mejorar ya: lo que falta + terminar ya, en un toque
+$m1 = SO::vista($D)['sede']['etapa']['mejoras'][1];
+$r = SO::mejorar($D, $e6d[1], 'ya', $m1['creditos_ya']);
+$ca1 = SO::costoAcelerar($m1['segundos_obra']);
+check('Mejorar ya con 💎: cobra materiales + terminar ya y la mejora queda lista en el acto', [$m1['creditos_ya'], $m1['creditos_materiales'], $ca1, $saldo - $m1['creditos_ya'], true, 1],
+    [$r['costo'], $r['costo_materiales'], $r['costo_acelerar'], $r['creditos'], $r['sede']['etapa']['mejoras'][1]['hecha'], count($r['sede']['obras'])]);
+check('…libro: sede_acelerar de esa obra y la obra guarda los créditos', [-$ca1, $ca1, 'terminada'],
+    (function () use ($D, $r) { $m = Db::fila("SELECT cambio FROM movimientos_creditos WHERE jugador_id = ? AND motivo = 'sede_acelerar' AND ref = ?", [$D, 'sede_obra:' . $r['obra_id']]); $o = Db::fila('SELECT creditos, estado FROM sede_obras WHERE id = ?', [$r['obra_id']]); return [(int) ($m['cambio'] ?? 0), (int) $o['creditos'], $o['estado']]; })());
+$saldo = Monedero::saldo($D);
+check('Mejorar ya otra vez la misma -> 409 ya_hecha y no cobra', [409, 'ya_hecha', $saldo], array_merge(falla(fn() => SO::mejorar($D, $e6d[1], 'ya', 9999)), [Monedero::saldo($D)]));
+// Nivel 5: 2 equipos de obra. Ocupa el segundo; completar materiales necesita un equipo libre, "Mejorar ya" no
+SO::mejorar($D, $e6d[2], 'materiales', SO::vista($D)['sede']['etapa']['mejoras'][2]['creditos_materiales']);
+check('Con los equipos ocupados, completar materiales -> 409 sin_obrero', [409, 'sin_obrero'], falla(fn() => SO::mejorar($D, $e6d[3], 'materiales', 9999)));
+$m3 = SO::vista($D)['sede']['etapa']['mejoras'][3];
+$r = SO::mejorar($D, $e6d[3], 'ya', $m3['creditos_ya']);
+check('…pero "Mejorar ya" sí (termina en el acto, no usa equipo)', [true, 2], [$r['sede']['etapa']['mejoras'][3]['hecha'], count($r['sede']['obras'])]);
+// Con todo lo de la receta: completar materiales no cobra nada (ni pide confirmar)
+$saldo = Monedero::saldo($D);
+check('Subir con 💎 sin todas las mejoras -> 409 faltan_mejoras y no cobra', [409, 'faltan_mejoras', $saldo], array_merge(falla(fn() => SO::subir($D, 'ya', 99999)), [Monedero::saldo($D)]));
+foreach (SO::vista($D)['sede']['obras'] as $o) SO::acelerar($D, $o['id'], $o['costo_creditos']);
+Db::q('UPDATE jugadores SET fama_publica = 10 WHERE id = ?', [$D]);
+$saldo = Monedero::saldo($D);
+check('Subir con 💎 sin la fama del nivel -> 409 requisito y no cobra (con 💎 no se salta nada)', [409, 'requisito', $saldo], array_merge(falla(fn() => SO::subir($D, 'ya', 99999)), [Monedero::saldo($D)]));
+Db::q('UPDATE jugadores SET fama_publica = 40 WHERE id = ?', [$D]);
+$sd = SO::vista($D)['sede']['etapa']['sede'];
+$r = SO::subir($D, 'ya', $sd['creditos_ya']);
+check('Subir ya con 💎: nivel 6 en el acto y cobra lo que se mostró', [6, $sd['creditos_ya'], $saldo - $sd['creditos_ya']], [$r['sede']['nivel'], $r['costo'], $r['creditos']]);
+check('…la suma del libro de créditos sigue igual al saldo', true, $libroOk($D));
+$dar($D, $mucho);
+$saldo = Monedero::saldo($D);
+$r = SO::mejorar($D, SO::edificiosDe(7)[0], 'materiales', null);
+check('Con todos los materiales, "completar materiales" no cobra ni pide confirmar', [0, $saldo, 1], [$r['costo'], $r['creditos'], count($r['sede']['obras'])]);
+
+// =====================================================================
 titulo('Packs con dinero real (contenido fijo) y aceleradores');
 $P = $nuevo('Compradora', 30);
 check('entregarPack pack_obra_s: true y contenido fijo', true, SO::entregarPack($P, 9001, 'pack_obra_s'));
@@ -393,6 +467,16 @@ check('POST /api/sede/ayudar otra vez -> 409 ya_ayudaste', [409, 'ya_ayudaste'],
 Monedero::mover($H, 500, 'compra', 'prueba');
 [$c, $j] = $http('POST', '/api/sede/acelerar', ['obra_id' => $obra['id'], 'confirmar_costo' => $obra['costo_creditos']], $tok);
 check('POST /api/sede/acelerar con créditos -> 200, obra terminada, saldo menor', [200, 0, true], [$c, count($j['sede']['obras'] ?? [1]), ($j['creditos'] ?? 999) < 500]);
+check('…libro de créditos cuadra', true, $libroOk($H));
+$ed4b = SO::edificiosDe(4)[1];
+check('POST /api/sede/mejorar con diamantes raro -> 400 datos_invalidos', [400, 'datos_invalidos'], (function () use ($http, $tok, $ed4b) { [$c, $j] = $http('POST', '/api/sede/mejorar', ['clave' => $ed4b, 'diamantes' => ['ya']], $tok); return [$c, $j['codigo'] ?? null]; })());
+[$c, $j] = $http('POST', '/api/sede/mejorar', ['clave' => $ed4b, 'diamantes' => 'ya'], $tok);
+check('POST /api/sede/mejorar {diamantes:"ya"} sin confirmar -> 400 confirmar_costo con el costo', [400, 'confirmar_costo', true], [$c, $j['codigo'] ?? null, ($j['costo'] ?? 0) > 0]);
+$cy = (int) ($j['costo'] ?? 0);
+$s0 = Monedero::saldo($H);
+[$c, $j] = $http('POST', '/api/sede/mejorar', ['clave' => $ed4b, 'diamantes' => 'ya', 'confirmar_costo' => $cy], $tok);
+check('POST /api/sede/mejorar {diamantes:"ya", confirmar_costo} -> 200, mejora lista y cobra', [200, $cy, $s0 - $cy, true], [$c, $j['costo'] ?? null, $j['creditos'] ?? null, (bool) Db::valor('SELECT 1 FROM sede_mejoras WHERE jugador_id = ? AND nivel = 4 AND ed = ?', [$H, $ed4b])]);
+check('POST /api/sede/subir {diamantes:"ya", confirmar_costo:"1"} sin las mejoras -> 409 faltan_mejoras', [409, 'faltan_mejoras'], (function () use ($http, $tok) { [$c, $j] = $http('POST', '/api/sede/subir', ['diamantes' => 'ya', 'confirmar_costo' => '1'], $tok); return [$c, $j['codigo'] ?? null]; })());
 check('…libro de créditos cuadra', true, $libroOk($H));
 check('GET /api/sede/mejorar -> 405', 405, $http('GET', '/api/sede/mejorar', null, $tok)[0]);
 check('POST /api/sede -> 405', 405, $http('POST', '/api/sede', [], $tok)[0]);
