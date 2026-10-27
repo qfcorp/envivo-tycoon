@@ -21,6 +21,11 @@ namespace EnVivo;
  *   confirmar y se cobra por Monedero, con libro). Ayudas de la asociación: −1 % de la obra o 5 minutos (lo mayor),
  *   máximo 10 por obra (de 10 a 20 con AyudaAsoc: nivel de la asociación + investigación); el que ayuda recibe 1 material
  *   (sus primeras 10 ayudas del día) y fichas de asociación. Pedir ayuda / "Ayudar a todos": server/src/AyudaAsoc.php.
+ * - Con créditos (💎; pedido de Dimitry, oct. 2026: "para mejorar la sede se debería poder comprar con diamantes"):
+ *   mejorar()/subir() con $diamantes 'materiales' compran EXACTO lo que falta (CREDITO_MATERIAL por material común,
+ *   CREDITO_CHIP por chip 4K: un poco más caro que los packs con dinero real, ver server/MONETIZACION.md) y empiezan la obra;
+ *   con 'ya' además la terminan en el acto (lo que falta + costoAcelerar(duración con el VIP)). Siempre con confirmar_costo
+ *   (el precio que se mostró), débitos por Monedero (libro) y los requisitos de siempre (fama, mejoras): con 💎 no se salta nada.
  * Todo lo que cambia algo va en Db::tx (BEGIN IMMEDIATE). Los errores son Fallo con 'codigo'.
  */
 final class SedeOficial
@@ -54,6 +59,15 @@ final class SedeOficial
     /** Acelerar con créditos: 1 crédito por cada SEG_POR_CREDITO segundos que falten, mínimo COSTO_MIN. */
     public const SEG_POR_CREDITO = 360;
     public const COSTO_MIN = 5;
+
+    /**
+     * Materiales que faltan, con créditos (💎): por unidad. Los packs con dinero real salen a ~1,6–2,1 💎 por material
+     * (pack_obra_l $9,99 ≈ 1.500 💎 − 4.800 min de aceleradores = 800 💎 → 700 💎 por 350 comunes + 8 chips), así que con
+     * 💎 sueltos es un poco más caro: lo más barato sigue siendo el pack. Igual que js/sede.js AJUSTE.diamantes.
+     */
+    public const CREDITO_MATERIAL = 3;
+    public const CREDITO_CHIP = 30;
+    public const DIAMANTES = ['materiales', 'ya'];
 
     /** Ayudas de la asociación. */
     public const AYUDAS_MAX = 10;          // por obra
@@ -163,6 +177,21 @@ final class SedeOficial
     public static function costoAcelerar(int $restante): int
     {
         return $restante <= 0 ? 0 : max(self::COSTO_MIN, (int) ceil($restante / self::SEG_POR_CREDITO));
+    }
+
+    /** Créditos (💎) por los materiales de $falta (['material' => cuántos faltan]). */
+    public static function precioMateriales(array $falta): int
+    {
+        $c = 0;
+        foreach ($falta as $m => $n) if (in_array($m, self::MATS, true)) $c += max(0, (int) $n) * ($m === 'chips' ? self::CREDITO_CHIP : self::CREDITO_MATERIAL);
+        return $c;
+    }
+
+    /** Duración real de una obra nueva de $seg segundos para $j: con el Pase VIP activo dura menos (Vip::PASE 'obra'). */
+    public static function segundosObra(int $j, int $seg): int
+    {
+        try { if (class_exists(Vip::class) && method_exists(Vip::class, 'segundosObra')) return Vip::segundosObra($j, $seg); } catch (\Throwable) { /* sin VIP: igual */ }
+        return $seg;
     }
 
     /**
@@ -441,8 +470,11 @@ final class SedeOficial
             foreach (self::edificiosDe($L) as $ed) {
                 $c = self::costo($L, $ed);
                 $o = current(array_filter($activas, fn($x) => $x['tipo'] === 'mejora' && (int) $x['nivel'] === $L && $x['ed'] === $ed)) ?: null;
+                $fm = $falta($c['mat']);
+                $so = self::segundosObra($j, $c['segundos']);
                 $mej[] = ['ed' => $ed, 'mat' => $c['mat'], 'dias' => $c['dias'], 'segundos' => $c['segundos'], 'hecha' => isset($hechas[$L . '.' . $ed]),
-                    'obra_id' => $o ? (int) $o['id'] : null, 'falta' => $falta($c['mat']), 'nivel_ed' => $nivelEd($ed)];
+                    'obra_id' => $o ? (int) $o['id'] : null, 'falta' => $fm, 'nivel_ed' => $nivelEd($ed),
+                    'segundos_obra' => $so, 'creditos_materiales' => self::precioMateriales($fm), 'creditos_ya' => self::precioMateriales($fm) + self::costoAcelerar($so)];
             }
             $cs = self::costo($L, 'sede');
             $on = current(array_filter($activas, fn($x) => $x['tipo'] === 'nivel')) ?: null;
@@ -450,9 +482,12 @@ final class SedeOficial
             $rf = self::requisitoFama($L);
             $req = $rf > 0 ? [['k' => 'req_fama', 'p' => ['n' => $rf], 'ok' => $fama >= $rf]] : [];
             $nh = count(array_filter($mej, fn($m) => $m['hecha']));
+            $fs = $falta($cs['mat']);
+            $ss = self::segundosObra($j, $cs['segundos']);
             $etapa = ['objetivo' => $L, 'mejoras' => $mej, 'hechas' => $nh,
-                'sede' => ['mat' => $cs['mat'], 'dias' => $cs['dias'], 'segundos' => $cs['segundos'], 'obra_id' => $on ? (int) $on['id'] : null, 'falta' => $falta($cs['mat']),
-                    'req' => $req, 'listo' => $nh === count($mej) && !array_filter($req, fn($r) => !$r['ok'])]];
+                'sede' => ['mat' => $cs['mat'], 'dias' => $cs['dias'], 'segundos' => $cs['segundos'], 'obra_id' => $on ? (int) $on['id'] : null, 'falta' => $fs,
+                    'req' => $req, 'listo' => $nh === count($mej) && !array_filter($req, fn($r) => !$r['ok']),
+                    'segundos_obra' => $ss, 'creditos_materiales' => self::precioMateriales($fs), 'creditos_ya' => self::precioMateriales($fs) + self::costoAcelerar($ss)]];
         }
         $fresca = $nivel === 1 && !$hechas && !(int) Db::valor('SELECT COUNT(*) FROM sede_obras WHERE jugador_id = ?', [$j]);
         $edad = intdiv(max(0, $t - (int) (Db::valor('SELECT creado FROM jugadores WHERE id = ?', [$j]) ?? $t)), 86400);
@@ -470,7 +505,8 @@ final class SedeOficial
             ],
             'creditos' => Monedero::saldo($j),
             'reglas' => ['seg_por_credito' => self::SEG_POR_CREDITO, 'costo_min' => self::COSTO_MIN, 'ayudas_max' => self::topeAyudas($j),
-                'ayuda_pct' => self::AYUDA_PCT, 'ayuda_min_seg' => self::AYUDA_MIN_SEG],
+                'ayuda_pct' => self::AYUDA_PCT, 'ayuda_min_seg' => self::AYUDA_MIN_SEG,
+                'credito_material' => self::CREDITO_MATERIAL, 'credito_chip' => self::CREDITO_CHIP],
         ];
     }
 
@@ -487,7 +523,7 @@ final class SedeOficial
     {
         $t = self::ahora();
         // Pase VIP activo: la obra dura menos según el nivel VIP (Vip::PASE 'obra', 10 a 30 %); sin el Pase, igual que siempre
-        try { if (class_exists(Vip::class) && method_exists(Vip::class, 'segundosObra')) $seg = Vip::segundosObra($j, $seg); } catch (\Throwable) { /* sin VIP: igual */ }
+        $seg = self::segundosObra($j, $seg);
         Db::q('INSERT INTO sede_obras (jugador_id, tipo, ed, nivel, inicio, duracion, fin) VALUES (?, ?, ?, ?, ?, ?, ?)', [$j, $tipo, $ed, $L, $t, $seg, $t + $seg]);
         return Db::ultimoId();
     }
@@ -499,11 +535,15 @@ final class SedeOficial
         Fallo::si((bool) $o, 'Te faltan materiales.', 409, ['codigo' => 'faltan_materiales', 'falta' => $o]);
     }
 
-    /** Empieza la mejora chica del edificio $ed para el próximo nivel. */
-    public static function mejorar(int $j, string $ed): array
+    /**
+     * Empieza la mejora chica del edificio $ed para el próximo nivel. Con $diamantes ('materiales' | 'ya') y $confirmar
+     * (el costo en créditos que se mostró) compra lo que falta y/o la termina ya (ver empezar()).
+     */
+    public static function mejorar(int $j, string $ed, ?string $diamantes = null, ?int $confirmar = null): array
     {
         Cuentas::exigirActiva($j);
-        Db::tx(function () use ($j, $ed): void {
+        self::exigirModo($diamantes);
+        $r = Db::tx(function () use ($j, $ed, $diamantes, $confirmar): array {
             $f = self::sincronizar($j);
             $nivel = (int) $f['nivel'];
             Fallo::si($nivel >= self::MAX_NIVEL, 'Tu sede ya está al máximo.', 409, ['codigo' => 'max']);
@@ -512,20 +552,65 @@ final class SedeOficial
             Fallo::si((bool) Db::valor('SELECT 1 FROM sede_mejoras WHERE jugador_id = ? AND nivel = ? AND ed = ?', [$j, $L, $ed]), 'Esa mejora ya está lista.', 409, ['codigo' => 'ya_hecha']);
             $act = self::obrasActivas($j);
             Fallo::si((bool) array_filter($act, fn($o) => $o['tipo'] === 'mejora' && (int) $o['nivel'] === $L && $o['ed'] === $ed), 'Esa mejora ya está en obra.', 409, ['codigo' => 'en_obra']);
-            Fallo::si(count($act) >= self::obreros($j, $nivel), 'Tu equipo de obra está ocupado.', 409, ['codigo' => 'sin_obrero']);
-            $c = self::costo($L, $ed);
-            self::exigirMateriales($f, $c['mat']);
-            $id = self::nuevaObra($j, 'mejora', $ed, $L, $c['segundos']);
-            self::sumar($j, array_map(fn($n) => -$n, $c['mat']), 'obra', 'obra:' . $id . ':' . $L . '.' . $ed);
+            // "Mejorar ya" con 💎 termina en el acto: no necesita un equipo de obra libre
+            Fallo::si($diamantes !== 'ya' && count($act) >= self::obreros($j, $nivel), 'Tu equipo de obra está ocupado.', 409, ['codigo' => 'sin_obrero']);
+            return self::empezar($j, $f, 'mejora', $ed, $L, self::costo($L, $ed), $diamantes, $confirmar, $L . '.' . $ed);
         });
-        return self::vista($j);
+        return $r + self::vista($j);
     }
 
-    /** Empieza la obra de la sede principal (la que sube el nivel). */
-    public static function subir(int $j): array
+    private static function exigirModo(?string $diamantes): void
+    {
+        Fallo::si($diamantes !== null && !in_array($diamantes, self::DIAMANTES, true), 'Forma de pago no válida.', 400, ['codigo' => 'datos_invalidos']);
+    }
+
+    /**
+     * Cobra los materiales (y con 💎, lo que falta y el "terminar ya") y crea la obra. Sin $diamantes: como siempre (409
+     * faltan_materiales si falta algo). Con $diamantes: costo = precioMateriales(lo que falta) (+ costoAcelerar(duración con
+     * VIP) si es 'ya'); hay que mandar confirmar_costo (si no: 400 confirmar_costo con el costo; si es menor: 409 costo_cambio)
+     * y alcanzar el saldo (402 sin_creditos). Débitos: 'sede_materiales' y 'sede_acelerar' con ref 'sede_obra:<id>'; los
+     * materiales comprados entran al libro de la sede con motivo 'creditos'. Repetir la misma petición no cobra dos veces:
+     * la mejora ya está en obra o lista (409 en_obra / ya_hecha). Devuelve lo cobrado (vacío sin $diamantes).
+     */
+    private static function empezar(int $j, array $f, string $tipo, string $ed, int $L, array $c, ?string $diamantes, ?int $confirmar, string $ref): array
+    {
+        if ($diamantes === null) {
+            self::exigirMateriales($f, $c['mat']);
+            $id = self::nuevaObra($j, $tipo, $ed, $L, $c['segundos']);
+            self::sumar($j, array_map(fn($n) => -$n, $c['mat']), 'obra', 'obra:' . $id . ':' . $ref);
+            return [];
+        }
+        $falta = [];
+        foreach ($c['mat'] as $m => $n) if ((int) $f[$m] < $n) $falta[$m] = $n - (int) $f[$m];
+        $cm = self::precioMateriales($falta);
+        $ca = $diamantes === 'ya' ? self::costoAcelerar(self::segundosObra($j, $c['segundos'])) : 0;
+        $costo = $cm + $ca;
+        if ($costo > 0) {
+            Fallo::si($confirmar === null, 'Confirma el costo en créditos.', 400, ['codigo' => 'confirmar_costo', 'costo' => $costo]);
+            Fallo::si($confirmar < $costo, 'El costo cambió: ahora son ' . $costo . ' créditos.', 409, ['codigo' => 'costo_cambio', 'costo' => $costo]);
+            $saldo = Monedero::saldo($j);
+            Fallo::si($saldo < $costo, 'No tienes créditos suficientes. Necesitas ' . $costo . ' créditos.', 402, ['codigo' => 'sin_creditos', 'costo' => $costo, 'creditos' => $saldo]);
+        }
+        $id = self::nuevaObra($j, $tipo, $ed, $L, $c['segundos']);
+        if ($cm > 0) {
+            Monedero::mover($j, -$cm, 'sede_materiales', 'sede_obra:' . $id);
+            self::sumar($j, $falta, 'creditos', 'creditos:obra:' . $id . ':' . $ref);
+        }
+        self::sumar($j, array_map(fn($n) => -$n, $c['mat']), 'obra', 'obra:' . $id . ':' . $ref);
+        if ($diamantes === 'ya') {
+            Monedero::mover($j, -$ca, 'sede_acelerar', 'sede_obra:' . $id);
+            Db::q('UPDATE sede_obras SET fin = ?, creditos = creditos + ? WHERE id = ?', [self::ahora(), $ca, $id]);
+            self::terminarVencidas($j);
+        }
+        return ['costo' => $costo, 'costo_materiales' => $cm, 'costo_acelerar' => $ca, 'comprado' => $falta, 'obra_id' => $id];
+    }
+
+    /** Empieza la obra de la sede principal (la que sube el nivel). Con $diamantes: como mejorar(). */
+    public static function subir(int $j, ?string $diamantes = null, ?int $confirmar = null): array
     {
         Cuentas::exigirActiva($j);
-        Db::tx(function () use ($j): void {
+        self::exigirModo($diamantes);
+        $r = Db::tx(function () use ($j, $diamantes, $confirmar): array {
             $f = self::sincronizar($j);
             $nivel = (int) $f['nivel'];
             Fallo::si($nivel >= self::MAX_NIVEL, 'Tu sede ya está al máximo.', 409, ['codigo' => 'max']);
@@ -538,13 +623,10 @@ final class SedeOficial
             $rf = self::requisitoFama($L);
             $fama = (int) (Db::valor('SELECT fama_publica FROM jugadores WHERE id = ?', [$j]) ?? 0);
             Fallo::si($fama < $rf, 'Necesitas fama ' . $rf . ' para el nivel ' . $L . '.', 409, ['codigo' => 'requisito', 'fama' => $rf]);
-            Fallo::si(count($act) >= self::obreros($j, $nivel), 'Tu equipo de obra está ocupado.', 409, ['codigo' => 'sin_obrero']);
-            $c = self::costo($L, 'sede');
-            self::exigirMateriales($f, $c['mat']);
-            $id = self::nuevaObra($j, 'nivel', 'sede', $L, $c['segundos']);
-            self::sumar($j, array_map(fn($n) => -$n, $c['mat']), 'obra', 'obra:' . $id . ':nivel' . $L);
+            Fallo::si($diamantes !== 'ya' && count($act) >= self::obreros($j, $nivel), 'Tu equipo de obra está ocupado.', 409, ['codigo' => 'sin_obrero']);
+            return self::empezar($j, $f, 'nivel', 'sede', $L, self::costo($L, 'sede'), $diamantes, $confirmar, 'nivel' . $L);
         });
-        return self::vista($j);
+        return $r + self::vista($j);
     }
 
     /** Elige un material común al azar (servidor: random_int). */

@@ -23,6 +23,9 @@ final class SedeApi
             return Http::entrada(64 * 1024);
         };
         $get = function () use ($metodo): void { if ($metodo !== 'GET') Http::error(405, 'Usa GET.'); };
+        // confirmar_costo (entero >= 0) y diamantes ('materiales' | 'ya'; lo valida SedeOficial)
+        $conf = function (array $in): ?int { $c = $in['confirmar_costo'] ?? null; return is_int($c) ? $c : (is_string($c) && preg_match('/^\d{1,9}$/', $c) ? (int) $c : null); };
+        $dm = function (array $in): ?string { $d = $in['diamantes'] ?? null; return $d === null ? null : (is_string($d) ? $d : '?'); };
         $id = function (array $in, string $k): int {
             $v = $in[$k] ?? null;
             if (is_int($v) && $v > 0) return $v;
@@ -35,19 +38,17 @@ final class SedeApi
                 Http::json(200, SedeOficial::vista($jugador));
             case '/sede/mejorar':
                 $in = $post();
-                Http::json(200, SedeOficial::mejorar($jugador, is_string($in['clave'] ?? null) ? $in['clave'] : ''));
+                Http::json(200, SedeOficial::mejorar($jugador, is_string($in['clave'] ?? null) ? $in['clave'] : '', $dm($in), $conf($in)));
             case '/sede/subir':
-                $post();
-                Http::json(200, SedeOficial::subir($jugador));
+                $in = $post();
+                Http::json(200, SedeOficial::subir($jugador, $dm($in), $conf($in)));
             case '/sede/cofre':
                 $post();
                 Http::json(200, SedeOficial::cofre($jugador));
             case '/sede/acelerar':
                 $in = $post();
-                $c = $in['confirmar_costo'] ?? null;
-                $conf = is_int($c) ? $c : (is_string($c) && preg_match('/^\d{1,9}$/', $c) ? (int) $c : null);
                 $usar = is_string($in['usar'] ?? null) ? $in['usar'] : 'creditos';
-                Http::json(200, SedeOficial::acelerar($jugador, $id($in, 'obra_id'), $conf, $usar));
+                Http::json(200, SedeOficial::acelerar($jugador, $id($in, 'obra_id'), $conf($in), $usar));
             case '/sede/ayudar':
                 $in = $post();
                 Http::json(200, SedeOficial::ayudar($jugador, $id($in, 'jugador_id'), $id($in, 'obra_id')));

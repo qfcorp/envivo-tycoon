@@ -24,6 +24,22 @@ tiene **techo**. Los precios en dinero real los fija el Centro de Control (`prod
   entrega `curso_intl`) y `personal_intl:<rol>` (180 💎, Semi-senior de habilidad 3 con experiencia internacional, tope 2 por
   rol; entrega `personal_intl`). Solo destraban los contratos internacionales de la historia: no son entregas `personal`, así
   que no dan permiso de nivel ni de habilidad en Duelos.
+- **Sede oficial con 💎** (pedido de Dimitry, oct. 2026: "para mejorar la sede se debería poder comprar con diamantes";
+  `SedeOficial::mejorar/subir` con `diamantes`, rutas `POST /api/sede/mejorar` y `/api/sede/subir`, débitos por
+  `Monedero::mover` con libro): **Completar materiales con 💎** compra EXACTO lo que falta a **3 💎 por material común y
+  30 💎 por chip 4K** (`SedeOficial::CREDITO_MATERIAL` / `CREDITO_CHIP` = `js/sede.js` AJUSTE.diamantes) y empieza la obra
+  (motivo `sede_materiales`); **Terminar ya con 💎** (ya existía) cuesta `max(5, ceil(segundos que faltan / 360))` = 1 💎 cada
+  6 min, mínimo 5, sin techo: como la duración crece con el nivel (2 h por "día" en el nivel 2 → 24 h en el 30) sale barato
+  al principio (mejora del nivel 2: 20 💎) y caro arriba (sede del 30: 1.440 💎; con el Pase VIP la obra dura 10–30 % menos y
+  cuesta menos); **Mejorar ya con 💎** = lo que falta + terminar ya (duración con el VIP) en un toque, no necesita equipo de
+  obra libre. Siempre se confirma el total (`confirmar_costo`; 409 `costo_cambio` si subió) y se repite sin cobrar dos veces
+  (409 `en_obra` / `ya_hecha`). Con 💎 no se salta ningún requisito (fama, mejoras del nivel). Precio justo: los packs con
+  dinero real salen a ~1,6–2,1 💎 por material (pack L $9,99 ≈ 1.500 💎 − 4.800 min de aceleradores = 800 💎 → 700 💎 por
+  350 comunes + 8 chips), así que con 💎 sueltos es algo más caro (lo de cada pack comprado suelto: S 310, M 870, L 2.090 💎
+  contra 250 / 700 / 1.500): el pack sigue siendo lo más conveniente. Todo faltante (peor caso): mejora de la sala de control
+  del nivel 2 = 30 💎 de materiales + 20 para terminar ya; nivel 10 = 150 + 108; nivel 20 = 348 + 534; nivel 30 = 750 + 1.440.
+  Sin cuenta los botones se ven con candado "con cuenta" (los 💎 son del servidor). La ventaja en línea no cambia: el nivel
+  oficial sigue dando como mucho +6 (`Ventajas::TOPE` y recortes sin tocar).
 - **Copa**: puntos de preparación = calidad validada + bono (+ estrellas extra como hoy); en los cruces, cada equipo del
   plantel lleva `bono` y `batalla.js` lo suma a la calidad de su partido (campo opcional `bono` por equipo, 0..12).
 - **Duelos**: el bono se suma a la calidad del retador y del fantasma; el emparejamiento sugiere rivales con **poder parecido**.
