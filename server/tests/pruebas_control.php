@@ -377,6 +377,58 @@ check('Cancelarla otra vez -> error', true, str_starts_with($c->accion(['accion'
 $c->get('/control/?t=jugadores&id=3');
 check('La ficha muestra la auditoría de la cuenta (tabla auditoria)', [true, true], [$c->tiene('id="auditoria-jugador"'), $c->tiene('Compensación por caída')]);
 
+// ------------------------------------------------------------------------------------------------ VIP (pruebas)
+titulo('Jugadores: VIP (pruebas) — Pase VIP por días y nivel VIP forzado, sin compras');
+$tokCaro = bin2hex(random_bytes(32));
+$exec('INSERT INTO sesiones (token_hash, jugador_id, creado, expira) VALUES (?, 3, ?, ?)', [hash('sha256', $tokCaro), time(), time() + 50 * $D]);
+$apiCaro = fn(string $ruta) => json_decode((string) file_get_contents($B . $ruta, false, stream_context_create(['http' => ['header' => "Cookie: envivo_s=$tokCaro\r\n"]])), true) ?? [];
+$nCompras = (int) $val('SELECT COUNT(*) FROM compras');
+$nFact = (int) $val("SELECT COUNT(*) FROM sqlite_master WHERE name = 'facturas'") ? (int) $val('SELECT COUNT(*) FROM facturas') : 0;
+$e0 = $apiCaro('/api/estado');
+check('Antes: /api/estado de Caro -> logueado, sin Pase VIP, vip_nivel 0', [true, false, 0], [$e0['logueado'] ?? null, $e0['vip_activo'] ?? null, $e0['vip_nivel'] ?? null]);
+$c->get('/control/?t=jugadores&id=3');
+check('Ficha: bloque "VIP (pruebas)" con nivel real, forzado, Pase y ventajas; botones +1/+7/+30, otro, nivel 1–10', [true, true, true, true, true, true, 10, false],
+    [$c->tiene('id="vip-pruebas"'), $c->tiene('id="vip-real"'), $c->tiene('id="vip-forzado"'), $c->tiene('id="vip-ventajas"'), (bool) preg_match('/value="jugador_vip_pase".*?name="dias" value="30"/s', $c->cuerpo),
+     $c->tiene('name="dias" required min="1" max="365"'), preg_match_all('/<option value="\d+"[^>]*>VIP \d+ · /', $c->cuerpo), $c->tiene('Quitar nivel forzado')]);
+check('Los formularios VIP llevan CSRF y piden confirmación', true, (function () use ($c) {
+    preg_match_all('/<form method="post"[^>]*>(?:(?!<\/form>).)*name="accion" value="jugador_vip_(?:pase|nivel)".*?<\/form>/s', $c->cuerpo, $m);
+    return count($m[0]) >= 5 && count(array_filter($m[0], fn($f) => !preg_match('/name="csrf" value="[a-f0-9]{64}"/', $f) || !str_contains($f, 'data-confirmar='))) === 0;
+})());
+check('VIP sin código CSRF -> 403 y nada cambia', [403, null, 0], [$c->post(['accion' => 'jugador_vip_nivel', 'jugador_id' => 3, 'nivel' => 9]), $val('SELECT nivel_forzado FROM vip_jugadores WHERE jugador_id = 3') ?: null, $aud('vip_nivel_admin')]);
+$c->get('/control/?t=jugadores&id=3');
+check('VIP con CSRF de otro origen -> 403', 403, $c->post(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 7, 'csrf' => $c->csrf()], ['Origin: https://malo.example']));
+$r = $c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 7], '/control/?t=jugadores&id=3');
+$vh = (int) $val('SELECT vip_hasta FROM jugadores WHERE id = 3');
+check('+7 días de Pase VIP -> ok, vence en ~7 días, auditoría vip_pase_admin', [true, true, 1, $QUIEN, 3], [str_starts_with($r, 'ok:'), abs($vh - (time() + 7 * $D)) < 120, $aud('vip_pase_admin'), $ultAud('vip_pase_admin')['quien'] ?? null, (int) ($ultAud('vip_pase_admin')['jugador_id'] ?? 0)]);
+$c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 30], '/control/?t=jugadores&id=3');
+check('+30 más -> se suma desde el vencimiento (37 días)', true, abs((int) $val('SELECT vip_hasta FROM jugadores WHERE id = 3') - ($vh + 30 * $D)) < 5);
+check('Días fuera de rango (400, -1, texto) -> error', [true, true, true], [str_starts_with($c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 400], '/control/?t=jugadores&id=3'), 'error:'),
+    str_starts_with($c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => -1], '/control/?t=jugadores&id=3'), 'error:'), str_starts_with($c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 'x'], '/control/?t=jugadores&id=3'), 'error:')]);
+$e1 = $apiCaro('/api/estado');
+check('/api/estado ya trae vip_activo = true (y vip_hasta)', [true, true], [$e1['vip_activo'] ?? null, is_string($e1['vip_hasta'] ?? null)]);
+$r = $c->accion(['accion' => 'jugador_vip_nivel', 'jugador_id' => 3, 'nivel' => 7], '/control/?t=jugadores&id=3');
+check('Forzar VIP 7 -> ok, nivel_forzado 7 (nivel real sigue 0), auditoría vip_nivel_admin', [true, 7, 0, 1, true], [str_starts_with($r, 'ok:'), (int) $val('SELECT nivel_forzado FROM vip_jugadores WHERE jugador_id = 3'),
+    (int) $val('SELECT nivel FROM vip_jugadores WHERE jugador_id = 3'), $aud('vip_nivel_admin'), str_contains($ultAud('vip_nivel_admin')['detalle'] ?? '', 'VIP 7')]);
+check('La ficha muestra real VIP 0, forzado VIP 7 y las ventajas del Pase con VIP 7 (5 eventos, −45 %, obras −25 %)', [true, true, true, true],
+    [(bool) preg_match('/id="vip-real">Sin nivel/', $c->cuerpo), (bool) preg_match('/id="vip-forzado">.*?VIP 7/', $c->cuerpo), (bool) preg_match('/id="vip-efectivo"><b>VIP 7 · Rubí/', $c->cuerpo), (bool) preg_match('/id="vip-ventajas">5 eventos por día · reparaciones −45 % · obras −25 %/', $c->cuerpo)]);
+$e2 = $apiCaro('/api/estado');
+$v2 = $apiCaro('/api/vip');
+check('/api/estado -> vip_nivel 7; /api/vip -> nivel 7, forzado, insignia Rubí, Pase VIP 7 (Vip::PASE[7])', [7, 7, true, 'Rubí', 5, 45, 25, 600],
+    [$e2['vip_nivel'] ?? null, $v2['nivel'] ?? null, $v2['forzado'] ?? null, $v2['insignia']['nombre'] ?? null, $v2['pase_vip']['turnos'] ?? null, $v2['pase_vip']['descuento'] ?? null, $v2['pase_vip']['obra'] ?? null, $v2['pase_vip']['bono']['dinero'] ?? null]);
+check('Forzar nivel 0, 11 o texto -> error', [true, true, true], array_map(fn($n) => str_starts_with($c->accion(['accion' => 'jugador_vip_nivel', 'jugador_id' => 3, 'nivel' => $n], '/control/?t=jugadores&id=3'), 'error:'), [0, 11, 'diez']));
+check('Ni compras ni facturas nuevas (ingresos y SRI limpios); ninguna oferta de nivel creada', [$nCompras, $nFact, 0],
+    [(int) $val('SELECT COUNT(*) FROM compras'), (int) $val("SELECT COUNT(*) FROM sqlite_master WHERE name = 'facturas'") ? (int) $val('SELECT COUNT(*) FROM facturas') : 0, (int) $val('SELECT COUNT(*) FROM vip_ofertas WHERE jugador_id = 3')]);
+$r = $c->accion(['accion' => 'jugador_vip_nivel', 'jugador_id' => 3, 'nivel' => 'real'], '/control/?t=jugadores&id=3');
+check('Quitar nivel forzado -> ok, vuelve al real (0), /api/estado vip_nivel 0, la ficha ya no ofrece quitarlo', [true, null, 0, 0, false],
+    [str_starts_with($r, 'ok:'), $val('SELECT nivel_forzado FROM vip_jugadores WHERE jugador_id = 3'), $apiCaro('/api/estado')['vip_nivel'] ?? null, $apiCaro('/api/vip')['nivel'] ?? null, $c->tiene('Quitar nivel forzado')]);
+check('Quitarlo otra vez -> error', true, str_starts_with($c->accion(['accion' => 'jugador_vip_nivel', 'jugador_id' => 3, 'nivel' => 'real'], '/control/?t=jugadores&id=3'), 'error:'));
+$r = $c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 0], '/control/?t=jugadores&id=3');
+check('Desactivar el Pase VIP -> ok, /api/estado vip_activo false, auditoría; otra vez -> error', [true, false, true, true],
+    [str_starts_with($r, 'ok:'), $apiCaro('/api/estado')['vip_activo'] ?? null, str_contains($ultAud('vip_pase_admin')['detalle'] ?? '', 'Desactivó'),
+     str_starts_with($c->accion(['accion' => 'jugador_vip_pase', 'jugador_id' => 3, 'dias' => 0], '/control/?t=jugadores&id=3'), 'error:')]);
+check('Jugador que no existe -> error', true, str_starts_with($c->accion(['accion' => 'jugador_vip_nivel', 'jugador_id' => 999, 'nivel' => 3], '/control/?t=jugadores&id=999'), 'error:'));
+$exec('DELETE FROM sesiones WHERE token_hash = ?', [hash('sha256', $tokCaro)]);
+
 // ------------------------------------------------------------------------------------------------ mercado (antes de los reembolsos: suspender congela publicaciones)
 titulo('Mercado (Mercado::moderar): congelar, reactivar, quitar');
 check('Congelar la publicación 3 (dron de Gabi)', [true, 'congelada', 1], [str_starts_with($c->accion(['accion' => 'mercado_congelar', 'publicacion_id' => 3], '/control/?t=mercado'), 'ok:'), $val('SELECT estado FROM mercado_publicaciones WHERE id = 3'), $aud('mercado_congelar')]);
@@ -526,7 +578,7 @@ titulo('Toda acción de cambio dejó su fila en auditoria');
 $acciones = ['control_entrar', 'control_entrar_fallido', 'control_csrf_rechazado', 'creditos_dar', 'creditos_quitar', 'cuenta_suspendido', 'cuenta_activo', 'cuenta_baneado', 'sesiones_cerrar',
     'transferencia_cancelada', 'compra_reembolso', 'compra_contracargo', 'control_csv_compras', 'producto_editar', 'producto_restaurar', 'oferta_crear', 'oferta_terminar',
     'mercado_congelar', 'mercado_descongelar', 'mercado_quitar', 'chat_ocultar', 'chat_mostrar', 'chat_resolver', 'chat_silenciar', 'chat_expulsar', 'chat_levantar', 'palabra_agregar', 'palabra_quitar',
-    'soporte_respuesta', 'soporte_cerrar', 'soporte_reabrir', 'soporte_rapida_crear', 'soporte_rapida_editar', 'soporte_rapida_borrar', 'mantenimiento', 'anuncio', 'abuso_reglas'];
+    'soporte_respuesta', 'soporte_cerrar', 'soporte_reabrir', 'soporte_rapida_crear', 'soporte_rapida_editar', 'soporte_rapida_borrar', 'mantenimiento', 'anuncio', 'abuso_reglas', 'vip_pase_admin', 'vip_nivel_admin'];
 check('Auditoría: hay filas de las ' . count($acciones) . ' acciones', [], array_values(array_filter($acciones, fn($a) => $aud($a) === 0)));
 check('Auditoría: todo lo del panel con quien = control:<usuario> (o control:? en entradas fallidas) e IP', 0,
     (int) $val("SELECT COUNT(*) FROM auditoria WHERE quien LIKE 'control:%' AND (ip IS NULL OR ip = '')") + (int) $val("SELECT COUNT(*) FROM auditoria WHERE accion LIKE 'control_%' AND quien NOT LIKE 'control:%'"));
@@ -555,7 +607,7 @@ if (is_dir($NP . '/playwright')) {
     $ult = json_decode((string) substr($sal, (int) strrpos($sal, "\n{") ?: 0), true) ?? json_decode($sal, true) ?? ['crudo' => $sal];
     echo '  ' . json_encode($ult, JSON_UNESCAPED_UNICODE) . "\n";
     foreach (($ult['paginas'] ?? []) as $n => $pg) check("Navegador: $n sin desplazamiento horizontal (HTTP 200)", [200, 0], [$pg['http'], $pg['desborde']]);
-    check('Navegador: entrar, detalle del gráfico al tocar, acción con confirmación y salir', ['entro' => true, 'tip' => true, 'accion_ok' => true, 'salio' => true], $ult['pasos'] ?? null);
+    check('Navegador: entrar, detalle del gráfico al tocar, acción con confirmación, VIP (pruebas) y salir', ['entro' => true, 'tip' => true, 'accion_ok' => true, 'vip' => true, 'salio' => true], $ult['pasos'] ?? null);
     check('Navegador: sin errores de consola ni de la página (CSP incluida)', [], $ult['errores'] ?? ['sin respuesta']);
     echo "  Capturas en $CAPTURAS\n";
 } else {
