@@ -7,7 +7,7 @@ declare(strict_types=1);
 // del chat y cancelar transferencias de cuenta. Todo con las clases del servidor (Control, Cuentas, Sesiones, Transferencias).
 defined('ENVIVO_CONTROL') || exit;
 
-use EnVivo\{Auditoria, Catalogo, Control, Db, Fallo, Transferencias};
+use EnVivo\{Auditoria, Catalogo, Control, Db, Fallo, Monedero, Transferencias, Vip};
 
 function cc_estado_cuenta(string $e): string { return cc_chip($e, ['activo' => 'ok', 'suspendido' => 'aviso', 'baneado' => 'mal'][$e] ?? ''); }
 
@@ -109,6 +109,7 @@ function cc_ficha_jugador(int $id): string
         $h .= '<div class="acciones">' . cc_acciones_autor($id) . ($chat ? cc_boton('chat_levantar', ['jugador_id' => $id], 'Levantar sanción del chat', 'btn btn-chico btn-sec') : '') . '</div>';
     }
     $h .= '</div></div></section>';
+    $h .= cc_vip_pruebas($id);
 
     // Compras
     $compras = Db::todas('SELECT * FROM compras WHERE jugador_id = ? ORDER BY id DESC LIMIT 50', [$id]);
@@ -163,6 +164,51 @@ function cc_ficha_jugador(int $id): string
     return $h;
 }
 
+/**
+ * Bloque "VIP (pruebas)" de la ficha: Pase VIP por días (1, 7, 30 u otro) y desactivarlo; nivel VIP forzado 1–10 y quitarlo.
+ * Nada de esto crea compras (los ingresos y las facturas del SRI quedan limpios). El juego lo ve en el siguiente /api/estado.
+ */
+function cc_vip_pruebas(int $id): string
+{
+    if (!class_exists(Vip::class) || !Control::tabla('vip_jugadores')) return '<section class="panel" id="vip-pruebas"><h2>VIP (pruebas)</h2>' . cc_no_disponible('VIP', 'Falta el módulo VIP (vip.sql).') . '</section>';
+    $real = Vip::nivelReal($id);
+    $forzado = Vip::nivelForzado($id);
+    $nivel = $forzado ?? $real;
+    $hasta = Db::valor('SELECT vip_hasta FROM jugadores WHERE id = ?', [$id]);
+    $activo = Monedero::vipActivo($id);
+    $pase = Vip::pase($nivel);
+    $b = $pase['bono'];
+    $bono = '$' . cc_num($b['dinero']) . ' del juego + ' . $b['creditos'] . ' créditos' . ($b['cable'] ? ' + ' . $b['cable'] . ' cable(s)' : '') . ($b['battery'] ? ' + ' . $b['battery'] . ' batería(s)' : '') . ($b['reparar'] ? ' + todo el equipo al 100 %' : '');
+    $ins = fn(int $n) => $n > 0 ? 'VIP ' . $n . ' · ' . Vip::NIVELES[$n]['insignia'] : 'Sin nivel (0)';
+    $intentos = count(array_filter(Vip::NIVELES_INTENTO, fn($x) => $nivel >= $x));
+    $h = '<section class="panel" id="vip-pruebas"><h2>VIP (pruebas)</h2>'
+       . '<p class="tenue">Para probar el Pase VIP y los niveles sin inventar compras: no crea ventas ni facturas. El juego lo ve en la próxima carga de /api/estado (al abrir o recargar). Todo queda en la auditoría.</p>'
+       . '<dl class="datos" id="vip-estado">'
+       . '<dt>Nivel real (compras)</dt><dd id="vip-real">' . e($ins($real)) . ' <span class="tenue">· ' . cc_dinero(Vip::gastado($id)) . ' que cuentan</span></dd>'
+       . '<dt>Nivel forzado</dt><dd id="vip-forzado">' . ($forzado !== null ? cc_chip('VIP ' . $forzado . ' (pruebas)', 'aviso') : '—') . '</dd>'
+       . '<dt>Nivel que usa el juego</dt><dd id="vip-efectivo"><b>' . e($ins($nivel)) . '</b>' . ($nivel > 0 ? ' · ' . e(Vip::NIVELES[$nivel]['titulo']) : '') . '</dd>'
+       . '<dt>Pase VIP</dt><dd id="vip-pase">' . ($activo ? cc_chip('Activo', 'vip') . ' hasta ' . e(cc_fecha($hasta)) : 'Inactivo' . ($hasta !== null ? ' <span class="tenue">(venció ' . e(cc_fecha($hasta)) . ')</span>' : '')) . '</dd>'
+       . '<dt>Ventajas del Pase con VIP ' . max(1, $nivel) . '</dt><dd id="vip-ventajas">' . $pase['turnos'] . ' eventos por día · reparaciones −' . $pase['descuento'] . ' % · obras −' . $pase['obra'] . ' % · bono diario: ' . e($bono)
+       . ($activo ? '' : ' <span class="tenue">(solo con el Pase activo)</span>') . '</dd>'
+       . '<dt>Ventajas del nivel</dt><dd>' . ($nivel > 0 ? '+' . $intentos . ' intento(s) de preparación por día · ' . ($nivel >= Vip::NIVEL_SLOT_OBRA ? 2 : 1) . ' espacio(s) de obra · regalo mensual · insignia en el chat' : 'Ninguna (sin nivel)') . '</dd>'
+       . '</dl><div class="acciones-grid">';
+    // Pase VIP
+    $h .= '<div class="form" id="vip-pase-form"><h3>Pase VIP</h3><p class="tenue">Suma días desde ahora o desde su vencimiento si ya está activo.</p><div class="botones">';
+    foreach ([1, 7, 30] as $d) $h .= cc_boton('jugador_vip_pase', ['jugador_id' => $id, 'dias' => $d], '+' . $d . ($d === 1 ? ' día' : ' días'), 'btn btn-sec', '¿Dar ' . $d . ($d === 1 ? ' día' : ' días') . ' de Pase VIP (sin compra)?');
+    $h .= '</div>' . cc_form('jugador_vip_pase', ['jugador_id' => $id], 'form', '¿Dar estos días de Pase VIP (sin compra)?')
+        . '<label>Otro número de días (1 a 365)<input type="number" name="dias" required min="1" max="365" step="1" inputmode="numeric" placeholder="Ej. 3"></label><button class="btn" type="submit">Activar / alargar</button></form>';
+    if ($activo) $h .= cc_boton('jugador_vip_pase', ['jugador_id' => $id, 'dias' => 0], 'Desactivar el Pase VIP', 'btn btn-peligro', '¿Desactivar el Pase VIP de este jugador ahora? (si lo había comprado, también se le quita)');
+    $h .= '</div>';
+    // Nivel
+    $ops = [];
+    for ($n = 1; $n <= Vip::MAX; $n++) $ops[$n] = 'VIP ' . $n . ' · ' . Vip::NIVELES[$n]['insignia'];
+    $h .= cc_form('jugador_vip_nivel', ['jugador_id' => $id], 'form', '¿Forzar este nivel VIP? (solo pruebas, no crea compras)')
+        . '<h3>Nivel VIP (pruebas)</h3><label>Nivel forzado<select name="nivel">' . cc_opciones($ops, (string) ($forzado ?? max(1, $real))) . '</select></label>'
+        . '<p class="tenue">Reemplaza al nivel real mientras esté puesto. No crea compras ni ofertas de nivel; el nivel real sigue contando aparte.</p><button class="btn" type="submit">Forzar nivel</button></form>';
+    if ($forzado !== null) $h .= '<div class="form"><h3>Volver al nivel real</h3>' . cc_boton('jugador_vip_nivel', ['jugador_id' => $id, 'nivel' => 'real'], 'Quitar nivel forzado (volver al real: VIP ' . $real . ')', 'btn btn-sec', '¿Quitar el nivel forzado y volver al nivel real?') . '</div>';
+    return $h . '</div></section>';
+}
+
 function cc_a_jugadores(string $accion, string $q): string
 {
     if ($accion === 'transferencia_cancelar') {
@@ -190,6 +236,16 @@ function cc_a_jugadores(string $accion, string $q): string
             $estado = cc_post('estado');
             Control::cambiarEstado($id, $estado, cc_post('motivo'), $q);
             return 'La cuenta ahora está: ' . $estado . '.';
+        case 'jugador_vip_pase':
+            $dias = filter_var(cc_post('dias'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 365]]);
+            Fallo::si($dias === false, 'Escribe un número de días entre 1 y 365.', 400);
+            $hasta = Vip::pasePanel($id, (int) $dias, $q);
+            return $dias === 0 ? 'Pase VIP desactivado.' : 'Pase VIP: +' . $dias . ($dias === 1 ? ' día' : ' días') . ', activo hasta ' . cc_fecha($hasta) . '. El juego lo ve al abrir o recargar.';
+        case 'jugador_vip_nivel':
+            if (cc_post('nivel') === 'real') return 'Nivel forzado quitado: vuelve al nivel real (VIP ' . Vip::forzarNivel($id, null, $q) . ').';
+            $n = filter_var(cc_post('nivel'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => Vip::MAX]]);
+            Fallo::si($n === false, 'Elige un nivel VIP del 1 al ' . Vip::MAX . '.', 400);
+            return 'Nivel VIP forzado: VIP ' . Vip::forzarNivel($id, (int) $n, $q) . ' (solo pruebas). El juego lo ve al abrir o recargar.';
         case 'jugador_sesiones':
             return 'Se cerraron ' . Control::revocarSesiones($id, $q) . ' sesiones.';
     }

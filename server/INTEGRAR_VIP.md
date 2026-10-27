@@ -203,3 +203,11 @@ y en "campos nuevos de /api/estado": `vip_nivel` (0..10, nivel VIP para siempre;
 | GET `/api/mecenas` | — | `{servidor, oculto, semana:{inicio, fin}, lista_semana[], lista_siempre[], yo:{semana, siempre}}` (top 20) |
 | POST `/api/vip/ajustes` | `{anonimo?: bool, ocultar_mecenas?: bool}` | `{ajustes}`; 400 `datos_invalidos` |
 Todas con sesión (401 `sesion_requerida`), POST con `X-Envivo: 1` (403), 60 POST cada 10 min por jugador (429).
+
+## VIP (pruebas) en el Centro de Control
+
+Jugadores → ficha del jugador → bloque **VIP (pruebas)** (solo con sesión del panel, CSRF y confirmación en cada botón):
+- **Pase VIP**: +1, +7, +30 u otro número de días (1–365) con `Vip::pasePanel` (usa `Monedero::sumarVip`); "Desactivar el Pase VIP" lo vence ahora. Auditoría `vip_pase_admin`.
+- **Nivel VIP forzado** 1–10 (`vip_jugadores.nivel_forzado`, migración `vip_admin.sql`) con `Vip::forzarNivel`; "Quitar nivel forzado" vuelve al real. Auditoría `vip_nivel_admin`.
+- `Vip::nivel` devuelve el nivel efectivo (forzado o real): lo usan el Pase (`Vip::PASE`), intentos, espacios de obra, regalo mensual, Diario, chat/Mecenas y `GET /api/estado` (`vip_nivel`) y `/api/vip` (`nivel`, `forzado`). `Vip::nivelReal` / `sincronizar` siguen con el nivel de las compras.
+- No crea compras, facturas del SRI ni ofertas de nivel.

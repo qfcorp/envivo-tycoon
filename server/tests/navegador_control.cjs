@@ -58,12 +58,25 @@ const { chromium } = require('playwright');
     r.pasos.accion_ok = (await p.locator('#aviso.aviso-ok').count()) === 1;
     r.paginas.tras_accion = { http: 200, desborde: await desborde() };
 
+    // VIP (pruebas): +7 días de Pase VIP y forzar VIP 5 (ambos piden confirmación), luego quitar el nivel forzado
+    await p.goto(base + '/control/?t=jugadores&id=' + jugador);
+    await Promise.all([p.waitForNavigation(), p.click('#vip-pase-form .botones form:has(input[name="dias"][value="7"]) button')]);
+    const paseOk = (await p.locator('#aviso.aviso-ok').count()) === 1 && /Activo/.test(await p.textContent('#vip-pase'));
+    await p.selectOption('form:has(input[name="accion"][value="jugador_vip_nivel"]) select[name="nivel"]', '5');
+    await Promise.all([p.waitForNavigation(), p.click('form:has(select[name="nivel"]) button[type="submit"]')]);
+    const nivelOk = (await p.locator('#aviso.aviso-ok').count()) === 1 && /VIP 5/.test(await p.textContent('#vip-efectivo')) && /VIP 5/.test(await p.textContent('#vip-forzado'));
+    r.paginas.ficha_vip = { http: 200, desborde: await desborde() };
+    await p.locator('#vip-pruebas').screenshot({ path: carpeta + '/control_vip_pruebas.png' });
+    await Promise.all([p.waitForNavigation(), p.click('form:has(input[name="nivel"][value="real"]) button')]);
+    const quitado = (await p.locator('#aviso.aviso-ok').count()) === 1 && (await p.textContent('#vip-forzado')).trim() === '—';
+    r.pasos.vip = paseOk && nivelOk && quitado;
+
     // Salir
     await Promise.all([p.waitForNavigation(), p.click('.barra-der button')]);
     r.pasos.salio = (await p.locator('#form-entrar').count()) === 1;
     await ctx.close();
     const todas = Object.values(r.paginas);
-    r.ok = r.pasos.entro && r.pasos.tip && r.pasos.accion_ok && r.pasos.salio && todas.every((x) => x.http === 200 && x.desborde === 0) && r.errores.length === 0;
+    r.ok = r.pasos.entro && r.pasos.tip && r.pasos.accion_ok && r.pasos.vip && r.pasos.salio && todas.every((x) => x.http === 200 && x.desborde === 0) && r.errores.length === 0;
   } catch (e) {
     r.errores.push(String(e));
   }

@@ -184,10 +184,94 @@ final class Vip
         });
     }
 
-    public static function nivel(int $jugador): int { return self::sincronizar($jugador); }
+    /**
+     * Nivel EFECTIVO: el forzado desde el Centro de Control (solo pruebas, vip_jugadores.nivel_forzado) o, si no hay, el real.
+     * Es el que usan las ventajas (Pase VIP, intentos, slots, regalo mensual, Diario) y GET /api/estado y /api/vip.
+     */
+    public static function nivel(int $jugador): int
+    {
+        $real = self::sincronizar($jugador);
+        return self::nivelForzado($jugador) ?? $real;
+    }
 
-    /** Nivel guardado sin recalcular (para listas: chat, Mecenas). */
-    public static function nivelGuardado(int $jugador): int { return (int) (Db::valor('SELECT nivel FROM vip_jugadores WHERE jugador_id = ?', [$jugador]) ?? 0); }
+    /** Nivel real (el de las compras pagadas), sin el forzado del panel. */
+    public static function nivelReal(int $jugador): int { return self::sincronizar($jugador); }
+
+    /** ¿La base tiene la columna nivel_forzado (migración vip_admin.sql)? */
+    public static function hayForzado(): bool
+    {
+        static $hay = null;
+        if ($hay !== true) $hay = isset(Migraciones::columnas('vip_jugadores')['nivel_forzado']);
+        return $hay;
+    }
+
+    /** Nivel forzado desde el Centro de Control (1..10) o null si usa el real. */
+    public static function nivelForzado(int $jugador): ?int
+    {
+        if ($jugador <= 0 || !self::hayForzado()) return null;
+        $v = Db::valor('SELECT nivel_forzado FROM vip_jugadores WHERE jugador_id = ?', [$jugador]);
+        return $v === null ? null : max(1, min(self::MAX, (int) $v));
+    }
+
+    /** Expresión SQL del nivel efectivo para una tabla vip_jugadores con alias $a (listas: chat, Mecenas). */
+    public static function sqlNivel(string $a): string
+    {
+        return self::hayForzado() ? "COALESCE($a.nivel_forzado, $a.nivel, 0)" : "COALESCE($a.nivel, 0)";
+    }
+
+    /** Nivel guardado sin recalcular (para listas: chat, Mecenas), con el forzado si lo hay. */
+    public static function nivelGuardado(int $jugador): int
+    {
+        return (int) (Db::valor('SELECT ' . self::sqlNivel('v') . ' FROM vip_jugadores v WHERE v.jugador_id = ?', [$jugador]) ?? 0);
+    }
+
+    // ------------------------------------------------------------------ Centro de Control: VIP (pruebas)
+    /**
+     * Fuerza el nivel VIP (1..10) o lo quita (null: vuelve al real). NO crea compras ni ofertas de nivel: solo cambia lo que
+     * ve y aprovecha el jugador. Auditoría vip_nivel_admin. Devuelve el nivel efectivo.
+     */
+    public static function forzarNivel(int $jugador, ?int $nivel, string $quien): int
+    {
+        Fallo::si(!self::hayForzado(), 'Falta la migración vip_admin.sql (nivel_forzado).', 409);
+        Fallo::si($jugador <= 0 || !Db::valor('SELECT 1 FROM jugadores WHERE id = ?', [$jugador]), 'Ese jugador no existe.', 404);
+        Fallo::si($nivel !== null && ($nivel < 1 || $nivel > self::MAX), 'El nivel VIP va de 1 a ' . self::MAX . '.', 400);
+        return (int) Db::tx(function () use ($jugador, $nivel, $quien): int {
+            $real = self::sincronizar($jugador);
+            $antes = self::nivelForzado($jugador);
+            Fallo::si($nivel === null && $antes === null, 'Este jugador no tiene un nivel forzado.', 409);
+            Db::q('INSERT OR IGNORE INTO vip_jugadores (jugador_id, nivel, revisado, actualizado) VALUES (?, 0, 0, ?)', [$jugador, self::ahora()]);
+            Db::q('UPDATE vip_jugadores SET nivel_forzado = ?, actualizado = ? WHERE jugador_id = ?', [$nivel, self::ahora(), $jugador]);
+            Auditoria::anotar($quien, 'vip_nivel_admin', $nivel === null
+                ? 'Quitó el nivel VIP forzado (era VIP ' . $antes . '); vuelve al real: VIP ' . $real
+                : 'Nivel VIP forzado: ' . ($antes === null ? 'real VIP ' . $real : 'VIP ' . $antes) . ' -> VIP ' . $nivel . ' (solo pruebas; real VIP ' . $real . ')', $jugador);
+            return $nivel ?? $real;
+        });
+    }
+
+    /**
+     * Pase VIP desde el Centro de Control: $dias > 0 lo activa o alarga (Monedero::sumarVip, desde ahora o desde su vencimiento);
+     * $dias = 0 lo desactiva (vence ahora). Sin compras: no toca ingresos ni facturas. Auditoría vip_pase_admin.
+     * Devuelve el nuevo vencimiento (segundos Unix).
+     */
+    public static function pasePanel(int $jugador, int $dias, string $quien): int
+    {
+        Fallo::si($jugador <= 0 || !Db::valor('SELECT 1 FROM jugadores WHERE id = ?', [$jugador]), 'Ese jugador no existe.', 404);
+        Fallo::si($dias < 0 || $dias > 365, 'Los días del Pase VIP van de 1 a 365.', 400);
+        return (int) Db::tx(function () use ($jugador, $dias, $quien): int {
+            $antes = Db::valor('SELECT vip_hasta FROM jugadores WHERE id = ?', [$jugador]);
+            $txt = fn($v) => $v !== null && (int) $v > time() ? 'activo hasta ' . date('d/m/Y H:i', (int) $v) : 'inactivo';
+            if ($dias === 0) {
+                Fallo::si(!Monedero::vipActivo($jugador), 'El Pase VIP ya está inactivo.', 409);
+                $nuevo = time() - 1;
+                Db::q('UPDATE jugadores SET vip_hasta = ? WHERE id = ?', [$nuevo, $jugador]);
+                Auditoria::anotar($quien, 'vip_pase_admin', 'Desactivó el Pase VIP (antes ' . $txt($antes) . ')', $jugador);
+                return $nuevo;
+            }
+            $nuevo = Monedero::sumarVip($jugador, $dias);
+            Auditoria::anotar($quien, 'vip_pase_admin', '+' . $dias . ' día(s) de Pase VIP (antes ' . $txt($antes) . ', ahora ' . $txt($nuevo) . ')', $jugador);
+            return $nuevo;
+        });
+    }
 
     private static function subio(int $jugador, int $antes, int $nuevo): void
     {
@@ -452,7 +536,7 @@ final class Vip
     private static function ranking(int $servidor, ?int $desde): array
     {
         [$in, $p] = self::sqlExcluir();
-        $filas = Db::todas("SELECT j.id, j.alias, j.nombre, SUM(c.total) AS s, MIN(c.pagado_en) AS primero, COALESCE(v.nivel, 0) AS nivel
+        $filas = Db::todas("SELECT j.id, j.alias, j.nombre, SUM(c.total) AS s, MIN(c.pagado_en) AS primero, " . self::sqlNivel('v') . " AS nivel
             FROM compras c JOIN jugadores j ON j.id = c.jugador_id LEFT JOIN vip_jugadores v ON v.jugador_id = j.id
             WHERE c.estado = 'pagado' AND c.producto NOT IN ($in) AND j.servidor_id = ? AND j.estado = 'activo' AND COALESCE(v.ocultar_mecenas, 0) = 0"
             . ($desde !== null ? ' AND c.pagado_en >= ?' : '') . ' GROUP BY j.id ORDER BY s DESC, primero ASC, j.id ASC',
@@ -486,9 +570,11 @@ final class Vip
     // ------------------------------------------------------------------ GET /api/vip y /api/estado
     public static function estado(int $jugador): array
     {
-        $nivel = self::sincronizar($jugador);
+        $real = self::sincronizar($jugador);
+        $forzado = self::nivelForzado($jugador);
+        $nivel = $forzado ?? $real;
         self::revisarHitos($jugador);
-        return ['ok' => true, 'nivel' => $nivel, 'insignia' => self::insignia($nivel), 'progreso' => self::progreso($jugador, $nivel),
+        return ['ok' => true, 'nivel' => $nivel, 'forzado' => $forzado !== null, 'insignia' => self::insignia($nivel), 'progreso' => self::progreso($jugador, $nivel),
                 'intentos_extra' => count(array_filter(self::NIVELES_INTENTO, fn($x) => $nivel >= $x)), 'slots_obra' => $nivel >= self::NIVEL_SLOT_OBRA ? 2 : 1,
                 'niveles' => self::tabla(), 'mensual' => self::mensual($jugador, $nivel), 'regalos' => Regalos::pendientes($jugador),
                 'regalos_tope_dia' => Regalos::topeDia(), 'ofertas' => self::ofertas($jugador), 'ajustes' => self::preferencias($jugador),

@@ -72,7 +72,7 @@ final class Chat
     {
         static $hay = null;
         $hay ??= Migraciones::columnas('vip_jugadores') !== null;
-        return $hay ? [', COALESCE(vj.nivel, 0) AS vip_nivel', ' LEFT JOIN vip_jugadores vj ON vj.jugador_id = m.jugador_id'] : ['', ''];
+        return $hay ? [', ' . (class_exists(Vip::class) ? Vip::sqlNivel('vj') : 'COALESCE(vj.nivel, 0)') . ' AS vip_nivel', ' LEFT JOIN vip_jugadores vj ON vj.jugador_id = m.jugador_id'] : ['', ''];
     }
 
     private static function mensajeJson(array $m, int $yo): array

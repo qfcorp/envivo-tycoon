@@ -528,6 +528,40 @@ check('Sin créditos -> 402 y no se crea la entrega', [402, 0], [$gasta($PI, 'pe
 check('No da permiso de nivel en Duelos (no es entrega "personal")', 0, (int) Db::valor("SELECT COUNT(*) FROM entregas WHERE jugador_id = ? AND tipo = 'personal'", [$PI]));
 check('Libro de créditos = saldo (personal internacional)', Monedero::saldo($PI), (int) Db::valor('SELECT COALESCE(SUM(cambio), 0) FROM movimientos_creditos WHERE jugador_id = ?', [$PI]));
 
+// =====================================================================
+titulo('Centro de Control: nivel VIP forzado (solo pruebas) y Pase VIP por días, sin compras');
+check('Migración vip_admin.sql: columna vip_jugadores.nivel_forzado', true, Vip::hayForzado());
+$FZ = $nuevoJugador('Forzado VIP');
+$activar($FZ);
+$comprasAntes = (int) Db::valor('SELECT COUNT(*) FROM compras');
+check('Sin compras: nivel 0, sin forzado, intentos 0, 1 espacio de obra', [0, null, 0, 1], [Vip::nivel($FZ), Vip::nivelForzado($FZ), Vip::intentosExtra($FZ), Vip::slotsObra($FZ)]);
+check('Forzar VIP 9 -> nivel efectivo 9, real 0', [9, 9, 0], [Vip::forzarNivel($FZ, 9, 'control:prueba'), Vip::nivel($FZ), Vip::nivelReal($FZ)]);
+check('Las ventajas usan el nivel efectivo: +3 intentos, 2 espacios de obra, regalo mensual VIP 9, insignia en chat/listas', [3, 2, true, 9, 9],
+    [Vip::intentosExtra($FZ), Vip::slotsObra($FZ), Vip::mensual($FZ)['disponible'], Vip::mensual($FZ)['nivel'], Vip::nivelGuardado($FZ)]);
+check('Sin el Pase activo: paseDe null (el nivel solo no da las ventajas del Pase)', null, Vip::paseDe($FZ));
+$hasta = Vip::pasePanel($FZ, 7, 'control:prueba');
+check('Pase VIP +7 días desde el panel: vipActivo y vence en ~7 días', [true, true], [Monedero::vipActivo($FZ), abs($hasta - (time() + 7 * 86400)) < 5]);
+check('Vip::PASE con el nivel forzado: paseDe = Vip::pase(9) (5 eventos, −50 %, obras −30 %, bono con reparar todo)', [Vip::pase(9), 5, 50, 30, true],
+    [Vip::paseDe($FZ), Vip::paseDe($FZ)['turnos'], Vip::paseDe($FZ)['descuento'], Vip::paseDe($FZ)['obra'], Vip::paseDe($FZ)['bono']['reparar']]);
+[, , $todasFZ] = Monedero::bonoVip($FZ);
+check('Bono diario del Pase con el nivel forzado (VIP 9): $800 + 4 cables + 4 baterías + reparar todo', [['dinero', 800], ['consumible', 4], ['consumible', 4], ['reparar_todo', 1]],
+    array_map(fn($e) => [$e['tipo'], $e['cantidad']], $todasFZ));
+$est = Vip::estado($FZ);
+$api = VipApi::estado($FZ);
+check('GET /api/vip (Vip::estado) y /api/estado (VipApi::estado): nivel 9, forzado, Pase VIP 9', [9, true, 'Diamante', 9, 9], [$est['nivel'], $est['forzado'], $est['insignia']['nombre'], $est['pase_vip']['nivel'], $api['vip_nivel']]);
+check('Forzar nivel NO crea compras ni ofertas de nivel (ingresos y SRI limpios)', [$comprasAntes, 0], [(int) Db::valor('SELECT COUNT(*) FROM compras'), (int) Db::valor('SELECT COUNT(*) FROM vip_ofertas WHERE jugador_id = ?', [$FZ])]);
+check('Nivel fuera de 1..10 -> 400 · jugador que no existe -> 404', [[400, null], [400, null], [404, null]],
+    [falla(fn() => Vip::forzarNivel($FZ, 0, 'x')), falla(fn() => Vip::forzarNivel($FZ, 11, 'x')), falla(fn() => Vip::forzarNivel(999999, 3, 'x'))]);
+check('Auditoría vip_nivel_admin y vip_pase_admin', [1, 1], [(int) Db::valor("SELECT COUNT(*) FROM auditoria WHERE accion = 'vip_nivel_admin' AND jugador_id = ?", [$FZ]), (int) Db::valor("SELECT COUNT(*) FROM auditoria WHERE accion = 'vip_pase_admin' AND jugador_id = ?", [$FZ])]);
+$comprar($FZ, 'creditos_250');
+check('Con forzado puesto, una compra real sube el nivel real (VIP 1) pero el efectivo sigue siendo el forzado', [1, 9], [Vip::nivelReal($FZ), Vip::nivel($FZ)]);
+check('Quitar el forzado -> vuelve al real (VIP 1) en nivel, estado, /api/estado y listas', [1, 1, 1, false, 1, 1],
+    [Vip::forzarNivel($FZ, null, 'control:prueba'), Vip::nivel($FZ), Vip::estado($FZ)['nivel'], Vip::estado($FZ)['forzado'], VipApi::estado($FZ)['vip_nivel'], Vip::nivelGuardado($FZ)]);
+check('…con el Pase: paseDe = Vip::pase(1); quitarlo otra vez -> 409', [Vip::pase(1), [409, null]], [Vip::paseDe($FZ), falla(fn() => Vip::forzarNivel($FZ, null, 'x'))]);
+Vip::pasePanel($FZ, 0, 'control:prueba');
+check('Desactivar el Pase desde el panel: sin Pase; otra vez -> 409; días fuera de rango -> 400', [false, null, [409, null], [400, null]],
+    [Monedero::vipActivo($FZ), Vip::paseDe($FZ), falla(fn() => Vip::pasePanel($FZ, 0, 'x')), falla(fn() => Vip::pasePanel($FZ, 366, 'x'))]);
+
 echo "\n----------------------------------------\nVIP: $OK correctas · $FALLAS fallas\n";
 if (getenv('GUARDAR_TMP') === '1') echo "Base de la prueba en $TMP\n"; else exec('rm -rf ' . escapeshellarg($TMP));
 exit($FALLAS === 0 ? 0 : 1);
