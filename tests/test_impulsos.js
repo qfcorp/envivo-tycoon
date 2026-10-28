@@ -199,8 +199,9 @@ async function cerrar(o, nombre) {
       const r = await revisar(o, 'Web', '#tab-tienda');
       const cards = await o.page.$$eval('#tv-crecer [data-prod]', (l) => l.map((x) => x.dataset.prod)).catch(() => []);
       bien(JSON.stringify(cards) === JSON.stringify(['equipo_obra_2', 'fondo_crecimiento', 'tarjeta_semanal']), 'Web: sección Crecer con las 3 tarjetas [' + cards.join(', ') + ']');
-      const atajo = await o.page.$('#tab-tienda .tv-nav [data-k="tv-crecer"]');
-      bien(!!atajo, 'Web: atajo a la sección en la fila de secciones');
+      // Navegación v2: la sección vive en la sub-pestaña "Ofertas" (fija arriba)
+      const atajo = await o.page.$('#tab-tienda .subpanel[data-sub="ofertas"] #tv-crecer');
+      bien(!!atajo && !!(await o.page.$('#tab-tienda .subnav [data-k="ofertas"].on')), 'Web: la sección está en la sub-pestaña "Ofertas"');
       const precios = await o.page.$$eval('#tv-crecer .price', (l) => l.map((x) => x.textContent.trim()));
       bien(precios.length === 3 && precios.every((p) => /\d/.test(p)), 'Web: precios reales (' + precios.join(' / ') + ')');
       const hitos = await o.page.$$eval('#tv-crecer .imp-hito', (l) => l.map((x) => x.dataset.hito));
@@ -327,7 +328,9 @@ async function cerrar(o, nombre) {
     {
       const o = await abrir(browser, { sinModulos: ['js/impulsos.js'] });
       await irTienda(o.page);
-      bien(!(await o.page.$('#tv-crecer')) && !!(await o.page.$('#tv-creditos')), 'Sin js/impulsos.js: la tienda funciona igual, sin la sección');
+      const sinCrecer = !(await o.page.$('#tv-crecer'));
+      await o.page.click('#tab-tienda .subnav [data-k="creditos"]');
+      bien(sinCrecer && !!(await o.page.$('#tv-creditos')), 'Sin js/impulsos.js: la tienda funciona igual, sin la sección');
       await cerrar(o, 'Sin módulo');
       const o2 = await abrir(browser, { sinServidor: true });
       await irTienda(o2.page);

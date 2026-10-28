@@ -798,6 +798,52 @@
     return '';
   }
 
+  /* ---------- Navegación v2: sub-pestañas fijas arriba de cada pestaña (reporte del dueño, oct. 2026:
+     "estar para abajo en lista en todos los menús no sirve"). Cada pestaña muestra UNA sección a la vez; la última
+     elegida se recuerda (localStorage). Los enlaces de otros módulos (Ver en la Bodega, ir-danos, hub...) eligen la
+     sección correcta con irA(tab, sub). ---------- */
+  const SUB_KEY = 'envivo_subtab';
+  const SUBS = { personal: ['equipo', 'contratar', 'capacitar'], bodega: ['equipos', 'tienda', 'repuestos'], tienda: ['ofertas', 'creditos', 'vip', 'pase', 'mercado'] };
+  const sub = Object.assign({ personal: 'equipo', bodega: 'equipos', tienda: 'ofertas', clientesOrden: 'llegada', shopOrden: 'rec', eqFiltro: 'todo', stFiltro: 'todo' }, (() => { const v = lsGet(SUB_KEY); return v && typeof v === 'object' ? v : {}; })());
+  Object.keys(SUBS).forEach((t) => { if (!SUBS[t].includes(sub[t])) sub[t] = SUBS[t][0]; });
+  const setSub = (k, v) => { sub[k] = v; lsSet(SUB_KEY, sub); };
+  let shopBusca = '';       // búsqueda en la tienda de equipos (no se guarda)
+  const ICO_BUSCA = svgIco('<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>', 'sm');
+  // Botonera de sub-pestañas (como los botones de un switcher: la elegida queda "al aire", con su luz roja)
+  // items: [{ k, t (texto), ic (html del ícono), n (contador), tono ('amb' | ''), extra (atributos) }]
+  function subnav(tabK, items, actual, opts) {
+    const o = opts || {};
+    return `<div class="subnav-w"><div class="subnav sn-col ${o.cls || ''}" role="tablist" aria-label="${esc(o.aria || T('nav2.secciones'))}" style="--sn:${items.length}">${items.map((x) => {
+      const on = x.k === actual;
+      return `<button type="button" class="sn-k ${on ? 'on' : ''}" role="tab" aria-selected="${on}" data-act="${x.act || o.act || 'sub'}" data-t="${esc(tabK)}" data-k="${esc(x.k)}" ${x.extra || ''}>
+        <span class="sn-ic">${x.ic || ''}</span><span class="sn-t">${esc(x.t)}</span>${x.n ? `<b class="sn-n ${x.tono || ''}">${typeof x.n === 'number' ? N(x.n) : esc(x.n)}</b>` : ''}</button>`;
+    }).join('')}</div></div>`;
+  }
+  // Fila de filtros (chips): data-act="filtro" data-f="<estado>" data-k="<valor>"
+  function chipsFiltro(f, items, actual, aria) {
+    return `<div class="catrow fchips" role="group" aria-label="${esc(aria || T('nav2.filtros'))}">${items.map((x) =>
+      `<button type="button" class="catchip ${x.k === actual ? 'on' : ''}" aria-pressed="${x.k === actual}" data-act="filtro" data-f="${esc(f)}" data-k="${esc(x.k)}">${x.ic || ''}<span>${esc(x.t)}</span>${x.n != null ? `<b>${N(x.n)}</b>` : ''}</button>`).join('')}</div>`;
+  }
+  // Ir a una pestaña y a una de sus secciones (deep link): tab, sección, y después de pintar, fn()
+  function irA(t, s, fn) {
+    if (VI) return;
+    if (s && SUBS[t] && SUBS[t].includes(s)) setSub(t, s);
+    if (t === 'tienda') vistaTienda = sub.tienda === 'mercado' ? 'mercado' : 'tienda';
+    tab = t; mus.go('menu'); render(); window.scrollTo(0, 0);
+    if (fn) { try { fn(); } catch (e) { /* nada */ } }
+  }
+  window.EnVivoIr = (t, s, extra) => {
+    const x = extra || {};
+    if (t === 'bodega' && x.cat) { catSel = x.cat; lsSet('envivo_cat', catSel); shopBusca = ''; }
+    irA(t, s);
+  };
+  // Resalta y centra una tarjeta después de un deep link
+  function resaltar(card) {
+    if (!card) return;
+    card.classList.add('combo-ir');
+    try { card.scrollIntoView({ block: 'center' }); } catch (err) { /* nada */ }
+  }
+
   // Contrato internacional en la tarjeta: requisitos armados de nuevo (en el idioma actual) con todo tu personal y equipo
   function intlVista(c) {
     if (!c || !c.internacional || !G.requisitosInternacional) return c;
@@ -805,32 +851,40 @@
   }
   function renderClientes() {
     const tHoy = turnoHoy();
-    const cards = S.contracts.map((c) => {
+    // Orden de las ofertas (chips): mejor pago, la que vence antes o la más fácil
+    const ord = sub.clientesOrden;
+    const lista = S.contracts.slice().sort(ord === 'vence' ? (a, b) => a.daysLeft - b.daysLeft || b.pay - a.pay
+      : ord === 'facil' ? (a, b) => a.diff - b.diff || b.pay - a.pay : ord === 'pago' ? (a, b) => b.pay - a.pay : () => 0);
+    const cards = lista.map((c) => {
       const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
       const todoDia = tHoy && esJornada(c) ? `<span class="tag amber todo-dia">${I('calendar', 'sm')}${T('clientes.todo_dia')}</span>` : '';
-      return `<div class="card ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
+      return `<div class="card ofc ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
         ${PE ? PE.internacional(intlVista(c)) : ''}${c.internacional ? ayudaIntlHtml(c) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
-        <div class="row between small" style="margin-top:8px">
-          <span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
-          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${tHoy && c.daysLeft <= 1 ? T('clientes.vence_hoy') : T('clientes.vence', { n: c.daysLeft })}</span>
+        <div class="of-pie">
+          <span class="of-meta small"><span>${T('clientes.dificultad')} ${starsTxt(c.diff)}</span>
+          <span class="${c.daysLeft <= 1 ? 'neg' : 'muted'}">${I('clock', 'sm')} ${tHoy && c.daysLeft <= 1 ? T('clientes.vence_hoy') : T('clientes.vence', { n: c.daysLeft })}</span></span>
+          <button class="btn main of-btn" data-act="prep" data-id="${c.id}">${I('rec', 'sm')}${T('clientes.preparar')}</button>
         </div>
-        <button class="btn main" data-act="prep" data-id="${c.id}">${T('clientes.preparar')}</button>
       </div>`;
     }).join('');
+    // Buscar clientes: tres botones grandes, siempre a la vista (fijos arriba)
+    const mkt = (k, ic, t, det, full, off) => `<button class="mk-t" data-act="mkt" data-k="${k}" ${off ? 'disabled' : ''} aria-label="${esc(full)}">
+      <span class="mk-ic">${I(ic)}</span><b>${esc(t)}</b><small>${off ? esc(T('nav2.hecho_hoy')) : det}</small></button>`;
+    const orden = S.contracts.length > 1 ? chipsFiltro('clientesOrden', [{ k: 'llegada', t: T('nav2.o_llegada') }, { k: 'pago', t: T('nav2.o_pago') }, { k: 'vence', t: T('nav2.o_vence') }, { k: 'facil', t: T('nav2.o_facil') }], ord, T('nav2.orden')) : '';
     $('tab-clientes').innerHTML = `
-      <div class="sectitle">${T('clientes.buscar')}</div>
-      <div class="card">
-        <button class="btn" data-act="mkt" data-k="redes" ${S.daily.redes ? 'disabled' : ''}>${I('social')}${T('clientes.redes')} <span class="muted small">(${T('clientes.redes_det', { m: M(40) })})</span></button>
-        <button class="btn" data-act="mkt" data-k="anuncio" ${S.daily.anuncio ? 'disabled' : ''}>${I('ad')}${T('clientes.anuncio')} <span class="muted small">(${T('clientes.anuncio_det', { m: M(200) })})</span></button>
-        <button class="btn" data-act="mkt" data-k="visitar">${I('walk')}${T('clientes.visitar')} <span class="muted small">(${T('clientes.visitar_det')})</span></button>
-      </div>
+      <div class="subbar" role="group" aria-label="${esc(T('clientes.buscar'))}"><div class="mk-row">
+        ${mkt('redes', 'social', T('nav2.redes'), esc(T('nav2.redes_det', { m: M(40) })), T('clientes.redes'), S.daily.redes)}
+        ${mkt('anuncio', 'ad', T('nav2.anuncio'), esc(T('nav2.anuncio_det', { m: M(200) })), T('clientes.anuncio'), S.daily.anuncio)}
+        ${mkt('visitar', 'walk', T('nav2.visitar'), esc(T('nav2.visitar_det')), T('clientes.visitar'), false)}
+      </div></div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
-      ${tHoy ? `<div class="card small turnos-hoy"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}<div class="muted" style="margin-top:4px">${T('clientes.turnos_det')} ${T('dia.jornada_det')}${tHoy.max > 3 ? ` <b>${T('dia.vip_turnos', { n: tHoy.max })}</b>` : ''}</div></div>` : ''}
+      ${tHoy ? `<div class="turnos-hoy tn-strip small"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}${tHoy.max > 3 ? ` <span class="muted">${T('dia.vip_turnos', { n: tHoy.max })}</span>` : ''}</div>` : ''}
+      ${orden}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
   }
 
@@ -927,6 +981,12 @@
     return `<div class="exp small">${tierBadge(p)}<span class="skill" title="${esc(T('personal.habilidad'))}" aria-label="${esc(T('personal.habilidad'))} ${p.skill}/5">${starsTxt(p.skill)}</span></div>
       ${conExp ? `<div class="exp small"><span>${I('flag', 'sm')}${T('personal.nacionales', { n: nac })}</span><span class="${intl ? 'intl' : ''}">${I('globe', 'sm')}${T('personal.internacionales', { n: intl })}</span></div>` : ''}`;
   }
+  // Experiencia en corto para las tarjetas de 2 columnas (el texto completo va en el título)
+  function expCorta(p) {
+    const nac = typeof p.eventos_nacionales === 'number' ? p.eventos_nacionales : (p.events || 0);
+    const intl = p.eventos_internacionales || 0;
+    return `<div class="exp small exp-c" title="${esc(T('personal.nacionales', { n: nac }) + ' · ' + T('personal.internacionales', { n: intl }))}"><span>${I('flag', 'sm')}<b class="num">${N(nac)}</b></span>${intl ? `<span class="intl">${I('globe', 'sm')}${T('personal.internacionales', { n: intl })}</span>` : `<span>${I('globe', 'sm')}<b class="num">0</b></span>`}</div>`;
+  }
   function rolLine(p) {
     return `<div class="rolrow"><span class="roleic">${I(roleIcon(p.role), 'sm')}</span><span class="rn">${esc(roleName(normRole(p.role)))}</span></div>`;
   }
@@ -940,48 +1000,73 @@
   }
   function renderPersonal() {
     const ord = (p) => (p.owner ? -1 : ((G.ROLES[normRole(p.role)] || {}).orden || 0));
-    const lista = S.staff.slice().sort((a, b) => ord(a) - ord(b) || (b.skill - a.skill));
-    const staff = lista.map((p) => `<div class="card staffc">
-      <div class="person">${avatarOf(p, 56)}
-        <div class="grow who"><h3>${esc(nmP(p))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expLine(p, true)}</div></div>
-      ${cursoHtml(p)}
-      ${p.owner ? `<p class="small muted" style="margin:8px 0 0">${T('personal.eres_tu')}</p>` : `
-      <div class="small muted" style="margin-top:8px">${T('personal.moral', { n: p.morale })}</div>${condBar(p.morale)}
-      <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
-        <button class="btn sm" data-act="fire" data-id="${p.id}">${T('personal.despedir')}</button></div>`}
-    </div>`).join('');
     const max = maxStaff();
     const lleno = S.staff.length >= max;
     const fee = (c) => c.wage * ((BAL().wage && BAL().wage.hireFeeDays) || 2);
-    const cands = S.candidates.map((c) => `<div class="card staffc cand">
-      <div class="person">${avatarOf(c, 56)}
-        <div class="grow who"><h3>${esc(TL(c.name))}</h3>${rolLine(c)}${expLine(c, !!c.eventos_internacionales)}</div></div>
-      <div class="row between" style="margin-top:10px"><span class="small">${T('personal.cobra_evento', { m: `<b class="num">${M(c.wage)}</b>` })}</span>
+    // Quién puede hacer la capacitación internacional (sección Capacitar)
+    const puedeCap = (p) => { try { return !!(G.puedeCursoIntl && !p.cursoIntl && G.puedeCursoIntl(S, p).ok); } catch (e) { return false; } };
+    const nCap = S.staff.filter(puedeCap).length;
+    const items = [
+      { k: 'equipo', t: T('nav2.p_equipo'), ic: I('people', 'sm'), n: `${S.staff.length}/${max}` },
+      { k: 'contratar', t: T('nav2.p_contratar'), ic: I('user', 'sm'), n: S.candidates.length || 0 },
+    ];
+    if (G.puedeCursoIntl) items.push({ k: 'capacitar', t: T('nav2.p_capacitar'), ic: I('globe', 'sm'), n: nCap || 0, tono: 'amb' });
+    let s = sub.personal;
+    if (!items.some((x) => x.k === s)) s = 'equipo';
+    let cuerpo = '';
+    if (s === 'equipo') {
+      // Filtro por puesto (con cuántos tienes de cada uno)
+      const cuenta = {};
+      S.staff.forEach((p) => { const k = normRole(p.role); cuenta[k] = (cuenta[k] || 0) + 1; });
+      const keys = (G.ROLE_KEYS || Object.keys(G.ROLES)).filter((k) => cuenta[k]);
+      let f = sub.stFiltro;
+      if (f !== 'todo' && !cuenta[f]) f = 'todo';
+      const filtro = keys.length > 1 ? chipsFiltro('stFiltro', [{ k: 'todo', t: T('nav2.todos'), n: S.staff.length }]
+        .concat(keys.map((k) => ({ k, t: roleName(k), ic: I(roleIcon(k), 'sm'), n: cuenta[k] }))), f) : '';
+      const lista = S.staff.filter((p) => f === 'todo' || normRole(p.role) === f).sort((a, b) => ord(a) - ord(b) || (b.skill - a.skill));
+      const staff = lista.map((p) => `<div class="card staffc sc2 ${p.owner ? 'owner' : ''}">
+        <div class="sc-top">${avatarOf(p, 48)}<div class="sc-lv">${tierBadge(p)}<span class="skill" aria-label="${esc(T('personal.habilidad'))} ${p.skill}/5">${starsTxt(p.skill)}</span></div>${p.cursoIntl ? `<span class="sc-intl" title="${esc(T('intl.curso_hecho'))}">${I('globe', 'sm')}</span>` : ''}</div>
+        <h3>${esc(nmP(p))}${p.premium ? `<span class="badge-p">${T('personal.estrella')}</span>` : ''}</h3>${rolLine(p)}${expCorta(p)}
+        <div class="grow2"></div>
+        ${p.owner ? `<p class="small muted sc-yo">${T('personal.eres_tu')}</p>` : `
+        <div class="sc-mor small muted">${T('personal.moral', { n: p.morale })}</div>${condBar(p.morale)}
+        <div class="sc-pie"><span class="small">${T('personal.cobra_corto', { m: `<b class="num">${M(p.wage)}</b>` })}</span>
+          <button class="btn sm" data-act="fire" data-id="${p.id}">${T('personal.despedir')}</button></div>`}
+      </div>`).join('');
+      cuerpo = `<div class="sectitle">${T('personal.tu_equipo', { n: S.staff.length, max })}</div>${filtro}<div class="sgrid">${staff}</div>`;
+    } else if (s === 'contratar') {
+      const cands = S.candidates.map((c) => `<div class="card staffc sc2 cand">
+        <div class="sc-top">${avatarOf(c, 48)}<div class="sc-lv">${tierBadge(c)}<span class="skill" aria-label="${esc(T('personal.habilidad'))} ${c.skill}/5">${starsTxt(c.skill)}</span></div></div>
+        <h3>${esc(TL(c.name))}</h3>${rolLine(c)}${expCorta(c)}
+        <div class="grow2"></div>
+        <div class="small sc-sueldo">${T('personal.cobra_corto', { m: `<b class="num">${M(c.wage)}</b>` })}</div>
         ${lleno ? `<button class="btn sm" disabled>${T('personal.equipo_completo', { n: S.staff.length, max })}</button>`
-          : `<button class="btn sm main" data-act="hire" data-id="${c.id}" ${S.money < fee(c) ? 'disabled' : ''}>${T('personal.contratar', { m: M(fee(c)) })}</button>`}</div>
-    </div>`).join('');
-    // Resumen por puesto (íconos con cuántos tienes de cada uno)
-    const cuenta = {};
-    S.staff.forEach((p) => { const k = normRole(p.role); cuenta[k] = (cuenta[k] || 0) + 1; });
-    const keys = (G.ROLE_KEYS || Object.keys(G.ROLES)).filter((k) => cuenta[k]);
-    const resumenRoles = keys.length ? `<div class="rolesum">${keys.map((k) => `<span class="tag" title="${esc(roleName(k))}">${I(roleIcon(k))}${N(cuenta[k])}</span>`).join('')}</div>` : '';
-    const opciones = (G.ROLE_KEYS || Object.keys(G.ROLES)).map((k) => `<option value="${esc(k)}" ${rolBuscar === k ? 'selected' : ''}>${esc(roleName(k))}</option>`).join('');
-    $('tab-personal').innerHTML = `
-      <div class="sectitle">${T('personal.tu_equipo', { n: S.staff.length, max })}</div>
-      ${resumenRoles}${staff}
-      <div class="sectitle">${T('personal.candidatos')}</div>
-      <p class="small muted">${T('personal.pago_inicial')}</p>
-      ${lleno ? `<div class="redstrip amberstrip" role="status">${I('home', 'sm')}<span>${T('personal.lleno_local', { lugar: esc(venueName()), n: S.staff.length, max })}</span></div>` : ''}
-      ${cands || emptyState('people', T('personal.vacio_t'), T('personal.vacio'))}
-      <div class="card buscar">
-        <label class="field" for="rolBuscar">${T('personal.buscar_puesto')}
-          <select id="rolBuscar" data-act="rol-buscar"><option value="">${T('personal.cualquier_puesto')}</option>${opciones}</select></label>
-        <button class="btn" data-act="search-staff" ${S.money < 30 ? 'disabled' : ''}>${I('megaphone')}${T('personal.vacante', { m: M(30) })}</button>
-        ${G.intlPersonalDisponible && G.intlPersonalDisponible(S) ? (() => { const cb = BAL().intlPersonal ? BAL().intlPersonal.buscar : 400;
-          return `<button class="btn" data-act="intl-buscar" data-k="" ${S.money < cb ? 'disabled' : ''}>${I('globe')}${T('intl.buscar', { m: M(cb) })}</button>
-          <p class="small muted" style="margin:2px 0 6px">${T('intl.buscar_det')}</p>
-          ${credBtn('intl-personal-cred', IC().personal, T('intl.personal_cred_gen', { n: N(IC().personal) }), 'data-k="" data-sel="1"')}`; })() : ''}
-      </div><div style="height:12px"></div>`;
+          : `<button class="btn sm main" data-act="hire" data-id="${c.id}" ${S.money < fee(c) ? 'disabled' : ''}>${T('personal.contratar', { m: M(fee(c)) })}</button>`}
+      </div>`).join('');
+      const opciones = (G.ROLE_KEYS || Object.keys(G.ROLES)).map((k) => `<option value="${esc(k)}" ${rolBuscar === k ? 'selected' : ''}>${esc(roleName(k))}</option>`).join('');
+      cuerpo = `${lleno ? `<div class="redstrip amberstrip" role="status">${I('home', 'sm')}<span>${T('personal.lleno_local', { lugar: esc(venueName()), n: S.staff.length, max })}</span></div>` : ''}
+        <div class="card buscar">
+          <label class="field" for="rolBuscar">${T('personal.buscar_puesto')}
+            <select id="rolBuscar" data-act="rol-buscar"><option value="">${T('personal.cualquier_puesto')}</option>${opciones}</select></label>
+          <button class="btn" data-act="search-staff" ${S.money < 30 ? 'disabled' : ''}>${I('megaphone')}${T('personal.vacante', { m: M(30) })}</button>
+          ${G.intlPersonalDisponible && G.intlPersonalDisponible(S) ? (() => { const cb = BAL().intlPersonal ? BAL().intlPersonal.buscar : 400;
+            return `<button class="btn" data-act="intl-buscar" data-k="" ${S.money < cb ? 'disabled' : ''}>${I('globe')}${T('intl.buscar', { m: M(cb) })}</button>
+            <p class="small muted" style="margin:2px 0 6px">${T('intl.buscar_det')}</p>
+            ${credBtn('intl-personal-cred', IC().personal, T('intl.personal_cred_gen', { n: N(IC().personal) }), 'data-k="" data-sel="1"')}`; })() : ''}
+        </div>
+        <div class="sectitle">${T('personal.candidatos')}</div>
+        <p class="small muted" style="margin-top:-4px">${T('personal.pago_inicial')}</p>
+        ${cands ? `<div class="sgrid">${cands}</div>` : emptyState('people', T('personal.vacio_t'), T('personal.vacio'))}`;
+    } else {
+      const pueden = S.staff.filter(puedeCap);
+      const hechos = S.staff.filter((p) => p.cursoIntl);
+      const fila = (p) => `<div class="card staffc capc"><div class="person">${avatarOf(p, 44)}
+          <div class="grow who"><h3>${esc(nmP(p))}</h3>${rolLine(p)}${expLine(p, true)}</div></div>${cursoHtml(p)}</div>`;
+      cuerpo = `<p class="small muted cap-det">${I('globe', 'sm')} ${T('nav2.cap_det')}</p>
+        ${pueden.length ? pueden.map(fila).join('') : emptyState('globe', T('nav2.cap_vacio_t'), T('nav2.cap_vacio'))}
+        ${hechos.length ? `<div class="sectitle">${T('nav2.cap_hechos')}</div><div class="rolesum">${hechos.map((p) => `<span class="tag">${I('globe')}${esc(nmP(p))}</span>`).join('')}</div>` : ''}`;
+    }
+    $('tab-personal').innerHTML = `${subnav('personal', items, s)}<div class="subpanel" data-sub="${s}">${cuerpo}</div><div style="height:12px"></div>`;
   }
 
   /* ---------- Bodega y tienda de equipos ---------- */
@@ -1215,65 +1300,114 @@
       : `<span class="muted">· ${T('danos.reparar', { m: M(rc) })}</span>`}</div>`;
   }
 
+  // Tarjeta de un equipo tuyo (Bodega → Mis equipos)
+  function miEquipoCard(e) {
+    const it = G.CATALOG[e.type] || { name: e.type, desc: '' };
+    const r = rar(e.type);
+    let rc = 0;
+    try { rc = G.repairCost(e); } catch (err) { rc = 0; }
+    if (it.alquiler) {
+      return `<div class="card gear rf r-${r.key} rented" data-eq="${e.id}">
+      <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
+      <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
+      <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
+      <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
+      <div class="grow2"></div>
+      <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
+    }
+    const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
+    const rgo = enRiesgo(e);
+    return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}" data-eq="${e.id}">
+      <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
+      <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
+      <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
+      <div class="grow2"></div>
+      <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
+      <div class="row2">
+        <button class="btn sm ${rgo ? 'dn-rep' : ''}" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${rc > 0 ? M(rc) : T('bodega.nuevo')}</button>
+        ${it.premium || delSrv ? `<button class="btn sm" disabled>${delSrv ? T('bodega.ex_mercado') : T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
+  }
+  // Tienda de equipos: lo que se ve con la categoría, la búsqueda y el orden elegidos
+  function shopHtml(cats, llena, maxEq) {
+    const q = shopBusca.trim().toLowerCase();
+    const ordenar = (xs) => (sub.shopOrden === 'precio' ? xs.slice().sort((a, b) => (a.locked - b.locked) || a.price - b.price)
+      : sub.shopOrden === 'calidad' ? xs.slice().sort((a, b) => (a.locked - b.locked) || (b.q || 0) - (a.q || 0) || a.price - b.price) : xs);
+    if (q) {
+      const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const qq = norm(q);
+      const vistos = new Set();
+      const xs = [];
+      cats.forEach((c) => c.items.forEach((it) => { if (!vistos.has(it.key) && (norm(TL(it.name)).includes(qq) || norm(usoDe(it.key)).includes(qq))) { vistos.add(it.key); xs.push(it); } }));
+      const html = ordenar(xs).map((it) => shopCard(it, llena, maxEq)).join('');
+      return `<div class="cathead"><b>${esc(T('nav2.resultados', { n: xs.length }))}</b><button type="button" class="btn sm" data-act="shop-borrar">${I('close', 'sm')}${T('nav2.borrar')}</button></div>
+        ${html ? `<div class="ggrid">${html}</div>` : emptyState('box', T('nav2.sin_result_t'), T('nav2.sin_result'))}`;
+    }
+    let cur = cats.find((c) => c.key === catSel);
+    if (!cur) { cur = cats[0]; catSel = cur ? cur.key : ''; }
+    if (!cur) return '';
+    const nota = cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
+    return `<div class="cathead"><b>${esc(TL(cur.nombre || cur.name || ''))}</b><span class="small muted">${T('bodega.n_equipos', { n: cur.items.length })}</span></div>${nota}
+      <div class="ggrid">${exclusivosDe(cur.key, cur.items).map((x) => exCard(x, llena, maxEq)).join('')}${ordenar(cur.items.filter((it) => !it.exclusivo)).map((it) => shopCard(it, llena, maxEq)).join('')}</div>`;
+  }
   function renderBodega() {
-    const cons = Object.keys(G.CONSUMABLES).map((k) => {
-      const it = G.CONSUMABLES[k];
-      return `<div class="pick">${itemArt(k, 48, 'mini')}
-        <div class="grow"><b>${esc(TL(it.name))}</b> <span class="num">× ${S.stock[k] || 0}</span><div class="small muted">${esc(TL(it.desc))}</div></div>
-        <button class="btn sm" data-act="buy-cons" data-k="${k}">+1 ${M(it.price)}</button></div>`;
-    }).join('');
-    // Equipos ordenados por rareza (lo más valioso primero) y luego por estado
-    const RORD = { vip: 0, exclusivo: 1, elite: 2, pro: 3, comun: 4 };
-    // ...salvo lo que necesita reparación, que va primero (lo más gastado arriba)
-    const sorted = S.equip.slice().sort((a, b) => (enRiesgo(b) - enRiesgo(a)) || (enRiesgo(a) && enRiesgo(b) ? a.condition - b.condition : 0) || (RORD[rar(a.type).key] - RORD[rar(b.type).key]) || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0) || (a.id - b.id));
-    const mine = sorted.map((e) => {
-      const it = G.CATALOG[e.type] || { name: e.type, desc: '' };
-      const r = rar(e.type);
-      let rc = 0;
-      try { rc = G.repairCost(e); } catch (err) { rc = 0; }
-      if (it.alquiler) {
-        return `<div class="card gear rf r-${r.key} rented">
-        <div class="row between">${rtag(e.type)}${infoBtn(e.type)}</div>
-        <div class="art">${itemArt(e.type, 110)}<span class="rent rentov">${I('clock', 'sm')}${T('bodega.alquiler')}</span></div>
-        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
-        <div class="small" style="color:var(--amber);margin-top:4px">${T('bodega.reservado')}</div>
-        <div class="grow2"></div>
-        <button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.cancelar_alquiler', { m: M(G.sellPrice(e)) })}</button></div>`;
-      }
-      const delSrv = !!(Pm && Pm.exclusivoDelServidor && Pm.exclusivoDelServidor(e));
-      const rgo = enRiesgo(e);
-      return `<div class="card gear rf r-${r.key} ${it.exclusivo ? 'exq-mia' : ''} ${rgo ? 'worn' + (e.condition < 25 ? ' dn-rojo' : '') : ''}">
-        <div class="row between">${rtag(e.type)}<span class="row" style="gap:0">${e.serie ? `<span class="num small muted">#${String(e.serie).padStart(4, '0')}</span>` : ''}${infoBtn(e.type)}</span></div>
-        <div class="art">${itemArt(e.type, 110)}${rgo ? `<span class="dn-chip">${I('wrench', 'sm')}${T('danos.chip')}</span>` : ''}</div>
-        <div class="nm">${esc(nmE(e))}</div>${usoHtml(e.type)}
-        <div class="grow2"></div>
-        <div class="cond"><span>${T('bodega.estado')}</span><b class="num ${e.condition < 40 ? 'neg' : ''}">${e.condition}%</b></div>${condBar(e.condition)}
-        <div class="row2">
-          <button class="btn sm ${rgo ? 'dn-rep' : ''}" data-act="repair" data-id="${e.id}" ${rc <= 0 ? 'disabled' : ''}>${I('wrench', 'sm')}${rc > 0 ? M(rc) : T('bodega.nuevo')}</button>
-          ${it.premium || delSrv ? `<button class="btn sm" disabled>${delSrv ? T('bodega.ex_mercado') : T('bodega.no_se_vende')}</button>` : `<button class="btn sm" data-act="sell" data-id="${e.id}">${T('bodega.vender', { m: M(G.sellPrice(e)) })}</button>`}</div></div>`;
-    }).join('');
     const maxEq = maxEquip();
     const llena = enBodega() >= maxEq;
     const cats = categorias();
-    let cur = cats.find((c) => c.key === catSel);
-    if (!cur) { cur = cats[0]; catSel = cur ? cur.key : ''; }
-    const chips = cats.length > 1 ? `<div class="catrow" role="tablist" aria-label="${esc(T('bodega.categorias'))}">${cats.map((c) => {
-      return `<button class="catchip ${c.key === catSel ? 'on' : ''}" role="tab" aria-selected="${c.key === catSel}" data-act="cat" data-k="${esc(c.key)}">${I(c.icon || 'box', 'sm')}<span>${esc(TL(c.nombre || c.name || c.key))}</span><b>${N(c.items.length)}</b></button>`;
-    }).join('')}</div>` : '';
-    const shop = cur ? exclusivosDe(cur.key, cur.items).map((x) => exCard(x, llena, maxEq)).join('')
-      + cur.items.filter((it) => !it.exclusivo).map((it) => shopCard(it, llena, maxEq)).join('') : '';
-    const nota = cur && cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
-    $('tab-bodega').innerHTML = `
-      <div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="card">${cons}</div>
-      <div class="sectitle" id="tusEquipos">${T('bodega.tus_equipos', { n: S.equip.length })}${llena ? ` <span class="neg">· ${T('bodega.llena_local', { lugar: esc(venueName()), n: enBodega(), max: maxEq })}</span>` : ''}</div>
-      ${repararTodoBodega()}
-      ${mine ? `<div class="ggrid">${mine}</div>` : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
-      <p class="small muted">${T('bodega.desgaste')}</p>
-      <div class="sectitle" id="tiendaEq">${T('bodega.tienda')}</div>${chips}
-      ${cur ? `<div class="cathead"><b>${esc(TL(cur.nombre || cur.name || ''))}</b><span class="small muted">${T('bodega.n_equipos', { n: cur.items.length })}</span></div>` : ''}${nota}
-      <div class="ggrid">${shop}</div><div style="height:20px"></div>`;
+    const riesgo = equiposEnRiesgo().length;
+    const stock = Object.keys(G.CONSUMABLES).reduce((a, k) => a + (S.stock[k] || 0), 0);
+    const items = [
+      { k: 'equipos', t: T('nav2.b_equipos'), ic: I('box', 'sm'), n: riesgo || S.equip.length || 0, tono: riesgo ? 'amb' : '', extra: riesgo ? `aria-description="${esc(T('danos.badge', { n: riesgo }))}"` : '' },
+      { k: 'tienda', t: T('nav2.b_tienda'), ic: I('cart', 'sm') },
+      { k: 'repuestos', t: T('nav2.b_repuestos'), ic: I('cable', 'sm'), n: stock || 0 },
+    ];
+    const s = sub.bodega;
+    const capPct = Math.min(100, Math.round(enBodega() / Math.max(1, maxEq) * 100));
+    const capacidad = `<div class="bd-cap ${llena ? 'llena' : ''}"><span class="small">${I('home', 'sm')} ${T('nav2.capacidad', { n: enBodega(), max: maxEq })}${llena ? ` · <span class="neg">${T('bodega.llena_local', { lugar: esc(venueName()), n: enBodega(), max: maxEq })}</span>` : ''}</span>
+      <div class="bar ${llena ? 'red' : capPct > 85 ? 'amber' : ''}"><i style="width:${capPct}%"></i></div></div>`;
+    let cuerpo = '';
+    if (s === 'equipos') {
+      // Equipos ordenados por rareza (lo más valioso primero) y luego por estado
+      const RORD = { vip: 0, exclusivo: 1, elite: 2, pro: 3, comun: 4 };
+      // ...salvo lo que necesita reparación, que va primero (lo más gastado arriba)
+      const sorted = S.equip.slice().sort((a, b) => (enRiesgo(b) - enRiesgo(a)) || (enRiesgo(a) && enRiesgo(b) ? a.condition - b.condition : 0) || (RORD[rar(a.type).key] - RORD[rar(b.type).key]) || (a.type < b.type ? -1 : a.type > b.type ? 1 : 0) || (a.id - b.id));
+      // Filtros: todos, por reparar y las categorías que tienes
+      const catDe = (e) => (G.CATALOG[e.type] || {}).cat || 'otro';
+      const nRep = porReparar().length;
+      const fs = [{ k: 'todo', t: T('nav2.todos'), n: S.equip.length }];
+      if (nRep) fs.push({ k: 'reparar', t: T('nav2.f_reparar'), ic: I('wrench', 'sm'), n: nRep });
+      cats.forEach((c) => { const n = S.equip.filter((e) => catDe(e) === c.key).length; if (n) fs.push({ k: c.key, t: TL(c.nombre || c.name || c.key), ic: I(c.icon || 'box', 'sm'), n }); });
+      let f = sub.eqFiltro;
+      if (!fs.some((x) => x.k === f)) f = 'todo';
+      const repIds = new Set(porReparar().map((e) => e.id));
+      const vista = sorted.filter((e) => f === 'todo' || (f === 'reparar' ? repIds.has(e.id) : catDe(e) === f));
+      const mine = vista.map(miEquipoCard).join('');
+      cuerpo = `<div class="sectitle" id="tusEquipos">${T('bodega.tus_equipos', { n: S.equip.length })}</div>
+        ${capacidad}${repararTodoBodega()}
+        ${S.equip.length > 3 && fs.length > 2 ? chipsFiltro('eqFiltro', fs, f) : ''}
+        ${mine ? `<div class="ggrid">${mine}</div>` : S.equip.length ? emptyState('box', T('nav2.f_vacio_t'), T('nav2.f_vacio')) : emptyState('box', T('bodega.vacia_t'), T('bodega.vacia'))}
+        <p class="small muted">${T('bodega.desgaste')}</p>`;
+    } else if (s === 'tienda') {
+      const chips = cats.length > 1 ? `<div class="catrow" role="tablist" aria-label="${esc(T('bodega.categorias'))}">${cats.map((c) =>
+        `<button class="catchip ${c.key === catSel && !shopBusca ? 'on' : ''}" role="tab" aria-selected="${c.key === catSel && !shopBusca}" data-act="cat" data-k="${esc(c.key)}">${I(c.icon || 'box', 'sm')}<span>${esc(TL(c.nombre || c.name || c.key))}</span><b>${N(c.items.length)}</b></button>`).join('')}</div>` : '';
+      const orden = `<select id="shopOrden" class="shop-orden" aria-label="${esc(T('nav2.orden'))}">${[['rec', 'nav2.o_rec'], ['precio', 'nav2.o_precio'], ['calidad', 'nav2.o_calidad']]
+        .map(([k, t]) => `<option value="${k}" ${sub.shopOrden === k ? 'selected' : ''}>${esc(T(t))}</option>`).join('')}</select>`;
+      cuerpo = `<div id="tiendaEq" class="shop-top">
+          <div class="shop-fila"><label class="shop-busca">${ICO_BUSCA}<span class="sr">${T('nav2.buscar_eq')}</span><input type="search" id="shopBusca" enterkeyhint="search" autocomplete="off" placeholder="${esc(T('nav2.buscar_ph'))}" value="${esc(shopBusca)}" aria-label="${esc(T('nav2.buscar_eq'))}"></label>${orden}</div>
+          ${chips}</div>
+        ${llena ? capacidad : ''}
+        <div id="shopGrid">${shopHtml(cats, llena, maxEq)}</div>`;
+    } else {
+      const cons = Object.keys(G.CONSUMABLES).map((k) => {
+        const it = G.CONSUMABLES[k];
+        return `<div class="card gear cons" data-cons="${esc(k)}"><div class="art">${itemArt(k, 64, 'mini')}<span class="owned">×${N(S.stock[k] || 0)}</span></div>
+          <div class="nm">${esc(TL(it.name))}</div><div class="ds">${esc(TL(it.desc))}</div><div class="grow2"></div>
+          <button class="btn sm" data-act="buy-cons" data-k="${k}">+1 ${M(it.price)}</button></div>`;
+      }).join('');
+      cuerpo = `<div class="sectitle">${T('bodega.repuestos')}</div><p class="small muted" style="margin-top:-4px">${T('bodega.repuestos_det')}</p><div class="ggrid">${cons}</div>`;
+    }
+    $('tab-bodega').innerHTML = `${subnav('bodega', items, s)}<div class="subpanel" data-sub="${s}">${cuerpo}</div><div style="height:20px"></div>`;
     // La categoría elegida queda visible en la fila de categorías
-    const on = document.querySelector('.catrow .catchip.on');
+    const on = document.querySelector('#tab-bodega .catrow .catchip.on');
     if (on && on.parentElement) { try { const row = on.parentElement; row.scrollLeft = Math.max(0, on.offsetLeft - row.clientWidth / 2 + on.clientWidth / 2); } catch (e) { /* nada */ } }
   }
 
@@ -1558,11 +1692,6 @@
 
   function renderTienda() {
     const el = $('tab-tienda');
-    if (vistaTienda === 'mercado' && Api.disponible && Api.estado && Api.estado.logueado && window.Mercado) {
-      el.innerHTML = `${selectorTienda()}<div id="merc-cont"></div>`;
-      window.Mercado.render($('merc-cont'), ctxMercado());
-      return;
-    }
     if (Api.disponible === null) { el.innerHTML = `<div class="sectitle">${T('nav.tienda')}</div><div class="card muted">${T('tienda.conectando')}</div>`; return; }
     const app = enApp();   // dentro de la app de Google Play: nada de Plux ni de la tienda web
     if (!Api.disponible || !Api.estado) {
@@ -1646,31 +1775,51 @@
     }).join('');
     secs.push({ id: 'tv-exclusivos', ico: I('sparkle', 'sm'), t: T('tienda.nav_exclusivos'),
       html: seccion('tv-exclusivos', I('sparkle', 'sm'), T('tienda.exclusivos'), premium ? `<div class="ggrid">${premium}</div>` : emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))) });
-    // Atajos a cada sección (fila que se desliza, como las categorías de la Bodega)
-    const atajos = secs.length > 2 ? `<div class="catrow tv-nav" role="navigation" aria-label="${esc(T('tienda.secciones'))}">${secs.map((x) =>
-      `<button class="catchip" data-act="tienda-ir" data-k="${x.id}">${x.ico}<span>${esc(x.t)}</span></button>`).join('')}</div>` : '';
-    el.innerHTML = `${log && window.Mercado ? selectorTienda() : ''}
-      <div class="sectitle">${T('tienda.tu_cuenta')}</div>${cuenta}
-      ${atajos}
-      <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
-      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}${prueba}
+    // Sub-pestañas: cada sección de la tienda va en su grupo (Ofertas, Créditos, VIP, Pase y, con cuenta, Mercado)
+    const grupos = { ofertas: [], creditos: [], vip: [], pase: [] };
+    secs.forEach((x) => { (grupos[GRUPO_TIENDA[x.id] || 'ofertas']).push(x); });
+    const conMerc = !!(log && window.Mercado);
+    const items = [
+      { k: 'ofertas', t: T('nav2.t_ofertas'), ic: I('gift', 'sm') },
+      { k: 'creditos', t: T('nav2.t_creditos'), ic: I('gem', 'sm'), n: log ? N(E.creditos || 0) : '' },
+      { k: 'vip', t: T('nav2.t_vip'), ic: I('crown', 'sm'), n: E.vip_activo ? '✓' : '' },
+      { k: 'pase', t: T('nav2.t_pase'), ic: ICO_PASE },
+    ].filter((x) => x.k === 'creditos' || grupos[x.k].length);
+    // El Mercado sigue con data-act="vista-tienda" (js/cuenta.js pide aceptar los términos antes de abrirlo)
+    if (conMerc) items.push({ k: 'mercado', t: T('nav2.t_mercado'), ic: I('cart', 'sm'), act: 'vista-tienda' });
+    let st = vistaTienda === 'mercado' && conMerc ? 'mercado' : sub.tienda;
+    if (!items.some((x) => x.k === st)) st = items[0].k;
+    vistaTienda = st === 'mercado' ? 'mercado' : 'tienda';
+    const nav = subnav('tienda', items, st);
+    if (st === 'mercado') {
+      el.innerHTML = `${nav}<div class="subpanel" data-sub="mercado"><div id="merc-cont"></div></div>`;
+      window.Mercado.render($('merc-cont'), ctxMercado());
+      return;
+    }
+    // Sin cuenta: franja para crearla (la tarjeta completa va en Créditos)
+    const tira = !log && st !== 'creditos' ? `<div class="redstrip amberstrip cta-cuenta">${I('user', 'sm')}<span class="grow">${T('nav2.cuenta_strip')}</span></div>
+      <div class="cta-btns"><button class="btn main" data-act="cuenta" data-modo="registro">${I('user', 'sm')}${T('cuenta.crear')}</button><button class="btn" data-act="cuenta" data-modo="entrar">${T('cuenta.ya_tengo_entrar')}</button></div>` : '';
+    const cuerpo = (st === 'creditos' ? `<div class="sectitle">${T('tienda.tu_cuenta')}</div>${cuenta}` : '') + grupos[st].map((x) => x.html).join('');
+    el.innerHTML = `${nav}<div class="subpanel" data-sub="${st}">${tira}${prueba}
       ${sinPago}
-      ${secs.map((x) => x.html).join('')}
+      ${cuerpo || emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))}
+      <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
+      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
       <p class="small muted">${T('tienda.aviso')}</p>
       ${soporteBtn()}
-      <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div>`;
+      <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div></div>`;
   }
+  // Cada sección de la tienda en su sub-pestaña (lo que no está aquí va en Ofertas: packs, impulsos...)
+  const GRUPO_TIENDA = { 'tv-empezar': 'ofertas', 'tv-obra': 'ofertas', 'tv-creditos': 'creditos', 'tv-exclusivos': 'creditos', 'tv-vip': 'vip', 'tv-pase': 'pase', 'tv-copa': 'pase' };
   function irSeccionTienda(id) {
+    // La sección vive en una sub-pestaña: primero se abre esa (si no es la que se ve)
+    const g = id ? (GRUPO_TIENDA[id] || 'ofertas') : null;
+    if (g && (tab !== 'tienda' || sub.tienda !== g || vistaTienda === 'mercado' || !document.getElementById(id))) { setSub('tienda', g); vistaTienda = 'tienda'; tab = 'tienda'; render(); window.scrollTo(0, 0); }
     const s = id && document.getElementById(id);
     if (!s) return;
     try { s.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { s.scrollIntoView(); }
   }
 
-  function selectorTienda() {
-    return `<div class="chat-tabs" style="margin:6px 0 4px;display:flex;gap:6px">
-      <button class="btn sm ${vistaTienda === 'tienda' ? 'main' : ''}" data-act="vista-tienda" data-k="tienda" style="flex:1">${I('gem', 'sm')} ${T('nav.tienda')}</button>
-      <button class="btn sm ${vistaTienda === 'mercado' ? 'main' : ''}" data-act="vista-tienda" data-k="mercado" style="flex:1">${I('cart', 'sm')} ${T('mercado.titulo')}</button></div>`;
-  }
   function ctxMercado() {
     return { Api, G, Pm, A, T, TL, I18N: I18, estado: () => S, toast, ask, openModal, closeModal, snd,
       sincronizar: () => { aplicarEntregas(); save(); } };
@@ -2085,7 +2234,9 @@
     const c = S.contracts.find((x) => x.id === contractId);
     if (!c) return;
     const sug = G.suggestLoadout(S, contractId);
-    prep = { id: contractId, staff: new Set(sug.staffIds), equip: new Set(sug.equipIds) };
+    // Volver a la misma preparación (tras un canje o una compra) deja el paso en el que estaba
+    const antes = prep && prep.id === contractId ? { paso: prep.paso, cat: prep.cat } : {};
+    prep = { id: contractId, staff: new Set(sug.staffIds), equip: new Set(sug.equipIds), paso: antes.paso, cat: antes.cat };
     renderPrep();
   }
 
@@ -2252,57 +2403,97 @@
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
     const avisos = camAvisosHtml(c, camP, equip);
     const bloqHtml = bloqueadosHtml(camP, c, equip);
-    const planHtml = PE ? (camP || PE.posiciones(c.type).length ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '') + bloqHtml + avisos + sinOp + (crew ? PE.personal(crew) : '') : bloqHtml + avisos;
+    // Plano de cámaras (js/plan_evento.js): se usa tal cual, como un componente dentro del paso "Cámaras"
+    const camHtml = PE && (camP || PE.posiciones(c.type).length) ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '';
+    const crewHtml = PE && crew ? PE.personal(crew) : '';
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
-    // Partes que cambian con lo que eliges: arriba (#prepCalc), la tabla del detalle (#prepTabla) y la barra fija (#prepPie)
-    const calcHtml = `${intlHtml}${c.internacional ? ayudaIntlHtml(c, prep.staff) : ''}
-      <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
-        ${puede ? tip : ''}
-        <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>
-      ${planHtml ? `<div class="planev">${planHtml}</div>` : ''}
-      ${window.Movilizacion ? window.Movilizacion.seccionPrep(ctxInicio(), c, [...prep.staff], [...prep.equip]) : ''}`;
+    /* Pasos (Personal → Equipos → Cámaras → Resumen): se ve uno a la vez; la barra de abajo (calidad y "¡Salir al aire!")
+       queda fija en todos. Partes que cambian con lo que eliges: #prepPasos (estado de cada paso), #prepCalc (lo del paso
+       que depende de la selección), #prepTabla (Resumen) y #prepPie (la barra fija). */
+    const PASOS = ['personal', 'equipos', 'camaras', 'resumen'];
+    if (!PASOS.includes(prep.paso)) prep.paso = 'personal';
+    const paso = prep.paso;
+    const pos0 = camP && Array.isArray(camP.positions) ? camP.positions.filter((p) => !p.opcional) : [];
+    const cubiertas = pos0.filter((p) => p.asignado).length;
+    const estPaso = {
+      personal: !staff.length || (crew && crew.falta) ? 'mal' : crew && crew.justo ? 'ojo' : 'ok',
+      equipos: !equip.some(isCam) ? 'mal' : equip.some(enRiesgo) || (camP && camP.bloqueados && camP.bloqueados.length) ? 'ojo' : 'ok',
+      camaras: pos0.length && cubiertas < pos0.length ? (cubiertas ? 'ojo' : 'mal') : sinOp ? 'ojo' : 'ok',
+      resumen: puede ? 'ok' : 'mal',
+    };
+    const nPaso = { personal: staff.length, equipos: equip.length, camaras: pos0.length ? `${cubiertas}/${pos0.length}` : '', resumen: '' };
+    const icPaso = { personal: I('people', 'sm'), equipos: I('box', 'sm'), camaras: I('role_camarografo', 'sm'), resumen: I('star', 'sm') };
+    const pasosHtml = PASOS.map((k, i) => `<button type="button" class="pp-k ${k === paso ? 'on' : ''} e-${estPaso[k]}" role="tab" aria-selected="${k === paso}" data-act="prep-paso" data-k="${k}" aria-label="${esc(T('nav2.paso_n', { n: i + 1, t: PASOS.length }) + ': ' + T('nav2.paso_' + k))}">
+        <span class="pp-num">${estPaso[k] === 'ok' && k !== paso ? I('check', 'sm') : N(i + 1)}</span><span class="pp-t">${T('nav2.paso_' + k)}</span>${nPaso[k] !== '' ? `<b class="pp-n num">${typeof nPaso[k] === 'number' ? N(nPaso[k]) : nPaso[k]}</b>` : ''}</button>`).join('');
+    const resumenSel = `<div class="pp-res small"><span>${T('nav2.llevas', { p: `<b class="num">${N(staff.length)}</b>`, e: `<b class="num">${N(equip.length)}</b>` })}</span>${pos0.length ? `<span>${T('nav2.posiciones', { n: `<b class="num">${N(cubiertas)}</b>`, t: N(pos0.length) })}</span>` : ''}</div>`;
+    const calcDe = {
+      personal: `${crewHtml ? `<div class="planev">${crewHtml}</div>` : ''}${c.internacional ? ayudaIntlHtml(c, prep.staff) : ''}`,
+      equipos: bloqHtml,
+      mov: window.Movilizacion ? window.Movilizacion.seccionPrep(ctxInicio(), c, [...prep.staff], [...prep.equip]) : '',
+      // Lo que no se puede usar (y cómo arreglarlo) va en "Equipos"; aquí el plano, los avisos de cámaras y operadores
+      camaras: `${camHtml || avisos || sinOp ? `<div class="planev">${camHtml}${avisos}${sinOp}</div>` : ''}`,
+      resumen: `${resumenSel}${intlHtml}
+        <div class="pronostico">${c.rival && typeof c.rivalQuality === 'number' ? (rg ? duelRango(rg, c.rivalQuality) : duelBars(q.q, c.rivalQuality)) : ''}
+          ${puede ? tip : ''}
+          <div class="small muted" style="margin-top:6px">${T('prep.sueldos')} <b class="num">${M(wages)}</b>${c.internacional && c.travelCost ? ` · ${T('prep.viaje', { m: `<b class="num">${M(c.travelCost)}</b>` })}` : ''}${window.Movilizacion ? window.Movilizacion.resumenPrep(S, c, [...prep.staff], [...prep.equip]) : ''} · ${rg ? T('prep.rango_det') : T('prep.imprevistos')}</div>${avisoDia}</div>`,
+    };
     const tablaHtml = `${q.parts.map((p) => `<tr><td>${esc(TL(p[0]))}</td><td class="${p[1] < 0 ? 'down' : ''}">${p[1] > 0 ? '+' : ''}${p[1]}</td></tr>`).join('')}
           ${rg ? `<tr><td>${T('prep.imprevistos_esperados', { n: rg.imprevistos != null ? N(rg.imprevistos) : '?' })}</td><td class="down">${rg.esperado - q.q}</td></tr>
             <tr><td>${T('prep.peor_mejor')}</td><td>${rg.peor}–${rg.mejor}</td></tr>` : ''}`;
-    const pieHtml = `<div class="row between"><span>${calidadTxt}</span><span>${starsTxt(est)}</span></div>
+    const sig = PASOS[PASOS.indexOf(paso) + 1];
+    const pieHtml = `<div class="row between pp-q"><span>${calidadTxt}</span><span>${starsTxt(est)}</span></div>
         ${barra}
         ${puede ? '' : tip}
-        <button class="btn main" data-act="go-live" ${puede ? '' : 'disabled aria-describedby="goHint"'}>${I('rec', 'sm')} ${T('prep.al_aire')}</button>`;
-    if (soloCalculo && $('prepCalc') && $('prepPie') && $('prepTabla')) {
-      // Al marcar o desmarcar: solo se rehace lo que depende de la selección (no toda la ventana)
-      $('prepCalc').innerHTML = calcHtml;
-      $('prepTabla').innerHTML = tablaHtml;
+        <div class="pp-acc">${sig ? `<button type="button" class="btn pp-sig" data-act="prep-paso" data-k="${sig}">${T('nav2.siguiente', { paso: T('nav2.paso_' + sig) })}</button>` : ''}
+        <button class="btn main pp-aire" data-act="go-live" ${puede ? '' : 'disabled aria-describedby="goHint"'}>${I('rec', 'sm')} ${T('prep.al_aire')}</button></div>`;
+    const CALC_ID = { personal: 'prepCalcP', equipos: 'prepCalcE', mov: 'prepCalcM', camaras: 'prepCalcC', resumen: 'prepCalcR' };
+    if (soloCalculo && $('prepPie') && $('prepPasos') && $('prepCalcP')) {
+      // Al marcar o desmarcar (o al cambiar de paso): solo se rehace lo que depende de la selección (no toda la ventana)
+      $('prepPasos').innerHTML = pasosHtml;
+      Object.keys(CALC_ID).forEach((k) => { const n = $(CALC_ID[k]); if (n) n.innerHTML = calcDe[k]; });
+      if ($('prepTabla')) $('prepTabla').innerHTML = tablaHtml;
       $('prepPie').innerHTML = pieHtml;
+      document.querySelectorAll('#modal .prep-paso').forEach((x) => { x.hidden = x.dataset.paso !== paso; });
       return;
     }
-    const staffHtml = S.staff.map((p) => { const w = wageFor(p, c.diff); return `<label class="pick ${prep.staff.has(p.id) ? 'sel' : ''}">
+    // Todos los pasos quedan en la ventana (las casillas siempre están); solo se ve el elegido
+    const staffList = S.staff.map((p) => { const w = wageFor(p, c.diff); return `<label class="pick ${prep.staff.has(p.id) ? 'sel' : ''}">
         <input type="checkbox" id="st-${p.id}" data-act="tog-staff" data-id="${p.id}" ${prep.staff.has(p.id) ? 'checked' : ''}>
         ${avatarOf(p, 44)}
         <div class="grow" style="min-width:0"><b>${esc(nmP(p))}</b><div class="small muted pkrol">${I(roleIcon(p.role), 'sm')}<span>${esc(roleName(normRole(p.role)))}</span>${tierBadge(p)}</div></div>
         <span class="num small" style="text-align:end">${M(w)}${w > p.wage ? `<br><span class="muted" style="font-size:10.5px">+${Math.round((w / p.wage - 1) * 100)}%</span>` : ''}</span></label>`; }).join('');
-    const equipHtml = S.equip.map((e) => {
+    // Equipos: filtro por categoría (solo pantalla: las casillas de las otras categorías siguen en la ventana)
+    const catDe = (e) => (G.CATALOG[e.type] || {}).cat || 'otro';
+    const cats = categorias().filter((k) => S.equip.some((e) => catDe(e) === k.key));
+    const f = prep.cat && cats.some((k) => k.key === prep.cat) ? prep.cat : 'todo';
+    const chips = cats.length > 1 ? `<div class="catrow fchips" role="group" aria-label="${esc(T('nav2.cats_eq'))}">${[{ key: 'todo', nombre: T('nav2.todos'), icon: '' }].concat(cats).map((k) => {
+      const n = k.key === 'todo' ? S.equip.length : S.equip.filter((e) => catDe(e) === k.key).length;
+      return `<button type="button" class="catchip ${k.key === f ? 'on' : ''}" aria-pressed="${k.key === f}" data-act="prep-cat" data-k="${esc(k.key)}">${k.icon ? I(k.icon, 'sm') : ''}<span>${esc(k.key === 'todo' ? k.nombre : TL(k.nombre || k.name || k.key))}</span><b>${N(n)}</b></button>`; }).join('')}</div>` : '';
+    const equipList = S.equip.map((e) => {
       const it = G.CATALOG[e.type] || { name: e.type };
-      return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''}">
+      return `<label class="pick ${prep.equip.has(e.id) ? 'sel' : ''}" data-cat="${esc(catDe(e))}" ${f !== 'todo' && catDe(e) !== f ? 'hidden' : ''}>
         <input type="checkbox" id="eq-${e.id}" data-act="tog-equip" data-id="${e.id}" ${prep.equip.has(e.id) ? 'checked' : ''}>
         ${itemArt(e.type, 44, 'mini')}
         <div class="grow" style="min-width:0"><b>${esc(nmE(e))}</b> ${rtag(e.type)}${it.alquiler ? ` <span class="rent">${T('bodega.alquiler')}</span>` : ''}${infoBtn(e.type)}${usoHtml(e.type, 'pkuso')}${it.alquiler ? '' : condBar(e.condition) + prepDano(e)}</div>
         <span class="num small ${e.condition < 40 ? 'neg' : 'muted'}">${it.alquiler ? '' : e.condition + '%'}</span></label>`;
     }).join('');
+    const auto = `<button class="btn sm pp-auto" data-act="auto">${I('sparkle', 'sm')}${T('prep.auto')}</button>`;
+    const panel = (k, html) => `<div class="prep-paso" data-paso="${k}" ${k === paso ? '' : 'hidden'}>${html}</div>`;
     const pos = $('modal').scrollTop;
-    openModal(`
-      <div class="row between"><div class="row" style="min-width:0">${tile(c.type, TILE_COLOR[c.type] || (c.internacional ? 'blue' : ''))}<h2>${esc(eventName(c.type))}</h2></div><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
-      <div class="small muted" style="margin-top:6px">${esc(TL(c.client))} · ${T('prep.paga', { m: `<span class="pay" style="font-size:15px">${M(c.pay)}</span>` })}</div>
-      <div style="margin:6px 0 4px">${reqTags(c)}</div>
-      <button class="btn" data-act="auto">${I('sparkle')}${T('prep.auto')}</button>
-      <div id="prepCalc">${calcHtml}</div>
-      <div class="sectitle">${T('prep.quien')}</div>${staffHtml}
-      <div class="sectitle">${T('prep.que_equipos')}</div>${equipHtml}
-      <p class="small muted">${T('prep.repuestos', { cables: T('prep.cables', { n: S.stock.cable || 0 }), baterias: T('prep.baterias', { n: S.stock.battery || 0 }) })}</p>
-      <details><summary>${T('prep.como_calidad')}</summary><table id="prepTabla">${tablaHtml}</table></details>
-      <div class="preview" id="prepPie">${pieHtml}</div>`);
-    $('modal').scrollTop = pos;
+    const mismo = !!$('prepPasos');
+    openModal(`<div class="prep-top">
+      <div class="row between"><div class="row" style="min-width:0">${tile(c.type, TILE_COLOR[c.type] || (c.internacional ? 'blue' : ''))}<div class="grow"><h2>${esc(eventName(c.type))}</h2>
+        <div class="small muted pp-cli">${esc(TL(c.client))} · ${T('prep.paga', { m: `<span class="pay" style="font-size:15px">${M(c.pay)}</span>` })}</div></div></div><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
+      <div class="pp-pasos" id="prepPasos" role="tablist" aria-label="${esc(T('nav2.secciones'))}">${pasosHtml}</div></div>
+      ${panel('personal', `<div class="pp-req">${reqTags(c)}</div>${auto}<div id="prepCalcP">${calcDe.personal}</div><div class="sectitle">${T('prep.quien')}</div>${staffList}`)}
+      ${panel('equipos', `${auto}<div id="prepCalcE">${calcDe.equipos}</div><div class="sectitle">${T('prep.que_equipos')}</div>${chips}${equipList}
+        <p class="small muted">${T('prep.repuestos', { cables: T('prep.cables', { n: S.stock.cable || 0 }), baterias: T('prep.baterias', { n: S.stock.battery || 0 }) })}</p><div id="prepCalcM">${calcDe.mov}</div>`)}
+      ${panel('camaras', `<div id="prepCalcC">${calcDe.camaras}</div>`)}
+      ${panel('resumen', `<div id="prepCalcR">${calcDe.resumen}</div><div class="sectitle">${T('nav2.calidad')}</div><table id="prepTabla" class="pp-tabla">${tablaHtml}</table>`)}
+      <div class="preview prep-pie" id="prepPie">${pieHtml}</div>`);
+    $('modal').scrollTop = mismo ? pos : 0;
   }
   // "Elegir lo mejor": se marcan las casillas y se rehace solo el cálculo
   function marcarSeleccion() {
@@ -2777,9 +2968,11 @@
   function hubOnline(activo) {
     return `<div class="onl-grid">${modos().map((m) => {
       const extra = activo ? estadoModo(m.k) : '';
-      const nuevo = activo && m.k === 'duelos' && Api.estado && Api.estado.duelos && Api.estado.duelos.defensas_nuevas;
+      const E = Api.estado || {};
+      const nuevo = activo && m.k === 'duelos' && E.duelos && E.duelos.defensas_nuevas;
+      const hoy = activo && m.k === 'desafio' && E.desafio && E.desafio.jugado_hoy === false && Number(E.desafio.restantes) > 0;
       return `<button class="onl-tile t-${m.tono}" data-act="online" data-k="${m.k}" ${activo ? '' : 'disabled'}>
-        <span class="oi">${I(m.icon)}</span>${nuevo ? `<span class="badge">${N(nuevo)}</span>` : ''}
+        <span class="oi">${I(m.icon)}</span>${nuevo ? `<span class="badge">${N(nuevo)}</span>` : hoy ? '<span class="badge">!</span>' : ''}
         <b>${T('online.' + m.k)}</b><span class="od">${T('online.' + m.k + '_det')}</span>${extra ? `<span class="oe">${extra}</span>` : ''}</button>`;
     }).join('')}</div>`;
   }
@@ -2800,8 +2993,7 @@
     if (vistaOnline === 'hub') {
       desmontarOnline();
       const E = Api.estado || {};
-      el.innerHTML = `<div class="sectitle">${T('nav.online')}</div>
-        <div class="card onl-hero"><div class="row">${tile('online', 'blue')}<div class="grow"><h3>${T('online.hola', { nombre: esc((E.jugador && E.jugador.nombre) || '') })}</h3>
+      el.innerHTML = `<div class="onl-hero onl-hero2"><div class="row">${tile('online', 'blue')}<div class="grow"><h3>${T('online.hola', { nombre: esc((E.jugador && E.jugador.nombre) || '') })}</h3>
           <p class="small muted" style="margin:2px 0 0">${T('online.hub_det')}</p></div></div></div>
         ${hubOnline(true)}
         <div class="sectitle">${T('discord.titulo')}</div>
@@ -2813,7 +3005,12 @@
     const cont = $('online-cont');
     if (montado === vistaOnline && cont && el.contains(cont)) return;   // ya está pintado: el módulo se actualiza solo
     desmontarOnline();
-    el.innerHTML = `<div class="onl-top"><button class="btn sm" data-act="online" data-k="hub">← ${T('nav.online')}</button><b>${I(m.icon, 'sm')} ${T('online.' + m.k)}</b></div><div id="online-cont"></div>`;
+    // Arriba, fija: volver a los modos y saltar de un modo a otro sin regresar
+    const modosBar = `<div class="subbar onl-bar"><div class="onl-bar-in"><button type="button" class="catchip onl-volver" data-act="online" data-k="hub" aria-label="${esc(T('nav.online'))}">${I('online', 'sm')}<span>${T('nav2.modos')}</span></button>
+      <div class="catrow onl-modos" role="tablist" aria-label="${esc(T('online.modos'))}">${modos().map((x) => `<button type="button" class="catchip ${x.k === m.k ? 'on' : ''}" role="tab" aria-selected="${x.k === m.k}" data-act="online" data-k="${x.k}">${I(x.icon, 'sm')}<span>${T('online.' + x.k)}</span>${x.k === 'duelos' && Number(Api.estado && Api.estado.duelos && Api.estado.duelos.defensas_nuevas) ? `<b class="sn-n">${N(Api.estado.duelos.defensas_nuevas)}</b>` : ''}</button>`).join('')}</div></div></div>`;
+    el.innerHTML = `${modosBar}<div class="onl-top"><b>${I(m.icon, 'sm')} ${T('online.' + m.k)}</b></div><div id="online-cont"></div>`;
+    const on = el.querySelector('.onl-modos .catchip.on');
+    if (on && on.parentElement) { try { on.parentElement.scrollLeft = Math.max(0, on.offsetLeft - 12); } catch (e) { /* nada */ } }
     const M = window[m.mod];
     if (!M || !M.render) { $('online-cont').innerHTML = emptyState(m.icon, T('online.no_disponible_t'), T('online.no_disponible')); return; }
     montado = vistaOnline;
@@ -2931,7 +3128,24 @@
       case 'mute': snd.toggle(); render(); break;
       case 'music': mus.toggle(); mus.init(); render(); break;
       case 'soporte': if (window.Soporte) Promise.resolve(window.Soporte.abrir(ctxSoporte())).catch(() => toast(T('err.no_completo'))); break;
-      case 'vista-tienda': vistaTienda = el.dataset.k; if (window.Mercado) window.Mercado.invalidar(); render(); break;
+      case 'vista-tienda': vistaTienda = el.dataset.k; if (vistaTienda === 'mercado') setSub('tienda', 'mercado'); else if (sub.tienda === 'mercado') setSub('tienda', 'ofertas'); if (window.Mercado) window.Mercado.invalidar(); snd.play('tap'); render(); window.scrollTo(0, 0); break;
+      // Navegación v2: sub-pestañas, filtros y pasos de la preparación
+      case 'sub': {
+        const t = el.dataset.t, k = el.dataset.k;
+        if (t === 'tienda') { vistaTienda = k === 'mercado' ? 'mercado' : 'tienda'; if (k === 'mercado' && window.Mercado) window.Mercado.invalidar(); }
+        const cambio = sub[t] !== k;
+        setSub(t, k); snd.play('tap'); render();
+        if (cambio) { const sec = $('tab-' + tab); const p = sec && sec.querySelector('.subpanel'); if (p && !reduceMotion()) { p.classList.remove('sp-in'); void p.offsetWidth; p.classList.add('sp-in'); } window.scrollTo(0, 0); }
+        break;
+      }
+      case 'filtro': setSub(el.dataset.f, el.dataset.k); snd.play('tap'); render(); break;
+      case 'shop-borrar': shopBusca = ''; snd.play('tap'); render(); { const b = $('shopBusca'); if (b) try { b.focus(); } catch (err) { /* nada */ } } break;
+      case 'prep-paso': if (prep && !S.currentEvent) { e.preventDefault(); prep.paso = el.dataset.k; snd.play('tap'); renderPrep(true); $('modal').scrollTop = 0; } break;
+      case 'prep-cat': if (prep && !S.currentEvent) {
+        e.preventDefault(); prep.cat = el.dataset.k; snd.play('tap');
+        document.querySelectorAll('#modal [data-act="prep-cat"]').forEach((b) => { const on = b.dataset.k === prep.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+        document.querySelectorAll('#modal label.pick[data-cat]').forEach((l) => { l.hidden = prep.cat !== 'todo' && l.dataset.cat !== prep.cat; });
+      } break;
       case 'cuenta': abrirCuenta(el.dataset.modo); break;
       case 'cuenta-info': avisoCuenta(); break;
       case 'cuenta-borrar': if (window.Cuenta) window.Cuenta.abrirBorrar({ openModal, closeModal, toast, snd, alBorrar: () => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; if (window.Chat) window.Chat.refrescar(); render(); } }); break;
@@ -2951,7 +3165,7 @@
       case 'install':
         try { window.PWA.install().then((r) => { if (r === 'accepted') toast(T('pwa.instalado')); render(); }); } catch (err) { toast(T('pwa.no_permite')); }
         break;
-      case 'tab': tab = el.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); break;
+      case 'tab': if (el.dataset.sub && SUBS[el.dataset.tab] && SUBS[el.dataset.tab].includes(el.dataset.sub)) { setSub(el.dataset.tab, el.dataset.sub); if (el.dataset.tab === 'tienda') vistaTienda = 'tienda'; } tab = el.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); break;
       case 'online': vistaOnline = el.dataset.k || 'hub'; snd.play('tap'); desmontarOnline(); render(); window.scrollTo(0, 0); break;
       case 'discord': abrirDiscord(); break;
       case 'discord-unirse': { const u = invitacionDiscord(); if (u) window.open(u, '_blank', 'noopener'); break; }
@@ -2989,7 +3203,7 @@
         break;
       }
       case 'search-staff': { const sel = $('rolBuscar'); rolBuscar = sel ? sel.value : rolBuscar; act(G.searchStaff(S, rolBuscar || undefined)); break; }
-      case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); snd.play('tap'); render(); break;
+      case 'cat': catSel = el.dataset.k; lsSet('envivo_cat', catSel); shopBusca = ''; if (tab === 'bodega') setSub('bodega', 'tienda'); snd.play('tap'); render(); break;
       case 'buy': {
         // Equipo que no rinde sin algo que todavía no tienes (cámara sin lente, lente box sin cámara de sistema...):
         // se avisa antes y se ofrece comprarlo todo junto (combo)
@@ -3013,7 +3227,7 @@
       case 'ir-pase-vip': {
         e.preventDefault();
         closeModal(); prep = null;
-        tab = 'tienda'; vistaTienda = 'tienda'; snd.play('tap'); mus.go('menu'); render();
+        snd.play('tap'); irA('tienda', 'vip');
         irSeccionTienda('tv-vip');
         break;
       }
@@ -3021,22 +3235,20 @@
         e.preventDefault();
         closeModal(); prep = null;
         rolBuscar = el.dataset.k || rolBuscar;
-        tab = 'personal'; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0);
+        snd.play('tap'); irA('personal', 'contratar');
         break;
       }
       case 'ir-bodega': {
         // Desde la preparación o un combo: a la categoría de la tienda donde está lo que falta (la oferta sigue en Clientes)
         e.preventDefault();
         closeModal(); prep = null;
-        catSel = el.dataset.k || catSel; lsSet('envivo_cat', catSel);
-        tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
+        catSel = el.dataset.k || catSel; lsSet('envivo_cat', catSel); shopBusca = '';
+        snd.play('tap'); irA('bodega', 'tienda');
         const item = el.dataset.item;
         const q = item && window.CSS && CSS.escape ? CSS.escape(item) : item;
         const bt = q ? document.querySelector(`#tab-bodega [data-act="buy"][data-k="${q}"]`) : null;
         const card = q ? (document.querySelector(`#tab-bodega [data-ex="${q}"]`) || (bt && bt.closest('.card'))) : null;
-        const te = card || $('tiendaEq');
-        if (card) card.classList.add('combo-ir');
-        if (te) { try { te.scrollIntoView({ block: card ? 'center' : 'start' }); } catch (err) { window.scrollTo(0, 0); } }
+        if (card) resaltar(card);
         break;
       }
       case 'buy-cons': act(G.buyConsumable(S, el.dataset.k, 1), 'buy'); break;
@@ -3047,9 +3259,9 @@
       case 'repair-all-res': repararVarios((resDanos || []).map((d) => d.id)); pintarDanosRes(); break;
       case 'repair-prep': e.preventDefault(); act(G.repair(S, id), 'buy'); if (prep) renderPrep(); break;
       case 'ir-danos': {
-        tab = 'bodega'; snd.play('tap'); mus.go('menu'); render();
-        const t = $('tusEquipos');
-        if (t) { try { t.scrollIntoView({ block: 'start' }); } catch (err) { window.scrollTo(0, 0); } } else window.scrollTo(0, 0);
+        // A Mis equipos, con el filtro "Por reparar" (lo más gastado arriba)
+        if (porReparar().length) setSub('eqFiltro', 'reparar');
+        snd.play('tap'); irA('bodega', 'equipos');
         break;
       }
       case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(T('bodega.vender_q', { item: esc(itemName(it.type)), m: M(G.sellPrice(it)) }), T('bodega.vender_si'), () => act(G.sell(S, id), 'buy')); break; }
@@ -3095,9 +3307,20 @@
     if (e.target && e.target.id === 'formNombre') { e.preventDefault(); guardarNombre(); }
   });
 
+  // Búsqueda en la tienda de equipos: solo se rehace la lista (el teclado no se cierra)
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (!S || !el || el.id !== 'shopBusca') return;
+    shopBusca = String(el.value || '').slice(0, 40);
+    const g = $('shopGrid');
+    if (g) g.innerHTML = shopHtml(categorias(), enBodega() >= maxEquip(), maxEquip());
+    document.querySelectorAll('#tab-bodega .catrow [data-act="cat"]').forEach((b) => { const on = !shopBusca && b.dataset.k === catSel; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  });
+
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el && el.id === 'rolBuscar') { rolBuscar = el.value; return; }
+    if (el && el.id === 'shopOrden') { setSub('shopOrden', el.value); const g = $('shopGrid'); if (g) g.innerHTML = shopHtml(categorias(), enBodega() >= maxEquip(), maxEquip()); return; }
     if (!el.dataset || !prep) return;
     const id = Number(el.dataset.id);
     if (el.dataset.act === 'tog-staff' || el.dataset.act === 'tog-equip') {

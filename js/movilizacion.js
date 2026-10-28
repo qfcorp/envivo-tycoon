@@ -619,6 +619,8 @@
   }
   function clicFlota(ctx, acc, el) {
     if (acc === 'tienda') {
+      // Bodega → Tienda → Vehículos (navegación v2 de js/ui.js); si no está, como antes
+      if (typeof root.EnVivoIr === 'function') { root.EnVivoIr('bodega', 'tienda', { cat: 'vehicle' }); return; }
       const nav = document.querySelector('nav button[data-tab="bodega"]');
       if (nav) nav.click();
       // Abre la categoría de vehículos de la tienda (si la pantalla la tiene)

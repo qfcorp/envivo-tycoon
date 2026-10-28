@@ -239,6 +239,7 @@ async function juegoSinCuenta(browser, cap) {
   const rep0 = await page.evaluate(() => window.__game.state.misiones.d.c.repuesto || 0);
   await page.evaluate(() => { window.__game.state.money += 5000; });
   await page.locator('nav button[data-tab="bodega"]').click();
+  await page.locator('#tab-bodega .subnav [data-k="repuestos"]').click();   // navegación v2: sub-pestaña "Repuestos"
   await page.locator('[data-act="buy-cons"]').first().click();
   ok(await page.evaluate(() => window.__game.state.misiones.d.c.repuesto || 0) === rep0 + 1, 'Botón "+1" de la Bodega cuenta para "Compra un repuesto"');
   await page.locator('nav button[data-tab="inicio"]').click();

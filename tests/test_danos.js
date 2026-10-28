@@ -110,6 +110,7 @@ function armarPartida(cambios) {
     await page.click('nav button[data-tab="clientes"]');
     await page.click(`[data-act="prep"][data-id="${P.cid}"]`);
     await page.waitForSelector('#modal #prepPie');
+    await page.click('#modal .pp-k[data-k="equipos"]');   // navegación v2: los equipos van en su paso
     for (const id of [P.bajaId, P.altaId]) {
       if (!(await page.isChecked(`#eq-${id}`))) { await page.click(`label:has(#eq-${id})`); await page.waitForTimeout(150); }
     }
@@ -241,6 +242,7 @@ function armarPartida(cambios) {
       await p3.click('nav button[data-tab="clientes"]');
       await p3.click(`[data-act="prep"][data-id="${R.cid}"]`);
       await p3.waitForSelector('#modal #prepPie');
+      await p3.click('#modal .pp-k[data-k="equipos"]');
       if (!(await p3.isChecked(`#eq-${R.bajaId}`))) await p3.click(`label:has(#eq-${R.bajaId}) .grow b`);
       await p3.click(`label:has(#eq-${R.bajaId}) [data-act="repair-prep"]`);
       await p3.waitForTimeout(250);

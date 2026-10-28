@@ -155,6 +155,15 @@ async function irTienda(page) {
   await page.waitForSelector('#tab-tienda .tv-trust', { timeout: 8000 });
   await page.waitForTimeout(700);   // datos del VIP / Google Play que llegan después
 }
+// Navegación v2: la tienda va por sub-pestañas (Ofertas, Créditos, VIP, Pase); cada sección vive en una
+const GRUPO = { 'tv-empezar': 'ofertas', 'tv-obra': 'ofertas', 'tv-crecer': 'ofertas', 'tv-creditos': 'creditos', 'tv-exclusivos': 'creditos', 'tv-vip': 'vip', 'tv-pase': 'pase', 'tv-copa': 'pase' };
+async function subT(page, k) { const b = page.locator(`#tab-tienda .subnav [data-act="sub"][data-k="${k}"]`); if (await b.count()) { await b.click(); await page.waitForTimeout(350); } }
+const irSec = (page, id) => subT(page, GRUPO[id] || 'ofertas');
+const subsT = (page) => page.$$eval('#tab-tienda .subnav [data-act="sub"]', (l) => l.map((b) => b.dataset.k));
+// Junta lo que da fn(k) en cada sub-pestaña
+async function enTodas(page, fn) { const out = []; const ks = await subsT(page); for (const k of ks.length ? ks : [null]) { if (k) await subT(page, k); out.push(...(await fn(k))); } return out; }
+const seccionesT = (page) => enTodas(page, () => page.$$eval('#tab-tienda .tv-sec', (l) => l.map((x) => x.id)));
+async function revisarTodas(o, nombre) { const rs = await enTodas(o.page, async (k) => [await revisar(o, nombre + (k ? ' · ' + k : ''))]); return { txt: rs.map((x) => x.txt).join('\n') }; }
 async function revisar(o, nombre) {
   const r = await o.page.evaluate(() => {
     const t = document.getElementById('tab-tienda');
@@ -198,12 +207,13 @@ async function cerrar(o, nombre) {
     {
       const o = await abrir(browser, { nombre: 'web' });
       await irTienda(o.page);
-      const r = await revisar(o, 'Web');
-      const secs = await o.page.$$eval('#tab-tienda .tv-sec', (l) => l.map((x) => x.id));
+      const r = await revisarTodas(o, 'Web');
+      const secs = await seccionesT(o.page);
       for (const s of ['tv-empezar', 'tv-obra', 'tv-creditos', 'tv-exclusivos']) bien(secs.includes(s), `Web: sección ${s}`);
       if (presentes.includes('js/pase.js')) bien(secs.includes('tv-pase'), 'Web: sección Pase de Temporada (js/pase.js)');
       if (presentes.includes('js/vip.js')) {
         bien(secs.includes('tv-vip'), 'Web: sección VIP');
+        await irSec(o.page, 'tv-vip');
         const v = await o.page.$eval('#tv-vip .tv-vipcard', (el) => ({ n: el.dataset.vipNivel, bar: (el.querySelector('.tv-bar i') || {}).style ? el.querySelector('.tv-bar i').style.width : '', t: el.innerText })).catch(() => null);
         bien(v && v.n === '4' && v.bar === '64%', 'Web: VIP muestra tu nivel (4) y el avance (64 %)' + (v ? ` [${v.n}, ${v.bar}]` : ''));
         bien(/360/.test(v ? v.t : ''), 'Web: VIP dice cuántos puntos faltan');
@@ -212,6 +222,7 @@ async function cerrar(o, nombre) {
       }
       {
         // Pase VIP 30 días: la tabla "Con el Pase VIP" por nivel (eventos por día, reparaciones, obras y bono), con tu nivel marcado
+        await irSec(o.page, 'tv-vip');
         const pv = await o.page.$eval('#tv-vip [data-prod="vip30"]', (el) => ({ t: el.innerText, filas: el.querySelectorAll('.pv-fila').length,
           yo: (el.querySelector('.pv-fila.yo') || {}).dataset ? el.querySelector('.pv-fila.yo').dataset.desde : null })).catch(() => null);
         bien(pv && pv.filas === 5 && /Con el Pase VIP/.test(pv.t) && /VIP 1–2/.test(pv.t) && /VIP 9–10/.test(pv.t), 'Web: el Pase VIP muestra la tabla por nivel (VIP 1–2 … VIP 9–10)' + (pv ? ` [${pv.filas}]` : ''));
@@ -221,26 +232,31 @@ async function cerrar(o, nombre) {
       }
       if (presentes.includes('js/estrellas.js')) {
         bien(secs.includes('tv-copa'), 'Web: sección Copa y Duelos (personal estrella y Pase de Copa)');
+        await irSec(o.page, 'tv-copa');
         const c = await o.page.$eval('#tv-copa', (el) => el.innerText).catch(() => '');
         bien(/\$2,99/.test(c) && /300/.test(c), 'Web: Pase de Copa con su precio en dinero y en créditos');
       }
       // Packs de obra: contenido fijo completo
+      await irSec(o.page, 'tv-obra');
       const s = await o.page.$eval('#tv-obra [data-prod="pack_obra_s"]', (el) => el.innerText).catch(() => '');
       bien(/10 h/.test(s) && /12\s*Cables/.test(s) && /1\s*Chips/.test(s) && /\$1,99/.test(s), 'Web: Pack de obra S muestra 10 h, materiales exactos y $1,99');
       bien(!/Plux/.test(r.txt) || /Pago Plux/.test(r.txt), 'Web: el pago con tarjeta se explica (Pago Plux)');
+      await irSec(o.page, 'tv-creditos');
       const c7 = await o.page.$eval('[data-prod="creditos_700"]', (el) => el.innerText).catch(() => '');
       bien(/\+20/.test(c7) && /30/.test(c7), 'Web: la oferta por tiempo dice el % y la fecha real en que termina');
       bien(!/\d{1,2}:\d{2}:\d{2}/.test(r.txt), 'Web: sin cuentas regresivas');
       await foto(o.page, 'web');
-      // Atajo a una sección
-      await o.page.evaluate(() => window.scrollTo(0, 0));
-      await o.page.click('.tv-nav [data-k="tv-creditos"]');
-      await o.page.waitForTimeout(900);
+      // Sub-pestaña "Créditos" (fija arriba): la sección queda arriba, sin bajar
+      await subT(o.page, 'ofertas');
+      await o.page.evaluate(() => window.scrollTo(0, 600));
+      await subT(o.page, 'creditos');
+      await o.page.waitForTimeout(300);
       const y = await o.page.$eval('#tv-creditos', (el) => el.getBoundingClientRect().top);
-      bien(y >= 0 && y < 300, `Web: el atajo "Créditos" lleva a su sección (top ${Math.round(y)}px)`);
+      bien(y >= 0 && y < 600, `Web: la sub-pestaña "Créditos" muestra su sección sin bajar (top ${Math.round(y)}px)`);
       await o.page.screenshot({ path: path.join(OUT, 'tienda_v2_web_creditos.png') });
       // Abrir el VIP y el pase desde la tienda
       if (presentes.includes('js/vip.js')) {
+        await irSec(o.page, 'tv-vip');
         await o.page.click('#tv-vip .tv-vipcard .btn');
         await o.page.waitForSelector('#overlay.on [data-vip="modal"]', { timeout: 5000 }).catch(() => null);
         bien(!!(await o.page.$('#overlay.on [data-vip="modal"]')), 'Web: "Ventajas" abre la ventana del VIP');
@@ -250,6 +266,7 @@ async function cerrar(o, nombre) {
         await o.page.click('#overlay.on [data-act="close"]');
       }
       if (presentes.includes('js/pase.js')) {
+        await irSec(o.page, 'tv-pase');
         await o.page.click('#tv-pase [data-ext="pase"][data-acc="abrir"]');
         await o.page.waitForSelector('#pase-ov', { timeout: 5000 }).catch(() => null);
         bien(!!(await o.page.$('#pase-ov')), 'Web: la ficha del pase abre su pantalla');
@@ -257,6 +274,7 @@ async function cerrar(o, nombre) {
         await o.page.evaluate(() => { try { window.Pase.cerrar(); } catch (e) { /* nada */ } });
       }
       // Comprar un pack de obra: pide la orden y va al pago
+      await irSec(o.page, 'tv-obra');
       await o.page.click('[data-prod="pack_obra_m"] [data-act="comprar"]');
       await o.page.waitForURL(/pago-prueba/, { timeout: 8000 }).catch(() => null);
       bien(o.srv.ordenes.includes('pack_obra_m'), 'Web: Comprar el Pack de obra M pide POST /api/orden {producto: pack_obra_m} y abre el pago');
@@ -268,22 +286,25 @@ async function cerrar(o, nombre) {
       const o = await abrir(browser, { nombre: 'app', query: '?origen=android', play: PLAY });
       await o.page.waitForFunction(() => document.querySelector('nav button[data-tab="tienda"]'));
       await irTienda(o.page);
+      await irSec(o.page, 'tv-creditos');
       await o.page.waitForFunction(() => document.querySelector('#tab-tienda [data-prod="creditos_250"] .price'), null, { timeout: 8000 }).catch(() => null);
-      const r = await revisar(o, 'App');
+      const r = await revisarTodas(o, 'App');
       bien(!/plux/i.test(r.txt), 'App: no aparece Pago Plux');
       const dolares = (r.txt.match(/[^\n]{0,30}\$\s?\d+[.,]\d\d[^\n]{0,10}/g) || []);
       bien(!dolares.length, 'App: ningún precio en dólares del servidor (solo los de Google Play)' + (dolares.length ? ' → ' + dolares.join(' | ') : ''));
-      const precios = await o.page.$$eval('#tab-tienda .price[data-precio]', (l) => l.map((x) => [x.dataset.precio, x.textContent.trim()]));
+      const precios = await enTodas(o.page, () => o.page.$$eval('#tab-tienda .price[data-precio]', (l) => l.map((x) => [x.dataset.precio, x.textContent.trim()])));
       bien(precios.length >= 8 && precios.every(([, t]) => /€|EUR/.test(t)), `App: ${precios.length} precios, todos de Google Play (EUR)`);
       bien(!precios.some(([id]) => id === 'pack_obra_l' || id === 'oferta_vip_2'), 'App: lo que Google Play no tiene (Pack L, oferta VIP) no se vende');
-      bien(!(await o.page.$('#tab-tienda [data-prod="pack_obra_l"]')), 'App: el Pack de obra L no aparece');
+      bien(!(await enTodas(o.page, async () => ((await o.page.$('#tab-tienda [data-prod="pack_obra_l"]')) ? [1] : []))).length, 'App: el Pack de obra L no aparece');
       await foto(o.page, 'app');
+      await irSec(o.page, 'tv-creditos');
       await o.page.click('[data-prod="creditos_700"] [data-act="comprar"]');
       await o.page.waitForTimeout(500);
       const pagos = await o.page.evaluate(() => window.__gp.pagos);
       bien(pagos.includes('creditos_700'), 'App: Comprar abre el pago de Google Play con el sku creditos_700');
       bien(!o.srv.ordenes.length, 'App: nunca pide /api/orden (Plux)');
       if (presentes.includes('js/estrellas.js')) {
+        await irSec(o.page, 'tv-copa');
         bien(!!(await o.page.$('#tv-copa [data-act="comprar"][data-k="pase_copa"]')), 'App: el Pase de Copa se compra desde la Tienda con el precio de Google Play');
         await o.page.click('#tv-copa [data-act="tienda-estrellas"]');
         await o.page.waitForTimeout(900);
@@ -295,6 +316,7 @@ async function cerrar(o, nombre) {
       // Pase y VIP: sus pantallas también muestran solo precios de Google Play (y nada que Play no venda)
       if (presentes.includes('js/pase.js')) {
         await o.page.click('nav button[data-tab="tienda"]');
+        await irSec(o.page, 'tv-pase');
         await o.page.waitForSelector('#tv-pase [data-ext="pase"][data-acc="abrir"]', { timeout: 5000 });
         await o.page.click('#tv-pase [data-ext="pase"][data-acc="abrir"]');
         await o.page.waitForSelector('#pase-ov [data-pase-comprar]', { timeout: 6000 }).catch(() => null);
@@ -303,6 +325,7 @@ async function cerrar(o, nombre) {
         await o.page.evaluate(() => { try { window.Pase.cerrar(); } catch (e) { /* nada */ } });
       }
       if (presentes.includes('js/vip.js')) {
+        await irSec(o.page, 'tv-vip');
         await o.page.click('#tv-vip .tv-vipcard .btn');
         await o.page.waitForSelector('#overlay.on [data-vip="modal"]', { timeout: 5000 }).catch(() => null);
         const m = await o.page.$eval('#overlay.on [data-vip="modal"]', (el) => el.innerText).catch(() => '');
@@ -316,10 +339,13 @@ async function cerrar(o, nombre) {
     {
       const o = await abrir(browser, { nombre: 'sin_cuenta', logueado: false });
       await irTienda(o.page);
-      await revisar(o, 'Sin cuenta');
+      await revisarTodas(o, 'Sin cuenta');
+      await subT(o.page, 'ofertas');
       bien(!!(await o.page.$('#tab-tienda [data-act="cuenta"][data-modo="registro"]')), 'Sin cuenta: invita a crear la cuenta');
-      bien(!(await o.page.$('#tv-vip .tv-vipcard')) && !(await o.page.$('#tv-copa')), 'Sin cuenta: sin nivel VIP ni estrellas (necesitan sesión)');
+      bien(!(await enTodas(o.page, async () => ((await o.page.$('#tv-vip .tv-vipcard')) || (await o.page.$('#tv-copa')) ? [1] : []))).length, 'Sin cuenta: sin nivel VIP ni estrellas (necesitan sesión)');
+      await subT(o.page, 'ofertas');
       await foto(o.page, 'sin_cuenta');
+      await irSec(o.page, 'tv-creditos');
       await o.page.click('[data-prod="creditos_250"] [data-act="comprar"]');
       await o.page.waitForSelector('#overlay.on #formCuenta', { timeout: 4000 }).catch(() => null);
       bien(!!(await o.page.$('#overlay.on #formCuenta')), 'Sin cuenta: Comprar pide crear la cuenta primero');
@@ -330,8 +356,8 @@ async function cerrar(o, nombre) {
     {
       const o = await abrir(browser, { nombre: 'sin_modulos', sinModulos: MODULOS, productos: PRODUCTOS.filter((p) => !/^pase|^pack_obra/.test(p.id)) });
       await irTienda(o.page);
-      await revisar(o, 'Sin módulos');
-      const secs = await o.page.$$eval('#tab-tienda .tv-sec', (l) => l.map((x) => x.id));
+      await revisarTodas(o, 'Sin módulos');
+      const secs = await seccionesT(o.page);
       bien(!secs.includes('tv-pase') && !secs.includes('tv-copa') && !secs.includes('tv-obra'), 'Sin módulos: no salen Pase, Copa ni Obra (' + secs.join(', ') + ')');
       bien(secs.includes('tv-creditos') && secs.includes('tv-vip'), 'Sin módulos: créditos y Pase VIP 30 días siguen a la venta');
       await o.page.click('nav button[data-tab="online"]');
@@ -356,6 +382,8 @@ async function cerrar(o, nombre) {
         await o.page.screenshot({ path: path.join(OUT, 'tienda_v2_online_estrellas.png') });
         // Desde la tienda, "Ver estrellas" abre lo mismo
         await o.page.click('nav button[data-tab="tienda"]');
+        await o.page.waitForSelector('#tab-tienda .subnav', { timeout: 5000 });
+        await irSec(o.page, 'tv-copa');
         await o.page.waitForSelector('#tv-copa [data-act="tienda-estrellas"]', { timeout: 5000 });
         await o.page.click('#tv-copa [data-act="tienda-estrellas"]');
         await o.page.waitForTimeout(500);
@@ -369,7 +397,7 @@ async function cerrar(o, nombre) {
       const o = await abrir(browser, { nombre: 'en', idioma: 'en', locale: 'en-US' });
       await o.page.waitForFunction(() => window.I18N && window.I18N.idioma === 'en', null, { timeout: 8000 }).catch(() => null);
       await irTienda(o.page);
-      const r = await revisar(o, 'Inglés');
+      const r = await revisarTodas(o, 'Inglés');
       bien(/No loot boxes/.test(r.txt) && /Build pack/.test(r.txt), 'Inglés: textos de la tienda traducidos');
       await foto(o.page, 'en');
       await cerrar(o, 'Inglés');
