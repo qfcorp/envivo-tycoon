@@ -142,6 +142,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
     const id = await page.evaluate((t) => { const c = window.__game.state.contracts.find((x) => x.type === t); return c ? c.id : null; }, tipo);
     await page.click(`[data-act="prep"][data-id="${id}"]`);
     await page.waitForSelector('#modal [data-act="go-live"]');
+    await page.click('#modal .pp-k[data-k="equipos"]');   // navegación v2: equipos y lo que les falta van en su paso
     await page.waitForTimeout(150);
     return id;
   }
@@ -165,6 +166,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
     {
       const { ctx, page, srv } = await abrir({ vip: true, equipos: BASICO, roles: ROLES, eventos: ['boxeo', 'concierto', 'final'] });
       await page.click('nav button[data-tab="bodega"]');
+      await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2
       await page.click('#tab-bodega [data-act="cat"][data-k="cam"]');
       await page.waitForTimeout(150);
       const btn = page.locator('#tab-bodega [data-ex="vip_cam8k"] [data-act="ex-canjear"]');
@@ -239,7 +241,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       bien(rep === 33, 'La fama no cambió (la cámara llegó por el combo con créditos, sin saltarse la fama de la tienda)');
       bien(await sinDesborde(page), 'fama33: sin desborde horizontal');
       await foto(page, 'vip_11_combo_fama33_listo.png', '#modal .pe-cl');
-      await page.click('#modal [data-act="ir-personal"][data-k="piloto_dron"]');
+      await page.click('#modal .bloq [data-act="ir-personal"][data-k="piloto_dron"]');
       await page.waitForTimeout(300);
       bien(await page.evaluate(() => document.querySelector('#tab-personal.on') !== null), '"Contratar Piloto de dron" abre Personal');
       await ctx.close();
@@ -281,6 +283,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       const { ctx, page, srv } = await abrir({ vip: false, rep: 50, money: 90000, equipos: ['cam_pro', 'cam_zony_hxr_mk2500', 'switch_pro', 'audio_basic'], roles: ROLES, eventos: ['final', 'boxeo'] });
       // Dinero del juego: cámara que necesita lente
       await page.click('nav button[data-tab="bodega"]');
+      await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2
       await page.click('#tab-bodega [data-act="cat"][data-k="cam"]');
       await page.waitForTimeout(150);
       const b = page.locator('#tab-bodega [data-act="buy"][data-k="cam_blackmagia_urso_broadcast_g3"]').first();
@@ -297,6 +300,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       bien(st.t.includes('cam_blackmagia_urso_broadcast_g3') && st.t.some((t) => /^lente_/.test(t)) && st.m < m0, 'Compró la cámara y su lente con dinero del juego');
       // Créditos: el lente box Exclusivo necesita cámara de sistema, adaptador y soporte
       await page.click('nav button[data-tab="bodega"]');
+      await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2
       await page.click('#tab-bodega [data-act="cat"][data-k="lens"]');
       await page.waitForTimeout(150);
       await page.click('#tab-bodega [data-ex="ex_lente_box"] [data-act="ex-canjear"]');

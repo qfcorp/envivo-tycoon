@@ -191,6 +191,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       bien(await page.evaluate((id) => window.__game.state.staff.some((p) => p.id === id), cand.id) && await reqOk(page, 'dir_intl'), 'Contratado: el requisito del realizador queda en verde');
       // Personal: vacante internacional para el puesto elegido
       await page.click('nav button[data-tab="personal"]');
+      await page.click('#tab-personal .subnav [data-k="contratar"]');   // navegación v2: buscar personal va en "Contratar"
       await page.waitForTimeout(150);
       await page.selectOption('#rolBuscar', 'camarografo');
       await page.click('#tab-personal [data-act="intl-buscar"]');
@@ -200,7 +201,9 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
       const cardTxt = await page.locator('#tab-personal .cand').first().innerText();
       bien(/internacional/i.test(cardTxt), 'La tarjeta del candidato muestra sus eventos internacionales');
       const gaby = await persona(page, 'Gaby Quishpe');
+      await page.click('#tab-personal .subnav [data-k="capacitar"]');   // navegación v2: la capacitación va en "Capacitar"
       bien(await page.locator(`#tab-personal [data-act="intl-curso"][data-id="${gaby.id}"]`).count() === 1, 'Personal: la Semi-senior Gaby tiene su botón "Capacitación internacional"');
+      await page.click('#tab-personal .subnav [data-k="contratar"]');
       await foto(page, 'intl_05_personal.png', '#tab-personal .buscar');
       bien(await sinDesborde(page), 'Personal: sin desborde horizontal');
       await ctx.close();

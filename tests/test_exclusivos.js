@@ -88,11 +88,13 @@ async function abrir(browser, caso) {
   }
   await page.evaluate((rep) => { const s = window.__game.state; s.rep = rep; s.money = 999999; }, caso.rep === undefined ? 99 : caso.rep);
   await page.click('nav button[data-tab="bodega"]');
+  await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2: la tienda es una sub-pestaña de la Bodega
   await page.waitForSelector('#tab-bodega .catrow');
   return { ctx, page, errores, srv };
 }
 
 async function categoria(page, cat) {
+  await page.click('#tab-bodega .subnav [data-k="tienda"]');
   await page.click(`#tab-bodega [data-act="cat"][data-k="${cat}"]`);
   await page.waitForTimeout(120);
 }
@@ -174,6 +176,7 @@ async function foto(page, nombre, sel) {
       const eq = await o.page.evaluate(() => window.__game.state.equip.find((e) => e.type === 'ex_repeticion'));
       bien(!!eq && eq.srvId === 100 && eq.serie === 1, 'Canjear: el equipo llega a la bodega con su número de serie');
       await o.page.click('nav button[data-tab="inicio"]'); await o.page.click('nav button[data-tab="bodega"]');
+      await o.page.click('#tab-bodega .subnav [data-k="equipos"]');   // tus equipos: sub-pestaña "Mis equipos"
       await o.page.waitForSelector('#tab-bodega .exq-mia');
       const mia = await o.page.$eval('#tab-bodega .ggrid .exq-mia', (c) => ({ t: c.innerText, venta: [...c.querySelectorAll('button')].map((b) => [b.textContent.trim(), b.disabled]) }));
       bien(/EVX XT-VIA Oro/.test(mia.t) && /#0001/.test(mia.t) && mia.venta.some(([t, d]) => /mercado/i.test(t) && d), 'Tus equipos: marco dorado, serie #0001 y "Se revende en el mercado" (no al desarmadero)');

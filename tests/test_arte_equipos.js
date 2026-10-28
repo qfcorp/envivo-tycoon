@@ -141,6 +141,7 @@ const MARCAS = ['zony', 'sony', 'kanon', 'canon', 'panasonika', 'panasonic', 'bl
   for (let k = 0; k < 4; k++) { const b = p2.locator('#overlay.on [data-act="close"], #overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"]'); if (await b.count()) await b.first().click().catch(() => {}); else break; await p2.waitForTimeout(150); }
   await p2.evaluate(() => { const s = window.__game.state; s.rep = 99; s.money = 999999; });
   await p2.click('nav button[data-tab="bodega"]');
+  await p2.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2: la tienda es una sub-pestaña de la Bodega
   const cat = p2.locator('[data-act="cat"][data-k="cam"]');
   if (await cat.count()) await cat.first().click();
   await p2.waitForTimeout(300);
