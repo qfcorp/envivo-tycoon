@@ -58,7 +58,7 @@
     'pe.ed.marca': 'Marca de piso {n}: {toma}', 'pe.ed.cam_en': 'Cámara {n}: {cam} en «{toma}»',
     'pe.ed.a_marca': 'Volver a la marca', 'pe.ed.lleno': 'Todas las tomas tienen cámara: toca una cámara del plano para moverla o cambiarla.',
     'pe.ed.elige': 'Primero toca una cámara (en el plano o abajo) y después el sitio.',
-    'pe.ed.movida': 'Fuera de su marca', 'pe.ed.cubre': 'Cubre: {toma}',
+    'pe.ed.movida': 'Fuera de su marca', 'pe.ed.cubre': 'Cubre: {toma}', 'pe.ed.comprar': 'Comprar en la Bodega',
     'pe.tk.t': 'Tomas clave', 'pe.tk.n': '{a} de {t} bien cubiertas', 'pe.tk.bien': 'Bien cubierta', 'pe.tk.extra': 'Extra',
     'pe.ley.marca': 'Marca sugerida', 'pe.ley.bloq': 'No se puede', 'pe.ley.alto': 'Zona alta', 'pe.v.alto': 'Alto', 'pe.v.no': 'No',
 
@@ -471,6 +471,9 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
 .pe-ed-det{border-bottom:1px solid var(--line,#2a3242)}
 .pe-dt .pe-am{appearance:none;justify-self:start;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid #5a4214;background:#2a1f0b;color:#ffd58a;font-size:12.5px;cursor:pointer}
 .pe-dt .pe-acc{display:flex;flex-wrap:wrap;gap:6px}
+.pe-zsi{fill:rgba(46,204,113,.16);stroke:#2ecc71;stroke-width:1.2;stroke-dasharray:3 2}
+.pe-dt .pe-nota{margin:0;font-size:12px;line-height:1.35;color:#ffd58a}
+.pe-dt .pe-buy{appearance:none;justify-self:start;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid #1f4f86;background:#0e2440;color:#8cc4ff;font-size:12.5px;cursor:pointer}
 .pe-am:focus-visible{outline:2px solid var(--blue,#4da3ff);outline-offset:2px}
 @media (prefers-reduced-motion:no-preference){.pe-cc,.pe-op,.pe-seg button{transition:background-color .12s,border-color .12s,box-shadow .12s}}
 `;
@@ -1070,6 +1073,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       const malas = geo.zonas.filter((z) => (z.t === 'bloqueo' && !(z.deja || []).includes(cuerpo)) || (z.t === 'alto' && cuerpo === 'grua'));
       g += `<defs><pattern id="${u}x" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#ff3b3b" fill-opacity=".08"/><path d="M0 0v6" stroke="#ff3b3b" stroke-opacity=".38" stroke-width="1.3"/></pattern></defs>`;
       g += malas.map((z) => (z.s ? zonaForma(z, `class="pe-zno-s"`) : zonaForma(z, `class="pe-zno" fill="url(#${u}x)"`))).join('');
+      // Huecos que esa cámara sí puede usar dentro de un bloqueo (la red de cada arco para una minicámara): en verde
+      g += geo.zonas.filter((z) => z.abre && (z.deja || []).includes(cuerpo)).map((z) => zonaForma(z, 'class="pe-zsi"')).join('');
     }
     return `<g class="pe-zonas" aria-hidden="true">${g}</g>`;
   }
@@ -1102,7 +1107,10 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const toma = r.toma && r.toma !== p.nombre ? `<small>${esc(T('pe.ed.cubre', { toma: r.toma }))}</small>` : '';
     const head = `<div class="pe-dth"><div style="min-width:0"><b>${p.n} · ${esc(p.nombre)}</b>${toma}<small>${esc(p.asgName || T('pe.vacia'))}${p.asgName && p.aj != null ? ' · ' + esc(T('pe.ed.ajuste', { p: Math.round(p.aj * 100) })) : ''}${r.movida ? ' · ' + esc(T('pe.ed.movida')) : ''}</small></div>
       <button type="button" class="pe-x" data-pe-act="cerrar" aria-label="${esc(T('pe.ed.cerrar'))}">×</button></div>`;
-    if (!p.asgName) return `<div class="pe-dt" aria-live="polite">${head}<p class="pe-tip">${esc(T('pe.ed.sin_cam'))}${p.ideal ? ' ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</p></div>`;
+    // Tomas a mano del fútbol: para qué sirve (lado contrario: solo repeticiones/VAR o bancos) y, sin minicámara, dónde comprarla
+    const nota = r.nota ? `<p class="pe-nota">${esc(TLx(r.nota))}</p>` : '';
+    const compra = r.compra && !o.tutorial ? `<p class="pe-tip">${esc(TLx(r.compraTexto || ''))}</p><button type="button" class="pe-buy" data-act="ir-bodega" data-k="cam" data-item="${esc(r.compra)}">${esc(T('pe.ed.comprar'))}</button>` : '';
+    if (!p.asgName) return `<div class="pe-dt" aria-live="polite">${head}${nota}<p class="pe-tip">${esc(T('pe.ed.sin_cam'))}${p.ideal ? ' ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</p>${compra}</div>`;
     const base = typeof r.base === 'number' ? `<li><span>${esc(p.ideal && r.base < 0.8 ? T('pe.ed.encaje_ideal', { t: p.ideal }) : T('pe.ed.encaje'))}</span><span class="pe-v pct">${Math.round(r.base * 100)}%</span></li>` : '';
     const rz = (Array.isArray(r.razones) ? r.razones : []).filter((x) => x && (x.texto || x.k) && (x.pts !== 0 || x.par)).map((x) => `<li><span>${esc(TLx(x.texto || x.k))}</span>${valor(x)}</li>`).join('');
     const lista = (o.operadores && r.needs && o.operadores[r.needs]) || null;
@@ -1112,7 +1120,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       <button type="button" class="pe-op" data-pe-act="op" data-k="${esc(p.key)}" data-id="0" aria-pressed="${opId ? 'false' : 'true'}">${esc(T('pe.ed.nadie'))}</button></div>` : '';
     const marca = !o.tutorial && r.movida ? `<button type="button" class="pe-am" data-pe-act="marca" data-k="${esc(p.key)}">${esc(T('pe.ed.a_marca'))}</button>` : '';
     const quitar = o.tutorial ? '' : `<button type="button" class="pe-qt" data-pe-act="quitar" data-k="${esc(p.key)}">${esc(T('pe.ed.quitar'))}</button>`;
-    return `<div class="pe-dt" aria-live="polite">${head}<ul class="pe-rz">${base}${rz}</ul>${ops}${marca || quitar ? `<div class="pe-acc">${marca}${quitar}</div>` : ''}</div>`;
+    return `<div class="pe-dt" aria-live="polite">${head}${nota}<ul class="pe-rz">${base}${rz}</ul>${ops}${marca || quitar ? `<div class="pe-acc">${marca}${quitar}</div>` : ''}</div>`;
   }
   // Partes del plan a mano: barra (automático / tu plan), aviso, bandeja de cámaras, detalle y combos
   function editor(list, plan, o) {
@@ -1151,7 +1159,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       const o = opts || {};
       const t = tipoKey(tipoEvento || (plan && (plan.tipo || plan.type)));
       const v = lugar(t), vr = variante(t, v);
-      const list = posList(plan, t);
+      // Las tomas a mano (fútbol: contracampo VAR, bancos, minicámaras en la red) sin cámara solo se ven al armar el plan
+      const list = posList(plan, t).filter((p) => o.editable || !(p.raw && p.raw.aMano && (p.asg == null || p.asg === false || p.asg === '')));
       // Con el id del equipo se usa el nombre que el jugador ve en su bodega (p. ej. "Cámara de Don Ramiro")
       list.forEach((p) => {
         let n = '';
