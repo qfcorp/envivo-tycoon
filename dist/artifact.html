@@ -821,6 +821,25 @@
   .pp-acc .pp-aire{flex:1;font-family:var(--f-head);font-size:19px;letter-spacing:.4px}
   @media (max-width:370px){.sn-k{font-size:14.5px;gap:4px}.sn-col .sn-k{font-size:12.5px}.mk-t b{font-size:15px}.pp-k{font-size:12.5px}.pp-acc .pp-sig{font-size:12.5px}}
   @media (prefers-reduced-motion:reduce){.subpanel.sp-in{animation:none}.mk-t:not(:disabled):active{transform:none}}
+  /* Partida en la nube: indicador de arriba (en la nube / solo en este aparato) y franja "¿Ya tienes cuenta?" (js/ui.js pintarNube) */
+  .nubeind{display:flex;align-items:center;gap:6px;width:100%;margin-top:6px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font:inherit;font-size:12px;line-height:1.3;text-align:start;min-width:0}
+  .nubeind[hidden]{display:none}
+  .nubeind span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nubeind .ico{flex:none;width:14px;height:14px}
+  .nubeind.ok{color:#9fe3bd;border-color:#1f4d36}
+  .nubeind.local{color:#ffd78a;border-color:#5a4214;background:#2a2210}
+  .nubeind.mal{color:#ffd0d0;border-color:#ff3b3b;background:#3a1519}
+  .nubebar{display:block;background:#2a2210;border:1px solid #c98a1a;color:#ffe2a6;border-radius:12px;padding:10px 12px;margin:2px 0 12px}
+  .nubebar[hidden]{display:none}
+  .nubebar.mal{background:#3a1519;border-color:#ff3b3b;color:#ffd0d0}
+  .nubebar p{margin:0 0 8px;font-size:14px;font-weight:600}
+  .nubebar .small{font-weight:400;opacity:.9}
+  .nubebar .nb-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .nubebar .nb-btns .btn{flex:1 1 auto;width:auto;margin:0}
+  .nube-op{display:block;text-align:start;line-height:1.45}
+  .nube-op .nube-op-t{display:flex;align-items:center;gap:6px;font-weight:700}
+  .nube-op .nube-op-t em{font-style:normal;font-size:11px;padding:1px 6px;border-radius:999px;background:#1f4d36;color:#9fe3bd;margin-inline-start:auto}
+  .nube-op .small{display:block}
 </style>
 <header class="gut">
   <div class="brand"><span class="tally"></span> En Vivo Tycoon<span class="vipbadge" id="vipBadge" hidden>VIP</span><button class="iconbtn" id="muteBtn" data-act="mute" aria-label="Sonido" data-i18n-aria="head.sonido"></button><button class="iconbtn" id="musicBtn" data-act="music" aria-label="Música" data-i18n-aria="head.musica" hidden></button><button class="iconbtn langbtn" id="langBtn" data-act="idioma" aria-label="Idioma" data-i18n-aria="idioma.boton" hidden></button></div>
@@ -830,9 +849,11 @@
     <div class="chip c-gem" id="cGem" hidden data-act="tab" data-tab="tienda" data-sub="creditos" role="button" tabindex="0"><span class="ci" data-ico="gem"></span><span class="cv"><small id="lGem">Créditos</small><b id="hGem">0</b></span></div>
     <div class="chip c-day" id="cDay" data-ayuda="dia"><span class="ci" data-ico="calendar"></span><span class="cv"><small data-i18n="head.dia">Día</small><b id="hDay">1</b></span></div>
   </div>
+  <button class="nubeind" id="nubeInd" data-act="nube-ind" hidden></button>
 </header>
 
 <main class="gut">
+  <div class="nubebar" id="nubeBar" role="status" hidden></div>
   <section id="tab-inicio" class="on"></section>
   <section id="tab-clientes"></section>
   <section id="tab-personal"></section>
@@ -25570,6 +25591,38 @@
     'nube.otro_nota': 'Se baja tu partida de la nube y el juego se abre otra vez aquí.',
     'nube.cargada': 'Listo: cargaste tu partida más nueva de la nube.',
     'nube.sin_red': 'No hay conexión con el servidor. Revisa tu internet e intenta otra vez.',
+    // Indicador de arriba: en qué partida estás (js/ui.js pintarNube)
+    'nube.ind_nube': 'Partida en la nube',
+    'nube.ind_guardada': 'Partida en la nube · guardada {cuando}',
+    'nube.ind_pendiente': 'Partida en la nube · sin conexión: se guarda al volver internet',
+    'nube.ind_revisando': 'Revisando tu partida en la nube…',
+    'nube.ind_elegir': 'Elige qué partida usar',
+    'nube.ind_otro': 'Esta partida se abrió en otro dispositivo',
+    'nube.ind_solo': 'Solo en {aparato} (sin cuenta)',
+    'nube.ind_sin_red': 'Sin conexión con la nube · jugando la copia de {aparato}',
+    'nube.aparato_cel': 'este celular',
+    'nube.aparato_pc': 'esta computadora',
+    'nube.hace_ahora': 'hace un momento',
+    'nube.hace_min': { one: 'hace {n} min', other: 'hace {n} min' },
+    'nube.hace_h': { one: 'hace {n} hora', other: 'hace {n} horas' },
+    'nube.hace_d': { one: 'hace {n} día', other: 'hace {n} días' },
+    // Franja al abrir sin sesión
+    'nube.bar_t': '¿Ya tienes cuenta? Entra para traer tu partida de la nube.',
+    'nube.bar_det': 'Ahora juegas una partida que está solo en {aparato}. Si ya jugaste en otro celular o computadora, entra con la misma cuenta.',
+    'nube.bar_sesion_t': 'Tu sesión se cerró en {aparato}.',
+    'nube.bar_sesion_det': 'Entra otra vez para seguir con tu partida de la nube. La de aquí puede ser una copia vieja.',
+    'nube.bar_entrar': 'Entrar',
+    'nube.bar_crear': 'Crear cuenta',
+    'nube.bar_cerrar': 'Ahora no',
+    'nube.entrar_nota': 'Entra con tu cuenta para traer tu partida de la nube. Si es distinta a la de aquí, te preguntamos cuál usar antes de reemplazar nada.',
+    // Elegir partida al entrar (comparación)
+    'nube.texto2': 'Tienes una partida en tu cuenta y otra distinta en {aparato}. Elige con cuál sigues.',
+    'nube.local2': 'En {aparato}',
+    'nube.op_fama': 'Fama {n}',
+    'nube.ultima': 'Última vez: {cuando}',
+    'nube.ultima_nd': 'Última vez: sin dato',
+    'nube.mas_avance': 'Más avance',
+    'nube.subida': 'Tu partida de {aparato} quedó guardada en tu cuenta.',
 
     // Registro
     'registro.titulo': 'Registro de la productora',
@@ -39973,6 +40026,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (nubeRecargando) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
     try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
+    marcarGuardado();                          // "Última vez" de la partida de aquí (al elegir entre esta y la de la nube)
     if (nubeInfo) lsSet(NUBE_KEY, nubeInfo);   // la versión de la nube va siempre junto a la partida guardada aquí
     nubePendiente = true;
     nubeLuego();
@@ -40003,6 +40057,17 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   let nubeRecargando = false;  // se bajó la partida de la nube y el juego se abre otra vez
   let nubePendiente = false;   // hubo guardados que la nube todavía no tiene
   let nubeSubiendo = null, nubeRevisando = null, nubeUltima = 0;
+  let nubeHora = null;         // cuándo se guardó en la nube la versión que tiene esta pestaña (ms, para el indicador)
+  const GUARDADO_KEY = 'envivo_guardado_en';   // cuándo se guardó la partida en este aparato (ms)
+  // Solo cuenta como "jugada" cuando cambia el avance (día, dinero, eventos): abrir el juego también guarda y no es jugar.
+  // Una partida de antes de esto (sin hora) queda "sin dato" hasta que se avance.
+  function marcarGuardado() {
+    const k = nubeClave(S), g = lsGet(GUARDADO_KEY);
+    if (g && typeof g === 'object' && g.k === k) return;
+    lsSet(GUARDADO_KEY, { t: g || !(S.stats.events > 0) ? Date.now() : null, k });
+  }
+  const guardadoEn = () => { const g = lsGet(GUARDADO_KEY); const t = g && typeof g === 'object' ? Number(g.t) : Number(g); return t > 0 ? t : null; };
+  const nubeVio = (r) => { const t = r && r.actualizado ? Date.parse(r.actualizado) : NaN; if (!isNaN(t)) nubeHora = t; };
   const nubeCuenta = () => (Api.estado && Api.estado.jugador ? Api.estado.jugador.id : null);
   const nubeActiva = () => !!(Api.disponible && Api.logueado && Api.logueado());
   const nubeBase = () => (nubeInfo && nubeInfo.cuenta === nubeCuenta() && Number.isInteger(nubeInfo.rev) ? nubeInfo.rev : null);
@@ -40037,6 +40102,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       try {
         const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar });
         nubeMarcar(r.rev, clave); nubeEstado = 'ok'; bien = true;
+        nubeHora = Date.parse(r.actualizado) || Date.now();
       } catch (e) {
         nubePendiente = true; nubeEstado = 'error';
         const n = e && e.respuesta ? e.respuesta.nube : null;
@@ -40045,7 +40111,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         else if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
       }
     })();
-    try { await nubeSubiendo; } finally { nubeSubiendo = null; }
+    try { await nubeSubiendo; } finally { nubeSubiendo = null; pintarNube(); }
     if (otraVez) return subirNube(tomar, true);
     if (bien && nubePendiente) nubeLuego();   // se guardó algo más mientras subía
   }
@@ -40072,6 +40138,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       return nubeLista !== nubeCuenta() ? nubeTomar(intentos) : subirNube();
     }
     if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeMasNueva();
+    if (m.rev === base && !nubePendiente) nubeVio(m);
     if (nubeLista !== nubeCuenta()) return nubeTomar(intentos);              // al día: esta pestaña toma la partida
     if (m.activo && m.activo.dispositivo !== NUBE_DISP) return nubeConflicto();   // otro dispositivo la tomó
     if (nubePendiente || nubeAvance()) return subirNube();                   // p. ej. avance de cuando no había internet
@@ -40081,6 +40148,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try { await Api.activarPartida(nubeBase(), NUBE_DISP); }
     catch (e) { if (esConflicto(e) && (intentos || 0) < 2) return nubeRevisar((intentos || 0) + 1); return; }   // alguien guardó justo ahora
     nubeLista = nubeCuenta(); nubeBloqueo = false;
+    pintarNube();
     try { if (sessionStorage.getItem(NUBE_AVISO)) { sessionStorage.removeItem(NUBE_AVISO); toast(T('nube.cargada')); } } catch (e) { /* nada */ }
     if (nubePendiente || nubeAvance()) return subirNube();
   }
@@ -40089,10 +40157,15 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     let r;
     try { r = await Api.partida(); } catch (e) { return; }
     const nube = nubeLeer(r);
-    if (!nube) { nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); return subirNube(true); }   // no hay en la nube: sube la de aquí
-    if (S.stats.events === 0 && S.day <= 1) return nubeUsar(nube, r.datos, r.rev, false);       // aquí recién empieza
+    nubeVio(r);
+    if (!nube) {   // no hay en la nube: sube la de aquí (no se pisa nada) y se avisa
+      nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta();
+      if (S.stats.events > 0 || S.day > 1) toast(T('nube.subida', { aparato: aparato() }));
+      return subirNube(true);
+    }
+    if (S.stats.events === 0 && S.day <= 1) return nubeUsar(nube, r.datos, r.rev, false);       // aquí recién empieza: nada que perder
     if (nubeClave(nube) === nubeClave(S)) { nubeMarcar(r.rev, nubeClave(nube)); return nubeTomar(0); }   // es la misma partida
-    return nubeElegir(nube, r.datos, r.rev);
+    return nubeElegir(nube, r.datos, r.rev, r.actualizado);   // dos partidas distintas: siempre se pregunta
   }
   // Al abrir el juego: la nube tiene una versión más nueva que la de aquí
   async function nubeMasNueva() {
@@ -40100,8 +40173,10 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try { r = await Api.partida(); } catch (e) { return; }
     const nube = nubeLeer(r);
     if (!nube) return nubeSinBase();
+    nubeVio(r);
+    // Aquí no se avanzó desde la versión de la que partió: la de la nube la contiene, se usa (con aviso, nunca en silencio)
     if (!nubeAvance() || nubeClave(nube) === nubeClave(S)) return nubeUsar(nube, r.datos, r.rev, false);
-    return nubeElegir(nube, r.datos, r.rev);   // las dos avanzaron: que el jugador elija
+    return nubeElegir(nube, r.datos, r.rev, r.actualizado);   // las dos avanzaron: que el jugador elija
   }
   // Usar la partida de la nube. En pleno evento o con el juego abierto hace rato: se guarda aquí y el juego se abre otra vez.
   function nubeUsar(nube, datos, rev, recargar) {
@@ -40115,11 +40190,13 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         return;
       } catch (e) { nubeRecargando = false; nubeBloqueo = false; }   // no se pudo guardar aquí: se usa sin abrir otra vez
     }
+    const cambia = nubeClave(nube) !== nubeClave(S);
     S = nube;
     aplicarFecha();
     nubeMarcar(rev, nubeClave(nube));
     try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
     nubePendiente = false;
+    if (cambia) { try { sessionStorage.setItem(NUBE_AVISO, '1'); } catch (e) { toast(T('nube.cargada')); } }   // nubeTomar lo avisa
     render();
     return nubeTomar(0);
   }
@@ -40130,12 +40207,13 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       try {
         const r = await Api.partida();
         const nube = nubeLeer(r);
-        if (nube && nubeClave(nube) !== nubeClave(S)) return nubeElegir(nube, r.datos, r.rev);
+        if (nube && nubeClave(nube) !== nubeClave(S)) return nubeElegir(nube, r.datos, r.rev, r.actualizado);
       } catch (e) { /* sin red: la ventana de abajo */ }
     }
     nubeAvisoOtro();
   }
   function nubeAvisoOtro() {
+    pintarNube();
     if (nubeRecargando || cloudPendiente) return;
     if ($('overlay').classList.contains('on') && $('modal').querySelector('[data-nube-otro]')) return;
     eleccion = () => nubeUsarNueva();
@@ -40150,7 +40228,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const nube = nubeLeer(r);
     // Aquí hay avance que esa versión no tiene (p. ej. un evento que terminó con el aviso tapado por el resultado):
     // se pregunta cuál usar, nunca se pisa sin preguntar
-    if (nube && nubeAvance() && nubeClave(nube) !== nubeClave(S)) { closeModal(); nubeElegir(nube, r.datos, r.rev); return; }
+    if (nube && nubeAvance() && nubeClave(nube) !== nubeClave(S)) { closeModal(); nubeElegir(nube, r.datos, r.rev, r.actualizado); return; }
     if (nube) { nubeUsar(nube, r.datos, r.rev, true); return; }
     // La otra pestaña no guardó nada todavía: esta toma la partida con la suya
     closeModal(); nubeBloqueo = false; nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); render();
@@ -40160,20 +40238,95 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (document.visibilityState === 'hidden') { clearTimeout(nubeT); if (nubePendiente) subirNube(); }
     else nubeFoco();
   });
-  function nubeFoco() { const t = Date.now(); if (t - nubeUltima < 3000) return; nubeUltima = t; revisarNube('foco'); }
+  function nubeFoco() { const t = Date.now(); if (t - nubeUltima < 3000) return; nubeUltima = t; if (!reconectar()) revisarNube('foco'); }
+  /* El servidor no respondió al abrir (celular lento, sin señal un momento): antes el juego se quedaba con la partida de
+     este aparato, sin cuenta ni nube, hasta recargar (si aquí había una copia vieja, se seguía jugando esa en silencio).
+     Ahora se vuelve a intentar al volver a la app, al volver internet y cada 30 s; al conectar se revisa la nube como al
+     abrir. Devuelve true si está intentando (entonces no hace falta revisar la nube aparte). */
+  let reconectando = false;
+  function reconectar() {
+    if (Api.disponible !== false || !Api.iniciar || !conServidorWeb()) return false;
+    if (reconectando) return true;
+    reconectando = true;
+    Api.iniciar().then(async () => {
+      if (!Api.disponible) return;
+      await alConectar(false);
+      if (window.Chat && window.Chat.iniciar) { try { window.Chat.iniciar(ctxChat()); } catch (e) { /* sin chat */ } }
+    }).catch(() => {}).finally(() => { reconectando = false; pintarNube(); });
+    return true;
+  }
   window.addEventListener('focus', nubeFoco);
   window.addEventListener('pageshow', (e) => { if (e.persisted) nubeFoco(); });
   window.addEventListener('online', () => {
     // Si el juego se abrió sin internet, ahora sí busca el servidor (cuenta, entregas y partida en la nube)
-    if (Api.disponible === false && Api.iniciar) { Api.iniciar().then(() => { if (Api.disponible) alConectar(false); }).catch(() => {}); return; }
+    if (reconectar()) return;
     revisarNube('red');
   });
   window.addEventListener('storage', (e) => { if (e.key === NUBE_KEY) revisarNube('reloj'); });   // otra pestaña de este navegador guardó
   setInterval(() => { if (document.visibilityState === 'visible') revisarNube('reloj'); }, 60000);
+  setInterval(() => { if (document.visibilityState === 'visible') { reconectar(); pintarNube(); } }, 30000);   // "guardada hace N min" al día
   // Para las pruebas automáticas
   window.__nube = { dispositivo: NUBE_DISP, get info() { return nubeInfo; }, get bloqueo() { return nubeBloqueo; }, get lista() { return nubeLista; },
     revisar: (m) => revisarNube(m || 'foco'), subir: async () => { if (nubeSubiendo) await nubeSubiendo; return subirNube(); } };
   let cloudPendiente = false;   // mientras el jugador elige entre la partida de la nube y la del celular
+
+  /* ---------- En qué partida estás: indicador de arriba y franja "¿Ya tienes cuenta?" ----------
+     El dueño abrió el juego en el celular sin sesión (cada aparato, y también la app instalada y la pestaña de Chrome,
+     tiene su propia sesión y su propia partida) y vio otra partida, sin ningún aviso. Ahora siempre se ve arriba si la
+     partida es la de la nube o solo la de este aparato, y sin sesión sale una franja para entrar y traer la de la nube. */
+  const enCelular = (() => { try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return true; } })();
+  const aparato = () => T(enCelular ? 'nube.aparato_cel' : 'nube.aparato_pc');
+  const conServidorWeb = () => { try { return location.protocol === 'https:' || location.protocol === 'http:'; } catch (e) { return false; } };
+  const cuentaPrevia = () => !!(nubeInfo && nubeInfo.cuenta != null);   // esta partida ya estuvo en una cuenta (la sesión se cerró)
+  function haceTxt(ms) {
+    const min = Math.floor(Math.max(0, Date.now() - ms) / 60000);
+    if (min < 1) return T('nube.hace_ahora');
+    if (min < 60) return T('nube.hace_min', { n: min });
+    const h = Math.floor(min / 60);
+    return h < 24 ? T('nube.hace_h', { n: h }) : T('nube.hace_d', { n: Math.floor(h / 24) });
+  }
+  const ICO_CEL = '<svg class="ico sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg>';
+  const ICO_PC = '<svg class="ico sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg>';
+  const icoAparato = () => (enCelular ? ICO_CEL : ICO_PC);
+  // { c: clase, ic, t: texto } o null (sin servidor: el juego como archivo o dentro de Claude, o todavía conectando)
+  function nubeIndicador() {
+    if (!S || Api.disponible === null) return null;
+    if (!Api.disponible) return conServidorWeb() && cuentaPrevia() ? { c: 'mal', ic: icoAparato(), t: T('nube.ind_sin_red', { aparato: aparato() }) } : null;
+    if (!Api.logueado()) return { c: 'local', ic: icoAparato(), t: T('nube.ind_solo', { aparato: aparato() }) };
+    if (nubeBloqueo && !nubeRecargando) return { c: 'mal', ic: I('cloud', 'sm'), t: T('nube.ind_otro') };
+    if (cloudPendiente) return { c: 'local', ic: I('cloud', 'sm'), t: T('nube.ind_elegir') };
+    if (nubeLista !== nubeCuenta()) return { c: '', ic: I('cloud', 'sm'), t: T('nube.ind_revisando') };
+    if (nubeEstado === 'error') return { c: 'local', ic: I('cloud', 'sm'), t: T('nube.ind_pendiente') };
+    return { c: 'ok', ic: I('cloud', 'sm'), t: nubeHora ? T('nube.ind_guardada', { cuando: haceTxt(nubeHora) }) : T('nube.ind_nube') };
+  }
+  const BAR_CERRADA = 'envivo_nubebar_cerrada';
+  function pintarNube() {
+    const ind = document.getElementById('nubeInd'), bar = document.getElementById('nubeBar');
+    if (!ind || !bar) return;
+    const x = nubeIndicador();
+    ind.hidden = !x;
+    if (x) {
+      const html = `${x.ic}<span>${esc(x.t)}</span>`;
+      if (ind.innerHTML !== html) ind.innerHTML = html;
+      ind.className = 'nubeind ' + x.c;
+      ind.setAttribute('aria-label', x.t);
+    }
+    // Franja en Inicio (la pantalla de entrada): sin sesión con servidor, hasta que el jugador la cierre en esta visita.
+    // En las otras pestañas queda el indicador de arriba (tocarlo también lleva a entrar).
+    let cerrada = false;
+    try { cerrada = !!sessionStorage.getItem(BAR_CERRADA); } catch (e) { /* nada */ }
+    const sin = !!(S && Api.disponible && Api.estado && !Api.logueado()) && !cerrada && !VI && tab === 'inicio';
+    bar.hidden = !sin;
+    if (!sin) { if (bar.firstChild) bar.textContent = ''; delete bar.dataset.html; return; }
+    const prev = cuentaPrevia();
+    bar.className = 'nubebar' + (prev ? ' mal' : '');
+    const html = `<p>${I('cloud', 'sm')} ${prev ? esc(T('nube.bar_sesion_t', { aparato: aparato() })) : esc(T('nube.bar_t'))}<br>
+        <span class="small">${prev ? esc(T('nube.bar_sesion_det')) : esc(T('nube.bar_det', { aparato: aparato() }))}</span></p>
+      <div class="nb-btns"><button class="btn main sm" data-act="cuenta" data-modo="entrar" data-nota="nube">${I('user', 'sm')}${T('nube.bar_entrar')}</button>
+        ${prev ? '' : `<button class="btn sm" data-act="cuenta" data-modo="registro">${T('nube.bar_crear')}</button>`}
+        <button class="btn sm" data-act="nube-bar-cerrar">${T('nube.bar_cerrar')}</button></div>`;
+    if (bar.dataset.html !== html) { bar.innerHTML = html; bar.dataset.html = html; }
+  }
   function load() {
     try { const raw = localStorage.getItem(SAVE_KEY); return raw ? G.deserialize(raw) : null; } catch (e) { return null; }
   }
@@ -40367,6 +40520,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   function render() {
     marcarDia();
     cabecera();
+    pintarNube();
     if (lastTab !== tab) {
       const sec = $('tab-' + tab);
       if (sec && lastTab !== null) { sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter'); }
@@ -41701,26 +41855,39 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (hechos.length) { save(); toast(TL(hechos[0]) + (hechos.length > 1 ? ' ' + T('comun.mas', { n: hechos.length - 1 }) : '')); snd.play('chapter'); }
   }
 
-  const resumen = (x) => `${T('comun.dia_n', { n: x.day })} · ${G.CHAPTERS[x.chapter] ? esc(TL(G.CHAPTERS[x.chapter].title).split('·')[0].trim()) : T('historia.completa')} · ${M(x.money)} · ${T('inicio.eventos', { n: x.stats.events })}`;
-  // La partida de la nube y la de aquí avanzaron las dos: el jugador elige (la otra se reemplaza; nunca sin preguntar)
-  function nubeElegir(nube, datos, rev) {
+  // Una opción de la comparación: día, fama, dinero, capítulo, eventos y la última vez que se jugó
+  function opcionPartida(x, k, titulo, ic, cuando, mas) {
+    const cap = G.CHAPTERS[x.chapter] ? esc(TL(G.CHAPTERS[x.chapter].title)) : T('historia.completa');
+    return `<button class="btn nube-op" data-act="partida" data-k="${k}">
+        <span class="nube-op-t">${ic}${titulo}${mas ? `<em>${T('nube.mas_avance')}</em>` : ''}</span>
+        <span class="small"><b>${T('comun.dia_n', { n: x.day })} · ${T('nube.op_fama', { n: N(Math.floor(x.rep || 0)) })} · ${M(x.money)}</b></span>
+        <span class="small muted">${cap} · ${T('inicio.eventos', { n: x.stats.events })}</span>
+        <span class="small muted">${cuando ? T('nube.ultima', { cuando: haceTxt(cuando) }) : T('nube.ultima_nd')}</span></button>`;
+  }
+  // La partida de la nube y la de aquí son distintas: el jugador elige (la otra se reemplaza; nunca sin preguntar)
+  function nubeElegir(nube, datos, rev, actualizado) {
     clearTimeout(nubeT);
     cloudPendiente = true;
+    pintarNube();
     return new Promise((listo) => {
       eleccion = (cual) => {
         cloudPendiente = false;
         closeModal();
-        if (cual === 'nube') { listo(nubeUsar(nube, datos, rev, nubeLista === nubeCuenta())); return; }
+        if (cual === 'nube') { nubeVio({ actualizado }); listo(nubeUsar(nube, datos, rev, nubeLista === nubeCuenta())); return; }
         // La de aquí: se sube encima de esa versión de la nube y esta pestaña toma la partida
         nubeBloqueo = false;
         nubeMarcar(rev, nubeClave(nube));
         nubeLista = nubeCuenta(); nubePendiente = true;
         save(); render(); listo(subirNube(true));
       };
+      const tNube = actualizado ? Date.parse(actualizado) : NaN, tAqui = guardadoEn();
+      const avance = (x) => [x.chapter || 0, x.stats.events || 0, x.day || 0];
+      const an = avance(nube), aq = avance(S);
+      const cmp = an[0] - aq[0] || an[1] - aq[1] || an[2] - aq[2];
       openModal(`<h2>${T('nube.titulo')}</h2>
-        <p class="small muted">${T('nube.texto')}</p>
-        <button class="btn" data-act="partida" data-k="nube">${I('cloud')}${T('nube.nube')}<br><span class="small muted">${resumen(nube)}</span></button>
-        <button class="btn" data-act="partida" data-k="local">${I('social')}${T('nube.local')}<br><span class="small muted">${resumen(S)}</span></button>
+        <p class="small muted">${T('nube.texto2', { aparato: aparato() })}</p>
+        ${opcionPartida(nube, 'nube', T('nube.nube'), I('cloud'), isNaN(tNube) ? null : tNube, cmp > 0)}
+        ${opcionPartida(S, 'local', T('nube.local2', { aparato: aparato() }), icoAparato(), tAqui, cmp < 0)}
         <p class="small muted">${T('nube.reemplaza')}</p>`);
     });
   }
@@ -43218,7 +43385,15 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         document.querySelectorAll('#modal [data-act="prep-cat"]').forEach((b) => { const on = b.dataset.k === prep.cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
         document.querySelectorAll('#modal label.pick[data-cat]').forEach((l) => { l.hidden = prep.cat !== 'todo' && l.dataset.cat !== prep.cat; });
       } break;
-      case 'cuenta': abrirCuenta(el.dataset.modo); break;
+      case 'cuenta': abrirCuenta(el.dataset.modo, el.dataset.nota === 'nube' ? T('nube.entrar_nota') : undefined); break;
+      case 'nube-bar-cerrar': try { sessionStorage.setItem(BAR_CERRADA, '1'); } catch (err) { /* nada */ } snd.play('tap'); pintarNube(); break;
+      case 'nube-ind':   // el indicador de arriba: sin cuenta → entrar; otro dispositivo → el aviso; con cuenta → la tarjeta de la cuenta
+        snd.play('tap');
+        if (Api.disponible && Api.estado && !Api.logueado()) abrirCuenta('entrar', T('nube.entrar_nota'));
+        else if (nubeBloqueo) nubeAvisoOtro();
+        else if (Api.disponible === false) { if (!reconectar()) toast(T('nube.sin_red')); else toast(T('nube.ind_revisando')); }
+        else if (Api.logueado()) { setSub('tienda', 'creditos'); vistaTienda = 'tienda'; tab = 'tienda'; render(); window.scrollTo(0, 0); }
+        break;
       case 'cuenta-info': avisoCuenta(); break;
       case 'cuenta-borrar': if (window.Cuenta) window.Cuenta.abrirBorrar({ openModal, closeModal, toast, snd, alBorrar: () => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; if (window.Chat) window.Chat.refrescar(); render(); } }); break;
       case 'nombre': abrirNombre(); break;
@@ -43502,6 +43677,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   if (I18 && I18.listo && typeof I18.listo.then === 'function') I18.listo.then(arrancar, arrancar);
   else arrancar();
   window.__game = { get state() { return S; }, // para las pruebas automáticas
+    guardar: () => save(),
     // El plan de cámaras de la preparación abierta (calidad base, posiciones y combos), como lo calcula la lógica
     prepPlan() {
       if (!prep) return null;
