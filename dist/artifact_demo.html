@@ -26820,6 +26820,8 @@
     "duelo.liga": "Liga {liga}",
     "duelo.sin_cupos": "Ya usaste tus duelos de hoy.",
     "duelo.inc.cable": "Cable roto",
+    "duelo.inc.plano_perdido": "No se ve la jugada",
+    "duelo.inc.toma_combo": "Toma perfecta",
     "duelo.inc.cable_pisado": "Cable pisado",
     "duelo.inc.internet": "Se cayó el internet",
     "duelo.inc.luz": "Apagón",
@@ -27452,7 +27454,8 @@
     'inc.plano_perdido.t.deporte': '📷 ¡No se ve la jugada! Pasa frente a «{pos}» y esa cámara no llega.',
     'inc.plano_perdido.o0': 'Cortar a la repetición desde otro ángulo', 'inc.plano_perdido.r0': 'La repetición salva el momento, aunque en vivo se perdió.',
     'inc.plano_perdido.o1': 'Quedarse en la toma abierta', 'inc.plano_perdido.r1': 'Se ve de lejos: el cliente se queda con las ganas del detalle.',
-    'inc.plano_perdido.o2': 'Forzar el zoom de esa cámara', 'inc.plano_perdido.r2': 'Sale borroso y movido. El cliente lo nota.',
+    'inc.plano_perdido.o2': 'Que {nombre} corra a corregir el encuadre', 'inc.plano_perdido.r2': 'Sale borroso y movido. El cliente lo nota.',
+    'inc.plano_perdido.r3': '{nombre} llega justo a tiempo y salva el plano.',
     'inc.toma_combo.t': '🎯 {combo}: tu plan de cámaras capta el momento desde el ángulo perfecto.',
     'inc.toma_combo.o0': 'Sacar esa toma al aire', 'inc.toma_combo.r0': '¡Toma perfecta en vivo! El cliente la quiere para sus redes.',
     'inc.toma_combo.o1': 'Guardarla para una repetición lenta', 'inc.toma_combo.r1': 'La repetición queda espectacular.',
@@ -31793,11 +31796,7 @@
     ev.mezcla = mezclar(s.seed, contract.id || 0);
     ev.clima = climaDe(s.seed, contract);
     // Elegir imprevistos
-<<<<<<< HEAD
-    const view = { contract: ev.contract, staff, equip, camPlan: esIntento(s) && !col ? null : base.cameraPlan };
-=======
-    const view = { contract: ev.contract, staff, equip, clima: ev.clima };
->>>>>>> main
+    const view = { contract: ev.contract, staff, equip, clima: ev.clima, camPlan: esIntento(s) && !col ? null : base.cameraPlan };
     const worn = equip.filter((e) => e.condition < BALANCE.worn).length;
     const BI = BALANCE.incidents;
     const faltan = crew.roles.filter((r) => r.estado === 'falta' && r.min > 0).length;
@@ -32364,21 +32363,22 @@
     when: (s, ev) => !!ev.camPlan && !isFuneral(ev) && reqCams(ev.camPlan) >= 2 && debiles(ev.camPlan).length > 0,
     setup: (s, ev) => { const d = debiles(ev.camPlan); return { pos: d.length ? d[0].nombre : '' }; },
     text: (ev, x) => [isSport(ev) ? 'inc.plano_perdido.t.deporte' : 'inc.plano_perdido.t', { pos: (x && x.pos) || '' }],
-    choices: [
-      { need: (s, ev) => (canReplay(s, ev) ? null : NEED('need.repeticion')), run: () => R(-2, 'inc.plano_perdido.r0') },
-      { need: (s, ev) => (camsOf(ev).length >= 2 ? null : NEED('need.dos_camaras')), run: () => R(-5, 'inc.plano_perdido.r1') },
-      { run: () => R(-9, 'inc.plano_perdido.r2') },
+    ops: [
+      { k: 'o0', solo: (s, ev) => canReplay(s, ev), falta: 'need.repeticion', si: { q: -2, r: 'r0' } },
+      { k: 'o1', solo: (s, ev) => camsOf(ev).length >= 2, falta: 'need.dos_camaras', si: { q: -5, r: 'r1' } },
+      { k: 'o2', quien: 'camarografo', si: { q: -1, r: 'r3' }, no: { q: -9, r: 'r2' } },
     ],
   });
   registrarImprevisto('toma_combo', {
-    weight: () => 1,
+    bueno: true,
+    weight: () => 0.5,
     when: (s, ev) => !!ev.camPlan && !isFuneral(ev) && combosToma(ev.camPlan).length > 0,
     setup: (s, ev) => { const cb = combosToma(ev.camPlan); return { combo: cb.length ? cb[0].k : '' }; },
     text: (ev, x) => ['inc.toma_combo.t', { combo: x && x.combo ? { k: x.combo } : '' }],
-    choices: [
-      { run: () => R(2, 'inc.toma_combo.r0') },
-      { need: (s, ev) => (canReplay(s, ev) ? null : NEED('need.repeticion')), run: () => R(4, 'inc.toma_combo.r1') },
-      { run: () => R(0, 'inc.toma_combo.r2') },
+    ops: [
+      { k: 'o0', si: { q: 2, r: 'r0' } },
+      { k: 'o1', solo: (s, ev) => canReplay(s, ev), falta: 'need.repeticion', si: { q: 3, r: 'r1' } },
+      { k: 'o2', si: { q: 0, r: 'r2' } },
     ],
   });
 
@@ -32392,12 +32392,8 @@
     cursoIntl, cursoIntlCosto, puedeCursoIntl, darCursoIntl, searchStaffIntl, ayudaIntl, intlPersonalDisponible, isIntlExp, nuevoNombre: staffName, INTL_CREDITOS: D.INTL_CREDITOS,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
     computeQuality, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
-<<<<<<< HEAD
-    crewPlan, cameraPlan, validarColocacion, CAMARAS_REGLAS: CAMR, crewReq, requisitosInternacional, normRole, baseWage,
-=======
     elegirOpcion, // imprevistos v2: la opción razonable (bot de pruebas y fantasma de los duelos)
-    crewPlan, cameraPlan, crewReq, requisitosInternacional, normRole, baseWage,
->>>>>>> main
+    crewPlan, cameraPlan, validarColocacion, CAMARAS_REGLAS: CAMR, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
     checkChapter, countCat, serialize, deserialize, money, tx, setTraductor,
     takeAvisos, takeChapterDone, venue, venueName, qualityRange,
@@ -49070,7 +49066,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     'duelo.sin_intento_js': 'Falta el motor de eventos en línea (js/intento.js). Recarga el juego.', 'duelo.pendiente': 'Tu jugada quedó guardada. El resultado aparece en unos minutos.',
     'duelo.reglas': 'Mismo contrato, misma semilla y el mismo sorteo de imprevistos para los dos. Tú juegas en vivo; tu rival juega con su equipo guardado y decide como un productor prudente.',
     'duelo.fama_recibida': 'Fama de duelos: +{n}', 'duelo.liga': 'Liga {liga}', 'duelo.sin_cupos': 'Ya usaste tus duelos de hoy.',
-    'duelo.inc.cable': 'Cable roto', 'duelo.inc.cable_pisado': 'Cable pisado', 'duelo.inc.internet': 'Se cayó el internet', 'duelo.inc.luz': 'Apagón',
+    'duelo.inc.cable': 'Cable roto', 'duelo.inc.plano_perdido': 'No se ve la jugada', 'duelo.inc.toma_combo': 'Toma perfecta', 'duelo.inc.cable_pisado': 'Cable pisado', 'duelo.inc.internet': 'Se cayó el internet', 'duelo.inc.luz': 'Apagón',
     'duelo.inc.lluvia': 'Lluvia', 'duelo.inc.tarde': 'Alguien llegó tarde', 'duelo.inc.acople': 'Acople de audio', 'duelo.inc.bateria': 'Batería agotada',
     'duelo.inc.logo': 'Logo a última hora', 'duelo.inc.falla': 'Equipo gastado', 'duelo.inc.epico': 'Momento épico', 'duelo.inc.permiso': 'Permiso del local',
     'duelo.inc.transporte': 'Transporte varado', 'duelo.inc.robo': 'Robo de un equipo', 'duelo.inc.senal': 'Señal trabada', 'duelo.inc.guion': 'Cambio de guion',

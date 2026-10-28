@@ -219,9 +219,12 @@ sec('Internacional (va en el viaje), intentos en línea (sin movilización) y de
   // Intento: mismo estado, sin movilización
   const mk = () => { const x = base(77); contratar(x, 2); const cc = G.addContract(x, 'barrial'); cc.rival = false; return { x, cc }; };
   const a = mk(), b = mk();
-  b.x.intento = true;
   const ids = (x) => [x.staff.map((p) => p.id), x.equip.map((e) => e.id)];
-  const ra = G.startEvent(a.x, a.cc.id, ...ids(a.x)), rb = G.startEvent(b.x, b.cc.id, ...ids(b.x));
+  // Un intento sin colocación se evalúa con el plan de cámaras de antes (28-oct); con la misma colocación que el
+  // automático de la partida, todo lo demás tiene que dar igual
+  const colB = G.cameraPlan ? G.cameraPlan(b.x, b.cc, ids(b.x)[1], ids(b.x)[0]).colocacion : undefined;
+  b.x.intento = true;
+  const ra = G.startEvent(a.x, a.cc.id, ...ids(a.x)), rb = G.startEvent(b.x, b.cc.id, ...ids(b.x), colB);
   ok(ra.ok && rb.ok && a.x.currentEvent.transporte && !b.x.currentEvent.transporte, 'el intento en línea no tiene movilización');
   ok(a.x.currentEvent.base === b.x.currentEvent.base && JSON.stringify(a.x.currentEvent.incidents.map((i) => i.key)) === JSON.stringify(b.x.currentEvent.incidents.map((i) => i.key)) && a.x.seed === b.x.seed,
     'la movilización no cambia la calidad, los imprevistos ni la semilla');

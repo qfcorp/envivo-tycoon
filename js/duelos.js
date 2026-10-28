@@ -44,7 +44,7 @@
     'duelo.sin_intento_js': 'Falta el motor de eventos en línea (js/intento.js). Recarga el juego.', 'duelo.pendiente': 'Tu jugada quedó guardada. El resultado aparece en unos minutos.',
     'duelo.reglas': 'Mismo contrato, misma semilla y el mismo sorteo de imprevistos para los dos. Tú juegas en vivo; tu rival juega con su equipo guardado y decide como un productor prudente.',
     'duelo.fama_recibida': 'Fama de duelos: +{n}', 'duelo.liga': 'Liga {liga}', 'duelo.sin_cupos': 'Ya usaste tus duelos de hoy.',
-    'duelo.inc.cable': 'Cable roto', 'duelo.inc.cable_pisado': 'Cable pisado', 'duelo.inc.internet': 'Se cayó el internet', 'duelo.inc.luz': 'Apagón',
+    'duelo.inc.cable': 'Cable roto', 'duelo.inc.plano_perdido': 'No se ve la jugada', 'duelo.inc.toma_combo': 'Toma perfecta', 'duelo.inc.cable_pisado': 'Cable pisado', 'duelo.inc.internet': 'Se cayó el internet', 'duelo.inc.luz': 'Apagón',
     'duelo.inc.lluvia': 'Lluvia', 'duelo.inc.tarde': 'Alguien llegó tarde', 'duelo.inc.acople': 'Acople de audio', 'duelo.inc.bateria': 'Batería agotada',
     'duelo.inc.logo': 'Logo a última hora', 'duelo.inc.falla': 'Equipo gastado', 'duelo.inc.epico': 'Momento épico', 'duelo.inc.permiso': 'Permiso del local',
     'duelo.inc.transporte': 'Transporte varado', 'duelo.inc.robo': 'Robo de un equipo', 'duelo.inc.senal': 'Señal trabada', 'duelo.inc.guion': 'Cambio de guion',

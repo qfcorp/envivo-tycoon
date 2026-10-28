@@ -3758,13 +3758,13 @@
   });
   registrarImprevisto('toma_combo', {
     bueno: true,
-    weight: () => 1,
+    weight: () => 0.5,
     when: (s, ev) => !!ev.camPlan && !isFuneral(ev) && combosToma(ev.camPlan).length > 0,
     setup: (s, ev) => { const cb = combosToma(ev.camPlan); return { combo: cb.length ? cb[0].k : '' }; },
     text: (ev, x) => ['inc.toma_combo.t', { combo: x && x.combo ? { k: x.combo } : '' }],
     ops: [
       { k: 'o0', si: { q: 2, r: 'r0' } },
-      { k: 'o1', solo: (s, ev) => canReplay(s, ev), falta: 'need.repeticion', si: { q: 4, r: 'r1' } },
+      { k: 'o1', solo: (s, ev) => canReplay(s, ev), falta: 'need.repeticion', si: { q: 3, r: 'r1' } },
       { k: 'o2', si: { q: 0, r: 'r2' } },
     ],
   });
