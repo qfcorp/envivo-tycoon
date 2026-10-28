@@ -234,6 +234,44 @@ console.log(`1. Honestos: ${honestos.filter((h) => h.v.valido).length}/${N} vali
   });
 }
 
+/* ---------- 1d. Fútbol, tomas a mano (28-oct): contracampo VAR del otro lado y minicámaras en la red ---------- */
+{
+  const base = {
+    seed: 280028,
+    contrato: { type: 'ligapro', client: 'Sporting Pichincha', cams: 4, diff: 4, audio: true, stream: true, outdoor: true, pay: 3000 },
+    equipo: {
+      staff: [{ name: 'Tú (dueño)', role: 'camarografo', skill: 3, owner: true }, { name: 'Ana', role: 'camarografo', skill: 5, tier: 'senior' },
+        { name: 'Kevin', role: 'camarografo', skill: 2 }, { name: 'Luis', role: 'camarografo', skill: 3 }, { name: 'Carla', role: 'director', skill: 4 },
+        { name: 'Paola', role: 'operador_repeticion', skill: 3 }, { name: 'Diego', role: 'sonidista', skill: 3 }, { name: 'Mishell', role: 'tecnico_transmision', skill: 3 }],
+      equip: [{ type: 'cam_blackmagia_urso_broadcast_g3', condition: 90 }, { type: 'lente_kanon_kx21x8_2', condition: 90 }, { type: 'cam_zony_hxr_mk2500', condition: 90 },
+        { type: 'cam_zony_hxr_mk2500', condition: 90 }, { type: 'cam_cine', condition: 90 }, { type: 'cam_zony_hxr_mk2500', condition: 90 },
+        { type: 'cam_gopra_heroe13', condition: 90 }, { type: 'cam_marchall_cv513_pov', condition: 90 }, { type: 'sw_vmax_pro_pc', condition: 90 }, { type: 'audio_pro', condition: 90 }, { type: 'encoder', condition: 90 }],
+    },
+    contexto: { fama: 45, dinero: 5000 },
+    // 0 sistema, 2-3-5 hombro, 4 cine, 6 GoPra (acción), 7 POV. El contracampo VAR en la tribuna de enfrente; las minis en la red
+    colocacion: [{ p: 'principal', e: 0 }, { p: 'cerrada', e: 4 }, { p: 'arco_izq_alto', e: 2 }, { p: 'arco_der_alto', e: 3 }, { p: 'var', e: 5 },
+      { p: 'mini_arco_izq', e: 6 }, { p: 'mini_arco_der', e: 7, x: 85, y: 49 }],
+  };
+  const jugado = jugarCliente(clon(base), azar);
+  const v = V.validate(Object.assign(clon(base), { decisiones: jugado.decisiones, cliente_resultado: jugado.resultado }));
+  ok(v.valido === true && v.calidad === jugado.resultado.quality, `tomas a mano: el intento con contracampo VAR y minicámaras no validó (${v.detalle.motivo}: ${v.detalle.mensaje})`);
+  // El mismo intento sin colocación (automático) da lo mismo que antes: las tomas a mano no cambian el automático
+  const sinCol = Object.assign(clon(base), { colocacion: null });
+  const ja = jugarCliente(clon(sinCol), azar);
+  const va = V.validate(Object.assign(clon(sinCol), { decisiones: ja.decisiones, cliente_resultado: ja.resultado }));
+  ok(va.valido === true, `tomas a mano: el intento automático no validó (${va.detalle.motivo})`);
+  const malos = {
+    'cámara de cine en la toma de la minicámara': [{ p: 'principal', e: 0 }, { p: 'mini_arco_izq', e: 4 }],
+    'cámara de hombro dentro de la red': [{ p: 'principal', e: 0 }, { p: 'cerrada', e: 2, x: 15, y: 47 }],
+    'minicámara en medio de la cancha': [{ p: 'principal', e: 0 }, { p: 'mini_arco_izq', e: 6, x: 40, y: 50 }],
+  };
+  Object.keys(malos).forEach((n) => {
+    const vm2 = V.validate(Object.assign(clon(base), { decisiones: [], colocacion: malos[n] }));
+    ok(!vm2.valido && vm2.detalle.motivo === 'colocacion_invalida', `tomas a mano: ${n} aceptada (${vm2.detalle.motivo})`);
+  });
+  console.log(`1d. Fútbol, tomas a mano: contracampo VAR + minicámaras en la red validado (calidad ${v.calidad} · automático ${va.calidad}) · ${Object.keys(malos).length} colocaciones imposibles rechazadas`);
+}
+
 /* ---------- 2. Trampas ---------- */
 const T = {};
 const anota = (nombre, detectada, inofensiva) => {

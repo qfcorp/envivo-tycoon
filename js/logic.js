@@ -1352,6 +1352,14 @@
       out.push({ key: p[0], perfil: p[1], opcional: i >= N,
         nombre: has ? tx(nk) : tx('pos.extra', { n: i + 1 }), ideal: has ? tx(nk + '.ideal') : tx('pos.extra.ideal') });
     }
+    // Tomas a mano (fútbol, 28-oct): siempre opcionales y solo en "Tu plan" (el automático no las llena); solo = los
+    // cuerpos de cámara que pueden ir (las minicámaras de la red)
+    (t.aMano || []).forEach((p) => {
+      if (out.some((q) => q.key === p[0])) return;
+      const nk = ['pos.' + (t.posDe || c.type) + '.' + p[0], 'pos.futbol.' + p[0]].find((k) => Object.prototype.hasOwnProperty.call(TEXTOS, k));
+      out.push({ key: p[0], perfil: p[1], opcional: true, aMano: true, solo: p[2] || null,
+        nombre: nk ? tx(nk) : p[0], ideal: nk && Object.prototype.hasOwnProperty.call(TEXTOS, nk + '.ideal') ? tx(nk + '.ideal') : '' });
+    });
     return out;
   }
 
@@ -1453,6 +1461,10 @@
     topeGeo: 1.15,          // ajuste máximo con lo que suma el sitio (en alto, más cerca...)
     eje: 3, ejeMax: 6,      // cámaras libres: una cerrada del otro lado de la principal (cruza el eje)
     sitio: 3, sitioMax: 6,  // cámaras libres: una cámara en un sitio mejor que su marca sugerida (por cámara, por plan)
+    // Fútbol, tomas a mano (28-oct): contracampo para el VAR / repeticiones (con operador y equipo de repeticiones, o
+    // sin ellos), bancos y cambios, y minicámaras en la red (por cámara: +1, +1 con repeticiones, +1 en LigaPrima, final
+    // e internacional; tope por plan)
+    var: 3, varSolo: 1, bancos: 2, miniArco: 1, miniMax: 3,
   };
   // La posición clave de cada evento (la que cuenta la jugada o las reacciones que no se repiten): ahí va tu mejor camarógrafo
   const CLAVE = { barrial: 'cerrada', ligapro: 'cerrada', final: 'cerrada2', internacional_host: 'cerrada2', boxeo: 'cerrada', lucha_libre: 'hombro_izq',
@@ -1517,7 +1529,7 @@
       if (!m) { const l = libres.shift() || [20 + (i * 23) % 320, 252]; m = [l[0], l[1], lugar.centro[0], lugar.centro[1]]; }
       const [nx, ny] = aPct(m[0], m[1]);
       const kind = p.perfil === 'aerea' || TOMA_DE[p.key] === 'aereo' ? 'aereo' : TOMA_DE[p.key] || (/^extra_/.test(p.key) ? 'general' : 'especial');
-      marcas[p.key] = { nx, ny, tx: m[2], ty: m[3], kind, eje: !!(lugar.eje && t.deporte && (kind === 'general' || kind === 'cerrado') && !/^(contraplano|arco_|baja_|robotica_arco)/.test(p.key)) };
+      marcas[p.key] = { nx, ny, tx: m[2], ty: m[3], kind, eje: !!(lugar.eje && t.deporte && (kind === 'general' || kind === 'cerrado') && !/^(contraplano|arco_|baja_|robotica_arco|var$|bancos$|mini_)/.test(p.key)) };
     });
     geoCache[ck] = { lugar: ev.lugar, zonas: lugar.zonas, centro: lugar.centro, eje: lugar.eje || null, marcas };
     return geoCache[ck];
@@ -1538,6 +1550,8 @@
   // ¿Puede ir una cámara con ese cuerpo en (x, y)%? null = sí; si no, [motivo, zona]
   function puntoInvalido(g, cuerpo, x, y) {
     const [px, py] = aPx(x, y);
+    // Un hueco que abre el bloqueo para ciertos cuerpos (la red de un arco: solo minicámaras)
+    if (g.zonas.some((z) => z.abre && dentro(z, px, py) && (z.deja || []).includes(cuerpo))) return null;
     for (const z of g.zonas) {
       if (!dentro(z, px, py)) continue;
       if (z.t === 'bloqueo' && !(z.deja || []).includes(cuerpo)) return ['punto', z.k];
@@ -1620,7 +1634,7 @@
       const r = ready.find((q) => q.e.id === x.e);
       if (!r) return fail('camara', { id: x.e });
       if (camUsada.has(r)) return fail('camara_repetida', { item: equipName(r.e) });
-      if (posicionImposible(p.perfil, r.clase)) return fail('imposible', { item: equipName(r.e), pos: p.nombre });
+      if (posicionImposible(p.perfil, r.clase) || (p.solo && !p.solo.includes(CUERPO[r.clase] || 'mano'))) return fail('imposible', { item: equipName(r.e), pos: p.nombre });
       // Dónde está en el plano (opcional): x, y enteros de 0 a 100; sin ellos, en la marca sugerida de la toma
       let gx = null, gy = null;
       if (x.x !== undefined || x.y !== undefined) {
@@ -1683,7 +1697,7 @@
     }
     // Tomas extra (opcionales), en orden: con una cámara que encaje y que alguien maneje; sin nadie que la maneje, solo
     // si encaja casi perfecto (con su trípode o soporte llega a 1: una cámara "dejada" en su sitio rinde la mitad, pero suma como toma extra)
-    pos.filter((p) => p.opcional).forEach((p) => {
+    pos.filter((p) => p.opcional && !p.aMano).forEach((p) => {
       let best = null, bs = b0;
       left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; best = r; } });
       const f = best ? fitOf(p.perfil, best) : 0;
@@ -1739,13 +1753,20 @@
     const cablero = roleCount(staff, 'cablero') > 0;
     const nec = GRANDE.includes(c.type) ? 2 : 1;
     const mueve = t.deporte || t.escenario || c.type === 'concierto';
+    // Minicámaras (red del arco): si no llevas ninguna, la más barata de la tienda (para la pista "hay en la Bodega")
+    const hayMini = ready.some((r) => CUERPO[r.clase] === 'mini');
+    const miniTienda = hayMini || !(t.aMano || []).some((x) => x[2]) ? null : Object.keys(CATALOG)
+      .filter((k) => !CATALOG[k].premium && !CATALOG[k].alquiler && !CATALOG[k].exclusivo && CUERPO[CLASE[CATALOG[k].subtipo]] === 'mini')
+      .sort((x, y) => (CATALOG[x].minRep || 0) - (CATALOG[y].minRep || 0) || CATALOG[x].price - CATALOG[y].price || (x < y ? -1 : 1))[0] || null;
     let sysCams = 0;
     const out = pos.map((p, i) => {
       const m = g ? g.marcas[p.key] : null;
       const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional, toma: nombreToma(c, p, i),
         asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, base: 0, ajuste: 0, mods: 0, operado: false, operador: null, razones: [],
         x: m ? m.nx : null, y: m ? m.ny : null, nx: m ? m.nx : null, ny: m ? m.ny : null, tx: m ? r2(m.tx * 100 / GW) : null, ty: m ? r2(m.ty * 100 / GH) : null,
-        kind: m ? m.kind : null, movida: false, geo: 1, lenteFalta: false };
+        kind: m ? m.kind : null, movida: false, geo: 1, lenteFalta: false, aMano: !!p.aMano,
+        nota: p.aMano ? tx(/^mini_/.test(p.key) ? 'cam.n.mini' : 'cam.n.contrario') : '' };
+      if (p.solo && p.solo.includes('mini') && !hayMini && miniTienda) Object.assign(o, { compra: miniTienda, compraTexto: tx('cam.n.comprar', { item: CATALOG[miniTienda].name }) });
       const a = asg.get(p);
       if (!a) return o;
       const r = a.r;
@@ -1818,6 +1839,16 @@
       const e2 = esq.map((k) => out.find((o) => o.key === k));
       if (e2.every((o) => o && o.asignado && o.cuerpo === 'mano' && o.operado)) e2.forEach((o, n) => o.razones.push({ k: 'cam.r.combo_esquinas', pts: n ? 0 : CAMR.esquinas, p: null, par: true }));
     }
+    // Fútbol, tomas a mano (28-oct): del lado contrario solo rinde lo que no es el juego en vivo (contracampo para el VAR
+    // y las repeticiones, bancos y cambios); las minicámaras de la red dan el gol desde adentro del arco
+    const sirve = (o) => o.asignado && o.aMano && o.fit * (o.geo || 1) >= 0.6;
+    const repeOk = repe && hasReplayGear(equip);
+    out.forEach((o) => {
+      if (!sirve(o)) return;
+      if (o.key === 'var' && o.operado) o.razones.push(repeOk ? { k: 'cam.r.var', pts: CAMR.var, p: null } : { k: 'cam.r.var_solo', pts: CAMR.varSolo, p: null });
+      if (o.key === 'bancos' && o.operado) o.razones.push({ k: 'cam.r.bancos', pts: CAMR.bancos, p: null });
+      if (/^mini_arco_/.test(o.key) && o.cuerpo === 'mini') o.razones.push({ k: 'cam.r.mini_arco', pts: CAMR.miniArco + (repeOk ? 1 : 0) + (GRANDE.includes(c.type) ? 1 : 0), p: null });
+    });
     // Cámaras libres: en deportes, la principal y las cerradas del mismo lado de la cancha o del ring (si una cruza el
     // eje, la acción cambia de dirección al cortar entre ellas)
     if (g && g.eje && p0 && p0.asignado) {
@@ -1856,6 +1887,7 @@
       if (cb.k === 'cam.r.cable') cb.pts = Math.max(cb.pts, -CAMR.cableMax);
       if (cb.k === 'cam.g.eje') cb.pts = Math.max(cb.pts, -CAMR.ejeMax);
       if (cb.k === 'cam.g.sitio') cb.pts = Math.min(cb.pts, CAMR.sitioMax);
+      if (cb.k === 'cam.r.mini_arco') cb.pts = Math.min(cb.pts, CAMR.miniMax);
     });
     const ok6 = (o) => o.asignado && o.ajuste >= 0.6;
     if ((c.cams || 1) >= 2) {
@@ -2048,7 +2080,8 @@
     const pesoAire = asg.reduce((a, p) => a + aire(p), 0);
     const camQ = asg.length ? asg.reduce((a, p) => a + p.q * p.cond * aire(p), 0) / pesoAire : 0;
     q += add('parte.calidad_camaras', Math.round(camQ * Q.camPerQ));
-    const extras = plan.positions.filter((p) => p.opcional && p.asignado && p.ajuste >= 0.5).length;
+    // (las tomas a mano del fútbol tienen sus propios puntos: contracampo, bancos, minicámaras)
+    const extras = plan.positions.filter((p) => p.opcional && !p.aMano && p.asignado && p.ajuste >= 0.5).length;
     if (extras) q += add('parte.extras', Math.min(Q.extraMax, extras) * Q.extraPos, { n: extras });
 
     const maxQ = (f) => equip.filter((e) => f(itemOf(e))).reduce((m, e) => Math.max(m, itemOf(e).q), 0);
@@ -3913,8 +3946,13 @@
      Dependen de dónde pusiste cada cámara (view.camPlan, el plan con el que se salió al aire): un plan con posiciones
      flojas hace más probable que "no se vea la jugada"; uno con combos, que una cámara capte el momento perfecto. */
   const debiles = (cp) => (cp && Array.isArray(cp.positions) ? cp.positions.filter((p) => !p.opcional && (!p.asignado || p.ajuste < 0.5)) : []);
-  const COMBOS_TOMA = ['cam.r.estrella', 'cam.r.combo_esquinas', 'cam.r.combo_grua', 'cam.r.lenta_repe', 'cam.r.dron_afuera'];
-  const combosToma = (cp) => (cp && Array.isArray(cp.combos) ? cp.combos.filter((cb) => COMBOS_TOMA.includes(cb.k) && cb.pts > 0) : []);
+  // (la minicámara en la red va primero: en el fútbol la toma perfecta es el gol desde adentro del arco)
+  const COMBOS_TOMA = ['cam.r.estrella', 'cam.r.combo_esquinas', 'cam.r.combo_grua', 'cam.r.lenta_repe', 'cam.r.dron_afuera', 'cam.r.var', 'cam.r.mini_arco'];
+  const combosToma = (cp) => {
+    const l = cp && Array.isArray(cp.combos) ? cp.combos.filter((cb) => COMBOS_TOMA.includes(cb.k) && cb.pts > 0) : [];
+    const gol = l.find((cb) => cb.k === 'cam.r.mini_arco');
+    return gol ? [gol].concat(l.filter((cb) => cb !== gol)) : l;
+  };
   const reqCams = (cp) => (cp && Array.isArray(cp.positions) ? cp.positions.filter((p) => !p.opcional).length : 0);
   registrarImprevisto('plano_perdido', {
     rol: 'camarografo',
@@ -3933,7 +3971,7 @@
     weight: () => 0.5,
     when: (s, ev) => !!ev.camPlan && !isFuneral(ev) && combosToma(ev.camPlan).length > 0,
     setup: (s, ev) => { const cb = combosToma(ev.camPlan); return { combo: cb.length ? cb[0].k : '' }; },
-    text: (ev, x) => ['inc.toma_combo.t', { combo: x && x.combo ? { k: x.combo } : '' }],
+    text: (ev, x) => (x && x.combo === 'cam.r.mini_arco' ? ['inc.toma_combo.t.gol'] : ['inc.toma_combo.t', { combo: x && x.combo ? { k: x.combo } : '' }]),
     ops: [
       { k: 'o0', si: { q: 2, r: 'r0' } },
       { k: 'o1', solo: (s, ev) => canReplay(s, ev), falta: 'need.repeticion', si: { q: 3, r: 'r1' } },

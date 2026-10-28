@@ -963,6 +963,48 @@ if (cam3.length >= 20) {
   const r = G.startEvent(s, gr.id, stIds, eqIds, cerca);
   check(r.ok && s.currentEvent.colocacion.some((z) => z.p === 'reaccion_familias' && z.x === reac.nx - 10), 'cámaras libres: el evento no guardó dónde quedó la cámara');
   console.log(`Cámaras libres: graduación ${base} → más cerca de las familias ${q(gr, cerca)} · detrás de una columna ${q(gr, tapada)}; fútbol cruzando el eje ${q(lp, pf.colocacion)} → ${q(lp, cruz)}`);
+
+  /* Fútbol, tomas a mano (28-oct, el dueño: "cuando usas VAR sí va una al otro lado; o esa cámara da técnicos o cambios;
+     hay cómo poner las mini atrás del arco") */
+  const mini1 = eq('cam_gopra_heroe13'), mini2 = eq('cam_marchall_cv513_pov');
+  s.staff.push({ id: nid(), name: 'Repe', role: 'operador_repeticion', skill: 3, tier: 'junior', wage: 50, morale: 90, events: 5 });
+  const eqIds2 = s.equip.map((e) => e.id), stIds2 = s.staff.map((p) => p.id);
+  ['barrial', 'ligapro', 'final', 'internacional_host'].forEach((t) => {
+    const c = { type: t, cams: G.EVENT_TYPES[t].cams[0] };
+    const pl = G.cameraPlan(s, c, eqIds2, stIds2);
+    const am = pl.positions.filter((p) => p.aMano);
+    check(am.map((p) => p.key).join() === 'var,bancos,mini_arco_izq,mini_arco_der' && am.every((p) => p.opcional && !p.asignado && p.nota),
+      `tomas a mano: ${t} debería tener contracampo, bancos y minicámaras (sin llenar en el automático)`);
+  });
+  // El automático no usa las tomas a mano (las minicámaras se quedan sin toma): el plan automático no cambia
+  const pa = G.cameraPlan(s, lp, eqIds2, stIds2);
+  check(!pa.positions.some((p) => p.aMano && p.asignado), 'tomas a mano: el automático no debería llenarlas');
+  const q2 = (col) => crudo(G.computeQuality(s, lp, s.staff, s.equip, col));
+  // Contracampo VAR del otro lado (con repeticiones): sin "cruza el eje" y con su combo; la cerrada del juego en vivo
+  // del mismo lado, en cambio, sí cruza el eje
+  const conVar = pa.colocacion.filter((z) => z.p !== 'arco_der_alto').map((z) => Object.assign({}, z));
+  conVar.push({ p: 'var', e: pa.colocacion.find((z) => z.p === 'arco_der_alto').e });
+  const pv = G.cameraPlan(s, lp, eqIds2, stIds2, conVar);
+  const ov = pv.positions.find((p) => p.key === 'var');
+  check(G.validarColocacion(s, lp, eqIds2, stIds2, conVar).ok && ov.asignado && ov.y < 30 && !ov.ejeCruzado && !pv.combos.some((x) => x.k === 'cam.g.eje')
+    && ov.razones.some((x) => x.k === 'cam.r.var' && x.pts > 0), 'tomas a mano: el contracampo VAR del otro lado no cruza el eje y suma con repeticiones');
+  const enVivo = mover(conVar, 'cerrada', 55, 10);
+  check(G.cameraPlan(s, lp, eqIds2, stIds2, enVivo).positions.find((p) => p.key === 'cerrada').ejeCruzado, 'tomas a mano: la cerrada del juego en vivo del otro lado sigue cruzando el eje');
+  // Minicámaras en la red: van solo cámaras de acción / POV (sin operador), suman y abren la "toma perfecta" del gol
+  const conMini = pa.colocacion.map((z) => Object.assign({}, z)).filter((z) => z.e !== mini1 && z.e !== mini2)
+    .concat([{ p: 'mini_arco_izq', e: mini1 }, { p: 'mini_arco_der', e: mini2 }]);
+  const pm = G.cameraPlan(s, lp, eqIds2, stIds2, conMini);
+  const mi = pm.positions.filter((p) => /^mini_arco_/.test(p.key));
+  check(G.validarColocacion(s, lp, eqIds2, stIds2, conMini).ok && mi.every((p) => p.asignado && p.operado && p.ok) && pm.combos.some((x) => x.k === 'cam.r.mini_arco' && x.pts > 0 && x.pts <= G.CAMARAS_REGLAS.miniMax)
+    && q2(conMini) > q2(pa.colocacion), 'tomas a mano: las minicámaras en la red suman (sin operador, ✓)');
+  const cine = s.equip.find((e) => e.type === 'cam_cine').id;
+  check(G.validarColocacion(s, lp, eqIds2, stIds2, [{ p: 'mini_arco_izq', e: cine }]).motivo === 'imposible', 'tomas a mano: una cámara de cine no va en la toma de la minicámara');
+  check(G.validarColocacion(s, lp, eqIds2, stIds2, [{ p: 'cerrada', e: cine, x: 15, y: 47 }]).motivo === 'punto', 'tomas a mano: una cámara grande no cabe en la red del arco');
+  check(G.validarColocacion(s, lp, eqIds2, stIds2, [{ p: 'mini_arco_izq', e: mini1, x: 30, y: 47 }]).motivo === 'punto', 'tomas a mano: la minicámara tampoco va en medio de la cancha');
+  // Sin minicámara, la toma dice dónde comprarla
+  const sinMini = G.cameraPlan(s, lp, eqIds2.filter((id) => id !== mini1 && id !== mini2), stIds2).positions.find((p) => p.key === 'mini_arco_izq');
+  check(sinMini.compra && G.CATALOG[sinMini.compra] && /Bodega/.test(sinMini.compraTexto), 'tomas a mano: sin minicámara debería sugerir comprar una');
+  console.log(`Tomas a mano (fútbol): automático ${q2(pa.colocacion)} · con minicámaras en la red ${q2(conMini)} · contracampo VAR ${q2(conVar)}`);
 })();
 
 if (errors) { console.error(`\n❌ ${errors} errores encontrados`); process.exit(1); }

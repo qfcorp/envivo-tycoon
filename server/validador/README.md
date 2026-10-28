@@ -60,6 +60,8 @@ Archivos (todos en `server/validador/`):
   `Game.validarColocacion` que cada cámara exista en lo que el jugador registró, que funcione (con su lente, fibra, piloto…),
   que no esté en dos posiciones, que la posición exista y sea posible (un dron no va en un trípode) y que el operador pueda
   manejarla; si no, `colocacion_invalida`. Máximo 16 elementos.
+  Fútbol (28-oct): también valen las tomas a mano `var`, `bancos`, `mini_arco_izq` y `mini_arco_der` (estas dos solo con
+  una cámara de acción o POV; la red de cada arco solo admite esas cámaras).
 
 El estado se arma **nuevo**: modo libre (sin historia), fuera del tutorial, con exactamente ese personal y esos equipos.
 

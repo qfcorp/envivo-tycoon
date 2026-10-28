@@ -376,6 +376,23 @@
     'cam.g.cerca': 'Muy cerca: no entra todo', 'cam.g.llega': 'Más cerca: tu lente sí llega',
     'cam.g.lejos': 'Lejos de la toma: el lente no llega', 'cam.g.cerca_bien': 'Más cerca de la toma: plano más limpio',
     'cam.g.encima': 'Demasiado encima: estorba y pierde la acción', 'cam.g.sitio': 'Buen sitio: mejor que la marca sugerida', 'cam.g.eje': 'Cruza el eje con la principal: la acción cambia de lado',
+    // Fútbol: tomas a mano (28-oct). Lado contrario solo para repeticiones/VAR o bancos; minicámaras en la red
+    'pos.futbol.var': 'Contracampo del otro lado: repeticiones y VAR', 'pos.futbol.var.ideal': 'Cámara con lente largo',
+    'pos.barrial.var': 'Contracampo del otro lado para las repeticiones', 'pos.barrial.var.ideal': 'Cámara con zoom largo',
+    'pos.futbol.bancos': 'Desde enfrente: bancos técnicos, cuarto árbitro y cambios', 'pos.futbol.bancos.ideal': 'Cámara con lente largo',
+    'pos.futbol.mini_arco_izq': 'Minicámara dentro de la red del arco izquierdo', 'pos.futbol.mini_arco_izq.ideal': 'Minicámara POV o de acción',
+    'pos.futbol.mini_arco_der': 'Minicámara dentro de la red del arco derecho', 'pos.futbol.mini_arco_der.ideal': 'Minicámara POV o de acción',
+    'toma.var': 'Contracampo VAR', 'toma.barrial.var': 'Contracampo para repeticiones', 'toma.bancos': 'Bancos técnicos y cambios',
+    'toma.mini_arco_izq': 'Detrás del arco izquierdo (minicámara)', 'toma.mini_arco_der': 'Detrás del arco derecho (minicámara)',
+    'cam.n.contrario': 'Lado contrario: solo para repeticiones/VAR o bancos, no para el juego en vivo.',
+    'cam.n.mini': 'Minicámara fija en la red (de acción o POV): no necesita operador y da el gol desde adentro del arco.',
+    'cam.n.comprar': 'No llevas una minicámara. Hay en la Bodega: {item}.',
+    'cam.r.var': 'Contracampo + repeticiones: otro ángulo para el VAR y las jugadas dudosas',
+    'cam.r.var_solo': 'Contracampo sin operador de repeticiones: se usa poco',
+    'cam.r.bancos': 'Bancos y cambios: técnicos, cuarto árbitro y tablero de cambios',
+    'cam.r.mini_arco': 'Minicámara en el arco: el gol desde la red',
+    'cam.z.red': 'el arco (ahí solo va una minicámara)',
+    'inc.toma_combo.t.gol': '⚽ ¡Gol! La minicámara en la red lo capta desde adentro del arco.',
     'cam.o.pilar': 'un pilar', 'cam.o.columna': 'una columna', 'cam.o.torre': 'la torre de sonido', 'cam.o.parlante': 'un parlante', 'cam.o.bancas': 'las bancas',
     // Qué falta en una toma clave (la lista de tomas del plano)
     'cam.p.sin_cam': 'Falta una cámara', 'cam.p.lente': 'Acércate o usa lente largo', 'cam.p.tapada': 'Algo tapa la vista: muévela',
@@ -1410,16 +1427,20 @@
   const AIRE = ['dron', 'aerea'];
   const DE_MANO = ['mano', 'bolsillo', 'mini', 'dron', 'aerea'];
   const EN_ESCENA = ['mano', 'bolsillo', 'mini', 'ptz', 'cine', 'dron', 'aerea'];
+  // Fútbol (28-oct, el dueño: "hay cómo poner las mini atrás del arco"): la red de cada arco. Ahí solo va una minicámara
+  // (de acción o POV, fija y sin operador) o algo que vuela; `abre` = dentro de esta zona no cuenta el bloqueo de la cancha.
+  const RED_ARCOS = [{ k: 'red', t: 'bloqueo', r: [47, 110, 13, 28], deja: ['mini', 'dron', 'aerea'], abre: true },
+    { k: 'red', t: 'bloqueo', r: [300, 110, 13, 28], deja: ['mini', 'dron', 'aerea'], abre: true }];
   const CAM_GEO = {
     W: 360, H: 264,
     lugares: {
       estadio: { centro: [180, 124], eje: 'h', libres: [[60, 250], [300, 250], [118, 250], [242, 250], [26, 60], [334, 188], [26, 188], [334, 60], [120, 22], [240, 22]], zonas: [
-        { k: 'cancha', t: 'bloqueo', r: [59, 46, 242, 156], deja: AIRE },
+        { k: 'cancha', t: 'bloqueo', r: [59, 46, 242, 156], deja: AIRE }, ...RED_ARCOS,
         { k: 'tribuna', t: 'alto', r: [40, 210, 280, 50] }, { k: 'tribuna', t: 'alto', r: [40, 4, 280, 34] },
         { k: 'tribuna', t: 'alto', r: [4, 44, 42, 160] }, { k: 'tribuna', t: 'alto', r: [314, 44, 42, 160] },
         { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [146, 203, 14, 4] }, { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [200, 203, 14, 4] }] },
       barrial: { centro: [180, 124], eje: 'h', libres: [[60, 250], [300, 250], [118, 250], [242, 250], [26, 60], [334, 188], [26, 188], [334, 60], [120, 22], [240, 22]], zonas: [
-        { k: 'cancha', t: 'bloqueo', r: [59, 46, 242, 156], deja: AIRE },
+        { k: 'cancha', t: 'bloqueo', r: [59, 46, 242, 156], deja: AIRE }, ...RED_ARCOS,
         { k: 'graderio', t: 'alto', r: [120, 212, 120, 30] },
         { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [146, 203, 14, 4] }, { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [200, 203, 14, 4] }] },
       boxeo: { centro: [180, 124], eje: 'h', libres: [[100, 236], [260, 236], [24, 124], [336, 124], [100, 18], [260, 18], [24, 236], [24, 18]], zonas: [
@@ -1475,7 +1496,8 @@
       boda: { lugar: 'boda', pos: { frontal_altar: [222, 28, 184, 54], contraplano_fondo: [180, 246, 180, 52], gimbal: [122, 150, 150, 120], dron: [324, 62, 180, 124] } },
       prensa: { lugar: 'prensa', pos: { frontal_mesa: [180, 204, 180, 36], abierta_ptz: [146, 216, 180, 30], reaccion: [318, 84, 200, 130] } },
       irl: { lugar: 'calle', pos: { gimbal: [134, 90, 154, 90], accion: [166, 103, 154, 91] } },
-      barrial: { lugar: 'barrial', pos: { principal: [180, 236, 180, 124], cerrada: [197, 236, 180, 124], cancha: [236, 207, 236, 150], dron: [292, 30, 180, 124] } },
+      barrial: { lugar: 'barrial', pos: { principal: [180, 236, 180, 124], cerrada: [197, 236, 180, 124], cancha: [236, 207, 236, 150], dron: [292, 30, 180, 124],
+        var: [204, 30, 180, 124], bancos: [150, 30, 153, 205], mini_arco_izq: [53, 124, 110, 124], mini_arco_der: [307, 124, 250, 124] } },
       graduacion: { lugar: 'graduacion', pos: { frontal: [180, 204, 180, 36], lateral_diplomas: [310, 44, 148, 34], jib_publico: [64, 132, 130, 168], reaccion_familias: [312, 196, 240, 196] } },
       lucha_libre: { lugar: 'lucha', pos: { hardcam: [180, 238, 180, 124], hombro_izq: [112, 120, 150, 124], hombro_der: [248, 128, 210, 124], rampa: [196, 66, 180, 24], pov: [228, 172, 180, 124] } },
       lanzamiento: { lugar: 'marca', pos: { frontal: [180, 240, 180, 58], abierta: [148, 244, 180, 44], gimbal_invitados: [236, 172, 200, 150], cenital_revelacion: [180, 52, 180, 60], photocall: [44, 216, 18, 216] } },
@@ -1491,14 +1513,17 @@
     futbol: { principal: [180, 236, 180, 124], cerrada: [197, 236, 180, 124], cerrada2: [163, 236, 180, 124], arco_izq_alto: [26, 124, 110, 124], arco_der_alto: [334, 124, 250, 124],
       cancha: [236, 207, 236, 150], contraplano: [180, 22, 180, 124], superlenta: [118, 222, 78, 124], superlenta2: [242, 222, 282, 124], baja_izq: [52, 160, 100, 124],
       baja_der: [308, 88, 260, 124], steadicam: [168, 214, 150, 170], dron: [292, 30, 180, 124], cablecam: [180, 124, 180, 124], presentador: [64, 230, 80, 212],
-      zona_mixta: [154, 210, 130, 214], comcam: [242, 247, 242, 258] },
+      zona_mixta: [154, 210, 130, 214], comcam: [242, 247, 242, 258],
+      // Tomas a mano (28-oct): del otro lado de la principal (contracampo para el VAR y las repeticiones; bancos y cambios,
+      // que desde enfrente se ven de cara) y las minicámaras dentro de la red de cada arco
+      var: [204, 22, 180, 124], bancos: [150, 22, 153, 205], mini_arco_izq: [53, 124, 110, 124], mini_arco_der: [307, 124, 250, 124] },
     // Qué toma es cada posición: general (plano abierto), cerrado (lente largo a lo importante), reaccion (caras, de
     // cerca), especial (grúa, riel, robóticas...) y aereo (dron, cablecam, cenital)
     tipoToma: {
       general: ['principal', 'hardcam', 'abierta', 'abierta_ptz', 'fondo', 'contraplano', 'contraplano_fondo', 'frontal_altar', 'discreta', 'beauty', 'tactica', 'coro'],
-      cerrado: ['cerrada', 'cerrada2', 'foh', 'frontal', 'frontal_mesa', 'area_izq', 'area_der', 'arco_izq_alto', 'arco_der_alto', 'superlenta', 'superlenta2', 'rampa',
+      cerrado: ['cerrada', 'cerrada2', 'var', 'foh', 'frontal', 'frontal_mesa', 'area_izq', 'area_der', 'arco_izq_alto', 'arco_der_alto', 'superlenta', 'superlenta2', 'rampa',
         'lateral_diplomas', 'oficiante', 'ptz_lateral'],
-      reaccion: ['reaccion', 'reaccion_familias', 'esquina1', 'esquina2', 'hombro_izq', 'hombro_der', 'cancha', 'foso', 'photocall', 'zona_mixta', 'presentador',
+      reaccion: ['reaccion', 'reaccion_familias', 'bancos', 'esquina1', 'esquina2', 'hombro_izq', 'hombro_der', 'cancha', 'foso', 'photocall', 'zona_mixta', 'presentador',
         'gimbal_invitados', 'steadicam', 'steadicam2', 'gimbal_auto'],
       aereo: ['dron', 'cablecam', 'cenital', 'cenital_revelacion'],
     },
@@ -1516,6 +1541,9 @@
   const FUT = { principal: ['principal', 'tribuna'], cerrada: ['cerrada', 'cerrada'], cerrada2: ['cerrada2', 'cerrada'], ai: ['arco_izq_alto', 'tribuna'],
     ad: ['arco_der_alto', 'tribuna'], cancha: ['cancha', 'hombro'], contra: ['contraplano', 'tribuna'], lenta: ['superlenta', 'lenta'],
     lenta2: ['superlenta2', 'lenta'], bi: ['baja_izq', 'fija'], bd: ['baja_der', 'fija'], steadi: ['steadicam', 'hombro'], cable: ['cablecam', 'aerea'], dron: ['dron', 'aerea'] };
+  // Tomas a mano del fútbol (28-oct): solo en "Tu plan" (el automático no las usa, así los intentos en línea y el plan
+  // automático no cambian). [clave, perfil, cuerpos que pueden ir (opcional)]. Ver PLAN.md, Bitácora.
+  const FUT_MANO = [['var', 'cerrada'], ['bancos', 'cerrada'], ['mini_arco_izq', 'pov', ['mini']], ['mini_arco_der', 'pov', ['mini']]];
   const EVENTOS = {
     misa: { icon: '⛪', cams: [1, 1], audio: true, stream: 0.3, outdoor: 0, diff: 1, pay: [150, 390], minRep: 0,
       clients: ['Parroquia San José', 'Iglesia El Buen Pastor', 'Parroquia La Merced'],
@@ -1547,7 +1575,7 @@
       clients: ['Liga Barrial La Floresta', 'Liga Parroquial Conocoto', 'Liga Barrial El Inca'],
       crew: plantilla('director 1/1, camarografo 2/3, cablero 0/1, sonidista 0/1, operador_repeticion 0/1, operador_graficos 0/1, tecnico_transmision 1/1'),
       crewReal: plantilla('director 1/1, productor 0/1, camarografo 2/3, cablero 0/1, sonidista 0/1, operador_repeticion 0/1, operador_graficos 0/1, tecnico_transmision 1/1, piloto_dron 0/1'),
-      positions: [['principal', 'tribuna'], ['cerrada', 'cerrada'], ['cancha', 'hombro'], ['dron', 'aerea']] },
+      positions: [['principal', 'tribuna'], ['cerrada', 'cerrada'], ['cancha', 'hombro'], ['dron', 'aerea']], aMano: FUT_MANO },
     graduacion: { icon: '🎓', cams: [2, 2], audio: true, stream: 0.6, outdoor: 0.2, diff: 2, pay: [300, 710], minRep: 5, escenario: true,
       clients: ['Colegio Nacional Mejía', 'Unidad Educativa Santa Ana', 'Colegio San Gabriel'],
       crew: plantilla('director 1/1, camarografo 2/3, cablero 0/1, sonidista 1/1, operador_graficos 0/1, tecnico_transmision 1/1, coordinador_piso 0/1'),
@@ -1583,12 +1611,12 @@
       clients: ['Club Atlético del Valle', 'Deportivo Cumbayá FC', 'Sporting Pichincha'],
       crew: plantilla('director 1/1, productor 1/1, camarografo 3/4, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 0/1, shader 0/1, tecnico_transmision 1/1'),
       crewReal: plantilla('director 1/1, productor 1/2, camarografo 4/7, operador_ptz 0/2, cablero 2/4, sonidista 1/2, microfonista 0/1, operador_repeticion 1/2, operador_graficos 1/1, shader 1/1, tecnico_transmision 1/1, piloto_dron 0/1, coordinador_piso 1/1, runner 1/2'),
-      positions: [FUT.principal, FUT.cerrada, FUT.ai, FUT.ad, FUT.cancha, FUT.contra, FUT.lenta, FUT.bi, FUT.bd, FUT.steadi] },
+      positions: [FUT.principal, FUT.cerrada, FUT.ai, FUT.ad, FUT.cancha, FUT.contra, FUT.lenta, FUT.bi, FUT.bd, FUT.steadi], aMano: FUT_MANO },
     final: { icon: '🏆', cams: [5, 6], audio: true, stream: 1, outdoor: 1, diff: 5, pay: [4000, 7500], peso: 0.5, minRep: 65, minChapter: 5, deporte: true, entrevistas: true,
       clients: ['Liga Nacional de Fútbol', 'Federación del Torneo'],
       crew: plantilla('director 1/1, productor 1/1, camarografo 3/5, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 1/1, shader 0/1, tecnico_transmision 1/1'),
       crewReal: plantilla('director 1/1, productor 1/2, camarografo 6/12, operador_ptz 1/3, cablero 3/6, sonidista 1/2, microfonista 1/1, operador_repeticion 2/3, operador_graficos 1/2, shader 1/2, tecnico_transmision 1/2, piloto_dron 0/1, coordinador_piso 1/2, runner 1/3'),
-      positions: [FUT.principal, FUT.cerrada2, FUT.ai, FUT.ad, FUT.cancha, FUT.lenta, FUT.contra, FUT.dron, FUT.cable, FUT.lenta2, FUT.bi, FUT.bd] },
+      positions: [FUT.principal, FUT.cerrada2, FUT.ai, FUT.ad, FUT.cancha, FUT.lenta, FUT.contra, FUT.dron, FUT.cable, FUT.lenta2, FUT.bi, FUT.bd], aMano: FUT_MANO },
     internacional_unilateral: { icon: '🌎', cams: [2, 3], audio: true, stream: 1, outdoor: 1, diff: 3, pay: [1750, 4350], minRep: 55, soloInternacional: true, deporte: true, entrevistas: true,
       clients: ['Canal Pampa Deportes'],
       crew: plantilla('director 0/1, productor 1/1, camarografo 2/3, sonidista 1/1, microfonista 0/1, tecnico_transmision 1/1'),
@@ -1598,7 +1626,7 @@
       clients: ['Confederación Continental de Fútbol'],
       crew: plantilla('director 1/1, productor 1/1, camarografo 4/5, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 1/1, shader 1/1, tecnico_transmision 1/1'),
       crewReal: plantilla('director 1/1, productor 2/2, camarografo 10/16, operador_ptz 2/4, cablero 4/8, sonidista 2/3, microfonista 1/2, operador_repeticion 2/4, operador_graficos 1/2, shader 2/3, tecnico_transmision 1/2, piloto_dron 0/1, coordinador_piso 2/3, runner 2/4'),
-      positions: [FUT.principal, FUT.cerrada2, FUT.ai, FUT.ad, FUT.lenta, FUT.lenta2, FUT.cancha, FUT.contra, FUT.cable, ['comcam', 'robotica']] },
+      positions: [FUT.principal, FUT.cerrada2, FUT.ai, FUT.ad, FUT.lenta, FUT.lenta2, FUT.cancha, FUT.contra, FUT.cable, ['comcam', 'robotica']], aMano: FUT_MANO },
   };
 
   /* ---------- Contratos internacionales ---------- */

@@ -7,6 +7,9 @@
      8. Intento en línea con cámaras movidas: el servidor lo repite igual; coordenadas imposibles se rechazan.
      9. Con mouse: arrastrar una cámara del plano a otro sitio.
     10. Capturas de graduación, fútbol, boxeo y concierto (tests/capturas/mover_*.png).
+    11. Fútbol (28-oct, "cuando usas VAR sí va una al otro lado... hay cómo poner las mini atrás del arco"): contracampo VAR
+        y bancos del otro lado sin "cruza el eje" (la cerrada del juego en vivo sí lo cruza); minicámaras en la red de los
+        arcos (solo de acción / POV, sin operador, ✓ y combo); sin minicámara, "Comprar en la Bodega" (tests/capturas/var_*.png).
    En un celular simulado (390x844, fecha fija 2026-06-10) con Playwright:
      1. Preparar una velada de boxeo: el plan sale en Automático; tocar una cámara la elige (luz roja) y muestra en cada
         posición cuánto cambia la calidad; tocar una posición la pone ahí ("Tu plan"), cambia de lugar con la que estaba,
@@ -74,6 +77,7 @@ async function servir(ctx) {
       eq('cam_blackmagia_urso_broadcast_g3'); eq('lente_kanon_kx21x8_2');
       eq('cam_zony_hxr_mk2500'); eq('cam_zony_hxr_mk2500');
       eq('cam_cine'); eq('cam_panasonika_aw_uv22');
+      (o.extra || []).forEach((k) => eq(k));
       ['sw_vmax_pro_pc', 'audio_pro', 'mics', 'encoder', 'router4g', 'ups', 'sop_manfrotti_504x', 'sop_manfrotti_504x'].forEach((k) => { if (G.CATALOG[k]) eq(k); });
       const p = (name, role, skill, tier) => s.staff.push({ id: id(), name, role, skill, tier, wage: 60, morale: 90, events: 10, eventos_nacionales: 10, eventos_internacionales: 0 });
       p('Ana Lema', 'camarografo', 5, 'senior'); p('Kevin Toapanta', 'camarografo', 2, 'junior'); p('Luis Pazmiño', 'camarografo', 2, 'junior');
@@ -499,7 +503,7 @@ async function servir(ctx) {
     }
 
     /* ===== 10. Capturas: graduación, fútbol, boxeo y concierto con alguna cámara movida ===== */
-    for (const [tipo, cams, mueve] of [['graduacion', 4, [['reaccion_familias', -12, 0], ['lateral_diplomas', 0, 8]]], ['ligapro', 4, [['arco_izq_alto', 7, 0], ['cerrada', 0, -79]]],
+    for (const [tipo, cams, mueve] of [['graduacion', 4, [['reaccion_familias', -12, 0], ['lateral_diplomas', 0, 8]]], ['ligapro', 4, [['arco_izq_alto', 5, 0], ['cerrada', 0, -79]]],
       ['boxeo', 4, [['esquina2', -6, 4], ['cerrada', 2, -10]]], ['concierto', 4, [['foso', 8, 0], ['abierta', -16, 4]]]]) {
       const { ctx, page } = await abrir({ eventos: 5, tipo, cams });
       // Mover con la lógica (como si se tocara el plano) para que la captura muestre cámaras fuera de su marca
@@ -525,6 +529,98 @@ async function servir(ctx) {
       await page.evaluate(() => { const el = document.querySelector('#prepCalcC .pe-tkh'); if (el) el.scrollIntoView({ block: 'center' }); });
       await page.waitForTimeout(120);
       await page.screenshot({ path: path.join(OUT, `mover_${nombre}_tomas.png`) });
+      await ctx.close();
+    }
+
+    /* ===== 11. Fútbol (28-oct, el dueño: "cuando usas VAR sí va una al otro lado; o esa cámara da técnicos o cambios;
+       hay cómo poner las mini atrás del arco"): contracampo VAR y bancos del otro lado sin "cruza el eje"; minicámaras
+       en la red de los arcos (solo de acción / POV); sin minicámara, la toma dice dónde comprarla ===== */
+    {
+      const { ctx, page } = await abrir({ eventos: 5, tipo: 'ligapro', cams: 4, extra: ['cam_gopra_heroe13', 'cam_marchall_cv513_pov', 'cam_zony_hxr_mk2500'] });
+      await verPlano(page);
+      // Las cámaras nuevas a la preparación (si no venían marcadas)
+      const ids = await page.evaluate(() => { const s = window.__game.state; const f = (t) => s.equip.filter((e) => e.type === t).map((e) => e.id); return { gop: f('cam_gopra_heroe13')[0], pov: f('cam_marchall_cv513_pov')[0], zony: f('cam_zony_hxr_mk2500')[2], cine: f('cam_cine')[0] }; });
+      const enPrep = async () => (await plano(page)).equipIds;
+      const faltan = [ids.gop, ids.pov, ids.zony, ids.cine];
+      for (const id of faltan) {
+        if ((await enPrep()).includes(id)) continue;
+        await irPaso(page, 'equipos');
+        await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${id}"])`).click({ position: { x: 12, y: 12 } });
+        await page.waitForTimeout(80);
+        await irPaso(page, 'camaras');
+        await verPlano(page);
+      }
+      const p0 = await plano(page);
+      let r = await leer(page);
+      const am = p0.positions.filter((p) => p.aMano);
+      bien(am.map((p) => p.key).join() === 'var,bancos,mini_arco_izq,mini_arco_der' && am.every((p) => !p.asignado) && ['var', 'bancos', 'mini_arco_izq', 'mini_arco_der'].every((k) => r.filas.some((f) => f.k === k)),
+        `Fútbol: la lista de tomas trae «Contracampo VAR», «Bancos técnicos y cambios» y las dos minicámaras del arco, vacías en el automático (${r.filas.map((f) => f.k).join(', ')})`);
+      // Con la minicámara elegida, la red de cada arco se ve en verde; con la de cine, el arco no se puede usar
+      await tocarCam(page, ids.gop);
+      const verdes = await page.locator('#prepCalcC .pe-zsi').count();
+      bien(verdes === 2, `Con una minicámara elegida, la red de los dos arcos sale en verde (${verdes})`);
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC svg.pe-dia'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(120);
+      await page.screenshot({ path: path.join(OUT, 'var_01_minicamara_elegida.png') });
+      await tocarPos(page, 'mini_arco_izq');
+      await tocarCam(page, ids.pov); await tocarPos(page, 'mini_arco_der');
+      const pMini = await plano(page);
+      // Al contracampo, la cámara de hombro de la cerrada (con su camarógrafo); la de cine pasa a la cerrada
+      ids.zony = p0.positions.find((p) => p.key === 'cerrada').equipId;
+      await tocarCam(page, ids.zony); await tocarPos(page, 'var');
+      await tocarCam(page, ids.cine); await tocarPos(page, 'cerrada');
+      const p1 = await plano(page);
+      r = await leer(page);
+      const pk = (k) => p1.positions.find((p) => p.key === k);
+      const fl = (k) => r.filas.find((f) => f.k === k) || {};
+      const okFila = (k) => page.evaluate((k) => (document.querySelector(`#prepCalcC button.pe-clr[data-k="${k}"]`) || {}).dataset.ok, k);
+      bien(pk('mini_arco_izq').equipId === ids.gop && pk('mini_arco_der').equipId === ids.pov && pk('mini_arco_izq').operado && (await okFila('mini_arco_izq')) === '1' && (await okFila('mini_arco_der')) === '1',
+        `Las minicámaras van en la red sin operador y su toma queda ✓ («${fl('mini_arco_izq').txt}»)`);
+      bien(r.combos.some((x) => /Minicámara en el arco/.test(x)) && pMini.crudo > p0.crudo, `Suman: ${r.combos.join(' | ')} (base ${p0.crudo} → con las minicámaras ${pMini.crudo})`);
+      bien(pk('var').equipId === ids.zony && pk('var').y < 30 && !pk('var').ejeCruzado && !r.combos.some((x) => /Cruza el eje/.test(x)), 'El contracampo VAR del otro lado de la principal no cruza el eje');
+      await abrirDetalle(page, 'var');
+      r = await leer(page);
+      bien(/Lado contrario: solo para repeticiones\/VAR o bancos, no para el juego en vivo/.test(r.det) && /Contracampo \+ repeticiones|Contracampo sin operador/.test(r.det), `El detalle lo explica: "${r.det.slice(0, 170)}"`);
+      await page.locator('#prepCalcC .pe-dt').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: path.join(OUT, 'var_02_detalle_contracampo.png') });
+      // La cerrada (juego en vivo) del mismo lado que el VAR sí cruza el eje
+      const col = p1.colocacion.map((z) => Object.assign({}, z));
+      const yo = col.find((z) => z.p === 'cerrada'); yo.x = 55; yo.y = 10;
+      await page.evaluate((col) => window.__game.prepColocar(col), col);
+      const p2 = await plano(page);
+      bien(p2.positions.find((p) => p.key === 'cerrada').ejeCruzado && p2.combos.some((x) => x.k === 'cam.g.eje'), 'La cerrada del juego en vivo del otro lado sí cruza el eje');
+      await page.evaluate((col) => window.__game.prepColocar(col), p1.colocacion);
+      // Una cámara grande no cabe en la red
+      const p3 = await plano(page);
+      const malo = await page.evaluate(([cine]) => { const plan = window.__game.prepPlan(); const col = plan.colocacion.map((z) => Object.assign({}, z)); const yo = col.find((z) => z.p === 'principal'); yo.x = 14; yo.y = 47; return window.__game.prepColocar(col); }, [ids.cine]);
+      const mc = await page.evaluate(([cine]) => { const G = window.Game, gm = window.__game, s = gm.state, plan = gm.prepPlan(); return G.validarColocacion(s, s.contracts[0], plan.equipIds, plan.staffIds, [{ p: 'mini_arco_izq', e: cine }]).msg; }, [ids.cine]);
+      bien(!malo && (await plano(page)).crudo === p3.crudo && /no se puede poner/.test(mc), `Una cámara grande no cabe en la red y la de cine no va en la toma de la minicámara ("${mc}")`);
+      await verPlano(page);
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC svg.pe-dia'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(150);
+      await page.evaluate(() => { const t = document.getElementById('toast'); if (t) t.style.display = 'none'; });
+      await page.screenshot({ path: path.join(OUT, 'var_03_mapa_futbol.png') });
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC .pe-tkh'); if (el) el.scrollIntoView({ block: 'start' }); });
+      await page.waitForTimeout(120);
+      await page.screenshot({ path: path.join(OUT, 'var_04_tomas.png') });
+      bien(!(await leer(page)).scroll, 'Sin desplazamiento horizontal (390 px)');
+      await ctx.close();
+    }
+    {
+      // Sin minicámara: la toma dice que hay en la Bodega y el botón lleva a la tienda
+      const { ctx, page } = await abrir({ eventos: 5, tipo: 'ligapro', cams: 4 });
+      await verPlano(page);
+      await abrirDetalle(page, 'mini_arco_izq');
+      const r = await leer(page);
+      const btn = page.locator('#prepCalcC .pe-buy[data-act="ir-bodega"]');
+      bien(/Hay en la Bodega/.test(r.det) && (await btn.count()) === 1, `Sin minicámara, la toma dice dónde comprarla: "${r.det.slice(0, 160)}"`);
+      await page.locator('#prepCalcC .pe-dt').scrollIntoViewIfNeeded();
+      await page.screenshot({ path: path.join(OUT, 'var_05_comprar_minicamara.png') });
+      const item = await btn.getAttribute('data-item');
+      await btn.click();
+      await page.waitForTimeout(300);
+      const ir = await page.evaluate((k) => ({ modal: !!document.querySelector('#overlay.on [data-act="go-live"]'), tab: !!document.querySelector('#tab-bodega') && getComputedStyle(document.querySelector('#tab-bodega')).display !== 'none', item: !!document.querySelector(`#tab-bodega [data-k="${k}"]`) }), item);
+      bien(!ir.modal && ir.tab && ir.item, `«Comprar en la Bodega» lleva a la tienda con la minicámara (${item})`);
       await ctx.close();
     }
 
