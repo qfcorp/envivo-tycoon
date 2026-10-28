@@ -1,5 +1,12 @@
 /* Prueba del plan de cámaras a mano (pedido del dueño, 28-oct): "tú como dueño deberías ver qué cámaras y en qué parte las
    pones; podría ser mucho mejor o peor de acuerdo a dónde se ponga y qué equipo se use".
+   Y las cámaras libres (28-oct, "no puedo mover a dónde poner la cámara"): cada cámara se mueve a cualquier sitio libre
+   del plano (tocar la cámara y luego el sitio; arrastrar con mouse); las marcas de piso quedan como sitios sugeridos.
+     7. Mover una cámara cambia la estimación; un sitio mejor la sube; uno prohibido (el ring, la cancha) se rechaza y no
+        cambia nada; la lista de tomas clave se actualiza (✓ → ✗ con "Algo tapa la vista") y "Volver a la marca".
+     8. Intento en línea con cámaras movidas: el servidor lo repite igual; coordenadas imposibles se rechazan.
+     9. Con mouse: arrastrar una cámara del plano a otro sitio.
+    10. Capturas de graduación, fútbol, boxeo y concierto (tests/capturas/mover_*.png).
    En un celular simulado (390x844, fecha fija 2026-06-10) con Playwright:
      1. Preparar una velada de boxeo: el plan sale en Automático; tocar una cámara la elige (luz roja) y muestra en cada
         posición cuánto cambia la calidad; tocar una posición la pone ahí ("Tu plan"), cambia de lugar con la que estaba,
@@ -73,8 +80,8 @@ async function servir(ctx) {
       p('Carla Ortiz', 'director', 4, 'senior'); p('Diego Salazar', 'sonidista', 3, 'semi_senior'); p('Mishell Cedeño', 'tecnico_transmision', 3, 'semi_senior');
       p('Bryan Guamán', 'cablero', 2, 'junior'); p('Paola Villacís', 'operador_repeticion', 3, 'semi_senior'); p('Stalin Morales', 'operador_graficos', 3, 'semi_senior');
       s.contracts = [];
-      const c = G.addContract(s, 'boxeo');
-      c.cams = 4; c.daysLeft = 5; c.rival = false; c.story = false; c.outdoor = false;
+      const c = G.addContract(s, o.tipo || 'boxeo');
+      c.cams = o.cams || 4; c.daysLeft = 5; c.rival = false; c.story = false; c.outdoor = false;
       return G.serialize(s);
     }, op);
     await page.goto(BASE + '/vacia.html');
@@ -292,6 +299,232 @@ async function servir(ctx) {
       await page.waitForTimeout(150);
       const p = await plano(page);
       bien(p.positions.find((x) => x.key === 'contraplano').equipId === cine && (await leer(page)).modo === 'manual', 'Arrastrar la cámara con el mouse hasta una posición la coloca ahí');
+      await ctx.close();
+    }
+
+    /* ===== 7. Cámaras libres: mover una cámara a cualquier sitio del plano ===== */
+    {
+      const { ctx, page } = await abrir({ eventos: 5, tipo: 'graduacion', cams: 4 });
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC svg.pe-dia'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(120);
+      const auto = await leer(page);
+      const qAuto = (await plano(page)).crudo;
+      const geo = await page.evaluate(() => ({ libre: !!document.querySelector('#prepCalcC svg.pe-libre'), marcas: document.querySelectorAll('#prepCalcC g.pe-gh').length,
+        camaras: document.querySelectorAll('#prepCalcC g[data-pe-act="sel"]').length, filas: [...document.querySelectorAll('#prepCalcC button.pe-clr')].map((b) => b.dataset.ok) }));
+      bien(geo.libre && geo.marcas >= 4 && geo.camaras >= 3 && geo.filas.length >= 4, `El plano tiene ${geo.marcas} marcas de piso y ${geo.camaras} cámaras que se pueden mover; la lista de tomas clave tiene ${geo.filas.length} filas`);
+      // Un sitio libre del plano en pantalla (donde un toque cae en el plano y no en una marca o cámara)
+      const aPantalla = (x, y) => page.evaluate(([x, y]) => {
+        const svg = document.querySelector('#prepCalcC svg.pe-dia'); const m = svg.getScreenCTM(); const pt = svg.createSVGPoint();
+        pt.x = x * 3.6; pt.y = y * 2.64; const q = pt.matrixTransform(m);
+        const t = document.elementFromPoint(q.x, q.y);
+        return { x: q.x, y: q.y, libre: !!(t && t.classList && t.classList.contains('pe-mapa')) };
+      }, [x, y]);
+      const tocarMapa = async (x, y) => { const p = await aPantalla(x, y); await page.touchscreen.tap(p.x, p.y); await page.waitForTimeout(150); return p.libre; };
+      const tocarCamPlano = async (k) => { const b = await page.locator(`#prepCalcC g[data-pe-act="sel"][data-k="${k}"] .pe-hit`).boundingBox(); await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await page.waitForTimeout(150); };
+      const fila = (k) => page.evaluate((k) => { const b = document.querySelector(`#prepCalcC button.pe-clr[data-k="${k}"]`); return b ? { ok: b.dataset.ok, txt: b.innerText.replace(/\s+/g, ' ') } : null; }, k);
+      // Buscar con la lógica un sitio mejor para la cámara de las reacciones (más cerca de las familias) que esté libre en pantalla
+      const pl0 = await plano(page);
+      const reac = pl0.positions.find((p) => p.key === 'reaccion_familias');
+      const mejor = await page.evaluate(([nx, ny]) => {
+        const G = window.Game, gm = window.__game, c = gm.state.contracts[0];
+        const plan = gm.prepPlan();
+        const out = [];
+        for (let dx = -26; dx <= 0; dx += 2) for (let dy = -6; dy <= 6; dy += 3) out.push([nx + dx, ny + dy]);
+        return out;
+      }, [reac.nx, reac.ny]);
+      let elegido = null;
+      for (const [x, y] of mejor) {
+        const p = await aPantalla(x, y);
+        if (!p.libre) continue;
+        const q = await page.evaluate(([x, y]) => {
+          const G = window.Game, gm = window.__game, s = gm.state, c = s.contracts[0];
+          const plan = gm.prepPlan();
+          const col = plan.colocacion.map((z) => Object.assign({}, z));
+          const yo = col.find((z) => z.p === 'reaccion_familias'); yo.x = x; yo.y = y;
+          const eq = plan.equipIds, st = plan.staffIds;
+          if (!G.validarColocacion(s, c, eq, st, col).ok) return null;
+          const cq = G.computeQuality(s, c, s.staff.filter((p) => st.includes(p.id)), s.equip.filter((e) => eq.includes(e.id)), col);
+          return cq.parts.reduce((a, p) => a + p[1], 0);
+        }, [x, y]);
+        if (q !== null && q > qAuto) { elegido = [x, y, q]; break; }
+      }
+      bien(!!elegido, `Hay un sitio mejor para la cámara de las reacciones, más cerca de las familias (${elegido ? elegido.slice(0, 2).join(', ') + ' → ' + elegido[2] : 'ninguno'} contra ${qAuto})`);
+      await tocarCamPlano('reaccion_familias');
+      let r = await leer(page);
+      bien(/Ahora toca dónde va/.test(r.tip) && (await page.locator('#prepCalcC g[data-pe-act="sel"][data-k="reaccion_familias"].pe-src').count()) === 1, 'Tocar una cámara del plano la elige para moverla (luz roja) y el aviso dice qué hacer');
+      await page.screenshot({ path: path.join(OUT, 'mover_01_elegida.png') });
+      if (elegido) {
+        await tocarMapa(elegido[0], elegido[1]);
+        r = await leer(page);
+        const pl = await plano(page);
+        const o = pl.positions.find((p) => p.key === 'reaccion_familias');
+        bien(o.x === elegido[0] && o.y === elegido[1] && o.movida && r.modo === 'manual', `Tocar un sitio libre mueve la cámara ahí (${o.x}, ${o.y}) y el plan pasa a "Tu plan"`);
+        bien(pl.crudo === elegido[2] && pl.crudo > qAuto && (r.min > auto.min || r.max > auto.max) && /\+/.test(r.delta), `En un sitio mejor la calidad sube (base ${qAuto} → ${pl.crudo}; ${auto.min}–${auto.max} → ${r.min}–${r.max}; "${r.delta}")`);
+        bien(/Más cerca de la toma|Buen sitio/.test(r.det), `El detalle explica por qué: "${r.det.slice(0, 160)}"`);
+        await page.screenshot({ path: path.join(OUT, 'mover_02_movida.png') });
+      }
+      // Lista de tomas clave: la cámara de los diplomas detrás de una columna queda ✗ "Algo tapa la vista"
+      const dip0 = await fila('lateral_diplomas');
+      await tocarCamPlano('lateral_diplomas');
+      const libreCol = await tocarMapa(92, 51);
+      const dip1 = await fila('lateral_diplomas');
+      r = await leer(page);
+      bien(libreCol && dip0.ok === '1' && dip1.ok === '0' && /Algo tapa la vista/.test(dip1.txt) && /Tapada: una columna/.test(r.det),
+        `La lista de tomas clave se actualiza: «${dip0.txt}» → «${dip1.txt}»`);
+      const tkl = await page.evaluate(() => (document.querySelector('#prepCalcC .pe-tkl') || {}).innerText || '');
+      bien(/de 4 bien cubiertas/.test(tkl) && /Entrega de diplomas/.test(tkl), `Debajo del plano se ve qué toma falta: "${tkl.replace(/\s+/g, ' ')}"`);
+      await page.screenshot({ path: path.join(OUT, 'mover_03_tapada.png') });
+      // A 360 px tampoco hay desplazamiento horizontal y las marcas y cámaras del plano siguen con 40 px de toque o más
+      await page.setViewportSize({ width: 360, height: 780 });
+      await page.waitForTimeout(200);
+      const t360 = await page.evaluate(() => Math.min(...[...document.querySelectorAll('#prepCalcC svg.pe-dia .pe-hit')].map((c) => c.getBoundingClientRect().width)));
+      bien(!(await leer(page)).scroll && t360 >= 40, `A 360 px: sin desplazamiento horizontal; marcas y cámaras del plano con ${Math.round(t360)} px de toque`);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(150);
+      await page.locator('#prepCalcC .pe-am').click();
+      await page.waitForTimeout(120);
+      const dip2 = await fila('lateral_diplomas');
+      bien(dip2.ok === '1' && !(await plano(page)).positions.find((p) => p.key === 'lateral_diplomas').movida, '"Volver a la marca" la deja otra vez en su marca de piso (✓)');
+      // Al aire: el evento guarda las cámaras movidas
+      const qPlan = (await plano(page)).q;
+      await page.click('[data-act="go-live"]');
+      await page.waitForFunction(() => window.__game.state.currentEvent);
+      const ev = await page.evaluate(() => { const e = window.__game.state.currentEvent; return { col: e.colocacion, base: e.base, luck: (e.parts.find((p) => p[2] === 'parte.suerte') || [0, 0])[1] }; });
+      bien(Array.isArray(ev.col) && ev.col.some((z) => z.p === 'reaccion_familias' && Number.isInteger(z.x) && Number.isInteger(z.y)) && ev.base === Math.max(0, Math.min(100, qPlan + ev.luck)),
+        `Al aire: el evento guarda dónde quedó cada cámara (${JSON.stringify(ev.col.filter((z) => z.x !== undefined))}) y su calidad base`);
+      bien(!(await leer(page)).scroll, 'Sin desplazamiento horizontal (390 px)');
+      await ctx.close();
+    }
+
+    /* ===== 7b. Un sitio prohibido (dentro del ring con una cámara de hombro) se rechaza ===== */
+    {
+      const { ctx, page } = await abrir({ eventos: 5 });
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC svg.pe-dia'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(120);
+      const aPantalla = (x, y) => page.evaluate(([x, y]) => {
+        const svg = document.querySelector('#prepCalcC svg.pe-dia'); const m = svg.getScreenCTM(); const pt = svg.createSVGPoint();
+        pt.x = x * 3.6; pt.y = y * 2.64; const q = pt.matrixTransform(m);
+        const t = document.elementFromPoint(q.x, q.y);
+        return { x: q.x, y: q.y, libre: !!(t && t.classList && t.classList.contains('pe-mapa')) };
+      }, [x, y]);
+      const antes = await plano(page);
+      const r0 = await leer(page);
+      const cam = antes.positions.find((p) => p.asignado && p.cuerpo === 'mano');
+      const b = await page.locator(`#prepCalcC g[data-pe-act="sel"][data-k="${cam.key}"] .pe-hit`).boundingBox();
+      await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+      await page.waitForTimeout(150);
+      const rojas = await page.locator('#prepCalcC .pe-zno').count();
+      bien(rojas >= 2, `Con una cámara de hombro elegida, en rojo donde no puede ir: el ring y la mesa de jueces (${rojas} zonas)`);
+      let dentro = null;
+      for (const [x, y] of [[42, 40], [44, 56], [56, 56], [46, 36], [54, 42]]) { const p = await aPantalla(x, y); if (p.libre) { dentro = p; dentro.gx = x; dentro.gy = y; break; } }
+      await page.touchscreen.tap(dentro.x, dentro.y);
+      await page.waitForTimeout(150);
+      const despues = await plano(page);
+      const r1 = await leer(page);
+      const toast = await page.evaluate(() => (document.getElementById('toast') || {}).innerText || '');
+      const o = despues.positions.find((p) => p.key === cam.key);
+      bien(o.equipId === cam.equipId && o.x === cam.x && o.y === cam.y && despues.crudo === antes.crudo && r1.min === r0.min && r1.max === r0.max,
+        `Un sitio prohibido (${dentro.gx}, ${dentro.gy}: dentro del ring) se rechaza: la cámara no se mueve y la calidad no cambia`);
+      bien(/no puede ir en el ring/.test(toast) && (await page.locator('#prepCalcC .pe-mal').count()) === 1, `Se marca en rojo y se dice por qué: "${toast}"`);
+      await page.screenshot({ path: path.join(OUT, 'mover_04_prohibido.png') });
+      await ctx.close();
+    }
+
+    /* ===== 8. Intento en línea con cámaras movidas: el servidor lo repite igual ===== */
+    {
+      const base = {
+        seed: 515151,
+        contrato: { type: 'boxeo', client: 'Veladas del Pacífico', cams: 4, diff: 3, audio: true, stream: true, outdoor: false, pay: 1500 },
+        equipo: {
+          staff: [{ name: 'Tú (dueño)', role: 'camarografo', skill: 3, owner: true }, { name: 'Ana', role: 'camarografo', skill: 5, tier: 'senior' },
+            { name: 'Kevin', role: 'camarografo', skill: 2 }, { name: 'Carla', role: 'director', skill: 4 }, { name: 'Paola', role: 'operador_repeticion', skill: 3 },
+            { name: 'Diego', role: 'sonidista', skill: 3 }, { name: 'Mishell', role: 'tecnico_transmision', skill: 3 }],
+          equip: [{ type: 'cam_blackmagia_urso_broadcast_g3', condition: 90 }, { type: 'lente_kanon_kx21x8_2', condition: 90 }, { type: 'cam_zony_hxr_mk2500', condition: 90 },
+            { type: 'cam_zony_hxr_mk2500', condition: 90 }, { type: 'cam_cine', condition: 90 }, { type: 'sw_vmax_pro_pc', condition: 90 }, { type: 'audio_pro', condition: 90 }, { type: 'encoder', condition: 90 }],
+        },
+        contexto: { fama: 30, dinero: 1000 },
+        // La de cine en la cerrada, a pie de ring (más cerca que su marca); una de hombro en la esquina 1, un poco corrida
+        colocacion: [{ p: 'principal', e: 0 }, { p: 'esquina1', e: 2, x: 70, y: 22 }, { p: 'esquina2', e: 3 }, { p: 'cerrada', e: 4, o: 1, x: 58, y: 78 }],
+      };
+      const { ctx, page } = await abrir({ eventos: 5 });
+      const jugado = await page.evaluate(async (it) => {
+        const Vv = window.EnVivoVivo;
+        await Vv.asegurar();
+        const v = Vv.crear(window.Game, it);
+        const plan = v.s.currentEvent.cameraPlan;
+        for (let n = 0; n < 20; n++) { const inc = Vv.incidente(v); if (!inc) break; Vv.elegir(v, inc.choices.find((c) => c.ok).i); }
+        const out = Vv.terminar(v);
+        return Object.assign(out, { movidas: plan.positions.filter((p) => p.movida).map((p) => p.key + '@' + p.x + ',' + p.y) });
+      }, base);
+      bien(jugado.movidas.length === 2, `El juego juega el intento con las cámaras movidas (${jugado.movidas.join(' ')})`);
+      const v = V.validate(Object.assign({}, base, { decisiones: jugado.decisiones, cliente_resultado: jugado.resultado }));
+      bien(v.valido === true && v.coincide === true && v.calidad === jugado.resultado.quality, `El validador repite el intento con las cámaras movidas: ${v.calidad} = ${jugado.resultado.quality}`);
+      const malos = {
+        'en el ring': [{ p: 'principal', e: 0 }, { p: 'esquina1', e: 2, x: 50, y: 50 }],
+        'fuera de la cuadrícula': [{ p: 'principal', e: 0, x: 101, y: 90 }],
+        'sin y': [{ p: 'principal', e: 0, x: 50 }],
+        'con decimales': [{ p: 'principal', e: 0, x: 50.5, y: 90 }],
+        'en la mesa de jueces': [{ p: 'principal', e: 0, x: 50, y: 74 }],
+      };
+      Object.keys(malos).forEach((k) => {
+        const vm = V.validate(Object.assign({}, base, { decisiones: jugado.decisiones, colocacion: malos[k] }));
+        bien(!vm.valido && vm.detalle.motivo === 'colocacion_invalida', `Coordenadas ${k}: se rechazan (${(vm.detalle.mensaje || '').slice(0, 80)})`);
+      });
+      const enMarca = V.validate(Object.assign({}, base, { decisiones: [], colocacion: [{ p: 'principal', e: 0, x: 50, y: 90 }] }));
+      bien(!enMarca.detalle || enMarca.detalle.motivo !== 'colocacion_invalida', `Una cámara en su marca de piso (con coordenadas) se acepta (${enMarca.detalle ? enMarca.detalle.motivo : 'válido'})`);
+      await ctx.close();
+    }
+
+    /* ===== 9. Con mouse: arrastrar una cámara del plano a otro sitio ===== */
+    {
+      const { ctx, page } = await abrir({ eventos: 5, mouse: true, tipo: 'concierto', cams: 4 });
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC svg.pe-dia'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(120);
+      const p0 = await plano(page);
+      const cam = p0.positions.find((p) => p.asignado && p.kind !== 'aereo' && p.cuerpo !== 'tripode' && p.key !== 'foh') || p0.positions.find((p) => p.asignado);
+      const de = await page.locator(`#prepCalcC g[data-pe-act="sel"][data-k="${cam.key}"] .pe-hit`).boundingBox();
+      // Destino: un sitio libre del público, cerca del centro
+      const dest = await page.evaluate(() => { const svg = document.querySelector('#prepCalcC svg.pe-dia'); const m = svg.getScreenCTM();
+        for (const [x, y] of [[40, 62], [36, 66], [44, 60], [30, 70], [60, 64]]) { const pt = svg.createSVGPoint(); pt.x = x * 3.6; pt.y = y * 2.64; const q = pt.matrixTransform(m); const t = document.elementFromPoint(q.x, q.y); if (t && t.classList.contains('pe-mapa')) return { x, y, sx: q.x, sy: q.y }; } return null; });
+      await page.mouse.move(de.x + de.width / 2, de.y + de.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(de.x + 30, de.y + 10, { steps: 4 });
+      await page.mouse.move(dest.sx, dest.sy, { steps: 8 });
+      await page.mouse.up();
+      await page.waitForTimeout(150);
+      const p1 = await plano(page);
+      const o = p1.positions.find((p) => p.key === cam.key);
+      bien(o.x === dest.x && o.y === dest.y && o.equipId === cam.equipId, `Arrastrar la cámara «${cam.toma}» con el mouse la mueve a otro sitio del plano (${dest.x}, ${dest.y})`);
+      await ctx.close();
+    }
+
+    /* ===== 10. Capturas: graduación, fútbol, boxeo y concierto con alguna cámara movida ===== */
+    for (const [tipo, cams, mueve] of [['graduacion', 4, [['reaccion_familias', -12, 0], ['lateral_diplomas', 0, 8]]], ['ligapro', 4, [['arco_izq_alto', 7, 0], ['cerrada', 0, -79]]],
+      ['boxeo', 4, [['esquina2', -6, 4], ['cerrada', 2, -10]]], ['concierto', 4, [['foso', 8, 0], ['abierta', -16, 4]]]]) {
+      const { ctx, page } = await abrir({ eventos: 5, tipo, cams });
+      // Mover con la lógica (como si se tocara el plano) para que la captura muestre cámaras fuera de su marca
+      await page.evaluate((mueve) => {
+        const gm = window.__game, plan = gm.prepPlan();
+        const col = plan.colocacion.map((z) => Object.assign({}, z));
+        mueve.forEach(([k, dx, dy]) => { const yo = col.find((z) => z.p === k); const m = plan.positions.find((p) => p.key === k); if (yo && m) { yo.x = Math.max(0, Math.min(100, m.nx + dx)); yo.y = Math.max(0, Math.min(100, m.ny + dy)); } });
+        if (!gm.prepColocar(col)) throw new Error('colocación inválida: ' + JSON.stringify(col));
+      }, mueve);
+      await page.waitForTimeout(150);
+      const pl = await plano(page);
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC .pe-ed-top'); if (el) el.scrollIntoView({ block: 'start' }); });
+      await page.waitForTimeout(150);
+      // Elegir una cámara para ver en rojo dónde no puede ir
+      const k = pl.positions.find((p) => p.asignado && p.movida) || pl.positions.find((p) => p.asignado);
+      if (k) { const b = await page.locator(`#prepCalcC g[data-pe-act="sel"][data-k="${k.key}"] .pe-hit`).boundingBox(); if (b) await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2); await page.waitForTimeout(150); }
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC svg.pe-dia'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(150);
+      const nombre = { graduacion: 'graduacion', ligapro: 'futbol', boxeo: 'boxeo', concierto: 'concierto' }[tipo];
+      await page.screenshot({ path: path.join(OUT, `mover_${nombre}.png`) });
+      const r = await leer(page);
+      bien(!r.scroll && pl.positions.some((p) => p.movida), `Captura ${nombre}: ${pl.positions.filter((p) => p.movida).length} cámaras movidas, sin desplazamiento horizontal`);
+      await page.evaluate(() => { const el = document.querySelector('#prepCalcC .pe-tkh'); if (el) el.scrollIntoView({ block: 'center' }); });
+      await page.waitForTimeout(120);
+      await page.screenshot({ path: path.join(OUT, `mover_${nombre}_tomas.png`) });
       await ctx.close();
     }
 

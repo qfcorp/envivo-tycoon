@@ -191,6 +191,49 @@ console.log(`1. Honestos: ${honestos.filter((h) => h.v.valido).length}/${N} vali
   }
 }
 
+/* ---------- 1c. Cámaras libres: colocación con coordenadas (x, y de 0 a 100) ---------- */
+{
+  const aIndices = (intento, col) => {
+    const est = C.Intento.crearEstado(C.Game, clon(intento));
+    return col.map((x) => Object.assign({ p: x.p, e: est.equipIds.indexOf(x.e) }, x.x !== undefined ? { x: x.x, y: x.y } : {}));
+  };
+  const estDe = (intento) => C.Intento.crearEstado(C.Game, clon(intento));
+  let movidos = 0, distintos = 0, prohibidos = 0;
+  honestos.slice(0, 80).forEach((h, k) => {
+    const est = estDe(h.base);
+    const c = est.s.contracts[0];
+    const plan = C.Game.cameraPlan(est.s, c, est.equipIds, est.staffIds);
+    const geo = C.Game.camGeo(c);
+    const o = plan.positions.find((p) => p.asignado && p.kind !== 'aereo');
+    if (!o || !geo) return;
+    // Mover esa cámara un 30 % hacia lo que filma (si el sitio se puede usar)
+    const x = Math.round(o.nx + 0.3 * (o.tx - o.nx)), y = Math.round(o.ny + 0.3 * (o.ty - o.ny));
+    const col = plan.colocacion.map((z) => (z.p === o.key ? { p: z.p, e: z.e, x, y } : { p: z.p, e: z.e }));
+    const conCol = Object.assign(clon(h.base), { colocacion: aIndices(h.base, col) });
+    let jugado;
+    try { jugado = jugarCliente(conCol, azar); } catch (e) {
+      ok(e.motivo === 'colocacion_invalida', `cámara movida ${k}: el cliente falló por otra cosa (${e.message})`);
+      const v = V.validate(Object.assign(clon(conCol), { decisiones: [] }));
+      ok(!v.valido && v.detalle.motivo === 'colocacion_invalida', `cámara movida ${k}: el servidor aceptó un sitio prohibido (${v.detalle.motivo})`);
+      prohibidos++;
+      return;
+    }
+    movidos++;
+    const v = V.validate(Object.assign(clon(conCol), { decisiones: jugado.decisiones, cliente_resultado: jugado.resultado }));
+    ok(v.valido === true && v.calidad === jugado.resultado.quality, `cámara movida ${k}: no validó (${v.detalle.motivo}: ${v.detalle.mensaje})`);
+    if (v.detalle.base !== h.v.detalle.base) distintos++;
+  });
+  console.log(`1c. Cámaras libres: ${movidos} intentos con una cámara movida, jugados y validados (${distintos} con otra calidad base) · ${prohibidos} sitios prohibidos rechazados`);
+  ok(movidos >= 20, `muy pocos intentos con cámaras movidas (${movidos})`);
+  const h = honestos[0];
+  const malos = { 'x sin y': [{ p: 'x', e: 0, x: 5 }], 'fuera de rango': [{ p: 'x', e: 0, x: -1, y: 5 }], 'texto': [{ p: 'x', e: 0, x: '5', y: 5 }], 'decimales': [{ p: 'x', e: 0, x: 5, y: 5.5 }] };
+  const pos0 = C.Game.cameraPlan(estDe(h.base).s, estDe(h.base).s.contracts[0], estDe(h.base).equipIds, estDe(h.base).staffIds).positions[0].key;
+  Object.keys(malos).forEach((n) => {
+    const v = V.validate(Object.assign(clon(h.intento), { colocacion: malos[n].map((z) => Object.assign({}, z, { p: pos0 })) }));
+    ok(!v.valido && v.calidad === null && v.detalle.motivo === 'colocacion_invalida', `coordenadas malas (${n}) aceptadas: ${v.detalle.motivo}`);
+  });
+}
+
 /* ---------- 2. Trampas ---------- */
 const T = {};
 const anota = (nombre, detectada, inofensiva) => {
