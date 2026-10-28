@@ -1550,6 +1550,8 @@
     "duelo.liga": "Liga {liga}",
     "duelo.sin_cupos": "Ya usaste tus duelos de hoy.",
     "duelo.inc.cable": "Cable roto",
+    "duelo.inc.plano_perdido": "No se ve la jugada",
+    "duelo.inc.toma_combo": "Toma perfecta",
     "duelo.inc.cable_pisado": "Cable pisado",
     "duelo.inc.internet": "Se cayó el internet",
     "duelo.inc.luz": "Apagón",

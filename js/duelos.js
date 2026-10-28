@@ -44,7 +44,7 @@
     'duelo.sin_intento_js': 'Falta el motor de eventos en línea (js/intento.js). Recarga el juego.', 'duelo.pendiente': 'Tu jugada quedó guardada. El resultado aparece en unos minutos.',
     'duelo.reglas': 'Mismo contrato, misma semilla y el mismo sorteo de imprevistos para los dos. Tú juegas en vivo; tu rival juega con su equipo guardado y decide como un productor prudente.',
     'duelo.fama_recibida': 'Fama de duelos: +{n}', 'duelo.liga': 'Liga {liga}', 'duelo.sin_cupos': 'Ya usaste tus duelos de hoy.',
-    'duelo.inc.cable': 'Cable roto', 'duelo.inc.cable_pisado': 'Cable pisado', 'duelo.inc.internet': 'Se cayó el internet', 'duelo.inc.luz': 'Apagón',
+    'duelo.inc.cable': 'Cable roto', 'duelo.inc.plano_perdido': 'No se ve la jugada', 'duelo.inc.toma_combo': 'Toma perfecta', 'duelo.inc.cable_pisado': 'Cable pisado', 'duelo.inc.internet': 'Se cayó el internet', 'duelo.inc.luz': 'Apagón',
     'duelo.inc.lluvia': 'Lluvia', 'duelo.inc.tarde': 'Alguien llegó tarde', 'duelo.inc.acople': 'Acople de audio', 'duelo.inc.bateria': 'Batería agotada',
     'duelo.inc.logo': 'Logo a última hora', 'duelo.inc.falla': 'Equipo gastado', 'duelo.inc.epico': 'Momento épico', 'duelo.inc.permiso': 'Permiso del local',
     'duelo.inc.transporte': 'Transporte varado', 'duelo.inc.robo': 'Robo de un equipo', 'duelo.inc.senal': 'Señal trabada', 'duelo.inc.guion': 'Cambio de guion',
@@ -146,11 +146,14 @@
       const I = root.Intento;
       if (!I) throw new Error(T('duelo.sin_intento_js'));
       const datos = clon(intento);
-      const { s, contractId, staffIds, equipIds } = I.crearEstado(G, datos);
+      const est = I.crearEstado(G, datos);
+      const { s, contractId, staffIds, equipIds } = est;
+      // Plan de cámaras a mano del intento (opcional, con índices de equipo.equip / equipo.staff): igual que el validador
+      const col = I.colocacionDe ? I.colocacionDe(datos, est) : null;
       const P = root.Premium; const antes = P ? !!P.vip : false;
       if (P && P.setVip) P.setVip(datos.vip === true);
       let r;
-      try { r = G.startEvent(s, contractId, staffIds, equipIds); } finally { if (P && P.setVip) P.setVip(antes); }
+      try { r = col ? G.startEvent(s, contractId, staffIds, equipIds, col) : G.startEvent(s, contractId, staffIds, equipIds); } finally { if (P && P.setVip) P.setVip(antes); }
       if (!r || !r.ok) throw new Error((r && r.msg) || 'No se pudo empezar el evento.');
       return { G, s, intento: datos, decisiones: [], ultimo: null, resultado: null,
         contrato: s.currentEvent.contract, gear: s.equip.map((e) => e.type), camaras: s.equip.filter((e) => G.CATALOG[e.type] && G.CATALOG[e.type].cat === 'cam').length };
@@ -166,7 +169,9 @@
       const f = v.G.finishEvent(v.s);
       if (!f || !f.ok) throw new Error((f && f.msg) || 'No se pudo terminar el evento.');
       v.resultado = f.result;
-      return { decisiones: v.decisiones.slice(), resultado: { quality: f.result.quality, stars: f.result.stars } };
+      const out = { decisiones: v.decisiones.slice(), resultado: { quality: f.result.quality, stars: f.result.stars } };
+      if (Array.isArray(v.intento.colocacion)) out.colocacion = v.intento.colocacion.slice();   // va con las decisiones
+      return out;
     },
     /* Pinta el paso actual del evento en vivo. alTerminar() se llama cuando no quedan imprevistos. */
     pintar(el, v, A, pref, alTerminar) {

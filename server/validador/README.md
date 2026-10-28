@@ -35,6 +35,7 @@ Archivos (todos en `server/validador/`):
   "contexto": { "fama": 35, "dinero": 1000, "stock": { "cable": 1, "battery": 1 } },
   "vip": false,
   "decisiones": [0, 2, 1],
+  "colocacion": [ { "p": "foh", "e": 0, "o": 1 }, { "p": "foso", "e": 2 } ],
   "cliente_resultado": { "quality": 61, "stars": 3 }
 }
 ```
@@ -51,6 +52,14 @@ Archivos (todos en `server/validador/`):
   `stock` de repuestos. Valores por defecto: fama 0, dinero 1000, 1 cable y 1 batería. **Deben ser iguales para todos los
   jugadores de un evento competitivo** o venir del servidor, nunca del juego.
 - `cliente_resultado` (opcional): lo que el juego dice que sacó. Si no viene, vale lo del servidor.
+- `colocacion` (opcional, 28-oct): el **plan de cámaras a mano** (qué cámara va en qué posición). Viene del juego como las
+  `decisiones` (PHP la debe copiar tal cual; **pendiente**: los endpoints de liga, festival, duelos, desafío y copas
+  todavía no la guardan, así que por ahora los modos en línea juegan con el plan automático). Cada elemento: `p` = clave de la posición del evento, `e` = índice de la cámara en
+  `equipo.equip` (0, 1, ...), `o` = índice del operador en `equipo.staff` (`null` = nadie la maneja; si falta, el mejor
+  camarógrafo libre). Sin `colocacion` (o `null`) el evento usa el plan automático, como siempre. El validador revisa con
+  `Game.validarColocacion` que cada cámara exista en lo que el jugador registró, que funcione (con su lente, fibra, piloto…),
+  que no esté en dos posiciones, que la posición exista y sea posible (un dron no va en un trípode) y que el operador pueda
+  manejarla; si no, `colocacion_invalida`. Máximo 16 elementos.
 
 El estado se arma **nuevo**: modo libre (sin historia), fuera del tutorial, con exactamente ese personal y esos equipos.
 
@@ -73,6 +82,7 @@ El estado se arma **nuevo**: modo libre (sin historia), fuera del tutorial, con 
 | `resultado_no_coincide` | La jugada es posible pero el juego dijo otro resultado (trampa o versión distinta de la lógica) |
 | `opcion_invalida` | Una decisión no es un número de opción que exista |
 | `opcion_no_disponible` | Eligió una opción bloqueada (por ejemplo "router 4G" sin router) |
+| `colocacion_invalida` | El plan de cámaras a mano usa una cámara que no registró o que no funciona, una posición que no existe o imposible, una cámara repetida o un operador que no sirve |
 | `faltan_decisiones` / `sobran_decisiones` | No hay una decisión por imprevisto |
 | `decisiones_invalidas`, `semilla_invalida`, `contrato_invalido`, `equipo_invalido`, `contexto_invalido`, `intento_invalido`, `json_invalido` | Datos mal formados |
 | `logica_no_determinista` | `js/logic.js` usó `Math.random` durante el evento (error de la lógica, no del jugador) |

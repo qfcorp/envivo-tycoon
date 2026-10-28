@@ -2235,10 +2235,162 @@
     if (!c) return;
     const sug = G.suggestLoadout(S, contractId);
     // Volver a la misma preparación (tras un canje o una compra) deja el paso en el que estaba
-    const antes = prep && prep.id === contractId ? { paso: prep.paso, cat: prep.cat } : {};
-    prep = { id: contractId, staff: new Set(sug.staffIds), equip: new Set(sug.equipIds), paso: antes.paso, cat: antes.cat };
+    const antes = prep && prep.id === contractId ? { paso: prep.paso, cat: prep.cat, col: prep.col } : {};
+    prep = { id: contractId, staff: new Set(sug.staffIds), equip: new Set(sug.equipIds), paso: antes.paso, cat: antes.cat,
+      // col: plan de cámaras a mano ([{ p, e, o }]) o null = automático; selCam / selPos: lo que está tocado en el plano
+      col: antes.col || null, selCam: null, selPos: null };
     renderPrep();
   }
+
+  /* ---------- Plan de cámaras a mano (js/plan_evento.js lo dibuja; aquí se mueven las cámaras) ----------
+     Tocar una cámara y luego una posición (o arrastrarla con el mouse) la pone ahí; si había otra, cambian de lugar.
+     El automático es el punto de partida: el primer cambio copia su plan. La lógica valida todo (Game.validarColocacion). */
+  const crudoQ = (cq) => cq.parts.reduce((a, p) => a + p[1], 0);
+  const camTutorial = () => !S.stats || S.stats.events < 1;
+  function autoCol(c) {
+    try { return G.cameraPlan(S, c, [...prep.equip], [...prep.staff]).colocacion.map((x) => Object.assign({}, x)); } catch (e) { return []; }
+  }
+  // La colocación sin lo que ya no se lleva (cámaras desmarcadas, cámaras que dejaron de funcionar, personas que no van)
+  function colPrep(c) {
+    if (!prep || !Array.isArray(prep.col) || !G.cameraPlan) return null;
+    let listas;
+    try { listas = new Set(G.cameraPlan(S, c, [...prep.equip], [...prep.staff]).camaras.map((x) => x.equipId)); } catch (e) { return null; }
+    prep.col = prep.col.filter((x) => listas.has(x.e)).map((x) => (x.o > 0 && !prep.staff.has(x.o) ? { p: x.p, e: x.e } : x));
+    return prep.col;
+  }
+  const colValida = (c, col) => (G.validarColocacion ? G.validarColocacion(S, c, [...prep.equip], [...prep.staff], col) : { ok: true });
+  // La colocación con la cámara e en la posición k (si había otra, cambian de lugar); null si no se puede
+  function colCon(c, e, k) {
+    const col = (Array.isArray(prep.col) ? prep.col : autoCol(c)).map((x) => Object.assign({}, x));
+    const yo = col.find((x) => x.e === e), ocupa = col.find((x) => x.p === k);
+    if (yo && yo.p === k) return col;
+    if (yo) { if (ocupa) ocupa.p = yo.p; yo.p = k; } else { if (ocupa) col.splice(col.indexOf(ocupa), 1); col.push({ p: k, e }); }
+    return col;
+  }
+  function camAplicar(c, col) {
+    const v = colValida(c, col);
+    if (!v.ok) { toast(TL(v.msg)); snd.play('error'); return false; }
+    prep.col = col;
+    return true;
+  }
+  // Cuánto cambia la calidad si la cámara elegida va a cada posición ({ clave: { dq, ok } })
+  function camPreview(c, staff, equip, actual) {
+    if (!prep || prep.selCam == null || !G.cameraPlan) return null;
+    const out = {};
+    let pos = [];
+    try { pos = G.cameraPlan(S, c, [...prep.equip], [...prep.staff], prep.col).positions; } catch (e) { return null; }
+    pos.forEach((p) => {
+      const col = colCon(c, prep.selCam, p.key);
+      if (!colValida(c, col).ok) { out[p.key] = { ok: false }; return; }
+      let q;
+      try { q = crudoQ(G.computeQuality(S, c, staff, equip, col)); } catch (e) { return; }
+      out[p.key] = { ok: true, dq: Math.round(q - actual) };
+    });
+    return out;
+  }
+  function camOperadores() {
+    const o = {};
+    ['camarografo', 'operador_ptz'].forEach((rol) => {
+      o[rol] = S.staff.filter((p) => prep.staff.has(p.id) && normRole(p.role) === rol)
+        .map((p) => ({ id: p.id, name: nmP(p), skill: p.skill }));
+    });
+    return o;
+  }
+  function camAccion(el) {
+    if (!prep) return;
+    const c = S.contracts.find((x) => x.id === prep.id);
+    if (!c) return;
+    colPrep(c);
+    const a = el.dataset.peAct, k = el.dataset.k || null, id = el.dataset.id != null ? Number(el.dataset.id) : null;
+    let foco = null;
+    if (a === 'modo') {
+      prep.col = k === 'manual' ? autoCol(c) : null;
+      prep.selCam = null; prep.selPos = null;
+      foco = `[data-pe-act="modo"][data-k="${k}"]`;
+    } else if (a === 'cam') {
+      const ocupada = prep.selPos && (Array.isArray(prep.col) ? prep.col : autoCol(c)).some((x) => x.p === prep.selPos);
+      if (prep.selPos && prep.selCam == null && !ocupada) {
+        // Posición vacía elegida primero: la cámara va ahí
+        if (camAplicar(c, colCon(c, id, prep.selPos))) snd.play('tap');
+      } else {
+        prep.selCam = prep.selCam === id ? null : id;
+        prep.selPos = null;
+        snd.play('tap');
+      }
+      foco = `[data-pe-act="cam"][data-id="${id}"]`;
+    } else if (a === 'pos') {
+      if (prep.selCam != null) {
+        if (camAplicar(c, colCon(c, prep.selCam, k))) { prep.selCam = null; prep.selPos = k; snd.play('tap'); }
+      } else { prep.selPos = prep.selPos === k ? null : k; snd.play('tap'); }
+      foco = `[data-pe-act="pos"][data-k="${k}"]`;
+    } else if (a === 'quitar') {
+      prep.col = (Array.isArray(prep.col) ? prep.col : autoCol(c)).filter((x) => x.p !== k).map((x) => Object.assign({}, x));
+      snd.play('tap');
+      foco = `[data-pe-act="pos"][data-k="${k}"]`;
+    } else if (a === 'op') {
+      const col = (Array.isArray(prep.col) ? prep.col : autoCol(c)).map((x) => Object.assign({}, x));
+      const yo = col.find((x) => x.p === k);
+      if (!yo) return;
+      const antes = yo.o;
+      if (id > 0) {
+        // Un camarógrafo maneja una sola cámara: si ya tenía otra, cambian de operador
+        const otro = col.find((x) => x !== yo && x.o === id);
+        const pers = S.staff.find((p) => p.id === id);
+        if (otro && pers && normRole(pers.role) === 'camarografo') otro.o = antes;
+      }
+      yo.o = id > 0 ? id : 0;
+      if (camAplicar(c, col)) snd.play('tap');
+      foco = `[data-pe-act="op"][data-k="${k}"][data-id="${id}"]`;
+    } else if (a === 'cerrar') {
+      prep.selPos = null; prep.selCam = null;
+    }
+    renderPrep(true);
+    if (foco) { const n = document.querySelector('#prepCalcC ' + foco); if (n && n.focus) { try { n.focus({ preventScroll: true }); } catch (e) { n.focus(); } } }
+  }
+  // Tocar (o Enter / Espacio) en el plano de cámaras de la preparación
+  document.addEventListener('click', (e) => {
+    const el = e.target && e.target.closest ? e.target.closest('#prepCalcC [data-pe-act]') : null;
+    if (!el || !prep) return;
+    if (camArrastre.hecho) { camArrastre.hecho = false; return; }
+    e.preventDefault();
+    camAccion(el);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const el = e.target && e.target.closest ? e.target.closest('#prepCalcC g[data-pe-act]') : null;
+    if (!el || !prep) return;
+    e.preventDefault();
+    camAccion(el);
+  });
+  // Con mouse: arrastrar una cámara hasta su posición (en el celular se toca la cámara y luego la posición)
+  const camArrastre = { id: null, x: 0, y: 0, fantasma: null, hecho: false };
+  document.addEventListener('pointerdown', (e) => {
+    const el = e.pointerType === 'mouse' && e.button === 0 && e.target.closest ? e.target.closest('#prepCalcC .pe-cc[data-pe-act="cam"]') : null;
+    if (!el || !prep) return;
+    Object.assign(camArrastre, { id: Number(el.dataset.id), x: e.clientX, y: e.clientY, fantasma: null, nombre: (el.querySelector('b') || {}).textContent || '' });
+  });
+  document.addEventListener('pointermove', (e) => {
+    const d = camArrastre;
+    if (d.id == null) return;
+    if (!d.fantasma && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8) return;
+    if (!d.fantasma) { d.fantasma = document.createElement('div'); d.fantasma.className = 'pe-drag'; d.fantasma.textContent = d.nombre; document.body.appendChild(d.fantasma); }
+    d.fantasma.style.left = e.clientX + 'px'; d.fantasma.style.top = e.clientY + 'px';
+  });
+  document.addEventListener('pointerup', (e) => {
+    const d = camArrastre;
+    if (d.id == null) return;
+    const id = d.id, arrastro = !!d.fantasma;
+    if (d.fantasma) d.fantasma.remove();
+    d.id = null; d.fantasma = null;
+    if (!arrastro || !prep) return;
+    d.hecho = true;   // el click que viene después del arrastre no cuenta como toque
+    setTimeout(() => { d.hecho = false; }, 0);
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    const pos = t && t.closest ? t.closest('#prepCalcC [data-pe-act="pos"]') : null;
+    if (!pos) return;
+    prep.selCam = id; prep.selPos = null;
+    camAccion(pos);
+  });
 
   // Rango de calidad esperado (la lógica lo da en computeQuality().rango)
   function rangoDe(q) {
@@ -2361,7 +2513,11 @@
     if (!c) { closeModal(); return; }
     const staff = S.staff.filter((p) => prep.staff.has(p.id));
     const equip = S.equip.filter((e) => prep.equip.has(e.id));
-    const q = G.computeQuality(S, c, staff, equip);
+    const col = colPrep(c);
+    const q = G.computeQuality(S, c, staff, equip, col);
+    // Tu plan de cámaras contra el automático (en puntos de calidad, sin el tope de 100)
+    let camDelta = null;
+    if (col) { try { camDelta = Math.round(crudoQ(q) - crudoQ(G.computeQuality(S, c, staff, equip))); } catch (e) { camDelta = null; } }
     const rg = rangoDe(q);
     const wages = staff.reduce((a, p) => a + wageFor(p, c.diff), 0);
     const est = estrellasDe(rg ? rg.esperado : q.q);
@@ -2403,14 +2559,19 @@
     const sinOp = camP && camP.sinOperador ? `<p class="small" style="color:var(--amber);margin:6px 0 0">${I('role_camarografo', 'sm')} ${T('prep.sin_operador', { n: camP.sinOperador })}</p>` : '';
     const avisos = camAvisosHtml(c, camP, equip);
     const bloqHtml = bloqueadosHtml(camP, c, equip);
+    const camOpts = { nombreEquipo: eqName };
+    if (camP && Array.isArray(camP.camaras) && G.validarColocacion) {
+      Object.assign(camOpts, { editable: true, tutorial: camTutorial(), modo: col ? 'manual' : 'auto', delta: camDelta, selCam: prep.selCam, selPos: prep.selPos,
+        preview: camPreview(c, staff, equip, crudoQ(q)), arte: (t) => itemArt(t, 34, 'mini'), operadores: camOperadores() });
+    }
     // Plano de cámaras (js/plan_evento.js): se usa tal cual, como un componente dentro del paso "Cámaras"
-    const camHtml = PE && (camP || PE.posiciones(c.type).length) ? PE.camaras(camP, c.type, { nombreEquipo: eqName }) : '';
+    const camHtml = PE && (camP || PE.posiciones(c.type).length) ? PE.camaras(camP, c.type, camOpts) : '';
     const crewHtml = PE && crew ? PE.personal(crew) : '';
     const calidadTxt = rg ? T('prep.calidad_rango', { min: `<b class="num">${rg.min}</b>`, max: `<b class="num">${rg.max}</b>` }) : `${T('prep.calidad_esperada')} <b class="num">${q.q}</b>/100`;
     const mega = c.rival && typeof c.rivalQuality === 'number' ? c.rivalQuality : undefined;
     const barra = rg ? barraRango(rg, '', mega) : `<div class="bar ${q.q < 40 ? 'red' : q.q < 55 ? 'amber' : ''}"><i style="width:${q.q}%"></i></div>`;
     /* Pasos (Personal → Equipos → Cámaras → Resumen): se ve uno a la vez; la barra de abajo (calidad y "¡Salir al aire!")
-       queda fija en todos. Partes que cambian con lo que eliges: #prepPasos (estado de cada paso), #prepCalc (lo del paso
+       queda fija en todos. Partes que cambian con lo que eliges: #prepPasos (estado de cada paso), #prepCalcC (lo del paso
        que depende de la selección), #prepTabla (Resumen) y #prepPie (la barra fija). */
     const PASOS = ['personal', 'equipos', 'camaras', 'resumen'];
     if (!PASOS.includes(prep.paso)) prep.paso = 'personal';
@@ -3266,9 +3427,11 @@
       }
       case 'sell': { const it = S.equip.find((x) => x.id === id); if (it) ask(T('bodega.vender_q', { item: esc(itemName(it.type)), m: M(G.sellPrice(it)) }), T('bodega.vender_si'), () => act(G.sell(S, id), 'buy')); break; }
       case 'prep': { snd.play('tap'); const pc = S.contracts.find((x) => x.id === id); if (pc) mus.go(esFuneral(pc.type) ? 'funeral' : 'preparacion'); openPrep(id); break; }
-      case 'auto': { const sg = G.suggestLoadout(S, prep.id); prep.staff = new Set(sg.staffIds); prep.equip = new Set(sg.equipIds); snd.play('tap'); marcarSeleccion(); renderPrep(true); break; }
+      case 'auto': { const sg = G.suggestLoadout(S, prep.id); prep.staff = new Set(sg.staffIds); prep.equip = new Set(sg.equipIds); prep.col = null; prep.selCam = null; prep.selPos = null; snd.play('tap'); marcarSeleccion(); renderPrep(true); break; }
       case 'go-live': {
-        const r = G.startEvent(S, prep.id, [...prep.staff], [...prep.equip]);
+        const cGo = S.contracts.find((x) => x.id === prep.id);
+        const colGo = cGo ? colPrep(cGo) : null;
+        const r = colGo ? G.startEvent(S, prep.id, [...prep.staff], [...prep.equip], colGo) : G.startEvent(S, prep.id, [...prep.staff], [...prep.equip]);
         if (!r.ok) { toast(TL(r.msg)); snd.play('error'); break; }
         danosInicio();
         save(); render();
@@ -3427,7 +3590,15 @@
   // Con otro idioma guardado, js/i18n.js trae su diccionario (I18N.listo) y después se pinta, ya en ese idioma
   if (I18 && I18.listo && typeof I18.listo.then === 'function') I18.listo.then(arrancar, arrancar);
   else arrancar();
-  window.__game = { get state() { return S; } }; // para las pruebas automáticas
+  window.__game = { get state() { return S; }, // para las pruebas automáticas
+    // El plan de cámaras de la preparación abierta (calidad base, posiciones y combos), como lo calcula la lógica
+    prepPlan() {
+      if (!prep) return null;
+      const c = S.contracts.find((x) => x.id === prep.id);
+      if (!c) return null;
+      const cq = G.computeQuality(S, c, S.staff.filter((p) => prep.staff.has(p.id)), S.equip.filter((e) => prep.equip.has(e.id)), colPrep(c));
+      return { q: cq.q, col: prep.col, positions: cq.cameraPlan.positions, combos: cq.cameraPlan.combos };
+    } };
   // js/hub.js (con defer) pinta Inicio otra vez al llegar, si la primera pantalla salió sin él
   window.EnVivoRepintar = () => { if (S && tab === 'inicio' && !VI) render(); };
 })();
