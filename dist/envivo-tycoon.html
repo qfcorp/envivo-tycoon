@@ -30629,7 +30629,10 @@
   // Clima de un evento al aire libre (lo ve el jugador; pesa en la lluvia)
   function climaDe(seed, c) {
     if (!c.outdoor) return null;
-    const h = mezclar(seed, (c.id || 0) * 31 + (c.diff || 1)) % 100;
+    // Sin el id del contrato: en un duelo los dos lados (con equipos distintos, ids distintos) tienen que ver el mismo clima
+    let k = c.diff || 1;
+    String((c.type || '') + '|' + (c.client || '')).split('').forEach((ch) => { k = (Math.imul(k, 31) + ch.charCodeAt(0)) | 0; });
+    const h = mezclar(seed, k) % 100;
     return h < 45 ? 'sol' : h < 78 ? 'nublado' : 'lluvioso';
   }
   // Una opción con probabilidad se resuelve igual que antes (nivel de la persona) si no trae p fijo

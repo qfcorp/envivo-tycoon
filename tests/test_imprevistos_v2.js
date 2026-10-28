@@ -399,6 +399,7 @@ async function navegador() {
     await page.click('nav button[data-tab="clientes"]');
     await page.click(`[data-act="prep"][data-id="${c.id}"]`);
     await page.waitForSelector('#modal #prepPie');
+    if (await page.$('#modal .pp-k[data-k="equipos"]')) await page.click('#modal .pp-k[data-k="equipos"]'); // navegación v2: los equipos van en su paso
     for (const e of s.equip) { if (!(await page.isChecked(`#eq-${e.id}`))) { await page.click(`label:has(#eq-${e.id}) .grow b`); await page.waitForTimeout(120); } }
     await page.click('#modal [data-act="go-live"]');
     await page.waitForSelector('#modal [data-act="choose"]', { timeout: 15000 });
