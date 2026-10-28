@@ -48,6 +48,8 @@ async function servir(ctx) {
 
   // Una productora con equipo de ring: cámara de sistema, dos de hombro, una de cine y una robótica; camarógrafos de
   // distinto nivel (la mejor, Ana, nivel 5). Una velada de boxeo de 4 cámaras. eventos = 0 → primer evento (tutorial).
+  // La preparación va por pasos (Personal → Equipos → Cámaras → Resumen); el plano está en "Cámaras"
+  async function irPaso(page, k) { await page.click(`#prepPasos [data-act="prep-paso"][data-k="${k}"]`); await page.waitForTimeout(150); }
   async function abrir(op) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: !op.mouse, hasTouch: !op.mouse, serviceWorkers: 'block', locale: 'es-EC' });
     await ctx.addInitScript(() => { window.__ENVIVO_FECHA = '2026-06-10'; });
@@ -88,36 +90,36 @@ async function servir(ctx) {
     const cid = await page.evaluate(() => window.__game.state.contracts[0].id);
     await page.click(`[data-act="prep"][data-id="${cid}"]`);
     await page.waitForSelector('[data-act="go-live"]');
-    await page.waitForTimeout(200);
+    await irPaso(page, 'camaras');
     return { ctx, page, cid };
   }
   // Lo que se ve: rango de calidad de abajo, modo, diferencia contra el automático y el plan
   const leer = (page) => page.evaluate(() => {
     const txt = (document.querySelector('#prepPie') || {}).innerText || '';
     const m = txt.match(/(\d+)\s*[–-]\s*(\d+)/);
-    const modo = document.querySelector('#prepCalc .pe-seg [aria-pressed="true"]');
+    const modo = document.querySelector('#prepCalcC .pe-seg [aria-pressed="true"]');
     return {
       min: m ? +m[1] : -1, max: m ? +m[2] : -1,
       modo: modo ? modo.dataset.k : null,
-      delta: ((document.querySelector('#prepCalc .pe-dq') || {}).innerText || '').trim(),
-      chips: [...document.querySelectorAll('#prepCalc .pe-cc')].map((b) => ({ id: +b.dataset.id, on: b.getAttribute('aria-pressed') === 'true', txt: b.innerText.replace(/\s+/g, ' ') })),
-      filas: [...document.querySelectorAll('#prepCalc button.pe-clr')].map((b) => ({ k: b.dataset.k, txt: b.innerText.replace(/\s+/g, ' ') })),
-      badges: document.querySelectorAll('#prepCalc .pe-pv').length,
-      combos: [...document.querySelectorAll('#prepCalc .pe-cb span')].map((x) => x.innerText.replace(/\s+/g, ' ')),
-      det: ((document.querySelector('#prepCalc .pe-dt') || {}).innerText || '').replace(/\s+/g, ' '),
-      tip: ((document.querySelector('#prepCalc .pe-tip') || {}).innerText || '').trim(),
+      delta: ((document.querySelector('#prepCalcC .pe-dq') || {}).innerText || '').trim(),
+      chips: [...document.querySelectorAll('#prepCalcC .pe-cc')].map((b) => ({ id: +b.dataset.id, on: b.getAttribute('aria-pressed') === 'true', txt: b.innerText.replace(/\s+/g, ' ') })),
+      filas: [...document.querySelectorAll('#prepCalcC button.pe-clr')].map((b) => ({ k: b.dataset.k, txt: b.innerText.replace(/\s+/g, ' ') })),
+      badges: document.querySelectorAll('#prepCalcC .pe-pv').length,
+      combos: [...document.querySelectorAll('#prepCalcC .pe-cb span')].map((x) => x.innerText.replace(/\s+/g, ' ')),
+      det: ((document.querySelector('#prepCalcC .pe-dt') || {}).innerText || '').replace(/\s+/g, ' '),
+      tip: ((document.querySelector('#prepCalcC .pe-tip') || {}).innerText || '').trim(),
       scroll: document.documentElement.scrollWidth > window.innerWidth + 1 || (document.querySelector('#modal') && document.querySelector('#modal').scrollWidth > document.querySelector('#modal').clientWidth + 1),
     };
   });
   // El plan de cámaras que está en la preparación, calculado con la lógica (para comparar con la pantalla)
   const plano = (page) => page.evaluate(() => window.__game.prepPlan ? window.__game.prepPlan() : null);
-  const verPlano = async (page) => { await page.evaluate(() => { const el = document.querySelector('#prepCalc .pe-cams'); if (el) el.scrollIntoView({ block: 'start' }); }); await page.waitForTimeout(120); };
-  const tocarCam = (page, id) => page.locator(`#prepCalc .pe-cc[data-id="${id}"]`).click();
-  const tocarPos = (page, k) => page.locator(`#prepCalc button.pe-clr[data-k="${k}"]`).click();
+  const verPlano = async (page) => { await page.evaluate(() => { const el = document.querySelector('#prepCalcC .pe-cams'); if (el) el.scrollIntoView({ block: 'start' }); }); await page.waitForTimeout(120); };
+  const tocarCam = (page, id) => page.locator(`#prepCalcC .pe-cc[data-id="${id}"]`).click();
+  const tocarPos = (page, k) => page.locator(`#prepCalcC button.pe-clr[data-k="${k}"]`).click();
   // Deja abierto el detalle de una posición (tocarla de nuevo lo cierra)
   const abrirDetalle = async (page, k) => {
     for (let n = 0; n < 2; n++) {
-      if (await page.locator(`#prepCalc button.pe-clr.pe-on[data-k="${k}"]`).count()) return;
+      if (await page.locator(`#prepCalcC button.pe-clr.pe-on[data-k="${k}"]`).count()) return;
       await tocarPos(page, k);
     }
   };
@@ -134,10 +136,10 @@ async function servir(ctx) {
       const auto = r;
       // Los toques son grandes: cámaras y filas de 44 px o más, y los puntos del plano con un área de toque amplia
       const tam = await page.evaluate(() => ({
-        cc: Math.min(...[...document.querySelectorAll('#prepCalc .pe-cc')].map((b) => b.getBoundingClientRect().height)),
-        fila: Math.min(...[...document.querySelectorAll('#prepCalc button.pe-clr')].map((b) => b.getBoundingClientRect().height)),
-        hit: Math.min(...[...document.querySelectorAll('#prepCalc .pe-hit')].map((c) => c.getBoundingClientRect().width)),
-        seg: Math.min(...[...document.querySelectorAll('#prepCalc .pe-seg button')].map((b) => b.getBoundingClientRect().height)),
+        cc: Math.min(...[...document.querySelectorAll('#prepCalcC .pe-cc')].map((b) => b.getBoundingClientRect().height)),
+        fila: Math.min(...[...document.querySelectorAll('#prepCalcC button.pe-clr')].map((b) => b.getBoundingClientRect().height)),
+        hit: Math.min(...[...document.querySelectorAll('#prepCalcC .pe-hit')].map((c) => c.getBoundingClientRect().width)),
+        seg: Math.min(...[...document.querySelectorAll('#prepCalcC .pe-seg button')].map((b) => b.getBoundingClientRect().height)),
       }));
       bien(tam.cc >= 44 && tam.fila >= 44 && tam.hit >= 28 && tam.seg >= 40, `Toques grandes: cámara ${Math.round(tam.cc)} px, fila ${Math.round(tam.fila)} px, punto del plano ${Math.round(tam.hit)} px, modo ${Math.round(tam.seg)} px`);
       await page.screenshot({ path: path.join(OUT, 'camlib_01_automatico.png') });
@@ -164,7 +166,7 @@ async function servir(ctx) {
       await page.screenshot({ path: path.join(OUT, 'camlib_03_movida.png') });
       // Quitar una cámara: la posición queda vacía y la estimación baja
       const conTodas = r;
-      await page.locator('#prepCalc .pe-qt').click();
+      await page.locator('#prepCalcC .pe-qt').click();
       r = await leer(page);
       ahora = await plano(page);
       bien(!ahora.positions.find((p) => p.key === 'principal').equipId && r.chips.find((c) => c.id === cine).txt.includes('Sin posición'),
@@ -172,7 +174,7 @@ async function servir(ctx) {
       bien(r.max < conTodas.max || r.min < conTodas.min, `Sin cámara en la principal la calidad estimada baja (${conTodas.min}–${conTodas.max} → ${r.min}–${r.max})`);
       bien(r.combos.some((x) => /Sin plano general/.test(x)), 'Sin cámara en la principal sale la falla "Sin plano general"');
       // Volver al automático
-      await page.locator('#prepCalc .pe-seg [data-k="auto"]').click();
+      await page.locator('#prepCalcC .pe-seg [data-k="auto"]').click();
       r = await leer(page);
       bien(r.modo === 'auto' && r.min === auto.min && r.max === auto.max, 'El botón Automático vuelve al plan de siempre');
       await ctx.close();
@@ -189,12 +191,12 @@ async function servir(ctx) {
       const ursa = await idDe(page, 'cam_blackmagia_urso_broadcast_g3');
       const h1 = await idDe(page, 'cam_zony_hxr_mk2500', 0), h2 = await idDe(page, 'cam_zony_hxr_mk2500', 1);
       const cine = await idDe(page, 'cam_cine');
-      await page.locator('#prepCalc .pe-seg [data-k="manual"]').click();
+      await page.locator('#prepCalcC .pe-seg [data-k="manual"]').click();
       for (const [id, k] of [[ursa, 'principal'], [h1, 'esquina1'], [h2, 'esquina2'], [cine, 'cerrada']]) { await tocarCam(page, id); await tocarPos(page, k); }
       // Ana a la cerrada (la posición clave del boxeo)
       const ana = await page.evaluate(() => window.__game.state.staff.find((p) => p.name === 'Ana Lema').id);
       await abrirDetalle(page, 'cerrada');
-      await page.locator(`#prepCalc .pe-op[data-k="cerrada"][data-id="${ana}"]`).click();
+      await page.locator(`#prepCalcC .pe-op[data-k="cerrada"][data-id="${ana}"]`).click();
       const bueno = await leer(page);
       const pb = await plano(page);
       bien(pb.q > qAuto, `Un plan pensado rinde más que el automático (calidad base ${qAuto} → ${pb.q}; "${bueno.delta}")`);
@@ -204,15 +206,17 @@ async function servir(ctx) {
       await abrirDetalle(page, 'esquina1');
       const rz = await leer(page);
       bien(/Combo: dos cámaras al hombro/.test(rz.det) && /\+/.test(rz.det), `El detalle de la posición explica por qué rinde así: "${rz.det.slice(0, 140)}…"`);
-      await page.locator('#prepCalc .pe-dt').scrollIntoViewIfNeeded();
+      await page.locator('#prepCalcC .pe-dt').scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(OUT, 'camlib_04_plan_pensado.png') });
       await verPlano(page);
       await page.screenshot({ path: path.join(OUT, 'camlib_05_plan_pensado_mapa.png') });
       // Malo: la de hombro en la principal, la de sistema en una esquina, la robótica en la otra esquina (reacciones)
       const ptz = await idDe(page, 'cam_panasonika_aw_uv22');
       // La robótica no venía marcada (no hay operador de robóticas): se marca en "¿Qué equipos llevas?"
+      await irPaso(page, 'equipos');
       await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${ptz}"])`).click({ position: { x: 12, y: 12 } });
       await page.waitForTimeout(80);
+      await irPaso(page, 'camaras');
       await verPlano(page);
       for (const [id, k] of [[h1, 'principal'], [ursa, 'esquina1'], [ptz, 'esquina2'], [h2, 'cerrada']]) { await tocarCam(page, id); await tocarPos(page, k); }
       const malo = await leer(page);
@@ -226,10 +230,12 @@ async function servir(ctx) {
       /* ===== 3. Al aire con el plan pensado: el evento usa la colocación ===== */
       for (const [id, k] of [[ursa, 'principal'], [h1, 'esquina1'], [h2, 'esquina2'], [cine, 'cerrada']]) { await tocarCam(page, id); await tocarPos(page, k); }
       // La robótica vuelve a la bodega (sin operador de robóticas no suma)
+      await irPaso(page, 'equipos');
       await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${ptz}"])`).click({ position: { x: 12, y: 12 } });
       await page.waitForTimeout(80);
+      await irPaso(page, 'camaras');
       await abrirDetalle(page, 'cerrada');
-      await page.locator(`#prepCalc .pe-op[data-k="cerrada"][data-id="${ana}"]`).click();
+      await page.locator(`#prepCalcC .pe-op[data-k="cerrada"][data-id="${ana}"]`).click();
       const antesAire = await plano(page);
       await page.click('[data-act="go-live"]');
       await page.waitForFunction(() => window.__game.state.currentEvent);
@@ -276,8 +282,8 @@ async function servir(ctx) {
       const { ctx, page } = await abrir({ eventos: 5, mouse: true });
       await verPlano(page);
       const cine = await idDe(page, 'cam_cine');
-      const de = await page.locator(`#prepCalc .pe-cc[data-id="${cine}"]`).boundingBox();
-      const a = await page.locator('#prepCalc g[data-pe-act="pos"][data-k="contraplano"] .pe-hit').boundingBox();
+      const de = await page.locator(`#prepCalcC .pe-cc[data-id="${cine}"]`).boundingBox();
+      const a = await page.locator('#prepCalcC g[data-pe-act="pos"][data-k="contraplano"] .pe-hit').boundingBox();
       await page.mouse.move(de.x + de.width / 2, de.y + de.height / 2);
       await page.mouse.down();
       await page.mouse.move(de.x + 40, de.y - 20, { steps: 4 });

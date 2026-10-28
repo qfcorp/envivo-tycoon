@@ -204,6 +204,7 @@ async function partida(browser, cambios) {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await cerrarOtras(page);
       await page.click('nav button[data-tab="bodega"]');
+      await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2: la tienda es una sub-pestaña
       await page.waitForSelector('.catwrap .catrow', { timeout: 3000 });
       await page.evaluate(() => { const r = document.querySelector('.catwrap .catrow'); r.scrollLeft = 0; r.dispatchEvent(new Event('scroll')); document.getElementById('tiendaEq').scrollIntoView(); });
       await page.waitForTimeout(200);

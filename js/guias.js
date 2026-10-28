@@ -137,6 +137,7 @@
   }
   // En una pestaña (sin ventana encima) / dentro de la ventana abierta
   const enTab = (t, sel, f) => (ov() || tabActual() !== t ? null : q(sel, $('#tab-' + t), f));
+  const pasoPrep = (k) => () => { const b = $(`#modal .pp-k[data-k="${k}"]`); if (b) b.click(); };
   const enModal = (sel, f) => { const o = ov(); return o ? q(sel, o.querySelector('#modal') || o, f) : null; };
 
   /* ---------- Recorridos ----------
@@ -145,13 +146,15 @@
      pasos: { k: texto, el: () → elemento a señalar, tocar: true si el toque llega al juego (si no, solo pasa al siguiente) } */
   const R = {
     bodega: { tab: 'bodega', pasos: [
-      { k: 'b_reparar', el: () => enTab('bodega', '[data-act="repair"]') },
-      { k: 'b_categorias', el: () => enTab('bodega', '.catrow') || enTab('bodega', '#tiendaEq') },
-      { k: 'b_exclusiva', el: () => enTab('bodega', '.card.exq') },
+      // Navegación v2 (js/ui.js): cada sección de la Bodega es una sub-pestaña; si no se ve, se señala su botón
+      // (ir: la guía abre esa sub-pestaña sola cuando lo que señala no está a la vista)
+      { k: 'b_reparar', ir: ['bodega', 'equipos'], el: () => enTab('bodega', '[data-act="repair"]') || enTab('bodega', '.subnav [data-k="equipos"]') },
+      { k: 'b_categorias', ir: ['bodega', 'tienda'], el: () => enTab('bodega', '.catrow[role="tablist"]') || enTab('bodega', '#tiendaEq') || enTab('bodega', '.subnav [data-k="tienda"]') },
+      { k: 'b_exclusiva', ir: ['bodega', 'tienda'], el: () => enTab('bodega', '.card.exq') || enTab('bodega', '.subnav [data-k="tienda"]') },
     ] },
     personal: { tab: 'personal', pasos: [
-      { k: 'p_buscar', el: () => enTab('personal', '[data-act="search-staff"]') || enTab('personal', '.card.buscar') },
-      { k: 'p_contratar', el: () => enTab('personal', '[data-act="hire"]') },
+      { k: 'p_buscar', ir: ['personal', 'contratar'], el: () => enTab('personal', '[data-act="search-staff"]') || enTab('personal', '.card.buscar') || enTab('personal', '.subnav [data-k="contratar"]') },
+      { k: 'p_contratar', ir: ['personal', 'contratar'], el: () => enTab('personal', '[data-act="hire"]') || enTab('personal', '.subnav [data-k="contratar"]') },
     ] },
     // Preparar un evento (desde el segundo: el primero lo lleva js/guia.js)
     prep: { modal: '[data-act="go-live"]', cuando: (s) => s.stats.events >= 1, pasos: [
@@ -160,8 +163,9 @@
       { k: 'e_marcar', el: () => enModal('label.pick', (n) => (n.querySelector('[data-act="tog-staff"]') ? n : null)) },
     ] },
     flota: { modal: '[data-act="go-live"]', cuando: (s) => s.stats.events >= 1, requiere: () => !!root.Movilizacion, pasos: [
-      { k: 'f_mov', el: () => enModal('#movSec .mov-hd') || enModal('#movSec') },
-      { k: 'f_app', el: () => enModal('.mov-app') },
+      // La movilización va en el paso "Equipos" de la preparación (navegación v2): la guía abre ese paso
+      { k: 'f_mov', ir: pasoPrep('equipos'), el: () => enModal('#movSec .mov-hd') || enModal('#movSec') || enModal('.pp-k[data-k="equipos"]') },
+      { k: 'f_app', ir: pasoPrep('equipos'), el: () => enModal('.mov-app') || enModal('.pp-k[data-k="equipos"]') },
     ] },
     // Hoja "Tu sede" de Inicio abierta (el letrero de la sede, js/hub.js) → ventana de mejoras
     sede: { tab: 'inicio', modalOk: '.sd-modal', pasos: [
@@ -171,9 +175,9 @@
       { k: 's_obra', el: () => enModal('.sd-modal .sd-obra') },
     ] },
     tienda: { tab: 'tienda', pasos: [
-      { k: 't_creditos', el: () => enTab('tienda', '.wallet') || enTab('tienda', '#tv-creditos .tv-cgrid') || enTab('tienda', '#tv-creditos') || enTab('tienda', '.card.r-exclusivo') },
+      { k: 't_creditos', ir: ['tienda', 'creditos'], el: () => enTab('tienda', '.wallet') || enTab('tienda', '#tv-creditos .tv-cgrid') || enTab('tienda', '#tv-creditos') || enTab('tienda', '.subnav [data-k="creditos"]') || enTab('tienda', '.card.r-exclusivo') },
       { k: 't_cuenta', el: () => enTab('tienda', '[data-act="cuenta"][data-modo="registro"]') },
-      { k: 't_exclusivos', el: () => enTab('tienda', '#tv-exclusivos .ggrid > .card') || enTab('tienda', '#tv-exclusivos') || enTab('tienda', '.ggrid > .card') },
+      { k: 't_exclusivos', ir: ['tienda', 'creditos'], el: () => enTab('tienda', '#tv-exclusivos .ggrid > .card') || enTab('tienda', '#tv-exclusivos') || enTab('tienda', '.subnav [data-k="creditos"]') || enTab('tienda', '.ggrid > .card') },
     ] },
     online: { tab: 'online', pasos: ['liga', 'duelos', 'desafio', 'copa'].map((k) => ({ k: 'o_' + k, el: () => enTab('online', `.onl-tile[data-k="${k}"]`) })) },
   };
@@ -393,6 +397,12 @@
         return;
       }
       act.perdido = 0;
+      // Señala el botón de una sub-pestaña (navegación v2): la guía la abre una vez y vuelve a buscar lo de verdad
+      if (p.ir && act.ido !== act.i && n.matches && n.matches('.subnav .sn-k, .pp-k')) {
+        act.ido = act.i; ocultar();
+        if (typeof p.ir === 'function') p.ir(); else if (typeof root.EnVivoIr === 'function') root.EnVivoIr(p.ir[0], p.ir[1]);
+        programar(250); return;
+      }
       textos(p);
       layout(n, p);
     } catch (e) { aviso(e); cerrar(); }

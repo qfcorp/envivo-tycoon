@@ -90,6 +90,7 @@ console.log(`  ${claves.length} equipos · frase de ${Math.min(...ls)} a ${Math.
   await page.screenshot({ path: path.join(outDir, 'desc_bodega.png') });
 
   // Tienda: todas las categorías
+  await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2: la tienda es una sub-pestaña de la Bodega
   const cats = await page.$$eval('[data-act="cat"]', (xs) => xs.map((x) => x.dataset.k));
   ok(cats.length >= 10, `la tienda tiene ${cats.length} categorías`);
   const vistos = new Set();
@@ -144,6 +145,7 @@ console.log(`  ${claves.length} equipos · frase de ${Math.min(...ls)} a ${Math.
   if (!(await page.locator('[data-act="prep"]').count())) { await page.click('[data-act="mkt"][data-k="visitar"]'); await cerrarVentanas(); }
   await page.locator('[data-act="prep"]').first().click();
   await page.waitForSelector('[data-act="go-live"]');
+  await page.click('#modal .pp-k[data-k="equipos"]');   // navegación v2: los equipos van en su paso
   const prep = await page.evaluate(() => [...document.querySelectorAll('#modal label.pick input[data-act="tog-equip"]')].map((i) => {
     const l = i.closest('.pick'); const u = l.querySelector('.pkuso'); const b = l.querySelector('[data-ayuda-item]');
     return { id: i.dataset.id, k: b && b.getAttribute('data-ayuda-item'), uso: u ? u.textContent : null, alto: u ? u.getBoundingClientRect().height : 0, alto_fila: l.getBoundingClientRect().height };
@@ -173,6 +175,7 @@ console.log(`  ${claves.length} equipos · frase de ${Math.min(...ls)} a ${Math.
   await page.waitForFunction(() => window.I18N.idioma === 'de', null, { timeout: 10000 }).catch(() => {});
   await cerrarVentanas();
   await page.click('nav button[data-tab="bodega"]');
+  await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2: la tienda es una sub-pestaña de la Bodega
   await page.click('[data-act="cat"][data-k="cam"]');
   const de = await page.evaluate(() => [...document.querySelectorAll('#tab-bodega .ds.uso')].map((x) => x.textContent));
   const esp = await page.evaluate(() => window.Game.TEXTOS['item.cam_basic.uso']);
