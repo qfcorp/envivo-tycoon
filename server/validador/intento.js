@@ -14,7 +14,7 @@
 (function (root) {
   'use strict';
 
-  const LIMITES = { staff: 12, equip: 40, decisiones: 20, texto: 80 };
+  const LIMITES = { staff: 12, equip: 40, decisiones: 20, texto: 80, colocacion: 16 };
   const DEFECTO = { fama: 0, dinero: 1000, stock: { cable: 1, battery: 1 }, moral: 80 };
   const NOMBRE_OK = /^[A-Za-z_][A-Za-z0-9_]{0,31}$/;
   const PROHIBIDAS = ['__proto__', 'constructor', 'prototype'];
@@ -182,11 +182,39 @@
     return { s, contractId: contrato.id, staffIds: s.staff.map((p) => p.id), equipIds: s.equip.map((e) => e.id), vip };
   }
 
+  /* Plan de cámaras a mano (opcional): intento.colocacion = [{ p: clave de la posición, e: índice en equipo.equip,
+     o?: índice en equipo.staff (null = nadie la maneja; si falta, el mejor camarógrafo libre) }].
+     Sin colocacion (o null) el evento usa el plan automático, como siempre. Devuelve la colocación con los ids del
+     estado armado por crearEstado (staff 1..n, equipos n+1..) o null; si no se entiende, falla con colocacion_invalida. */
+  function colocacionDe(intento, estado) {
+    const c = intento && intento.colocacion;
+    if (c === undefined || c === null) return null;
+    if (!Array.isArray(c) || c.length > LIMITES.colocacion) falla('colocacion_invalida', `colocacion debe ser una lista (máximo ${LIMITES.colocacion}).`);
+    return c.map((x, i) => {
+      if (!esObj(x) || typeof x.p !== 'string' || !x.p.length || x.p.length > 40 || !NOMBRE_OK.test(x.p)) falla('colocacion_invalida', `Colocación ${i + 1}: posición inválida.`);
+      if (!entero(x.e, 0, estado.equipIds.length - 1)) falla('colocacion_invalida', `Colocación ${i + 1}: la cámara debe ser un índice de equipo.equip (0 a ${estado.equipIds.length - 1}).`);
+      const o = { p: x.p, e: estado.equipIds[x.e] };
+      if (x.o === null) o.o = 0;
+      else if (x.o !== undefined) {
+        if (!entero(x.o, 0, estado.staffIds.length - 1)) falla('colocacion_invalida', `Colocación ${i + 1}: el operador debe ser un índice de equipo.staff o null.`);
+        o.o = estado.staffIds[x.o];
+      }
+      return o;
+    });
+  }
+
   /* Juega el intento. elegir(incidente, n) devuelve el índice de la opción.
      Devuelve { ok, motivo?, mensaje?, decisiones, resultado?, pasos, base, partes } */
   function correr(G, intento, elegir) {
-    const { s, contractId, staffIds, equipIds } = crearEstado(G, intento);
-    const r0 = G.startEvent(s, contractId, staffIds, equipIds);
+    const est = crearEstado(G, intento);
+    const { s, contractId, staffIds, equipIds } = est;
+    // Plan de cámaras a mano: solo cámaras que el jugador registró y que funcionan, en posiciones posibles
+    const col = colocacionDe(intento, est);
+    if (col && typeof G.validarColocacion === 'function') {
+      const vc = G.validarColocacion(s, s.contracts[0], equipIds, staffIds, col);
+      if (!vc.ok) return { ok: false, motivo: 'colocacion_invalida', mensaje: `${vc.msg} (${vc.motivo})`, decisiones: [], pasos: [] };
+    }
+    const r0 = col ? G.startEvent(s, contractId, staffIds, equipIds, col) : G.startEvent(s, contractId, staffIds, equipIds);
     if (!r0 || !r0.ok) return { ok: false, motivo: 'evento_no_inicia', mensaje: (r0 && r0.msg) || 'No se pudo iniciar.', decisiones: [], pasos: [] };
     const ev = s.currentEvent;
     const out = { ok: true, decisiones: [], pasos: [], base: ev.base, partes: ev.parts };
@@ -265,7 +293,7 @@
     }
   }
 
-  const API = { repetir, jugar, crearEstado, ErrorIntento, LIMITES, DEFECTO };
+  const API = { repetir, jugar, crearEstado, colocacionDe, ErrorIntento, LIMITES, DEFECTO };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.Intento = API;
 })(typeof window !== 'undefined' ? window : globalThis);

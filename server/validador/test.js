@@ -113,6 +113,84 @@ for (let k = 0; k < N; k++) {
 }
 console.log(`1. Honestos: ${honestos.filter((h) => h.v.valido).length}/${N} validados · ${imprevistos} imprevistos (máx. ${maxDec} por evento, ${Object.keys(claves).length} tipos) · ${conRival} duelos`);
 
+/* ---------- 1b. Plan de cámaras a mano (intento.colocacion) ---------- */
+{
+  // La colocación del automático pasada a índices de equipo.equip / equipo.staff (lo que mandaría el juego)
+  const aIndices = (intento, col) => {
+    const est = C.Intento.crearEstado(C.Game, clon(intento));
+    return col.map((x) => Object.assign({ p: x.p, e: est.equipIds.indexOf(x.e) }, x.o ? { o: est.staffIds.indexOf(x.o) } : x.o === 0 ? { o: null } : {}));
+  };
+  const planDe = (intento) => {
+    const est = C.Intento.crearEstado(C.Game, clon(intento));
+    return C.Game.cameraPlan(est.s, est.s.contracts[0], est.equipIds, est.staffIds);
+  };
+  let manuales = 0, distintos = 0, rechazados = 0, trampas = 0;
+  honestos.slice(0, 120).forEach((h, k) => {
+    const plan = planDe(h.base);
+    const cams = plan.camaras;
+    if (cams.length < 2 || plan.positions.length < 2) return;
+    // Mover la primera cámara colocada a otra posición posible (o cambiarla con la que está ahí)
+    const col = plan.colocacion.map((x) => ({ p: x.p, e: x.e }));
+    if (!col.length) return;
+    const otra = plan.positions.find((p) => p.key !== col[0].p && !(p.perfil === 'aerea'));
+    if (!otra) return;
+    const ocupa = col.find((x) => x.p === otra.key);
+    if (ocupa) ocupa.p = col[0].p;
+    col[0].p = otra.key;
+    const colI = aIndices(h.base, col);
+    const conCol = Object.assign(clon(h.base), { colocacion: colI });
+    let jugado;
+    try { jugado = jugarCliente(conCol, azar); } catch (e) {
+      // Una colocación imposible (p. ej. un dron en el piso): el cliente tampoco puede jugarla
+      ok(e.motivo === 'colocacion_invalida', `colocación ${k}: el cliente falló por otra cosa (${e.message})`);
+      const v = V.validate(Object.assign(clon(conCol), { decisiones: [] }));
+      ok(!v.valido && v.detalle.motivo === 'colocacion_invalida', `colocación ${k}: el servidor aceptó una colocación imposible (${v.detalle.motivo})`);
+      rechazados++;
+      return;
+    }
+    manuales++;
+    const intento = Object.assign(clon(conCol), { decisiones: jugado.decisiones, cliente_resultado: jugado.resultado });
+    const v = V.validate(clon(intento));
+    ok(v.valido === true && v.calidad === jugado.resultado.quality, `colocación ${k}: no validó (${v.detalle.motivo}: ${v.detalle.mensaje})`);
+    if (v.detalle.base !== h.v.detalle.base) distintos++;
+    // Trampa: decir el resultado del plan a mano pero mandar el intento sin la colocación (o con otra)
+    const sin = Object.assign(clon(intento), { colocacion: undefined });
+    delete sin.colocacion;
+    const vs = V.validate(sin);
+    if (vs.calidad !== jugado.resultado.quality || !vs.valido) { trampas++; ok(!vs.valido, `colocación ${k}: el resultado del plan a mano pasó sin la colocación`); }
+  });
+  console.log(`1b. Plan de cámaras a mano: ${manuales} jugados y validados (${distintos} con otra calidad base que el automático) · ${rechazados} imposibles rechazados · ${trampas} trampas detectadas`);
+  ok(manuales >= 20 && distintos >= 10, `muy pocos intentos con plan de cámaras a mano (${manuales}, ${distintos} distintos)`);
+  // Colocaciones mal formadas o imposibles: el servidor las rechaza siempre
+  const h = honestos.find((x) => planDe(x.base).camaras.length >= 1 && x.base.equipo.equip.some((e) => G.CATALOG[e.type].cat !== 'cam'));
+  if (h) {
+    const plan = planDe(h.base);
+    const pos0 = plan.positions[0].key;
+    const malos = {
+      'índice fuera de rango': [{ p: pos0, e: 99 }],
+      'posición que no existe': [{ p: 'cabina_del_vecino', e: 0 }],
+      'no es lista': { p: pos0, e: 0 },
+      'operador fuera de rango': [{ p: pos0, e: 0, o: 50 }],
+      'equipo que no es cámara': [{ p: pos0, e: h.base.equipo.equip.findIndex((e) => G.CATALOG[e.type].cat !== 'cam') }],
+      'cámara repetida': [{ p: plan.positions[0].key, e: 0 }, { p: (plan.positions[1] || plan.positions[0]).key, e: 0 }],
+      'texto en vez de número': [{ p: pos0, e: '0' }],
+    };
+    Object.keys(malos).forEach((n) => {
+      const v = V.validate(Object.assign(clon(h.intento), { colocacion: malos[n] }));
+      ok(!v.valido && v.calidad === null && v.detalle.motivo === 'colocacion_invalida', `colocación mala (${n}) aceptada: ${v.detalle.motivo}`);
+    });
+    // Un dron en una posición fija: imposible
+    const conDron = clon(h.base);
+    conDron.equipo.equip.push({ type: 'dron_dgi_micro_4_pro', condition: 90 });
+    conDron.equipo.staff.push({ name: 'Piloto', role: 'piloto_dron', skill: 3 });
+    const pFija = planDe(conDron).positions.find((p) => p.perfil !== 'aerea' && p.perfil !== 'grua');
+    if (pFija) {
+      const v = V.validate(Object.assign(clon(conDron), { decisiones: [], colocacion: [{ p: pFija.key, e: conDron.equipo.equip.length - 1 }] }));
+      ok(!v.valido && v.detalle.motivo === 'colocacion_invalida', `un dron en «${pFija.key}» debería ser imposible (${v.detalle.motivo})`);
+    }
+  }
+}
+
 /* ---------- 2. Trampas ---------- */
 const T = {};
 const anota = (nombre, detectada, inofensiva) => {

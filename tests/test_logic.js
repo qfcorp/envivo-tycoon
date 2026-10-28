@@ -152,6 +152,8 @@ function botTurn(s) {
   if (!best) { idle.sinOferta++; G.nextDay(s); return; }
   // Antes de un evento de la historia, deja todo el equipo como nuevo (lo que haría una persona)
   if (best.c.story) s.equip.filter((e) => e.condition < 80).forEach((e) => { if (s.money > G.repairCost(e) + 200) G.repair(s, e.id); });
+  // Muestras para medir el plan de cámaras a mano (automático vs. pensado vs. malo): 1 de cada 29 eventos
+  if (camMuestras.length < CAM_MAX && camCuenta++ % (s.storyDone ? 97 : 9) === 0) camMuestras.push({ st: G.serialize(s), id: best.c.id, staffIds: best.lo.staffIds.slice(), equipIds: best.lo.equipIds.slice(), ch: s.storyDone ? NCH : s.chapter });
   const r = G.startEvent(s, best.c.id, best.lo.staffIds, best.lo.equipIds);
   check(r.ok, 'startEvent falló: ' + r.msg);
   if (!r.ok) { G.nextDay(s); return; }
@@ -197,6 +199,9 @@ const idle = { descanso: 0, sinOferta: 0, noRinde: 0, falta: 0 }; // por qué el
 const faltaRol = {};
 let intlSeen = 0, intlPlayed = 0;
 const intlUso = { curso: 0, busca: 0, contrato: 0 };
+const camMuestras = [];
+let camCuenta = 0;
+const CAM_MAX = Number(process.env.CAM_MAX) || 400;
 
 const GAMES = Number(process.env.GAMES) || 400, MAX_DAYS = 400, SEED = Number(process.env.SEED) || 1000;
 const NCH = G.CHAPTERS.length;
@@ -791,6 +796,97 @@ console.log(`Quiebras durante la historia ${(bankRate * 100).toFixed(1)}% · en 
 check(intlUso.curso + intlUso.busca + intlUso.contrato > 0 && intlPlayed > 0, `el bot nunca usó el camino del personal internacional (curso/búsqueda) o nunca jugó un internacional: ${JSON.stringify(intlUso)} · jugados ${intlPlayed}`);
 console.log(`Personal internacional del bot: ${intlUso.curso} capacitaciones · ${intlUso.busca} búsquedas · ${intlUso.contrato} contratados con experiencia internacional`);
 console.log(`Contratos internacionales vistos: ${intlIds.size} · jugados por el bot: ${intlPlayed} · eventos con algún rol en rojo: ${(100 * crewStats.falta / Math.max(1, crewStats.events)).toFixed(1)}% · días sin trabajar: ${JSON.stringify(idle)}`);
+
+/* ---------- Plan de cámaras a mano (28-oct): automático vs. un plan pensado vs. uno malo ----------
+   Con las muestras de las partidas del bot (el equipo que llevó): el plan pensado se busca moviendo cámaras y
+   operadores de a uno mientras la calidad sube (lo que haría una persona que conoce los combos); el malo, moviéndolas
+   mientras baja sin dejar cámaras en la bodega. Pedido del dueño: el automático "decente", uno pensado claramente
+   mejor (+5 a +15 %), uno malo claramente peor. */
+// Calidad base sin el tope de 100 (en el modo libre muchos eventos llegan a 100 y no se vería la diferencia)
+const crudo = (cq) => cq.parts.reduce((a, p) => a + p[1], 0);
+function buscarPlan(s, c, staffIds, equipIds, signo, sinQuitar) {
+  const staff = s.staff.filter((p) => staffIds.includes(p.id)), equip = s.equip.filter((e) => equipIds.includes(e.id));
+  const q = (col) => crudo(G.computeQuality(s, c, staff, equip, col));
+  const auto = G.cameraPlan(s, c, equipIds, staffIds);
+  const posKeys = auto.positions.map((p) => p.key);
+  const cams = auto.camaras;
+  let col = auto.colocacion.map((x) => Object.assign({}, x));
+  let mejor = q(col);
+  const valida = (k) => G.validarColocacion(s, c, equipIds, staffIds, k).ok;
+  const opsDe = (rol) => staff.filter((p) => G.canonRole(p.role) === rol).map((p) => p.id);
+  for (let vuelta = 0; vuelta < 12; vuelta++) {
+    let mejorK = null, mejorQ = mejor;
+    const probar = (k) => { if (!valida(k)) return; const v = q(k); if (signo * (v - mejorQ) > 0) { mejorQ = v; mejorK = k; } };
+    cams.forEach((cm) => {
+      const de = col.find((x) => x.e === cm.equipId);
+      posKeys.forEach((pk) => {
+        if (de && de.p === pk) return;
+        const k = col.map((x) => Object.assign({}, x));
+        const ocupa = k.find((x) => x.p === pk);
+        const yo = k.find((x) => x.e === cm.equipId);
+        if (yo) { if (ocupa) ocupa.p = yo.p; yo.p = pk; } else {
+          if (ocupa && sinQuitar) return;
+          if (ocupa) k.splice(k.indexOf(ocupa), 1);
+          k.push({ p: pk, e: cm.equipId });
+        }
+        probar(k);
+      });
+      if (de && !sinQuitar) probar(col.filter((x) => x !== de).map((x) => Object.assign({}, x)));
+    });
+    // Operadores: cambiar dos de lugar o poner a uno que no está en ninguna cámara
+    ['camarografo', 'operador_ptz'].forEach((rol) => {
+      const ids = opsDe(rol);
+      col.forEach((a, i) => {
+        ids.forEach((id) => {
+          if (a.o === id) return;
+          const k = col.map((x) => Object.assign({}, x));
+          const otro = k.find((x) => x.o === id);
+          if (otro && rol === 'camarografo') otro.o = a.o;
+          k[i].o = id;
+          probar(k);
+        });
+      });
+    });
+    if (!mejorK) break;
+    col = mejorK; mejor = mejorQ;
+  }
+  return { q: mejor, col };
+}
+if (process.env.CAM_DUMP) require('fs').writeFileSync(process.env.CAM_DUMP, JSON.stringify(camMuestras));
+const camRes = [];
+camMuestras.forEach((m) => {
+  const s = G.deserialize(m.st);
+  const c = s && s.contracts.find((x) => x.id === m.id);
+  if (!c) return;
+  const staff = s.staff.filter((p) => m.staffIds.includes(p.id)), equip = s.equip.filter((e) => m.equipIds.includes(e.id));
+  const auto = crudo(G.computeQuality(s, c, staff, equip));
+  const plan = G.cameraPlan(s, c, m.equipIds, m.staffIds);
+  check(G.validarColocacion(s, c, m.equipIds, m.staffIds, plan.colocacion).ok, 'la colocación del automático no es válida');
+  check(crudo(G.computeQuality(s, c, staff, equip, plan.colocacion)) === auto, 'la colocación del automático, puesta a mano, no da lo mismo');
+  const multi = plan.camaras.length >= 2 && plan.positions.length >= 2;
+  const bueno = buscarPlan(s, c, m.staffIds, m.equipIds, 1).q;
+  const malo = multi ? buscarPlan(s, c, m.staffIds, m.equipIds, -1, true).q : auto;
+  camRes.push({ ch: m.ch, multi, auto, bueno, malo, tipo: c.type, cams: c.cams || 1 });
+  if (process.env.CAM_VER && multi && camRes.length % 7 === 0) console.log(c.type, auto, bueno, malo, JSON.stringify(plan.positions.map((p) => [p.key, p.perfil, p.asignado, p.ajuste, p.razones.map((x) => x.texto + ' ' + x.pct).join('; ')])), JSON.stringify(plan.camaras.map((x) => x.tipo + '@' + x.en)));
+});
+const pct = (a, b) => (b ? (100 * (a - b)) / b : 0);
+const camMulti = camRes.filter((r) => r.multi);
+const fx = (v) => (v >= 0 ? '+' : '') + v.toFixed(1);
+console.log(`Plan de cámaras a mano (${camRes.length} muestras, ${camMulti.length} con 2+ cámaras): calidad base mediana automático ${median(camMulti.map((r) => r.auto))} · pensado ${median(camMulti.map((r) => r.bueno))} · malo ${median(camMulti.map((r) => r.malo))}`);
+console.log(`  pensado vs. automático: mediana ${fx(median(camMulti.map((r) => pct(r.bueno, r.auto))))}% (puntos ${fx(median(camMulti.map((r) => r.bueno - r.auto)))}) · malo vs. automático: mediana ${fx(median(camMulti.map((r) => pct(r.malo, r.auto))))}% (puntos ${fx(median(camMulti.map((r) => r.malo - r.auto)))})`);
+console.log('  por capítulo (pensado / malo vs. automático, %):', G.CHAPTERS.map((ch, i) => i).concat([NCH]).map((i) => {
+  const rs = camMulti.filter((r) => r.ch === i);
+  return rs.length ? `${i + 1}: ${fx(median(rs.map((r) => pct(r.bueno, r.auto))))} / ${fx(median(rs.map((r) => pct(r.malo, r.auto))))} (${rs.length})` : `${i + 1}: -`;
+}).join(' · '));
+// Lo que se exige, en los eventos de 3 cámaras o más (en uno de 2 cámaras con 2 posiciones fijas casi no hay qué decidir)
+const cam3 = camMulti.filter((r) => r.cams >= 3);
+console.log(`  eventos de 3+ cámaras (${cam3.length}): pensado ${fx(median(cam3.map((r) => pct(r.bueno, r.auto))))}% · malo ${fx(median(cam3.map((r) => pct(r.malo, r.auto))))}% · de 2 cámaras (${camMulti.length - cam3.length}): pensado ${fx(median(camMulti.filter((r) => r.cams < 3).map((r) => pct(r.bueno, r.auto))))}%`);
+if (cam3.length >= 20) {
+  const gan = median(cam3.map((r) => pct(r.bueno, r.auto))), pierde2 = median(camMulti.map((r) => pct(r.malo, r.auto)));
+  check(camRes.every((r) => r.bueno >= r.auto), 'el plan pensado salió peor que el automático');
+  check(gan >= 5 && gan <= 15, `un plan de cámaras pensado debería rendir +5 a +15 % sobre el automático en los eventos de 3+ cámaras (mediana ${gan.toFixed(1)}%)`);
+  check(pierde2 <= -10, `un plan de cámaras malo debería rendir claramente menos que el automático (mediana ${pierde2.toFixed(1)}%, máximo -10%)`);
+}
 
 if (errors) { console.error(`\n❌ ${errors} errores encontrados`); process.exit(1); }
 console.log('\n✅ Lógica OK: sin errores');

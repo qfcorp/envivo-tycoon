@@ -35,7 +35,23 @@
     'pe.leg.ok': 'Ideal', 'pe.leg.mid': 'Sirve', 'pe.leg.bad': 'No es la ideal', 'pe.leg.off': 'Vacía', 'pe.leg.na': 'Asignada',
     'pe.forma.fija': 'Fija', 'pe.forma.mano': 'Al hombro', 'pe.forma.robot': 'Robótica', 'pe.forma.aerea': 'Aérea',
     'pe.vacia': 'Sin cámara', 'pe.opcional': 'Opcional', 'pe.idealp': 'Ideal: {t}', 'pe.ajuste': 'Ajuste {p}%', 'pe.tocar': 'Toca una cámara para ver cuál va',
-    'pe.sinop': 'sin camarógrafo: rinde la mitad', 'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
+    'pe.sinop': 'sin camarógrafo: rinde menos', 'pe.cam.n': 'Cámara {n}', 'pe.um': 'UM', 'pe.control': 'CONTROL',
+
+    // Plan de cámaras a mano (el jugador mueve las cámaras)
+    'pe.ed.auto': 'Automático', 'pe.ed.manual': 'Tu plan', 'pe.ed.modo': 'Quién arma el plan de cámaras',
+    'pe.ed.delta': '{n} vs. automático', 'pe.ed.igual': 'igual que el automático',
+    'pe.ed.tip': 'Toca una cámara y después la posición donde la quieres. Toca una posición para ver por qué rinde así.',
+    'pe.ed.tip_cam': 'Ahora toca dónde va {cam}. Los números dicen cuánto cambia la calidad.',
+    'pe.ed.tip_pos': 'Toca una cámara de abajo para ponerla en «{pos}».',
+    'pe.ed.tray': 'Tus cámaras', 'pe.ed.libre': 'Sin posición', 'pe.ed.en': 'En la {n}',
+    'pe.ed.quitar': 'Quitar la cámara', 'pe.ed.operador': 'Quién la maneja', 'pe.ed.nadie': 'Nadie',
+    'pe.ed.sin_cam': 'Sin cámara. Toca una de tus cámaras para ponerla aquí.', 'pe.ed.cerrar': 'Cerrar',
+    'pe.ed.encaje': 'Tipo de cámara en esta posición', 'pe.ed.encaje_ideal': 'Tipo de cámara (ideal: {t})', 'pe.ed.ajuste': 'Rinde {p}%', 'pe.ed.pts': 'puntos de calidad',
+    'pe.ed.combos': 'Combos y fallas del plan', 'pe.ed.sin_combos': 'Todavía sin combos: prueba otras posiciones.',
+    'pe.ed.tutorial': 'Desde tu próximo evento podrás mover las cámaras tú mismo y armar combos.',
+    'pe.ed.no_va': 'no va', 'pe.ed.arrastra': 'También puedes arrastrar una cámara hasta su posición.',
+    'pe.ed.ninguna': 'No llevas cámaras que funcionen en este evento.',
+    'pe.ed.cliente.bien': 'El cliente notó las tomas: {t}', 'pe.ed.cliente.mal': 'El cliente notó: {t}',
 
     'pe.intl': 'Contrato internacional', 'pe.intl.pago': '×{m} pago', 'pe.intl.dias': '{n} días de viaje', 'pe.intl.dia': '1 día de viaje',
     'pe.intl.gastos': 'Gastos de viaje {m}', 'pe.intl.bloqueo': 'Mientras viajas no puedes tomar otros contratos.',
@@ -344,6 +360,69 @@
 .pe-rc.pe-ca{color:#ffd58a;border-color:#5a4214;background:#2a1f0b}
 .pe-rc.pe-cg{color:#8fe8b5;border-color:#1f5a3a;background:#0f2a1c}
 .pe-rc.pe-cm{color:var(--muted,#8b95a8)}
+
+/* Plan de cámaras a mano: tocar una cámara (luz de tally roja = elegida) y luego su posición */
+.pe-ed{display:grid;gap:8px;padding:8px 10px 10px;border-bottom:1px solid var(--line,#2a3242);background:var(--panel,#161a22)}
+.pe-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.pe-seg{display:inline-grid;grid-template-columns:1fr 1fr;border:1px solid var(--line,#2a3242);border-radius:10px;overflow:hidden;background:#0b0e14}
+.pe-seg button{appearance:none;border:0;background:none;color:var(--muted,#8b95a8);font:700 13px var(--f-head,"Barlow Condensed",sans-serif);letter-spacing:.4px;min-height:40px;padding:0 14px;cursor:pointer}
+.pe-seg button[aria-pressed="true"]{background:var(--panel2,#1e2430);color:var(--text,#e9edf5);box-shadow:inset 0 -2px 0 var(--red,#ff3b3b)}
+.pe-dq{font:600 12px var(--f-mono,"JetBrains Mono",monospace);padding:3px 8px;border-radius:8px;border:1px solid var(--line,#2a3242);color:var(--muted,#8b95a8);white-space:nowrap}
+.pe-dq.up{color:#8fe8b5;border-color:#1f5a3a;background:#0f2a1c}.pe-dq.dn{color:#ffb0b0;border-color:#5a2026;background:#2a1013}
+.pe-tip{font-size:12px;line-height:1.35;color:var(--muted,#8b95a8);margin:0}
+.pe-tip b{color:var(--text,#e9edf5)}
+.pe-hit{fill:transparent;stroke:none}
+.pe-ed-on .pe-cam{cursor:pointer}
+.pe-cam.pe-on .pe-dot{stroke-width:2.6;filter:drop-shadow(0 0 4px var(--pe-c))}
+.pe-ring{fill:none;stroke:var(--text,#e9edf5);stroke-width:1.4;stroke-dasharray:3 2;opacity:0;pointer-events:none}
+.pe-cam.pe-on .pe-ring{opacity:.9}
+.pe-cam.pe-src .pe-ring{opacity:1;stroke:var(--red,#ff3b3b);stroke-dasharray:none}
+.pe-pv rect{stroke-width:.8}
+.pe-pv text{font:700 8.6px "JetBrains Mono",ui-monospace,monospace;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.pe-pv{pointer-events:none}
+.pe-pv.up rect{fill:#0f2a1c;stroke:#2ecc71}.pe-pv.up text{fill:#8fe8b5}
+.pe-pv.dn rect{fill:#2a1013;stroke:#ff3b3b}.pe-pv.dn text{fill:#ffb0b0}
+.pe-pv.eq rect{fill:#1e2430;stroke:#8b95a8}.pe-pv.eq text{fill:#c4ccd9}
+.pe-pv.no rect{fill:#0b0e14;stroke:#3a4150}.pe-pv.no text{fill:#8b95a8}
+.pe-tray{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pe-cc{appearance:none;display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:7px;min-height:56px;padding:6px 8px 6px 6px;border-radius:12px;border:1px solid var(--line,#2a3242);background:var(--panel2,#1e2430);color:var(--text,#e9edf5);text-align:start;cursor:pointer;position:relative;touch-action:manipulation;font:inherit}
+.pe-cc .itemart,.pe-cc svg.itemart{width:34px;height:34px}
+.pe-cc b{display:block;font-size:12.5px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.pe-cc small{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted,#8b95a8);margin-top:2px;min-width:0}
+.pe-cc small span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe-tl{width:8px;height:8px;border-radius:50%;background:#3a4150;flex:none}
+.pe-cc.pe-puesta .pe-tl{background:var(--green,#2ecc71)}
+.pe-cc.pe-on{border-color:var(--red,#ff3b3b);background:#2a1a1f;box-shadow:0 0 0 1px var(--red,#ff3b3b),0 0 16px rgba(255,59,59,.35)}
+.pe-cc.pe-on .pe-tl{background:var(--red,#ff3b3b);box-shadow:0 0 8px var(--red,#ff3b3b)}
+.pe-cc.pe-arr{opacity:.45}
+.pe-cc:focus-visible,.pe-seg button:focus-visible,.pe-clr:focus-visible,.pe-op:focus-visible,.pe-qt:focus-visible{outline:2px solid var(--blue,#4da3ff);outline-offset:2px}
+.pe-dt{border:1px solid var(--line,#2a3242);border-radius:12px;background:#11151d;padding:9px 10px;display:grid;gap:7px}
+.pe-dth{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pe-dth b{font-size:13.5px;line-height:1.25}
+.pe-dth small{display:block;font-size:11.5px;color:var(--muted,#8b95a8);margin-top:2px}
+.pe-x{appearance:none;border:1px solid var(--line,#2a3242);background:none;color:var(--muted,#8b95a8);border-radius:8px;min-width:36px;min-height:36px;cursor:pointer;font-size:16px;line-height:1}
+.pe-rz{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.pe-rz li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12px;line-height:1.3}
+.pe-v{font:600 11.5px var(--f-mono,"JetBrains Mono",monospace);padding:1px 6px;border-radius:6px;white-space:nowrap;border:1px solid var(--line,#2a3242);color:var(--muted,#8b95a8)}
+.pe-v.up{color:#8fe8b5;border-color:#1f5a3a;background:#0f2a1c}.pe-v.dn{color:#ffb0b0;border-color:#5a2026;background:#2a1013}
+.pe-v.pct{border-style:dashed}
+.pe-ops{display:flex;flex-wrap:wrap;gap:5px}
+.pe-ops-t{font-size:11.5px;color:var(--muted,#8b95a8)}
+.pe-op{appearance:none;min-height:38px;padding:0 10px;border-radius:999px;border:1px solid var(--line,#2a3242);background:var(--panel2,#1e2430);color:var(--text,#e9edf5);font-size:12px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe-op[aria-pressed="true"]{border-color:var(--green,#2ecc71);background:#0f2a1c;color:#c9f5dc}
+.pe-op i{font-style:normal;font-family:var(--f-mono,"JetBrains Mono",monospace);color:var(--amber,#ffb020);margin-inline-start:4px}
+.pe-qt{appearance:none;justify-self:start;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid #5a2026;background:#2a1013;color:#ffb0b0;font-size:12.5px;cursor:pointer}
+.pe-cb{display:flex;flex-wrap:wrap;gap:5px}
+.pe-cb span{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:11.5px;line-height:1.25;border-radius:8px;padding:3px 7px;border:1px solid var(--line,#2a3242);background:var(--panel2,#1e2430)}
+.pe-cb span.up{border-color:#1f5a3a;background:#0f2a1c;color:#c9f5dc}.pe-cb span.dn{border-color:#5a2026;background:#2a1013;color:#ffd0d0}
+.pe-cb b{font-family:var(--f-mono,"JetBrains Mono",monospace);font-weight:600}
+.pe-cbt{font-size:11px;color:var(--muted,#8b95a8)}
+button.pe-clr{appearance:none;width:100%;border:0;border-bottom:1px solid var(--line,#2a3242);background:none;color:inherit;font:inherit;text-align:start;min-height:48px}
+button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9edf5)}
+.pe-clr .pe-pvl{font:700 11px var(--f-mono,"JetBrains Mono",monospace)}
+.pe-pvl.up{color:#8fe8b5}.pe-pvl.dn{color:#ffb0b0}.pe-pvl.no{color:var(--muted,#8b95a8)}
+.pe-drag{position:fixed;z-index:99;pointer-events:none;padding:6px 10px;border-radius:10px;background:#2a1a1f;border:1px solid var(--red,#ff3b3b);color:var(--text,#e9edf5);font-size:12px;box-shadow:0 0 16px rgba(255,59,59,.4);transform:translate(-50%,-120%)}
+@media (prefers-reduced-motion:no-preference){.pe-cc,.pe-op,.pe-seg button{transition:background-color .12s,border-color .12s,box-shadow .12s}}
 `;
   function ensureCss() {
     try {
@@ -798,7 +877,7 @@
       // fit = qué tan bien encaja la cámara (sin contar si hay quien la maneje); operado === false: nadie la maneja
       let fit = num(p.fit);
       if (fit != null && fit > 1) fit = fit / 100;
-      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, fit, sinOp: p.operado === false, eid: p.equipId != null ? p.equipId : null, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional };
+      return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, fit, sinOp: p.operado === false, eid: p.equipId != null ? p.equipId : null, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional, raw: p };
     });
   }
   function camName(a, o) {
@@ -851,10 +930,18 @@
     return `M${f1(x)} ${f1(y)}L${f1(p1[0])} ${f1(p1[1])}A${f1(L)} ${f1(L)} 0 0 1 ${f1(p2[0])} ${f1(p2[1])}Z`;
   }
 
-  function marker(p) {
+  // Lo que se ve sobre cada posición cuando hay una cámara elegida: cuánto cambia la calidad si va ahí
+  const pvTxt = (pv) => (!pv ? '' : pv.ok === false ? T('pe.ed.no_va') : pv.dq > 0 ? '+' + pv.dq : pv.dq < 0 ? String(pv.dq).replace('-', '−') : '±0');
+  const pvCls = (pv) => (!pv ? '' : pv.ok === false ? 'no' : pv.dq > 0 ? 'up' : pv.dq < 0 ? 'dn' : 'eq');
+  function marker(p, ed) {
     const s = p.spot, [x, y] = s.at, k = fitK(p);
     const info = `${T('pe.cam.n', { n: p.n })} · ${p.nombre} — ${p.asgName || vacioTxt(p)}${p.aj != null && p.asgName ? ' · ' + T('pe.ajuste', { p: Math.round(p.aj * 100) }) : ''}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
-    let g = `<g class="pe-cam pe-k-${k}" data-pe-cam="${p.n}" tabindex="0" role="button" aria-label="${esc(info)}"><title>${esc(info)}</title>`;
+    // En el plan a mano la posición se toca para colocar (data-pe-act); si no, solo se resalta (data-pe-cam)
+    const sel = ed && ed.selPos === p.key ? ' pe-on' : '';
+    const src = ed && ed.selCam != null && p.eid === ed.selCam ? ' pe-src' : '';
+    let g = ed
+      ? `<g class="pe-cam pe-k-${k}${sel}${src}" data-pe-act="pos" data-k="${esc(p.key)}" tabindex="0" role="button" aria-pressed="${sel ? 'true' : 'false'}" aria-label="${esc(info)}"><title>${esc(info)}</title><circle class="pe-hit" cx="${x}" cy="${y}" r="17"/><circle class="pe-ring" cx="${x}" cy="${y}" r="11.5"/>`
+      : `<g class="pe-cam pe-k-${k}" data-pe-cam="${p.n}" tabindex="0" role="button" aria-label="${esc(info)}"><title>${esc(info)}</title>`;
     if (s.wires) g += `<path class="pe-wire" d="${s.wires.map((w) => `M${w[0]} ${w[1]}L${x} ${y}`).join('')}"/>`;
     if (s.arm) g += `<path class="pe-arm" d="M${s.arm[0]} ${s.arm[1]}L${x} ${y}"/>`;
     if (s.path) g += `<path class="pe-trav" d="M${s.path.map((q) => q.join(' ')).join('L')}"/>`;
@@ -862,8 +949,14 @@
     if (s.f === 'aerea') g += `<circle class="pe-aer" cx="${x}" cy="${y}" r="13"/><rect class="pe-dot" x="-6.4" y="-6.4" width="12.8" height="12.8" rx="2" transform="translate(${x} ${y}) rotate(45)"/>`;
     else if (s.f === 'robot') g += `<rect class="pe-dot" x="${x - 6.6}" y="${y - 6.6}" width="13.2" height="13.2" rx="2.5"/>`;
     else g += `<circle class="pe-dot" cx="${x}" cy="${y}" r="7.2"/>`;
-    g += `<text class="pe-num" x="${x}" y="${y + 0.3}">${p.n}</text></g>`;
-    return g;
+    g += `<text class="pe-num" x="${x}" y="${y + 0.3}">${p.n}</text>`;
+    const pv = ed && ed.preview ? ed.preview[p.key] : null;
+    if (pv) {
+      const t = pvTxt(pv), w = Math.max(18, t.length * 5.6 + 8);
+      const by = y < 26 ? y + 17 : y - 17, bx = Math.max(w / 2 + 2, Math.min(W - w / 2 - 2, x));
+      g += `<g class="pe-pv ${pvCls(pv)}"><rect x="${f1(bx - w / 2)}" y="${by - 6.5}" width="${f1(w)}" height="13" rx="6.5"/><text x="${f1(bx)}" y="${by + 0.4}">${esc(t)}</text></g>`;
+    }
+    return g + '</g>';
   }
 
   function cable(p, v) {
@@ -877,6 +970,57 @@
 
   const shapeIco = (f) => `<svg width="12" height="12" viewBox="-7 -7 14 14" aria-hidden="true">${f === 'aerea' ? '<rect x="-4.3" y="-4.3" width="8.6" height="8.6" rx="1.5" transform="rotate(45)" fill="none" stroke="currentColor" stroke-width="1.6"/>' : f === 'robot' ? '<rect x="-5" y="-5" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>' : f === 'mano' ? '<circle r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M-7 6.2H7" stroke="currentColor" stroke-dasharray="2 1.5"/>' : '<circle r="5" fill="none" stroke="currentColor" stroke-width="1.6"/>'}</svg>`;
   const colorIco = (k) => `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" class="pe-k-${k}"><circle cx="5" cy="5" r="4" style="fill:var(--pe-c)"${k === 'off' || k === 'opt' ? ' fill-opacity=".35"' : ''}/></svg>`;
+
+  /* ---------- Plan de cámaras a mano: barra (automático / tu plan), cámaras, detalle de la posición y combos ----------
+     o.editable, o.modo ('auto' | 'manual'), o.delta (calidad de tu plan - automático), o.selCam (id del equipo),
+     o.selPos (clave), o.preview ({ clave: { dq, ok } }), o.arte(tipo) → html, o.operadores ({ rol: [{ id, name, skill }] }),
+     o.tutorial (solo se mira). Los toques llevan data-pe-act: modo | cam | pos | op | quitar | cerrar. */
+  const valor = (x) => {
+    if (typeof x.pts === 'number') return x.pts ? `<span class="pe-v ${x.pts > 0 ? 'up' : 'dn'}" title="${esc(T('pe.ed.pts'))}">${x.pts > 0 ? '+' : '−'}${Math.abs(x.pts)}</span>` : '';
+    if (typeof x.pct === 'number' && x.pct) return `<span class="pe-v pct ${x.pct > 0 ? 'up' : 'dn'}">${x.pct > 0 ? '+' : '−'}${Math.abs(x.pct)}%</span>`;
+    return '';
+  };
+  function detalle(p, plan, o) {
+    const r = p.raw || {};
+    const head = `<div class="pe-dth"><div style="min-width:0"><b>${p.n} · ${esc(p.nombre)}</b><small>${esc(p.asgName || T('pe.vacia'))}${p.asgName && p.aj != null ? ' · ' + esc(T('pe.ed.ajuste', { p: Math.round(p.aj * 100) })) : ''}</small></div>
+      <button type="button" class="pe-x" data-pe-act="cerrar" aria-label="${esc(T('pe.ed.cerrar'))}">×</button></div>`;
+    if (!p.asgName) return `<div class="pe-dt" aria-live="polite">${head}<p class="pe-tip">${esc(T('pe.ed.sin_cam'))}${p.ideal ? ' ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</p></div>`;
+    const base = typeof r.base === 'number' ? `<li><span>${esc(p.ideal && r.base < 0.8 ? T('pe.ed.encaje_ideal', { t: p.ideal }) : T('pe.ed.encaje'))}</span><span class="pe-v pct">${Math.round(r.base * 100)}%</span></li>` : '';
+    const rz = (Array.isArray(r.razones) ? r.razones : []).filter((x) => x && (x.texto || x.k) && (x.pts !== 0 || x.par)).map((x) => `<li><span>${esc(TLx(x.texto || x.k))}</span>${valor(x)}</li>`).join('');
+    const lista = (o.operadores && r.needs && o.operadores[r.needs]) || null;
+    const opId = r.operador ? r.operador.id : 0;
+    const ops = lista && !o.tutorial ? `<div class="pe-ops-t">${esc(T('pe.ed.operador'))}</div><div class="pe-ops" role="group" aria-label="${esc(T('pe.ed.operador'))}">
+      ${lista.map((q) => `<button type="button" class="pe-op" data-pe-act="op" data-k="${esc(p.key)}" data-id="${q.id}" aria-pressed="${q.id === opId ? 'true' : 'false'}">${esc(q.name)}<i>${q.skill}</i></button>`).join('')}
+      <button type="button" class="pe-op" data-pe-act="op" data-k="${esc(p.key)}" data-id="0" aria-pressed="${opId ? 'false' : 'true'}">${esc(T('pe.ed.nadie'))}</button></div>` : '';
+    const quitar = o.tutorial ? '' : `<button type="button" class="pe-qt" data-pe-act="quitar" data-k="${esc(p.key)}">${esc(T('pe.ed.quitar'))}</button>`;
+    return `<div class="pe-dt" aria-live="polite">${head}<ul class="pe-rz">${base}${rz}</ul>${ops}${quitar}</div>`;
+  }
+  function editor(list, plan, o) {
+    const cams = (plan && Array.isArray(plan.camaras)) ? plan.camaras : [];
+    const porPos = {}; list.forEach((p) => { porPos[p.key] = p; });
+    const manual = o.modo === 'manual';
+    const d = typeof o.delta === 'number' ? o.delta : null;
+    const top = o.tutorial ? '' : `<div class="pe-top"><div class="pe-seg" role="group" aria-label="${esc(T('pe.ed.modo'))}">
+        <button type="button" data-pe-act="modo" data-k="auto" aria-pressed="${manual ? 'false' : 'true'}">${esc(T('pe.ed.auto'))}</button>
+        <button type="button" data-pe-act="modo" data-k="manual" aria-pressed="${manual ? 'true' : 'false'}">${esc(T('pe.ed.manual'))}</button></div>
+        ${manual && d !== null ? `<span class="pe-dq ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${esc(d ? T('pe.ed.delta', { n: (d > 0 ? '+' : '−') + Math.abs(d) }) : T('pe.ed.igual'))}</span>` : ''}</div>`;
+    const selC = o.selCam != null ? cams.find((c) => c.equipId === o.selCam) : null;
+    const selP = o.selPos ? porPos[o.selPos] : null;
+    const tip = o.tutorial ? T('pe.ed.tutorial') : !cams.length ? T('pe.ed.ninguna')
+      : selC ? T('pe.ed.tip_cam', { cam: '«' + selC.nombre + '»' }) : selP && !selP.asgName ? T('pe.ed.tip_pos', { pos: selP.nombre }) : T('pe.ed.tip');
+    const tray = o.tutorial || !cams.length ? '' : `<div class="pe-tray" role="group" aria-label="${esc(T('pe.ed.tray'))}">${cams.map((c) => {
+      const en = c.en ? porPos[c.en] : null;
+      const on = o.selCam === c.equipId;
+      let arte = '';
+      try { arte = o.arte ? o.arte(c.tipo) : ''; } catch (e) { arte = ''; }
+      return `<button type="button" class="pe-cc${en ? ' pe-puesta' : ''}${on ? ' pe-on' : ''}" data-pe-act="cam" data-id="${c.equipId}" aria-pressed="${on ? 'true' : 'false'}">${arte || ico('cam_basic', 26)}
+        <span style="min-width:0"><b>${esc(c.nombre)}</b><small><i class="pe-tl" aria-hidden="true"></i><span>${esc(en ? T('pe.ed.en', { n: en.n }) + ' · ' + en.nombre : T('pe.ed.libre'))}</span></small></span></button>`;
+    }).join('')}</div>`;
+    const det = selP ? detalle(selP, plan, o) : '';
+    const combos = (plan && Array.isArray(plan.combos)) ? plan.combos.filter((cb) => cb.pts) : [];
+    const cb = o.tutorial ? '' : `<div><div class="pe-cbt">${esc(T('pe.ed.combos'))}</div><div class="pe-cb">${combos.length ? combos.map((x) => `<span class="${x.pts > 0 ? 'up' : 'dn'}">${esc(TLx(x.texto || x.k))}<b>${x.pts > 0 ? '+' : '−'}${Math.abs(x.pts)}</b></span>`).join('') : `<span>${esc(T('pe.ed.sin_combos'))}</span>`}</div></div>`;
+    return `<div class="pe-ed">${top}<p class="pe-tip" aria-live="polite">${esc(tip)}</p>${tray}${det}${cb}</div>`;
+  }
 
   function camaras(plan, tipoEvento, opts) {
     ensureCss(); bindTap();
@@ -897,12 +1041,12 @@
       const svg = `<svg class="pe-dia" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T('pe.cams'))}">
         ${(BG[v] || bgSalon)(u, vr)}
         ${cables ? `<path class="pe-cable" d="${cables}"/>` : ''}${control(vr)}
-        ${list.map(marker).join('')}</svg>`;
+        ${list.map((p) => marker(p, o.editable && !o.tutorial ? o : null)).join('')}</svg>`;
       // Solo las posiciones obligatorias cuentan para "cubiertas" (las tomas extra son opcionales)
       const reqList = list.filter((p) => !p.opcional);
       const covered = reqList.filter((p) => p.asgName).length;
       const fits = list.filter((p) => p.asgName && p.aj != null);
-      const avg = fits.length ? Math.round(fits.reduce((s, p) => s + p.aj, 0) / fits.length * 100) : null;
+      const avg = fits.length ? Math.min(100, Math.round(fits.reduce((s, p) => s + p.aj, 0) / fits.length * 100)) : null;
       const evName = (() => { const e = (G().EVENT_TYPES || {})[t]; return (e && TLx(e.name)) || (has('pe.ev.' + t) ? T('pe.ev.' + t) : ''); })();
       const head = o.titulo === false ? '' : `<div class="pe-hd"><span class="pe-ttl">${esc(o.titulo || T('pe.cams'))}</span>
         <span class="pe-sub">${evName ? esc(evName) + ' · ' : ''}<b>${esc(T('pe.cubiertas', { a: covered, t: reqList.length }))}</b>${avg != null ? ' · ' + esc(T('pe.ajuste.medio', { p: avg })) : ''}</span></div>`;
@@ -915,11 +1059,21 @@
         // "Ideal: ..." solo si la cámara no es la adecuada; si es la adecuada pero nadie la maneja, se dice eso
         const camMal = p.asgName && p.fit != null ? p.fit < 0.8 : k !== 'ok';
         const extra = p.asgName && p.sinOp && !camMal ? ' · ' + esc(T('pe.sinop')) : p.ideal && camMal ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : '';
+        const fitHtml = p.asgName && p.aj != null ? `${Math.min(100, Math.round(p.aj * 100))}%<u><i style="width:${Math.min(100, Math.round(p.aj * 100))}%"></i></u>` : p.asgName ? '' : '—';
+        if (o.editable && !o.tutorial) {
+          // Plan a mano: la fila es un botón grande para colocar; con una cámara elegida dice cuánto cambia la calidad
+          const pv = o.preview ? o.preview[p.key] : null;
+          const op = p.raw && p.raw.operador ? ' · ' + p.raw.operador.name : '';
+          return `<button type="button" class="pe-clr pe-k-${k}${o.selPos === p.key ? ' pe-on' : ''}" data-pe-act="pos" data-k="${esc(p.key)}" aria-pressed="${o.selPos === p.key ? 'true' : 'false'}"><b class="pe-n">${p.n}</b>
+          <span class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName ? p.asgName + op : vacioTxt(p))}${p.asgName ? extra : ''}</small></span>
+          <span class="pe-fit">${pv ? `<span class="pe-pvl ${pvCls(pv)}">${esc(pvTxt(pv))}</span>` : fitHtml}</span></button>`;
+        }
         return `<div class="pe-clr pe-k-${k}" data-pe-cam="${p.n}" data-pe-info="${esc(info)}"><b class="pe-n">${p.n}</b>
           <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${extra}</small></div>
-          <span class="pe-fit">${p.asgName && p.aj != null ? `${Math.round(p.aj * 100)}%<u><i style="width:${Math.round(p.aj * 100)}%"></i></u>` : p.asgName ? '' : '—'}</span></div>`;
+          <span class="pe-fit">${fitHtml}</span></div>`;
       }).join('')}</div>`;
-      return `<div class="pe-cams ${esc(o.clase || '')}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${legend}<div class="pe-det" aria-live="polite"></div>${rowsHtml}</div></div>`;
+      const ed = o.editable ? editor(list, plan, o) : '';
+      return `<div class="pe-cams ${esc(o.clase || '')}${o.editable && !o.tutorial ? ' pe-ed-on' : ''}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${ed}${legend}${o.editable ? '' : '<div class="pe-det" aria-live="polite"></div>'}${rowsHtml}</div></div>`;
     } catch (e) { return ''; }
   }
 
@@ -995,10 +1149,17 @@
         posList(cp, t).filter((p) => !camName(p.asg, o) && !p.opcional).slice(0, 2).forEach((p) => chips.push(['a', T('pe.chip.cam', { n: p.n, pos: p.nombre })]));
       }
       if (!chips.length) {
-        if (!rs.length) return '';
-        chips.push(['g', T('pe.chip.ok')]);
+        if (!rs.length && !(o.camaras && Array.isArray(o.camaras.combos) && o.camaras.combos.length)) return '';
+        if (rs.length) chips.push(['g', T('pe.chip.ok')]);
       }
-      const shown = chips.slice(0, max);
+      // Lo que el cliente notó del plan de cámaras: el mejor combo y la peor falla (con sus puntos de calidad)
+      const cbs = o.camaras && Array.isArray(o.camaras.combos) ? o.camaras.combos.filter((x) => x && x.pts) : [];
+      const mejor = cbs.filter((x) => x.pts > 0).sort((a, b) => b.pts - a.pts)[0];
+      const peor = cbs.filter((x) => x.pts < 0).sort((a, b) => a.pts - b.pts)[0];
+      const pts = (n) => (n > 0 ? '+' : '−') + Math.abs(n);
+      if (mejor) chips.unshift(['g', T('pe.ed.cliente.bien', { t: TLx(mejor.texto || mejor.k) }) + ' ' + pts(mejor.pts)]);
+      if (peor) chips.splice(mejor ? 1 : 0, 0, ['r', T('pe.ed.cliente.mal', { t: TLx(peor.texto || peor.k) }) + ' ' + pts(peor.pts)]);
+      const shown = chips.slice(0, max + (mejor ? 1 : 0) + (peor ? 1 : 0));
       const extra = chips.length - shown.length;
       const icon = { r: 'pe_warn', a: 'pe_warn', g: 'check' };
       return `<div class="pe-risk ${esc(o.clase || '')}">${shown.map((c) => `<span class="pe-rc pe-c${c[0]}">${ico(icon[c[0]], 14)}<span>${esc(c[1])}</span></span>`).join('')}${extra > 0 ? `<span class="pe-rc pe-cm"><span>${esc(T('pe.chip.mas', { n: extra }))}</span></span>` : ''}</div>`;
