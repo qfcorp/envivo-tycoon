@@ -65,6 +65,7 @@ const { chromium } = require('playwright');
 
   // Comprar consola de audio para mejorar
   await click('nav button[data-tab="bodega"]');
+  await click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2: la tienda es una sub-pestaña de la Bodega
   // La tienda de equipos va por categorías: primero la de consolas de audio
   await click('[data-act="cat"][data-k="audio"]');
   await click('[data-act="buy"][data-k="audio_basic"]');
@@ -112,6 +113,7 @@ const { chromium } = require('playwright');
 
   // Contratar a alguien
   await click('nav button[data-tab="personal"]');
+  await click('#tab-personal .subnav [data-k="contratar"]');   // navegación v2: candidatos en "Contratar"
   const before = await page.evaluate(() => window.__game.state.staff.length);
   const hireBtn = page.locator('[data-act="hire"]');
   if (await hireBtn.count()) {
@@ -184,6 +186,7 @@ const { chromium } = require('playwright');
     await p2.waitForTimeout(500);
     for (let k = 0; k < 3; k++) { const b = p2.locator('#overlay.on [data-act="close"], #overlay.on [data-act="close-dia"]'); if (await b.count()) await b.first().click(); else break; }
     await p2.click('nav button[data-tab="personal"]');
+    await p2.click('#tab-personal .subnav [data-k="contratar"]');
     await p2.locator('[data-act="hire"]:not([disabled])').first().click();
     const cap = p2.locator('#overlay.on [data-act="close-story"]');
     await cap.first().waitFor({ timeout: 10000 }).catch(() => {});

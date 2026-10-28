@@ -140,6 +140,7 @@ async function jugarEvento(page, cid, equipIds) {
   await page.click('nav button[data-tab="clientes"]');
   await page.click(`[data-act="prep"][data-id="${cid}"]`);
   await page.waitForSelector('#modal #prepPie');
+  await page.click('#modal .pp-k[data-k="equipos"]');   // navegación v2: los equipos van en su paso
   for (const id of equipIds) {
     if (!(await page.isChecked(`#eq-${id}`))) { await page.click(`label:has(#eq-${id}) .grow b`); await page.waitForTimeout(120); }
   }

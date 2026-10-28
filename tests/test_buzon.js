@@ -183,6 +183,7 @@ const sinDesborde = (p) => p.evaluate(() => document.documentElement.scrollWidth
   await cerrarVentanas(p);
   // Tienda → Cuenta → Canjear código
   await p.click('nav button[data-tab="tienda"]');
+  await p.click('#tab-tienda .subnav [data-k="creditos"]');   // navegación v2: la cuenta va en "Créditos"
   await p.waitForSelector('#tab-tienda [data-ext="buzon"][data-acc="canjear"]', { timeout: 6000 }).catch(() => {});
   ok(await p.locator('#tab-tienda [data-ext="buzon"][data-acc="canjear"]').count() === 1, 'Tienda → Cuenta: botón "Canjear código"');
   await p.locator('#tab-tienda [data-ext="buzon"][data-acc="canjear"]').scrollIntoViewIfNeeded();

@@ -104,19 +104,31 @@ async function abrir(browser, caso) {
   return { ctx, page, errores, srv };
 }
 
-async function irTienda(page, espera) {
+// Navegación v2: la tienda va por sub-pestañas (Ofertas, Créditos, VIP, Pase); los paquetes de créditos en "Créditos"
+async function irTienda(page, espera, sub) {
   await page.click('nav button[data-tab="tienda"]');
   await page.waitForSelector(espera || '#tab-tienda .tv-trust', { timeout: 8000 });
+  const k = page.locator(`#tab-tienda .subnav [data-k="${sub || 'creditos'}"]`);
+  if (await k.count()) { await k.click(); await page.waitForSelector(espera || '#tab-tienda .tv-trust', { timeout: 8000 }); }
   await page.waitForTimeout(600);
 }
-// Botones de cada producto: {id: ['tarjeta'|'paypal'|'comprar', ...]}
-const botones = (page) => page.evaluate(() => {
+// Botones de cada producto (en todas las sub-pestañas): {id: ['tarjeta'|'paypal'|'comprar', ...]}
+const botones = async (page) => {
   const o = {};
-  document.querySelectorAll('#tab-tienda [data-prod]').forEach((c) => {
-    o[c.dataset.prod] = [...c.querySelectorAll('[data-act="comprar"]')].map((b) => b.dataset.metodo || 'comprar');
-  });
+  const subs = await page.$$eval('#tab-tienda .subnav [data-act="sub"]', (l) => l.map((b) => b.dataset.k));
+  for (const k of subs.length ? subs : [null]) {
+    if (k) { await page.click(`#tab-tienda .subnav [data-k="${k}"]`); await page.waitForTimeout(250); }
+    Object.assign(o, await page.evaluate(() => {
+      const r = {};
+      document.querySelectorAll('#tab-tienda [data-prod]').forEach((c) => {
+        r[c.dataset.prod] = [...c.querySelectorAll('[data-act="comprar"]')].map((b) => b.dataset.metodo || 'comprar');
+      });
+      return r;
+    }));
+  }
+  if (subs.includes('creditos')) { await page.click('#tab-tienda .subnav [data-k="creditos"]'); await page.waitForTimeout(250); }
   return o;
-});
+};
 async function revisar(o, nombre) {
   const r = await o.page.evaluate(() => {
     const t = document.getElementById('tab-tienda');

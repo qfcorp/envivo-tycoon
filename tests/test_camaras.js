@@ -144,9 +144,11 @@ async function servir(ctx) {
       marcadas: [...document.querySelectorAll('#modal input[data-act="tog-equip"]')].filter((x) => x.checked).map((x) => +x.dataset.id),
       plan: [...document.querySelectorAll('#modal .pe-clr')].map((r) => r.innerText.replace(/\s+/g, ' ')) };
   });
-  const marcar = async (page, id) => { await page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${id}"])`).click({ position: { x: 12, y: 12 } }); await page.waitForTimeout(60); };
+  // Navegación v2: los equipos van en el paso "Equipos" de la preparación
+  const marcar = async (page, id) => { const l = page.locator(`#modal label.pick:has(input[data-act="tog-equip"][data-id="${id}"])`); if (!(await l.isVisible())) await page.click('#modal .pp-k[data-k="equipos"]'); await l.click({ position: { x: 12, y: 12 } }); await page.waitForTimeout(60); };
   const comprar = async (page, cat, k) => {
     await page.click('nav button[data-tab="bodega"]');
+    await page.click('#tab-bodega .subnav [data-k="tienda"]');   // navegación v2
     await page.click(`[data-act="cat"][data-k="${cat}"]`);
     const b = page.locator(`[data-act="buy"][data-k="${k}"]`).first();
     await b.scrollIntoViewIfNeeded();
@@ -181,7 +183,8 @@ async function servir(ctx) {
       const cambio = await leer(page);
       bien(cambio.marcadas.length === 1 && cambio.marcadas[0] === ids.pro, 'Don Ramiro desmarcada, la Kanon sigue marcada');
       bien(cambio.min > conRamiro.min && cambio.max > conRamiro.max, `Cambiar Don Ramiro por la Kanon sube la calidad (${conRamiro.min}–${conRamiro.max} → ${cambio.min}–${cambio.max}; con las dos ${ambas.min}–${ambas.max})`);
-      await page.locator('#modal .pe-cl').first().scrollIntoViewIfNeeded();
+      await page.click('#modal .pp-k[data-k="camaras"]');   // navegación v2: el plano de cámaras va en su paso
+      await page.locator('#modal .prep-paso:not([hidden]) .pe-cl').first().scrollIntoViewIfNeeded();
       await page.waitForTimeout(300);
       await page.screenshot({ path: path.join(OUT, 'camaras_02_cambiada.png') });
       // Al aire: el evento usa la Kanon
@@ -222,6 +225,7 @@ async function servir(ctx) {
       const av = page.locator('#modal [data-act="ir-bodega"][data-k="cam"]');
       bien(await av.count() > 0, 'Lucha libre sin cámara de hombro: la preparación dice qué comprar y tiene "Comprar en la Bodega"');
       bien(/Zony HXR-MK2500/.test(await page.locator('#modal .camav').innerText().catch(() => '')), '…y nombra la cámara de hombro de entrada');
+      await page.click('#modal .pp-k[data-k="camaras"]');   // los avisos de cámaras van en el paso "Cámaras"
       await av.first().scrollIntoViewIfNeeded();
       await page.screenshot({ path: path.join(OUT, 'camaras_04_falta_hombro.png') });
       await av.first().click();
@@ -239,7 +243,8 @@ async function servir(ctx) {
       const r = await leer(page);
       const pos2 = r.plan[1] || '';
       bien(/Zony HXR-MK2500/.test(pos2) && !/Ideal/.test(pos2), 'La posición al hombro queda con la cámara de hombro y ya no pide "Ideal: Cámara de hombro" → ' + pos2);
-      await page.locator('#modal .pe-cl').first().scrollIntoViewIfNeeded();
+      await page.click('#modal .pp-k[data-k="camaras"]');   // navegación v2: el plano de cámaras va en su paso
+      await page.locator('#modal .prep-paso:not([hidden]) .pe-cl').first().scrollIntoViewIfNeeded();
       await page.waitForTimeout(450);
       await page.screenshot({ path: path.join(OUT, 'camaras_06_con_hombro.png') });
       const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
