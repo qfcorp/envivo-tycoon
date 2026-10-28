@@ -1514,7 +1514,7 @@
   }
 
   /* Automático: la mejor pareja posición-cámara por el tipo de cámara (como siempre) */
-  function colocarAuto(pos, ready, staff) {
+  function colocarAuto(pos, ready, staff, legado) {
     const left = ready.slice();
     // Operadores: se reparten mientras se eligen las cámaras, así una cámara que se quedaría sin nadie que la maneje
     // (una PTZ sin operador de robóticas, una segunda cámara sin segundo camarógrafo) no le quita el puesto a otra que sí rinde.
@@ -1524,7 +1524,10 @@
     // Puntaje de una cámara en una posición: cuánto encaja, su calidad y su estado; si nadie la puede manejar vale
     // mucho menos (rinde la mitad y además deja sin puesto a una que sí tendría operador)
     // Una cámara que nadie va a manejar solo se deja fija (en la mano o en una cerrada no sirve y resta)
-    const score = (p, r) => (posicionImposible(p.perfil, r.clase) || (!canOp(r) && (CAMR.sinOp[p.perfil] || CAMR.sinOp.otra) < 0.5) ? 0 : fitOf(p.perfil, r)) * (2 + r.effQ) * r.cond * (canOp(r) ? 1 : 0.25);
+    // (legado: el automático de antes del 28-oct, para los intentos en línea sin colocación)
+    const score = legado ? (p, r) => fitOf(p.perfil, r) * (2 + r.effQ) * r.cond * (canOp(r) ? 1 : 0.25)
+      : (p, r) => (posicionImposible(p.perfil, r.clase) || (!canOp(r) && (CAMR.sinOp[p.perfil] || CAMR.sinOp.otra) < 0.5) ? 0 : fitOf(p.perfil, r)) * (2 + r.effQ) * r.cond * (canOp(r) ? 1 : 0.25);
+    const b0 = legado ? -1 : 0;
     const asg = new Map();
     let orden = 0;
     const tomar = (p, r) => {
@@ -1537,7 +1540,7 @@
     // posición al hombro y no a la fija, donde cualquier otra sirve)
     const pend = pos.filter((p) => !p.opcional);
     while (pend.length && left.length) {
-      let bp = null, br = null, bs = 0;
+      let bp = null, br = null, bs = b0;
       pend.forEach((p) => left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; bp = p; br = r; } }));
       if (!br) break;
       tomar(bp, br);
@@ -1546,7 +1549,7 @@
     // Tomas extra (opcionales), en orden: con una cámara que encaje y que alguien maneje; sin nadie que la maneje, solo
     // si encaja casi perfecto (con su trípode o soporte llega a 1: una cámara "dejada" en su sitio rinde la mitad, pero suma como toma extra)
     pos.filter((p) => p.opcional).forEach((p) => {
-      let best = null, bs = 0;
+      let best = null, bs = b0;
       left.forEach((r) => { const sc = score(p, r); if (sc > bs) { bs = sc; best = r; } });
       const f = best ? fitOf(p.perfil, best) : 0;
       if (best && (canOp(best) ? f >= 0.5 : f >= 0.85)) tomar(p, best);
@@ -1580,13 +1583,15 @@
     asg.forEach((a) => { a.operado = !a.r.needs || a.r.needs === 'piloto_dron' || !!a.op; });
   }
 
-  function planCams(c, equip, staff, col) {
+  /* legado = true: un intento en línea sin colocación se evalúa como antes del 28-oct (automático, sin puntos de combos
+     ni peso al aire, sin operador = la mitad), así el balance de la liga, copas y duelos no cambia hasta que se pueda colocar en línea */
+  function planCams(c, equip, staff, col, legado) {
     const pos = positionsFor(c);
     const { ready, blocked } = readyCams(equip, staff);
     const t = EVENT_TYPES[c.type] || {};
     const manual = Array.isArray(col);
     const leido = manual ? leerColocacion(pos, ready, staff, col) : null;
-    const asg = manual ? leido.asg : colocarAuto(pos, ready, staff);
+    const asg = manual ? leido.asg : colocarAuto(pos, ready, staff, legado);
     asignarOperadores(asg, staff);
     const usados = [];
     // Accesorios: trípodes, gimbal, estabilizador corporal, jib y dolly mejoran el ajuste de su posición; los
@@ -1625,7 +1630,7 @@
         const pct = Math.round((op.skill + tierBonus(op) - 3) * CAMR.op);
         if (pct) add(pct > 0 ? 'cam.r.op_bueno' : 'cam.r.op_flojo', pct, { nombre: nm(op), n: op.skill });
       }
-      const fSinOp = CAMR.sinOp[p.perfil] || CAMR.sinOp.otra;
+      const fSinOp = legado ? 0.5 : CAMR.sinOp[p.perfil] || CAMR.sinOp.otra;
       if (!a.operado) add(fSinOp >= 0.6 ? 'cam.r.fija_sola' : 'cam.r.sin_operador', -Math.round((1 - fSinOp) * 100));
       // Reglas de la posición (puntos de calidad)
       if (esLejana(p)) {
@@ -1672,7 +1677,7 @@
     out.forEach((o) => {
       if (!o.asignado) return;
       o.mods = o.razones.filter((x) => typeof x.pct === 'number' && /^cam\.r\.op_/.test(x.k)).reduce((s0, x) => s0 + x.pct, 0);
-      o.ajuste = r2(clamp(o.fit + o.mods / 100, 0, CAMR.tope) * (o.operado ? 1 : (CAMR.sinOp[o.perfil] || CAMR.sinOp.otra)));
+      o.ajuste = r2(clamp(o.fit + o.mods / 100, 0, CAMR.tope) * (o.operado ? 1 : legado ? 0.5 : (CAMR.sinOp[o.perfil] || CAMR.sinOp.otra)));
       o.razones.forEach((x) => { x.texto = tx(x.k, x.p || undefined); });
     });
     // Combos y fallas del plan (puntos de calidad), con los topes; más los del plan entero
@@ -1853,19 +1858,21 @@
     const diff = contract.diff || 1;
     const t = EVENT_TYPES[contract.type] || EVENT_TYPES.misa;
     // Plan de cámaras
-    const plan = planCams(contract, equip, staff, col);
+    const legado = esIntento(s) && !Array.isArray(col);
+    const plan = planCams(contract, equip, staff, col, legado);
     const req = plan.positions.filter((p) => !p.opcional);
     const N = Math.max(1, req.length);
     const cover = Math.round(Q.cover * req.reduce((a, p) => a + p.ajuste, 0) / N);
     q += add('parte.camaras', cover, { a: plan.cubiertas, n: N, p: Math.round(plan.ajusteMedio * 100) });
     if (plan.sinOperador) parts.push([tx('parte.sin_operador', { n: plan.sinOperador }), 0, 'parte.sin_operador']);
     // Combos del plan de cámaras entero (abierta + cerrada + reacción, sin plano general)
-    plan.combos.forEach((cb) => { if (cb.pts) q += add(cb.k, cb.pts); });
+    if (!legado) plan.combos.forEach((cb) => { if (cb.pts) q += add(cb.k, cb.pts); });
     plan.bloqueados.slice(0, 3).forEach((b) => parts.push([b.texto, 0, 'bloq.' + b.motivo]));
     const asg = req.filter((p) => p.asignado);
     // La calidad de las cámaras pesa según cuánto sale al aire cada posición (la principal y la clave, el doble)
-    const pesoAire = asg.reduce((a, p) => a + (p.aire || 1), 0);
-    const camQ = asg.length ? asg.reduce((a, p) => a + p.q * p.cond * (p.aire || 1), 0) / pesoAire : 0;
+    const aire = (p) => (legado ? 1 : p.aire || 1);
+    const pesoAire = asg.reduce((a, p) => a + aire(p), 0);
+    const camQ = asg.length ? asg.reduce((a, p) => a + p.q * p.cond * aire(p), 0) / pesoAire : 0;
     q += add('parte.calidad_camaras', Math.round(camQ * Q.camPerQ));
     const extras = plan.positions.filter((p) => p.opcional && p.asignado && p.ajuste >= 0.5).length;
     if (extras) q += add('parte.extras', Math.min(Q.extraMax, extras) * Q.extraPos, { n: extras });
@@ -2745,7 +2752,7 @@
       log(s, 'log.intl_viaje', { monto: money(contract.travelCost), pais: paisP(contract) });
     }
     // Elegir imprevistos
-    const view = { contract: ev.contract, staff, equip, camPlan: base.cameraPlan };
+    const view = { contract: ev.contract, staff, equip, camPlan: esIntento(s) && !col ? null : base.cameraPlan };
     const worn = equip.filter((e) => e.condition < BALANCE.worn).length;
     const BI = BALANCE.incidents;
     const faltan = crew.roles.filter((r) => r.estado === 'falta' && r.min > 0).length;
