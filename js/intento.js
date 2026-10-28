@@ -183,7 +183,9 @@
   }
 
   /* Plan de cámaras a mano (opcional): intento.colocacion = [{ p: clave de la posición, e: índice en equipo.equip,
-     o?: índice en equipo.staff (null = nadie la maneja; si falta, el mejor camarógrafo libre) }].
+     o?: índice en equipo.staff (null = nadie la maneja; si falta, el mejor camarógrafo libre),
+     x?, y?: dónde está la cámara en el plano (enteros 0-100, los dos o ninguno; sin ellos, en la marca de la toma) }].
+     La lógica (Game.validarColocacion) revisa que el sitio se pueda usar en ese lugar con esa cámara.
      Sin colocacion (o null) el evento usa el plan automático, como siempre. Devuelve la colocación con los ids del
      estado armado por crearEstado (staff 1..n, equipos n+1..) o null; si no se entiende, falla con colocacion_invalida. */
   function colocacionDe(intento, estado) {
@@ -194,6 +196,10 @@
       if (!esObj(x) || typeof x.p !== 'string' || !x.p.length || x.p.length > 40 || !NOMBRE_OK.test(x.p)) falla('colocacion_invalida', `Colocación ${i + 1}: posición inválida.`);
       if (!entero(x.e, 0, estado.equipIds.length - 1)) falla('colocacion_invalida', `Colocación ${i + 1}: la cámara debe ser un índice de equipo.equip (0 a ${estado.equipIds.length - 1}).`);
       const o = { p: x.p, e: estado.equipIds[x.e] };
+      if (x.x !== undefined || x.y !== undefined) {
+        if (!entero(x.x, 0, 100) || !entero(x.y, 0, 100)) falla('colocacion_invalida', `Colocación ${i + 1}: x e y deben ser enteros de 0 a 100 (los dos).`);
+        o.x = x.x; o.y = x.y;
+      }
       if (x.o === null) o.o = 0;
       else if (x.o !== undefined) {
         if (!entero(x.o, 0, estado.staffIds.length - 1)) falla('colocacion_invalida', `Colocación ${i + 1}: el operador debe ser un índice de equipo.staff o null.`);

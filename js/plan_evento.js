@@ -40,8 +40,8 @@
     // Plan de cámaras a mano (el jugador mueve las cámaras)
     'pe.ed.auto': 'Automático', 'pe.ed.manual': 'Tu plan', 'pe.ed.modo': 'Quién arma el plan de cámaras',
     'pe.ed.delta': '{n} vs. automático', 'pe.ed.igual': 'igual que el automático',
-    'pe.ed.tip': 'Toca una cámara y después la posición donde la quieres. Toca una posición para ver por qué rinde así.',
-    'pe.ed.tip_cam': 'Ahora toca dónde va {cam}. Los números dicen cuánto cambia la calidad.',
+    'pe.ed.tip': 'Toca una cámara y después cualquier sitio libre del plano o una marca de piso. Toca una toma para ver por qué rinde así.',
+    'pe.ed.tip_cam': 'Ahora toca dónde va {cam}: un sitio libre del plano o una marca de piso (los números dicen cuánto cambia la calidad). Lo rojo no se puede usar.',
     'pe.ed.tip_pos': 'Toca una cámara de abajo para ponerla en «{pos}».',
     'pe.ed.tray': 'Tus cámaras', 'pe.ed.libre': 'Sin posición', 'pe.ed.en': 'En la {n}',
     'pe.ed.quitar': 'Quitar la cámara', 'pe.ed.operador': 'Quién la maneja', 'pe.ed.nadie': 'Nadie',
@@ -52,6 +52,15 @@
     'pe.ed.no_va': 'no va', 'pe.ed.arrastra': 'También puedes arrastrar una cámara hasta su posición.',
     'pe.ed.ninguna': 'No llevas cámaras que funcionen en este evento.',
     'pe.ed.cliente.bien': 'El cliente notó las tomas: {t}', 'pe.ed.cliente.mal': 'El cliente notó: {t}',
+    // Cámaras libres: mover cada cámara a cualquier sitio del plano
+    'pe.ed.tip_mover': 'Ahora toca dónde va {cam}: otro sitio libre del plano, o una marca de piso para cambiarla de toma.',
+    'pe.ed.mapa': 'Plano del lugar: toca un sitio libre para mover la cámara elegida',
+    'pe.ed.marca': 'Marca de piso {n}: {toma}', 'pe.ed.cam_en': 'Cámara {n}: {cam} en «{toma}»',
+    'pe.ed.a_marca': 'Volver a la marca', 'pe.ed.lleno': 'Todas las tomas tienen cámara: toca una cámara del plano para moverla o cambiarla.',
+    'pe.ed.elige': 'Primero toca una cámara (en el plano o abajo) y después el sitio.',
+    'pe.ed.movida': 'Fuera de su marca', 'pe.ed.cubre': 'Cubre: {toma}',
+    'pe.tk.t': 'Tomas clave', 'pe.tk.n': '{a} de {t} bien cubiertas', 'pe.tk.bien': 'Bien cubierta', 'pe.tk.extra': 'Extra',
+    'pe.ley.marca': 'Marca sugerida', 'pe.ley.bloq': 'No se puede', 'pe.ley.alto': 'Zona alta', 'pe.v.alto': 'Alto', 'pe.v.no': 'No',
 
     'pe.intl': 'Contrato internacional', 'pe.intl.pago': '×{m} pago', 'pe.intl.dias': '{n} días de viaje', 'pe.intl.dia': '1 día de viaje',
     'pe.intl.gastos': 'Gastos de viaje {m}', 'pe.intl.bloqueo': 'Mientras viajas no puedes tomar otros contratos.',
@@ -422,6 +431,47 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
 .pe-clr .pe-pvl{font:700 11px var(--f-mono,"JetBrains Mono",monospace)}
 .pe-pvl.up{color:#8fe8b5}.pe-pvl.dn{color:#ffb0b0}.pe-pvl.no{color:var(--muted,#8b95a8)}
 .pe-drag{position:fixed;z-index:99;pointer-events:none;padding:6px 10px;border-radius:10px;background:#2a1a1f;border:1px solid var(--red,#ff3b3b);color:var(--text,#e9edf5);font-size:12px;box-shadow:0 0 16px rgba(255,59,59,.4);transform:translate(-50%,-120%)}
+/* Cámaras libres: marcas de piso (cinta), zonas y campo de visión */
+.pe-mapa{fill:transparent;cursor:crosshair}
+.pe-zonas{pointer-events:none}
+.pe-zalto{fill:#ffb020;fill-opacity:.05;stroke:#ffb020;stroke-opacity:.5;stroke-width:.8;stroke-dasharray:1 2.2}
+.pe-zat{font:700 6px "JetBrains Mono",ui-monospace,monospace;fill:#ffcf6e;fill-opacity:.75;letter-spacing:.5px}
+.pe-zno{stroke:#ff3b3b;stroke-opacity:.55;stroke-width:.8}
+.pe-zno-s{fill:none;stroke:#ff3b3b;stroke-opacity:.35}
+.pe-gh{cursor:pointer;outline:none}
+.pe-tape{fill:none;stroke:#e8d27a;stroke-width:2.4;stroke-linecap:butt;opacity:.55}
+.pe-gh .pe-tape{stroke:var(--pe-c)}
+.pe-ghn{font:700 7.5px "JetBrains Mono",ui-monospace,monospace;fill:var(--pe-c);opacity:.85;pointer-events:none}
+.pe-k-off .pe-tape,.pe-k-opt .pe-tape{stroke:#e8d27a;opacity:.75}
+.pe-k-off .pe-ghn,.pe-k-opt .pe-ghn{fill:#e8d27a}
+.pe-gh:focus-visible .pe-tape,.pe-gh.pe-on .pe-tape{opacity:1;stroke-width:3}
+.pe-gh:focus-visible .pe-hit{stroke:var(--blue,#4da3ff);stroke-width:1.2;stroke-dasharray:2 2}
+.pe-ed-on.pe-moviendo .pe-gh .pe-tape{opacity:.95}
+.pe-cone.pe-tap{stroke:var(--pe-bad);stroke-dasharray:2.5 2;fill-opacity:.1}
+.pe-nol{fill:none;stroke:var(--pe-c);stroke-width:.9;stroke-dasharray:1.5 2.5;stroke-opacity:.7}
+.pe-real .pe-dot{stroke-width:2}
+.pe-mal{pointer-events:none}
+.pe-mal path{stroke:#ff3b3b;stroke-width:2.6;stroke-linecap:round}
+.pe-mal circle{fill:#ff3b3b;fill-opacity:.18;stroke:#ff3b3b;stroke-width:1}
+@media (prefers-reduced-motion:no-preference){.pe-mal{animation:peMal .9s ease-out forwards}@keyframes peMal{0%{opacity:1}70%{opacity:1}100%{opacity:0}}}
+.pe-tkh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:8px 10px 4px;border-top:1px solid var(--line,#2a3242)}
+.pe-tkh b{font:800 13px var(--f-head,"Barlow Condensed",sans-serif);letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#8b95a8)}
+.pe-tkh span{font:600 11.5px var(--f-mono,"JetBrains Mono",monospace);color:var(--text,#e9edf5)}
+.pe-tkh span.pe-tk-mal{color:#ffcf6e}
+.pe-clt .pe-tkt{display:flex;align-items:center;gap:5px}
+.pe-clt .pe-tkt .pe-ck{flex:none;margin:0}
+.pe-clt small.pe-pista{color:#ffb0b0}
+.pe-clt small.pe-pista.pe-pmov{color:var(--muted,#8b95a8)}
+.pe-clt .pe-tkt em{font-style:normal;font-size:12.5px;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe-tkx{font:600 9.5px var(--f-mono,"JetBrains Mono",monospace);color:var(--muted,#8b95a8);border:1px solid var(--line,#2a3242);border-radius:5px;padding:0 4px;margin-inline-start:4px;font-style:normal}
+.pe-ed-top{background:var(--panel,#161a22)}
+.pe-tkl{display:flex;align-items:flex-start;gap:7px;margin:0;padding:7px 10px;font-size:12px;line-height:1.35;border-bottom:1px solid var(--line,#2a3242);background:#0f131b}
+.pe-tkl .pe-ck{flex:none;margin-top:1px}
+.pe-tkl b{font-family:var(--f-mono,"JetBrains Mono",monospace);font-weight:600}
+.pe-ed-det{border-bottom:1px solid var(--line,#2a3242)}
+.pe-dt .pe-am{appearance:none;justify-self:start;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid #5a4214;background:#2a1f0b;color:#ffd58a;font-size:12.5px;cursor:pointer}
+.pe-dt .pe-acc{display:flex;flex-wrap:wrap;gap:6px}
+.pe-am:focus-visible{outline:2px solid var(--blue,#4da3ff);outline-offset:2px}
 @media (prefers-reduced-motion:no-preference){.pe-cc,.pe-op,.pe-seg button{transition:background-color .12s,border-color .12s,box-shadow .12s}}
 `;
   function ensureCss() {
@@ -783,7 +833,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       <path d="M180 10v10M176 13.5h8" stroke="#ffb020" stroke-opacity=".8" stroke-width="1.4"/>
       <rect x="224" y="46" width="13" height="10" rx="1.5" fill="#5a4a3a"/>${vt(231, 41, 'pe.v.ambon')}
       <path d="${rows(96, 78, 68, 7, 12, 13.5)}${rows(196, 78, 68, 7, 12, 13.5)}" fill="#3a2c22"/>
-      <rect x="166" y="254" width="28" height="6" fill="#0b0c11"/>${vt(200, 252, 'pe.v.puerta', { a: 'start' })}`;
+      <rect x="166" y="254" width="28" height="6" fill="#0b0c11"/>${vt(200, 252, 'pe.v.puerta', { a: 'start' })}
+      <path d="M91 107a5 5 0 1 0 .1 0M91 167a5 5 0 1 0 .1 0M269 107a5 5 0 1 0 .1 0M269 167a5 5 0 1 0 .1 0" fill="#4a4256" stroke="#6a6076" stroke-width=".8"/>`;
     if (v === 'funeral') g += `<rect x="171" y="68" width="18" height="34" rx="4" fill="#5a3a22" stroke="#8a5a2b"/><circle cx="165" cy="70" r="3" fill="#e9edf5" fill-opacity=".8"/><circle cx="195" cy="70" r="3" fill="#e9edf5" fill-opacity=".8"/>${vt(180, 112, 'pe.v.feretro')}`;
     return g;
   }
@@ -803,7 +854,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         <rect x="118" y="28" width="56" height="10" rx="1.5" fill="#5a4a3a"/>${vt(146, 48, 'pe.v.diplomas')}<rect x="236" y="30" width="12" height="12" rx="1.5" fill="#5a4a3a"/>${vt(242, 52, 'pe.v.atril')}${vt(180, 18, 'pe.v.escenario')}
         <path d="${rows(86, 72, 84, 6, 5, 12)}${rows(190, 72, 84, 6, 5, 12)}" fill="#24375a"/>${vt(330, 100, 'pe.v.graduados', { r: 90 })}
         <path d="${rows(86, 140, 84, 6, 4, 12)}${rows(190, 140, 84, 6, 4, 12)}${rows(86, 222, 64, 6, 2, 12)}${rows(210, 222, 64, 6, 2, 12)}" fill="#3a3442"/>${vt(330, 176, 'pe.v.familias', { r: 90 })}
-        <rect x="158" y="194" width="44" height="20" rx="2" fill="#232a38" stroke="#3a4150"/>`;
+        <rect x="158" y="194" width="44" height="20" rx="2" fill="#232a38" stroke="#3a4150"/>
+        <path d="M72 106a6 6 0 1 0 .1 0M288 106a6 6 0 1 0 .1 0" fill="#4a4256" stroke="#6a6076" stroke-width=".8"/>`;
     } else {
       g += `<rect x="6" y="6" width="348" height="252" rx="3" fill="#18171f" stroke="#3a3446"/>
         <rect x="80" y="10" width="200" height="6" rx="1" fill="#4da3ff" fill-opacity=".35"/>${vt(180, 9, 'pe.v.backing')}
@@ -873,10 +925,10 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       if (!ideal) { const d = 'pe.idealcam.' + t + '.' + key; if (has(d)) ideal = T(d); }
       const asg = p.asignado !== undefined ? p.asignado : p.camara !== undefined ? p.camara : p.equip !== undefined ? p.equip : p.assigned;
       let aj = num(p.ajuste != null ? p.ajuste : p.fit != null ? p.fit : p.score);
-      if (aj != null && aj > 1) aj = aj / 100;
+      if (aj != null && aj > 1.5) aj = aj / 100;
       // fit = qué tan bien encaja la cámara (sin contar si hay quien la maneje); operado === false: nadie la maneja
       let fit = num(p.fit);
-      if (fit != null && fit > 1) fit = fit / 100;
+      if (fit != null && fit > 1.5) fit = fit / 100;
       return { i, key, nkey, nombre, ideal: ideal || '', asg, aj, fit, sinOp: p.operado === false, eid: p.equipId != null ? p.equipId : null, n: num(p.n != null ? p.n : p.num) || i + 1, opcional: !!p.opcional, raw: p };
     });
   }
@@ -920,6 +972,15 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       }
       used.add(s.k);
       p.spot = s;
+      // Cámaras libres: la lógica dice dónde está la cámara (x, y en % del plano) y hacia dónde filma (tx, ty)
+      const r = p.raw || {};
+      if (typeof r.x === 'number' && typeof r.y === 'number') {
+        const at = [f1(r.x * W / 100), f1(r.y * H / 100)];
+        const aim = typeof r.tx === 'number' ? [r.tx * W / 100, r.ty * H / 100] : s.aim;
+        const mov = !!r.movida;
+        p.spot = Object.assign({}, s, { at, aim, path: mov ? null : s.path, arm: mov ? null : s.arm, wires: mov ? null : s.wires, libre: true });
+        if (typeof r.nx === 'number') p.marca = [f1(r.nx * W / 100), f1(r.ny * H / 100)];
+      }
     });
   }
 
@@ -939,24 +1000,78 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     // En el plan a mano la posición se toca para colocar (data-pe-act); si no, solo se resalta (data-pe-cam)
     const sel = ed && ed.selPos === p.key ? ' pe-on' : '';
     const src = ed && ed.selCam != null && p.eid === ed.selCam ? ' pe-src' : '';
-    let g = ed
-      ? `<g class="pe-cam pe-k-${k}${sel}${src}" data-pe-act="pos" data-k="${esc(p.key)}" tabindex="0" role="button" aria-pressed="${sel ? 'true' : 'false'}" aria-label="${esc(info)}"><title>${esc(info)}</title><circle class="pe-hit" cx="${x}" cy="${y}" r="17"/><circle class="pe-ring" cx="${x}" cy="${y}" r="11.5"/>`
+    // Plan a mano con cámaras libres: la cámara puesta se toca para elegirla y moverla (data-pe-act="sel"); una toma sin
+    // cámara solo tiene su marca de piso (ghost). Sin cámaras libres, la posición se toca para colocar (data-pe-act="pos").
+    const libre = ed && ed.libre && s.libre;
+    if (libre && !p.asgName) return '';
+    let g = libre
+      ? `<g class="pe-cam pe-real pe-k-${k}${sel}${src}" data-pe-act="sel" data-k="${esc(p.key)}" data-id="${p.eid}" tabindex="0" role="button" aria-pressed="${src ? 'true' : 'false'}" aria-label="${esc(T('pe.ed.cam_en', { n: p.n, cam: p.asgName, toma: (p.raw && p.raw.toma) || p.nombre }))}"><title>${esc(info)}</title><circle class="pe-hit" cx="${x}" cy="${y}" r="23"/><circle class="pe-ring" cx="${x}" cy="${y}" r="11.5"/>`
+      : ed
+      ? `<g class="pe-cam pe-k-${k}${sel}${src}" data-pe-act="pos" data-k="${esc(p.key)}" tabindex="0" role="button" aria-pressed="${sel ? 'true' : 'false'}" aria-label="${esc(info)}"><title>${esc(info)}</title><circle class="pe-hit" cx="${x}" cy="${y}" r="23"/><circle class="pe-ring" cx="${x}" cy="${y}" r="11.5"/>`
       : `<g class="pe-cam pe-k-${k}" data-pe-cam="${p.n}" tabindex="0" role="button" aria-label="${esc(info)}"><title>${esc(info)}</title>`;
     if (s.wires) g += `<path class="pe-wire" d="${s.wires.map((w) => `M${w[0]} ${w[1]}L${x} ${y}`).join('')}"/>`;
     if (s.arm) g += `<path class="pe-arm" d="M${s.arm[0]} ${s.arm[1]}L${x} ${y}"/>`;
     if (s.path) g += `<path class="pe-trav" d="M${s.path.map((q) => q.join(' ')).join('L')}"/>`;
-    if (s.f !== 'aerea' && s.aim) g += `<path class="pe-cone" d="${cone(x, y, s.aim[0], s.aim[1], s.fov, s.len)}"/>`;
+    if (s.f !== 'aerea' && s.aim) {
+      const r = p.raw || {};
+      if (s.libre && p.asgName && r.kind && r.kind !== 'aereo') {
+        // Campo de visión real: hacia lo que filma, más angosto con lente largo; si el lente no llega, se corta antes
+        const d = Math.hypot(s.aim[0] - x, s.aim[1] - y);
+        const al = typeof r.alcance === 'number' ? Math.max(0, Math.min(3, r.alcance)) : 1;
+        const fov = r.kind === 'general' ? 54 : r.kind === 'cerrado' ? [40, 26, 16, 10][al] : r.kind === 'reaccion' ? 46 : 40;
+        const len = Math.max(14, Math.min(170, r.lenteFalta ? d * 0.55 : d));
+        g += `<path class="pe-cone${r.tapada ? ' pe-tap' : ''}" d="${cone(x, y, s.aim[0], s.aim[1], fov, len)}"/>`;
+        if (r.lenteFalta && d > 20) { const a = Math.atan2(s.aim[1] - y, s.aim[0] - x); g += `<path class="pe-nol" d="M${f1(x + len * Math.cos(a))} ${f1(y + len * Math.sin(a))}L${f1(s.aim[0])} ${f1(s.aim[1])}"/>`; }
+      } else g += `<path class="pe-cone" d="${cone(x, y, s.aim[0], s.aim[1], s.fov, s.len)}"/>`;
+    }
     if (s.f === 'aerea') g += `<circle class="pe-aer" cx="${x}" cy="${y}" r="13"/><rect class="pe-dot" x="-6.4" y="-6.4" width="12.8" height="12.8" rx="2" transform="translate(${x} ${y}) rotate(45)"/>`;
     else if (s.f === 'robot') g += `<rect class="pe-dot" x="${x - 6.6}" y="${y - 6.6}" width="13.2" height="13.2" rx="2.5"/>`;
     else g += `<circle class="pe-dot" cx="${x}" cy="${y}" r="7.2"/>`;
     g += `<text class="pe-num" x="${x}" y="${y + 0.3}">${p.n}</text>`;
-    const pv = ed && ed.preview ? ed.preview[p.key] : null;
+    const pv = ed && ed.preview && !libre ? ed.preview[p.key] : null;
     if (pv) {
       const t = pvTxt(pv), w = Math.max(18, t.length * 5.6 + 8);
       const by = y < 26 ? y + 17 : y - 17, bx = Math.max(w / 2 + 2, Math.min(W - w / 2 - 2, x));
       g += `<g class="pe-pv ${pvCls(pv)}"><rect x="${f1(bx - w / 2)}" y="${by - 6.5}" width="${f1(w)}" height="13" rx="6.5"/><text x="${f1(bx)}" y="${by + 0.4}">${esc(t)}</text></g>`;
     }
     return g + '</g>';
+  }
+
+  /* Cámaras libres: marca de piso (cinta en X) de cada toma, en su sitio sugerido. Tocarla pone ahí la cámara elegida. */
+  function ghost(p, ed) {
+    if (!p.marca) return '';
+    const [x, y] = p.marca, k = fitK(p);
+    const toma = (p.raw && p.raw.toma) || p.nombre;
+    const lbl = T('pe.ed.marca', { n: p.n, toma });
+    let g = `<g class="pe-gh pe-k-${k}${ed.selPos === p.key ? ' pe-on' : ''}" data-pe-act="pos" data-k="${esc(p.key)}" tabindex="0" role="button" aria-label="${esc(lbl)}"><title>${esc(lbl)}</title>
+      <circle class="pe-hit" cx="${x}" cy="${y}" r="23"/><path class="pe-tape" d="M${f1(x - 6)} ${f1(y - 6)}L${f1(x + 6)} ${f1(y + 6)}M${f1(x + 6)} ${f1(y - 6)}L${f1(x - 6)} ${f1(y + 6)}"/>
+      <text class="pe-ghn" x="${f1(x + 9)}" y="${f1(y - 7)}">${p.n}</text>`;
+    const pv = ed.preview ? ed.preview[p.key] : null;
+    if (pv) {
+      const t = pvTxt(pv), w = Math.max(18, t.length * 5.6 + 8);
+      const by = y < 26 ? y + 19 : y - 19, bx = Math.max(w / 2 + 2, Math.min(W - w / 2 - 2, x));
+      g += `<g class="pe-pv ${pvCls(pv)}"><rect x="${f1(bx - w / 2)}" y="${f1(by - 6.5)}" width="${f1(w)}" height="13" rx="6.5"/><text x="${f1(bx)}" y="${f1(by + 0.4)}">${esc(t)}</text></g>`;
+    }
+    return g + '</g>';
+  }
+  // Zonas del lugar: las altas (tribuna, tarima) siempre; con una cámara elegida, en rojo donde esa cámara no puede ir
+  function zonaForma(z, attrs) {
+    if (z.r) return `<rect x="${z.r[0]}" y="${z.r[1]}" width="${z.r[2]}" height="${z.r[3]}" rx="2" ${attrs}/>`;
+    if (z.c) return `<circle cx="${z.c[0]}" cy="${z.c[1]}" r="${z.c[2]}" ${attrs}/>`;
+    if (z.s) { const [x1, y1, x2, y2, w] = z.s; return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke-width="${w * 2}" stroke-linecap="round" ${attrs.replace(/fill=/, 'data-f=')}/>`; }
+    return '';
+  }
+  function zonasSvg(geo, cuerpo, u) {
+    if (!geo || !Array.isArray(geo.zonas)) return '';
+    let g = '';
+    const altas = geo.zonas.filter((z) => z.t === 'alto' && z.r);
+    g += altas.map((z) => `${zonaForma(z, 'class="pe-zalto"')}${z.r[2] >= 60 && z.r[3] >= 26 ? `<text class="pe-zat" x="${z.r[0] + 3}" y="${z.r[1] + 8}">▲ ${esc(String(T('pe.v.alto')).toUpperCase())}</text>` : ''}`).join('');
+    if (cuerpo) {
+      const malas = geo.zonas.filter((z) => (z.t === 'bloqueo' && !(z.deja || []).includes(cuerpo)) || (z.t === 'alto' && cuerpo === 'grua'));
+      g += `<defs><pattern id="${u}x" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#ff3b3b" fill-opacity=".08"/><path d="M0 0v6" stroke="#ff3b3b" stroke-opacity=".38" stroke-width="1.3"/></pattern></defs>`;
+      g += malas.map((z) => (z.s ? zonaForma(z, `class="pe-zno-s"`) : zonaForma(z, `class="pe-zno" fill="url(#${u}x)"`))).join('');
+    }
+    return `<g class="pe-zonas" aria-hidden="true">${g}</g>`;
   }
 
   function cable(p, v) {
@@ -974,7 +1089,9 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   /* ---------- Plan de cámaras a mano: barra (automático / tu plan), cámaras, detalle de la posición y combos ----------
      o.editable, o.modo ('auto' | 'manual'), o.delta (calidad de tu plan - automático), o.selCam (id del equipo),
      o.selPos (clave), o.preview ({ clave: { dq, ok } }), o.arte(tipo) → html, o.operadores ({ rol: [{ id, name, skill }] }),
-     o.tutorial (solo se mira). Los toques llevan data-pe-act: modo | cam | pos | op | quitar | cerrar. */
+     o.tutorial (solo se mira). Los toques llevan data-pe-act: modo | cam | pos | op | quitar | cerrar.
+     Cámaras libres (o.geo = Game.camGeo(contrato), y la lógica da x, y de cada cámara): sel (tocar una cámara del plano),
+     mapa (tocar un sitio del plano), marca (devolver la cámara a su marca); o.malPunto { x, y } marca un toque inválido. */
   const valor = (x) => {
     if (typeof x.pts === 'number') return x.pts ? `<span class="pe-v ${x.pts > 0 ? 'up' : 'dn'}" title="${esc(T('pe.ed.pts'))}">${x.pts > 0 ? '+' : '−'}${Math.abs(x.pts)}</span>` : '';
     if (typeof x.pct === 'number' && x.pct) return `<span class="pe-v pct ${x.pct > 0 ? 'up' : 'dn'}">${x.pct > 0 ? '+' : '−'}${Math.abs(x.pct)}%</span>`;
@@ -982,7 +1099,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   };
   function detalle(p, plan, o) {
     const r = p.raw || {};
-    const head = `<div class="pe-dth"><div style="min-width:0"><b>${p.n} · ${esc(p.nombre)}</b><small>${esc(p.asgName || T('pe.vacia'))}${p.asgName && p.aj != null ? ' · ' + esc(T('pe.ed.ajuste', { p: Math.round(p.aj * 100) })) : ''}</small></div>
+    const toma = r.toma && r.toma !== p.nombre ? `<small>${esc(T('pe.ed.cubre', { toma: r.toma }))}</small>` : '';
+    const head = `<div class="pe-dth"><div style="min-width:0"><b>${p.n} · ${esc(p.nombre)}</b>${toma}<small>${esc(p.asgName || T('pe.vacia'))}${p.asgName && p.aj != null ? ' · ' + esc(T('pe.ed.ajuste', { p: Math.round(p.aj * 100) })) : ''}${r.movida ? ' · ' + esc(T('pe.ed.movida')) : ''}</small></div>
       <button type="button" class="pe-x" data-pe-act="cerrar" aria-label="${esc(T('pe.ed.cerrar'))}">×</button></div>`;
     if (!p.asgName) return `<div class="pe-dt" aria-live="polite">${head}<p class="pe-tip">${esc(T('pe.ed.sin_cam'))}${p.ideal ? ' ' + esc(T('pe.idealp', { t: p.ideal })) : ''}</p></div>`;
     const base = typeof r.base === 'number' ? `<li><span>${esc(p.ideal && r.base < 0.8 ? T('pe.ed.encaje_ideal', { t: p.ideal }) : T('pe.ed.encaje'))}</span><span class="pe-v pct">${Math.round(r.base * 100)}%</span></li>` : '';
@@ -992,9 +1110,11 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const ops = lista && !o.tutorial ? `<div class="pe-ops-t">${esc(T('pe.ed.operador'))}</div><div class="pe-ops" role="group" aria-label="${esc(T('pe.ed.operador'))}">
       ${lista.map((q) => `<button type="button" class="pe-op" data-pe-act="op" data-k="${esc(p.key)}" data-id="${q.id}" aria-pressed="${q.id === opId ? 'true' : 'false'}">${esc(q.name)}<i>${q.skill}</i></button>`).join('')}
       <button type="button" class="pe-op" data-pe-act="op" data-k="${esc(p.key)}" data-id="0" aria-pressed="${opId ? 'false' : 'true'}">${esc(T('pe.ed.nadie'))}</button></div>` : '';
+    const marca = !o.tutorial && r.movida ? `<button type="button" class="pe-am" data-pe-act="marca" data-k="${esc(p.key)}">${esc(T('pe.ed.a_marca'))}</button>` : '';
     const quitar = o.tutorial ? '' : `<button type="button" class="pe-qt" data-pe-act="quitar" data-k="${esc(p.key)}">${esc(T('pe.ed.quitar'))}</button>`;
-    return `<div class="pe-dt" aria-live="polite">${head}<ul class="pe-rz">${base}${rz}</ul>${ops}${quitar}</div>`;
+    return `<div class="pe-dt" aria-live="polite">${head}<ul class="pe-rz">${base}${rz}</ul>${ops}${marca || quitar ? `<div class="pe-acc">${marca}${quitar}</div>` : ''}</div>`;
   }
+  // Partes del plan a mano: barra (automático / tu plan), aviso, bandeja de cámaras, detalle y combos
   function editor(list, plan, o) {
     const cams = (plan && Array.isArray(plan.camaras)) ? plan.camaras : [];
     const porPos = {}; list.forEach((p) => { porPos[p.key] = p; });
@@ -1006,20 +1126,23 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         ${manual && d !== null ? `<span class="pe-dq ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${esc(d ? T('pe.ed.delta', { n: (d > 0 ? '+' : '−') + Math.abs(d) }) : T('pe.ed.igual'))}</span>` : ''}</div>`;
     const selC = o.selCam != null ? cams.find((c) => c.equipId === o.selCam) : null;
     const selP = o.selPos ? porPos[o.selPos] : null;
-    const tip = o.tutorial ? T('pe.ed.tutorial') : !cams.length ? T('pe.ed.ninguna')
-      : selC ? T('pe.ed.tip_cam', { cam: '«' + selC.nombre + '»' }) : selP && !selP.asgName ? T('pe.ed.tip_pos', { pos: selP.nombre }) : T('pe.ed.tip');
+    const tipT = o.tutorial ? T('pe.ed.tutorial') : !cams.length ? T('pe.ed.ninguna')
+      : selC ? (o.libre && selC.en ? T('pe.ed.tip_mover', { cam: '«' + selC.nombre + '»' }) : T('pe.ed.tip_cam', { cam: '«' + selC.nombre + '»' }))
+      : selP && !selP.asgName ? T('pe.ed.tip_pos', { pos: selP.nombre }) : T('pe.ed.tip');
+    const tip = `<p class="pe-tip" aria-live="polite">${esc(tipT)}</p>`;
     const tray = o.tutorial || !cams.length ? '' : `<div class="pe-tray" role="group" aria-label="${esc(T('pe.ed.tray'))}">${cams.map((c) => {
       const en = c.en ? porPos[c.en] : null;
       const on = o.selCam === c.equipId;
       let arte = '';
       try { arte = o.arte ? o.arte(c.tipo) : ''; } catch (e) { arte = ''; }
+      const dnd = en ? ((en.raw && en.raw.toma) || en.nombre) : '';
       return `<button type="button" class="pe-cc${en ? ' pe-puesta' : ''}${on ? ' pe-on' : ''}" data-pe-act="cam" data-id="${c.equipId}" aria-pressed="${on ? 'true' : 'false'}">${arte || ico('cam_basic', 26)}
-        <span style="min-width:0"><b>${esc(c.nombre)}</b><small><i class="pe-tl" aria-hidden="true"></i><span>${esc(en ? T('pe.ed.en', { n: en.n }) + ' · ' + en.nombre : T('pe.ed.libre'))}</span></small></span></button>`;
+        <span style="min-width:0"><b>${esc(c.nombre)}</b><small><i class="pe-tl" aria-hidden="true"></i><span>${esc(en ? T('pe.ed.en', { n: en.n }) + ' · ' + dnd : T('pe.ed.libre'))}</span></small></span></button>`;
     }).join('')}</div>`;
     const det = selP ? detalle(selP, plan, o) : '';
     const combos = (plan && Array.isArray(plan.combos)) ? plan.combos.filter((cb) => cb.pts) : [];
     const cb = o.tutorial ? '' : `<div><div class="pe-cbt">${esc(T('pe.ed.combos'))}</div><div class="pe-cb">${combos.length ? combos.map((x) => `<span class="${x.pts > 0 ? 'up' : 'dn'}">${esc(TLx(x.texto || x.k))}<b>${x.pts > 0 ? '+' : '−'}${Math.abs(x.pts)}</b></span>`).join('') : `<span>${esc(T('pe.ed.sin_combos'))}</span>`}</div></div>`;
-    return `<div class="pe-ed">${top}<p class="pe-tip" aria-live="polite">${esc(tip)}</p>${tray}${det}${cb}</div>`;
+    return { top, tip, tray, det, cb, selC };
   }
 
   function camaras(plan, tipoEvento, opts) {
@@ -1037,11 +1160,20 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       });
       placeAll(list, v);
       const u = 'pe' + (++UID).toString(36);
+      const editando = !!(o.editable && !o.tutorial);
+      // Cámaras libres: la lógica da dónde está cada cámara y el lugar (zonas); entonces se mueven por todo el plano
+      const libre = editando && !!o.geo && list.some((p) => p.spot && p.spot.libre);
+      const ed = editando ? Object.assign({}, o, { libre }) : null;
+      const parts = o.editable ? editor(list, plan, ed || o) : null;
+      const cuerpo = libre && parts && parts.selC ? parts.selC.cuerpo : null;
       const cables = o.cables === false || v === 'calle' ? '' : list.map((p) => cable(p, vr)).filter(Boolean).join('');
-      const svg = `<svg class="pe-dia" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${esc(T('pe.cams'))}">
+      const mal = libre && o.malPunto ? (() => { const x = f1(o.malPunto.x * W / 100), y = f1(o.malPunto.y * H / 100); return `<g class="pe-mal"><circle cx="${x}" cy="${y}" r="9"/><path d="M${x - 4.5} ${y - 4.5}L${x + 4.5} ${y + 4.5}M${x + 4.5} ${y - 4.5}L${x - 4.5} ${y + 4.5}"/></g>`; })() : '';
+      const svg = `<svg class="pe-dia${libre ? ' pe-libre' : ''}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" ${libre ? `role="group" aria-label="${esc(T('pe.ed.mapa'))}"` : `role="img" aria-label="${esc(T('pe.cams'))}"`}>
         ${(BG[v] || bgSalon)(u, vr)}
+        ${libre ? zonasSvg(o.geo, cuerpo, u) : ''}
         ${cables ? `<path class="pe-cable" d="${cables}"/>` : ''}${control(vr)}
-        ${list.map((p) => marker(p, o.editable && !o.tutorial ? o : null)).join('')}</svg>`;
+        ${libre ? `<rect class="pe-mapa" data-pe-act="mapa" x="0" y="0" width="${W}" height="${H}"/>` + list.map((p) => ghost(p, ed)).join('') : ''}
+        ${list.map((p) => marker(p, ed)).join('')}${mal}</svg>`;
       // Solo las posiciones obligatorias cuentan para "cubiertas" (las tomas extra son opcionales)
       const reqList = list.filter((p) => !p.opcional);
       const covered = reqList.filter((p) => p.asgName).length;
@@ -1051,8 +1183,13 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       const head = o.titulo === false ? '' : `<div class="pe-hd"><span class="pe-ttl">${esc(o.titulo || T('pe.cams'))}</span>
         <span class="pe-sub">${evName ? esc(evName) + ' · ' : ''}<b>${esc(T('pe.cubiertas', { a: covered, t: reqList.length }))}</b>${avg != null ? ' · ' + esc(T('pe.ajuste.medio', { p: avg })) : ''}</span></div>`;
       const ks = new Set(list.map(fitK)); const fs = new Set(list.map((p) => p.spot.f));
+      const tape = '<svg width="12" height="12" viewBox="-7 -7 14 14" aria-hidden="true"><path d="M-5 -5L5 5M5 -5L-5 5" stroke="#e8d27a" stroke-width="2.4"/></svg>';
+      const hatch = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x=".5" y=".5" width="11" height="11" rx="2" fill="rgba(255,59,59,.15)" stroke="#ff3b3b" stroke-width=".9"/><path d="M0 8L8 0M4 12L12 4" stroke="#ff3b3b" stroke-width="1.3"/></svg>';
+      const altoI = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x=".5" y=".5" width="11" height="11" rx="2" fill="rgba(255,176,32,.08)" stroke="#ffb020" stroke-width=".9" stroke-dasharray="1 2"/></svg>';
       const legend = `<div class="pe-leg">${['ok', 'mid', 'bad', 'na', 'off', 'opt'].filter((k) => (k !== 'na' && k !== 'opt') || ks.has(k)).map((k) => `<span>${colorIco(k)}${esc(k === 'opt' ? T('pe.opcional') : T('pe.leg.' + k))}</span>`).join('')}
-        <span class="pe-sep"></span>${['fija', 'mano', 'robot', 'aerea'].filter((f) => fs.has(f)).map((f) => `<span>${shapeIco(f)}${esc(T('pe.forma.' + f))}</span>`).join('')}</div>`;
+        <span class="pe-sep"></span>${['fija', 'mano', 'robot', 'aerea'].filter((f) => fs.has(f)).map((f) => `<span>${shapeIco(f)}${esc(T('pe.forma.' + f))}</span>`).join('')}
+        ${libre ? `<span class="pe-sep"></span><span>${tape}${esc(T('pe.ley.marca'))}</span>${(o.geo.zonas || []).some((z) => z.t === 'alto') ? `<span>${altoI}${esc(T('pe.ley.alto'))}</span>` : ''}<span>${hatch}${esc(T('pe.ley.bloq'))}</span>` : ''}</div>`;
+      const conToma = editando && list.some((p) => p.raw && p.raw.toma);
       const rowsHtml = o.lista === false ? '' : `<div class="pe-cl">${list.map((p) => {
         const k = fitK(p);
         const info = `${T('pe.cam.n', { n: p.n })} · ${p.asgName || vacioTxt(p)}${p.ideal ? ' · ' + T('pe.idealp', { t: p.ideal }) : ''}`;
@@ -1060,20 +1197,39 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         const camMal = p.asgName && p.fit != null ? p.fit < 0.8 : k !== 'ok';
         const extra = p.asgName && p.sinOp && !camMal ? ' · ' + esc(T('pe.sinop')) : p.ideal && camMal ? ' · ' + esc(T('pe.idealp', { t: p.ideal })) : '';
         const fitHtml = p.asgName && p.aj != null ? `${Math.min(100, Math.round(p.aj * 100))}%<u><i style="width:${Math.min(100, Math.round(p.aj * 100))}%"></i></u>` : p.asgName ? '' : '—';
-        if (o.editable && !o.tutorial) {
-          // Plan a mano: la fila es un botón grande para colocar; con una cámara elegida dice cuánto cambia la calidad
+        if (editando) {
+          // Plan a mano: la fila es un botón grande; con una cámara elegida dice cuánto cambia la calidad. Con cámaras
+          // libres la fila es la toma clave: ✓ si está bien cubierta, ✗ con lo que conviene arreglar
           const pv = o.preview ? o.preview[p.key] : null;
-          const op = p.raw && p.raw.operador ? ' · ' + p.raw.operador.name : '';
+          const r = p.raw || {};
+          const op = r.operador ? ' · ' + r.operador.name : '';
+          const right = `<span class="pe-fit">${pv ? `<span class="pe-pvl ${pvCls(pv)}">${esc(pvTxt(pv))}</span>` : fitHtml}</span>`;
+          if (conToma) {
+            const ok = p.opcional && !p.asgName ? null : !!r.ok;
+            const pista = r.pistaTexto && !(p.opcional && !p.asgName) ? r.pistaTexto : '';
+            const sub = p.asgName ? `${p.asgName + op}${pista ? ' · ' + pista : r.movida ? ' · ' + T('pe.ed.movida') : ''}` : pista || vacioTxt(p);
+            return `<button type="button" class="pe-clr pe-k-${k}${o.selPos === p.key ? ' pe-on' : ''}" data-pe-act="pos" data-k="${esc(p.key)}" data-ok="${ok === null ? '' : ok ? '1' : '0'}" aria-pressed="${o.selPos === p.key ? 'true' : 'false'}" aria-label="${esc(`${p.n} · ${r.toma || p.nombre}: ${ok ? T('pe.tk.bien') : pista || vacioTxt(p)}`)}"><b class="pe-n">${p.n}</b>
+              <span class="pe-clt"><span class="pe-tkt">${CHECK(ok === null ? undefined : ok)}<em>${esc(r.toma || p.nombre)}${p.opcional ? ` <i class="pe-tkx">${esc(T('pe.tk.extra'))}</i>` : ''}</em></span><small class="${pista && !ok ? 'pe-pista' : ''}">${esc(sub)}</small></span>${right}</button>`;
+          }
           return `<button type="button" class="pe-clr pe-k-${k}${o.selPos === p.key ? ' pe-on' : ''}" data-pe-act="pos" data-k="${esc(p.key)}" aria-pressed="${o.selPos === p.key ? 'true' : 'false'}"><b class="pe-n">${p.n}</b>
-          <span class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName ? p.asgName + op : vacioTxt(p))}${p.asgName ? extra : ''}</small></span>
-          <span class="pe-fit">${pv ? `<span class="pe-pvl ${pvCls(pv)}">${esc(pvTxt(pv))}</span>` : fitHtml}</span></button>`;
+          <span class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName ? p.asgName + op : vacioTxt(p))}${p.asgName ? extra : ''}</small></span>${right}</button>`;
         }
         return `<div class="pe-clr pe-k-${k}" data-pe-cam="${p.n}" data-pe-info="${esc(info)}"><b class="pe-n">${p.n}</b>
           <div class="pe-clt"><span>${esc(p.nombre)}</span><small>${esc(p.asgName || vacioTxt(p))}${extra}</small></div>
           <span class="pe-fit">${fitHtml}</span></div>`;
       }).join('')}</div>`;
-      const ed = o.editable ? editor(list, plan, o) : '';
-      return `<div class="pe-cams ${esc(o.clase || '')}${o.editable && !o.tutorial ? ' pe-ed-on' : ''}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${ed}${legend}${o.editable ? '' : '<div class="pe-det" aria-live="polite"></div>'}${rowsHtml}</div></div>`;
+      const nOk = reqList.filter((p) => p.raw && p.raw.ok).length;
+      const tk = conToma ? `<div class="pe-tkh"><b>${esc(T('pe.tk.t'))}</b><span class="${nOk < reqList.length ? 'pe-tk-mal' : ''}">${esc(T('pe.tk.n', { a: nOk, t: reqList.length }))}</span></div>` : '';
+      const cls = `pe-cams ${esc(o.clase || '')}${editando ? ' pe-ed-on' : ''}${libre && parts.selC ? ' pe-moviendo' : ''}`;
+      if (editando) {
+        // Plan a mano: arriba el modo y qué hacer; el plano grande; el detalle de lo tocado; las tomas clave; las cámaras
+        // Debajo del plano, en una línea: cuántas tomas clave están bien y la primera que conviene arreglar
+        const mala = conToma ? reqList.find((p) => p.raw && !p.raw.ok) : null;
+        const tkl = conToma ? `<p class="pe-tkl" aria-live="polite">${CHECK(!mala)}<span><b>${esc(T('pe.tk.n', { a: nOk, t: reqList.length }))}</b>${mala ? ` · ${esc((mala.raw.toma || mala.nombre) + ': ' + (mala.raw.pistaTexto || vacioTxt(mala)))}` : ''}</span></p>` : '';
+        return `<div class="${cls}" data-pe-lugar="${v}">${head}<div class="pe-box"><div class="pe-ed pe-ed-top">${parts.top}${parts.tip}</div>${svg}${tkl}${parts.det ? `<div class="pe-ed pe-ed-det">${parts.det}</div>` : ''}${parts.tray ? `<div class="pe-ed pe-ed-tray">${parts.tray}</div>` : ''}${tk}${rowsHtml}<div class="pe-ed">${parts.cb}</div>${legend}</div></div>`;
+      }
+      const edHtml = parts ? `<div class="pe-ed">${parts.top}${parts.tip}${parts.tray}${parts.det}${parts.cb}</div>` : '';
+      return `<div class="${cls}" data-pe-lugar="${v}">${head}<div class="pe-box">${svg}${edHtml}${legend}${o.editable ? '' : '<div class="pe-det" aria-live="polite"></div>'}${rowsHtml}</div></div>`;
     } catch (e) { return ''; }
   }
 

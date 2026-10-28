@@ -2259,13 +2259,76 @@
     return prep.col;
   }
   const colValida = (c, col) => (G.validarColocacion ? G.validarColocacion(S, c, [...prep.equip], [...prep.staff], col) : { ok: true });
-  // La colocación con la cámara e en la posición k (si había otra, cambian de lugar); null si no se puede
+  // La colocación con la cámara e en la posición k, en su marca de piso (si había otra, cambian de lugar: la otra queda
+  // en la toma y el sitio de e; si ahí no puede ir, en la marca de su nueva toma)
+  const sinXY = (x) => { delete x.x; delete x.y; return x; };
   function colCon(c, e, k) {
     const col = (Array.isArray(prep.col) ? prep.col : autoCol(c)).map((x) => Object.assign({}, x));
     const yo = col.find((x) => x.e === e), ocupa = col.find((x) => x.p === k);
-    if (yo && yo.p === k) return col;
-    if (yo) { if (ocupa) ocupa.p = yo.p; yo.p = k; } else { if (ocupa) col.splice(col.indexOf(ocupa), 1); col.push({ p: k, e }); }
+    if (yo && yo.p === k) { sinXY(yo); return col; }
+    if (yo) {
+      if (ocupa) {
+        ocupa.p = yo.p;
+        if (yo.x !== undefined) { ocupa.x = yo.x; ocupa.y = yo.y; if (!colValida(c, col).ok) sinXY(ocupa); } else sinXY(ocupa);
+      }
+      yo.p = k; sinXY(yo);
+    } else { if (ocupa) col.splice(col.indexOf(ocupa), 1); col.push({ p: k, e }); }
     return col;
+  }
+  /* Cámaras libres: mover la cámara e al sitio (x, y)% del plano. Si ya tiene toma, la conserva; si viene de la bandeja,
+     toma la toma libre donde más rinde desde ahí. Devuelve la colocación o { error } con el motivo (sitio prohibido...) */
+  function colMover(c, e, x, y) {
+    const base = (Array.isArray(prep.col) ? prep.col : autoCol(c)).map((z) => Object.assign({}, z));
+    const g = G.camGeo ? G.camGeo(c) : null;
+    const marca = (k) => (g ? g.marcas.find((m) => m.key === k) : null);
+    const yo = base.find((z) => z.e === e);
+    if (yo) {
+      const m = marca(yo.p);
+      if (m && m.nx === x && m.ny === y) sinXY(yo); else { yo.x = x; yo.y = y; }
+      const v = colValida(c, base);
+      return v.ok ? base : { error: v.msg };
+    }
+    const ocupadas = new Set(base.map((z) => z.p));
+    let pos = [];
+    try { pos = G.cameraPlan(S, c, [...prep.equip], [...prep.staff], base).positions.filter((p) => !ocupadas.has(p.key)); } catch (err) { pos = []; }
+    if (!pos.length) return { error: PE ? PE.T('pe.ed.lleno') : '' };
+    const staff = S.staff.filter((p) => prep.staff.has(p.id)), equip = S.equip.filter((q) => prep.equip.has(q.id));
+    let mejor = null, mq = -Infinity, error = null;
+    pos.forEach((p) => {
+      const m = marca(p.key);
+      const k = base.concat([m && m.nx === x && m.ny === y ? { p: p.key, e } : { p: p.key, e, x, y }]);
+      const v = colValida(c, k);
+      if (!v.ok) { if (!error) error = v.msg; return; }
+      const q = crudoQ(G.computeQuality(S, c, staff, equip, k)) - (p.opcional ? 0.5 : 0);
+      if (q > mq) { mq = q; mejor = k; }
+    });
+    return mejor || { error };
+  }
+  // Sitio del plano (en % de la cuadrícula) donde se tocó
+  function puntoMapa(ev, el) {
+    const svg = el && (el.ownerSVGElement || (el.closest && el.closest('svg')));
+    if (!svg || !svg.getScreenCTM || typeof ev.clientX !== 'number') return null;
+    const m = svg.getScreenCTM();
+    if (!m) return null;
+    const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+    const q = pt.matrixTransform(m.inverse());
+    const vb = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width ? svg.viewBox.baseVal : { width: 360, height: 264 };
+    const r = (v, t) => Math.max(0, Math.min(100, Math.round(v * 100 / t)));
+    return { x: r(q.x, vb.width), y: r(q.y, vb.height) };
+  }
+  function camMoverA(c, e, x, y) {
+    const r = colMover(c, e, x, y);
+    if (Array.isArray(r)) {
+      prep.col = r;
+      const yo = r.find((z) => z.e === e);
+      prep.selCam = null; prep.selPos = yo ? yo.p : null;
+      snd.play('tap');
+      return true;
+    }
+    prep.malPunto = { x, y };
+    if (r.error) toast(TL(r.error));
+    snd.play('error');
+    return false;
   }
   function camAplicar(c, col) {
     const v = colValida(c, col);
@@ -2296,14 +2359,35 @@
     });
     return o;
   }
-  function camAccion(el) {
+  function camAccion(el, ev) {
     if (!prep) return;
     const c = S.contracts.find((x) => x.id === prep.id);
     if (!c) return;
     colPrep(c);
     const a = el.dataset.peAct, k = el.dataset.k || null, id = el.dataset.id != null ? Number(el.dataset.id) : null;
     let foco = null;
-    if (a === 'modo') {
+    if (a === 'sel') {
+      // Una cámara del plano: elegirla para moverla (otra vez, la suelta); con otra elegida, cambian de toma y de sitio
+      if (prep.selCam != null && prep.selCam !== id) {
+        if (camAplicar(c, colCon(c, prep.selCam, k))) { prep.selCam = null; prep.selPos = k; snd.play('tap'); }
+      } else if (prep.selCam === id) { prep.selCam = null; prep.selPos = null; snd.play('tap'); }
+      else { prep.selCam = id; prep.selPos = k; snd.play('tap'); }
+      foco = `g[data-pe-act="sel"][data-id="${id}"]`;
+    } else if (a === 'mapa') {
+      // Un sitio libre del plano: la cámara elegida va ahí (o la de la toma abierta en el detalle)
+      const pt = ev ? puntoMapa(ev, el) : null;
+      let cam = prep.selCam;
+      if (cam == null && prep.selPos) { const yo = (Array.isArray(prep.col) ? prep.col : autoCol(c)).find((z) => z.p === prep.selPos); if (yo) cam = yo.e; }
+      if (!pt) return;
+      if (cam == null) { toast(PE ? PE.T('pe.ed.elige') : ''); return; }
+      camMoverA(c, cam, pt.x, pt.y);
+      foco = `g[data-pe-act="sel"][data-id="${cam}"]`;
+    } else if (a === 'marca') {
+      const col = (Array.isArray(prep.col) ? prep.col : autoCol(c)).map((x) => Object.assign({}, x));
+      const yo = col.find((x) => x.p === k);
+      if (yo) { sinXY(yo); if (camAplicar(c, col)) snd.play('tap'); }
+      foco = `[data-pe-act="pos"][data-k="${k}"]`;
+    } else if (a === 'modo') {
       prep.col = k === 'manual' ? autoCol(c) : null;
       prep.selCam = null; prep.selPos = null;
       foco = `[data-pe-act="modo"][data-k="${k}"]`;
@@ -2345,7 +2429,8 @@
       prep.selPos = null; prep.selCam = null;
     }
     renderPrep(true);
-    if (foco) { const n = document.querySelector('#prepCalcC ' + foco); if (n && n.focus) { try { n.focus({ preventScroll: true }); } catch (e) { n.focus(); } } }
+    prep.malPunto = null;   // la marca roja del toque inválido se ve una sola vez
+    if (foco) { const n = document.querySelector('#prepCalcC ' + foco) || (/data-pe-act="sel"/.test(foco) && k ? document.querySelector(`#prepCalcC [data-pe-act="pos"][data-k="${k}"]`) : null); if (n && n.focus) { try { n.focus({ preventScroll: true }); } catch (e) { n.focus(); } } }
   }
   // Tocar (o Enter / Espacio) en el plano de cámaras de la preparación
   document.addEventListener('click', (e) => {
@@ -2353,21 +2438,41 @@
     if (!el || !prep) return;
     if (camArrastre.hecho) { camArrastre.hecho = false; return; }
     e.preventDefault();
-    camAccion(el);
+    camAccion(el, e);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
     const el = e.target && e.target.closest ? e.target.closest('#prepCalcC g[data-pe-act]') : null;
     if (!el || !prep) return;
+    // Flechas: con la cámara elegida, moverla de a 2 % (teclado)
+    const flecha = { ArrowLeft: [-2, 0], ArrowRight: [2, 0], ArrowUp: [0, -2], ArrowDown: [0, 2] }[e.key];
+    if (flecha && el.dataset.peAct === 'sel' && prep.selCam === Number(el.dataset.id)) {
+      e.preventDefault();
+      const c = S.contracts.find((x) => x.id === prep.id);
+      if (!c) return;
+      colPrep(c);
+      let pl = null;
+      try { pl = G.cameraPlan(S, c, [...prep.equip], [...prep.staff], Array.isArray(prep.col) ? prep.col : null); } catch (err) { pl = null; }
+      const o = pl && pl.positions.find((p) => p.equipId === prep.selCam);
+      if (!o || o.x == null) return;
+      const id = prep.selCam;
+      if (camMoverA(c, id, Math.max(0, Math.min(100, o.x + flecha[0])), Math.max(0, Math.min(100, o.y + flecha[1])))) prep.selCam = id;
+      renderPrep(true); prep.malPunto = null;
+      const n = document.querySelector(`#prepCalcC g[data-pe-act="sel"][data-id="${id}"]`); if (n) { try { n.focus({ preventScroll: true }); } catch (err) { n.focus(); } }
+      return;
+    }
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (el.dataset.peAct === 'mapa') return;
     e.preventDefault();
     camAccion(el);
   });
-  // Con mouse: arrastrar una cámara hasta su posición (en el celular se toca la cámara y luego la posición)
+  // Con mouse: arrastrar una cámara (de la bandeja o del plano) hasta un sitio del plano o una marca de piso (en el
+  // celular se toca la cámara y luego el sitio)
   const camArrastre = { id: null, x: 0, y: 0, fantasma: null, hecho: false };
   document.addEventListener('pointerdown', (e) => {
-    const el = e.pointerType === 'mouse' && e.button === 0 && e.target.closest ? e.target.closest('#prepCalcC .pe-cc[data-pe-act="cam"]') : null;
+    const el = (e.pointerType === 'mouse' || e.pointerType === 'pen') && e.button === 0 && e.target.closest ? e.target.closest('#prepCalcC .pe-cc[data-pe-act="cam"], #prepCalcC g[data-pe-act="sel"]') : null;
     if (!el || !prep) return;
-    Object.assign(camArrastre, { id: Number(el.dataset.id), x: e.clientX, y: e.clientY, fantasma: null, nombre: (el.querySelector('b') || {}).textContent || '' });
+    const nombre = el.matches('.pe-cc') ? (el.querySelector('b') || {}).textContent || '' : ((document.querySelector(`#prepCalcC .pe-cc[data-id="${el.dataset.id}"] b`) || {}).textContent || '');
+    Object.assign(camArrastre, { id: Number(el.dataset.id), x: e.clientX, y: e.clientY, fantasma: null, nombre });
   });
   document.addEventListener('pointermove', (e) => {
     const d = camArrastre;
@@ -2386,10 +2491,18 @@
     d.hecho = true;   // el click que viene después del arrastre no cuenta como toque
     setTimeout(() => { d.hecho = false; }, 0);
     const t = document.elementFromPoint(e.clientX, e.clientY);
-    const pos = t && t.closest ? t.closest('#prepCalcC [data-pe-act="pos"]') : null;
+    const pos = t && t.closest ? t.closest('#prepCalcC [data-pe-act="pos"], #prepCalcC g[data-pe-act="sel"], #prepCalcC [data-pe-act="mapa"]') : null;
     if (!pos) return;
+    const k = pos.dataset.k;
+    if (pos.dataset.peAct === 'sel' && Number(pos.dataset.id) === id) return;   // soltó la cámara donde estaba
     prep.selCam = id; prep.selPos = null;
-    camAccion(pos);
+    if (pos.dataset.peAct === 'mapa') { camAccion(pos, e); return; }
+    // Sobre una marca o sobre otra cámara: va a esa toma (en su marca)
+    const c = S.contracts.find((x) => x.id === prep.id);
+    if (!c) return;
+    colPrep(c);
+    if (camAplicar(c, colCon(c, id, k))) { prep.selCam = null; prep.selPos = k; snd.play('tap'); }
+    renderPrep(true);
   });
 
   // Rango de calidad esperado (la lógica lo da en computeQuality().rango)
@@ -2562,7 +2675,8 @@
     const camOpts = { nombreEquipo: eqName };
     if (camP && Array.isArray(camP.camaras) && G.validarColocacion) {
       Object.assign(camOpts, { editable: true, tutorial: camTutorial(), modo: col ? 'manual' : 'auto', delta: camDelta, selCam: prep.selCam, selPos: prep.selPos,
-        preview: camPreview(c, staff, equip, crudoQ(q)), arte: (t) => itemArt(t, 34, 'mini'), operadores: camOperadores() });
+        preview: camPreview(c, staff, equip, crudoQ(q)), arte: (t) => itemArt(t, 34, 'mini'), operadores: camOperadores(),
+        geo: G.camGeo ? G.camGeo(c) : null, malPunto: prep.malPunto || null });
     }
     // Plano de cámaras (js/plan_evento.js): se usa tal cual, como un componente dentro del paso "Cámaras"
     const camHtml = PE && (camP || PE.posiciones(c.type).length) ? PE.camaras(camP, c.type, camOpts) : '';
@@ -3597,7 +3711,16 @@
       const c = S.contracts.find((x) => x.id === prep.id);
       if (!c) return null;
       const cq = G.computeQuality(S, c, S.staff.filter((p) => prep.staff.has(p.id)), S.equip.filter((e) => prep.equip.has(e.id)), colPrep(c));
-      return { q: cq.q, col: prep.col, positions: cq.cameraPlan.positions, combos: cq.cameraPlan.combos };
+      return { q: cq.q, crudo: crudoQ(cq), col: prep.col, positions: cq.cameraPlan.positions, combos: cq.cameraPlan.combos, colocacion: cq.cameraPlan.colocacion,
+        equipIds: [...prep.equip], staffIds: [...prep.staff] };
+    },
+    // Pruebas: poner una colocación (se valida como si se tocara el plano)
+    prepColocar(col) {
+      if (!prep) return false;
+      const c = S.contracts.find((x) => x.id === prep.id);
+      if (!c || !camAplicar(c, col)) return false;
+      renderPrep(true);
+      return true;
     } };
   // js/hub.js (con defer) pinta Inicio otra vez al llegar, si la primera pantalla salió sin él
   window.EnVivoRepintar = () => { if (S && tab === 'inicio' && !VI) render(); };

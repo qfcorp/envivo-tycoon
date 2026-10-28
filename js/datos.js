@@ -366,6 +366,57 @@
     'msg.col.camara_repetida': '{item} está en dos posiciones a la vez.',
     'msg.col.imposible': '{item} no se puede poner en «{pos}».',
     'msg.col.operador': 'El operador elegido para {item} no puede manejarla (o ya maneja otra).',
+    'msg.col.punto': '{item} no puede ir en {zona}.',
+    'msg.col.grua_alto': 'La grúa no cabe en {zona}: necesita piso firme y espacio para el brazo.',
+
+    // Cámaras libres (28-oct): dónde está cada cámara en el plano. Razones (porcentaje del ajuste de la toma) y puntos
+    'cam.g.angulo': 'Ángulo distinto al de la toma', 'cam.g.tapada': 'Tapada: {que} en medio',
+    'cam.g.publico': 'Entre el público: las cabezas tapan', 'cam.g.alto': 'En alto: el plano gana profundidad',
+    'cam.g.bajo': 'A ras del piso: el plano pierde profundidad', 'cam.g.alto_caras': 'Desde arriba se pierden las caras', 'cam.g.caras': 'A la altura de las caras',
+    'cam.g.cerca': 'Muy cerca: no entra todo', 'cam.g.llega': 'Más cerca: tu lente sí llega',
+    'cam.g.lejos': 'Lejos de la toma: el lente no llega', 'cam.g.cerca_bien': 'Más cerca de la toma: plano más limpio',
+    'cam.g.encima': 'Demasiado encima: estorba y pierde la acción', 'cam.g.sitio': 'Buen sitio: mejor que la marca sugerida', 'cam.g.eje': 'Cruza el eje con la principal: la acción cambia de lado',
+    'cam.o.pilar': 'un pilar', 'cam.o.columna': 'una columna', 'cam.o.torre': 'la torre de sonido', 'cam.o.parlante': 'un parlante', 'cam.o.bancas': 'las bancas',
+    // Qué falta en una toma clave (la lista de tomas del plano)
+    'cam.p.sin_cam': 'Falta una cámara', 'cam.p.lente': 'Acércate o usa lente largo', 'cam.p.tapada': 'Algo tapa la vista: muévela',
+    'cam.p.angulo': 'Desde ahí no se ve bien: ponla de frente a la toma', 'cam.p.cerca': 'Aléjala para que entre todo',
+    'cam.p.eje': 'Pásala al lado de la principal', 'cam.p.operador': 'Nadie la maneja', 'cam.p.tipo': 'No es la cámara ideal: {ideal}',
+    'cam.p.bajo': 'Súbela a una zona alta', 'cam.p.publico': 'Súbela a la torre o usa una de mano',
+    // Zonas del plano donde no va una cámara
+    'cam.z.cancha': 'la cancha (ahí solo vuela el dron)', 'cam.z.ring': 'el ring', 'cam.z.mesa': 'la mesa', 'cam.z.pasillo': 'el pasillo (debe quedar libre)',
+    'cam.z.escenario': 'el escenario', 'cam.z.presbiterio': 'el altar', 'cam.z.fuera': 'fuera de la iglesia', 'cam.z.novios': 'el lugar de los novios',
+    'cam.z.auto': 'el auto', 'cam.z.pista': 'la pista de prueba', 'cam.z.edificio': 'un edificio', 'cam.z.tribuna': 'la tribuna',
+    'cam.z.graderio': 'el graderío', 'cam.z.foh': 'la torre de sonido', 'cam.z.tarima': 'la tarima de cámaras', 'cam.z.coro': 'el coro',
+    'cam.z.publico': 'el público', 'cam.z.parlantes': 'los parlantes', 'cam.z.pilar': 'un pilar', 'cam.z.columna': 'una columna', 'cam.z.bancas': 'las bancas',
+    // Nombre corto de cada toma (la lista de tomas clave)
+    'toma.extra': 'Toma extra {n}',
+    'toma.principal': 'Plano general', 'toma.cerrada': 'Cerrado a la jugada', 'toma.cerrada2': 'Cerrado 4K a la jugada',
+    'toma.arco_izq_alto': 'Detrás del arco izquierdo', 'toma.arco_der_alto': 'Detrás del arco derecho', 'toma.cancha': 'Bancas y festejos',
+    'toma.contraplano': 'Contraplano', 'toma.superlenta': 'Cámara lenta (área izquierda)', 'toma.superlenta2': 'Cámara lenta (área derecha)',
+    'toma.baja_izq': 'A ras del arco izquierdo', 'toma.baja_der': 'A ras del arco derecho', 'toma.steadicam': 'Salida de los equipos',
+    'toma.dron': 'Toma aérea', 'toma.cablecam': 'Cablecam sobre la cancha', 'toma.comcam': 'Comentaristas', 'toma.presentador': 'Presentador con el estadio',
+    'toma.zona_mixta': 'Zona mixta', 'toma.photocall': 'Entrevistas en el photocall',
+    'toma.misa.fondo': 'Plano general del altar', 'toma.misa.ptz_lateral': 'Lectores y consagración', 'toma.misa.coro': 'Desde el coro',
+    'toma.funeral.discreta': 'Plano calmado del féretro', 'toma.funeral.oficiante': 'Cerrado al oficiante',
+    'toma.boda.frontal_altar': 'Los novios de frente', 'toma.boda.contraplano_fondo': 'Entrada de la novia', 'toma.boda.gimbal': 'Detalles en movimiento',
+    'toma.boda.dron': 'El lugar desde el aire',
+    'toma.prensa.frontal_mesa': 'Cerrado al vocero', 'toma.prensa.abierta_ptz': 'Mesa completa', 'toma.prensa.reaccion': 'Periodistas preguntando',
+    'toma.irl.gimbal': 'Toma principal en movimiento', 'toma.irl.accion': 'Segundo ángulo',
+    'toma.barrial.cerrada': 'Cerrado a la jugada',
+    'toma.graduacion.frontal': 'Cerrado al graduado', 'toma.graduacion.lateral_diplomas': 'Entrega de diplomas',
+    'toma.graduacion.jib_publico': 'Público desde arriba', 'toma.graduacion.reaccion_familias': 'Reacción de las familias',
+    'toma.lucha_libre.hardcam': 'Plano general del ring', 'toma.lucha_libre.hombro_izq': 'Ring de cerca (izquierda)', 'toma.lucha_libre.hombro_der': 'Ring de cerca (derecha)',
+    'toma.lucha_libre.rampa': 'Entrada por la rampa', 'toma.lucha_libre.pov': 'Esquinas y público',
+    'toma.lanzamiento.frontal': 'Cerrado al presentador', 'toma.lanzamiento.abierta': 'Escenario y pantalla', 'toma.lanzamiento.gimbal_invitados': 'Invitados e influencers',
+    'toma.lanzamiento.cenital_revelacion': 'Revelación desde arriba',
+    'toma.boxeo.principal': 'Plano general del ring', 'toma.boxeo.esquina1': 'Esquina neutral 1', 'toma.boxeo.esquina2': 'Esquina neutral 2',
+    'toma.boxeo.cerrada': 'Cerrado a los boxeadores', 'toma.boxeo.cenital': 'El ring desde arriba', 'toma.boxeo.postes': 'Desde los postes',
+    'toma.lanzamiento_autos.frontal': 'Cerrado al presentador', 'toma.lanzamiento_autos.jib_revelacion': 'Revelación del auto',
+    'toma.lanzamiento_autos.gimbal_auto': 'Alrededor del auto', 'toma.lanzamiento_autos.dolly': 'Travelling junto al auto',
+    'toma.lanzamiento_autos.pov_auto': 'Dentro del auto', 'toma.lanzamiento_autos.dron': 'Prueba de manejo desde el aire',
+    'toma.concierto.foh': 'Primeros planos del cantante', 'toma.concierto.abierta': 'Escenario completo', 'toma.concierto.foso': 'Desde el foso',
+    'toma.concierto.jib': 'Sobre el público', 'toma.concierto.roboticas': 'Batería y teclados', 'toma.concierto.riel': 'Travelling en la valla',
+    'toma.concierto.steadicam': 'Sobre el escenario',
 
     // Partes de la calidad
     'parte.base': 'Base',
@@ -1347,6 +1398,112 @@
     riel:     fila([0.25, 0.2, 0.2, 0.3, 0.45, 0.5, 0.4, 0.55, 0.5, 0.4, 0.45, 0.3, 0.3, 0.2, 0.6, 0.5, 1]),
   };
 
+  /* ---------- Plano de cámaras: geometría de cada lugar (cámaras libres, 28-oct) ----------
+     El plano mide 360 x 264 (el mismo dibujo de js/plan_evento.js). Las cámaras se guardan en una cuadrícula de 1 %
+     (x 0-100, y 0-100). Zonas (en px del dibujo): r: [x, y, ancho, alto], c: [x, y, radio], s: [x1, y1, x2, y2, medio ancho].
+       t: 'bloqueo' (no se puede poner una cámara, salvo los cuerpos de `deja`) · 'alto' (tribuna, tarima: mejor plano
+       general) · 'obstaculo' (tapa la vista; o: qué es) · 'gente' (público de pie: una fija a ras del piso queda tapada).
+     Cuerpos: tripode, cine, mano, bolsillo, mini, ptz, dron, grua, aerea, riel (CUERPO en js/logic.js).
+     pos: la marca de piso sugerida de cada toma [x, y, hacia x, hacia y] (en px); la toma la cubre la cámara que va ahí.
+     Las tomas extra que no están en la lista van a `libres` (en orden). eje: 'h' = la acción va de izquierda a derecha
+     (deportes): las cámaras de la toma principal y las cerradas deben quedar del mismo lado. */
+  const AIRE = ['dron', 'aerea'];
+  const DE_MANO = ['mano', 'bolsillo', 'mini', 'dron', 'aerea'];
+  const EN_ESCENA = ['mano', 'bolsillo', 'mini', 'ptz', 'cine', 'dron', 'aerea'];
+  const CAM_GEO = {
+    W: 360, H: 264,
+    lugares: {
+      estadio: { centro: [180, 124], eje: 'h', libres: [[60, 250], [300, 250], [118, 250], [242, 250], [26, 60], [334, 188], [26, 188], [334, 60], [120, 22], [240, 22]], zonas: [
+        { k: 'cancha', t: 'bloqueo', r: [59, 46, 242, 156], deja: AIRE },
+        { k: 'tribuna', t: 'alto', r: [40, 210, 280, 50] }, { k: 'tribuna', t: 'alto', r: [40, 4, 280, 34] },
+        { k: 'tribuna', t: 'alto', r: [4, 44, 42, 160] }, { k: 'tribuna', t: 'alto', r: [314, 44, 42, 160] },
+        { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [146, 203, 14, 4] }, { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [200, 203, 14, 4] }] },
+      barrial: { centro: [180, 124], eje: 'h', libres: [[60, 250], [300, 250], [118, 250], [242, 250], [26, 60], [334, 188], [26, 188], [334, 60], [120, 22], [240, 22]], zonas: [
+        { k: 'cancha', t: 'bloqueo', r: [59, 46, 242, 156], deja: AIRE },
+        { k: 'graderio', t: 'alto', r: [120, 212, 120, 30] },
+        { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [146, 203, 14, 4] }, { k: 'bancas', t: 'obstaculo', o: 'bancas', r: [200, 203, 14, 4] }] },
+      boxeo: { centro: [180, 124], eje: 'h', libres: [[100, 236], [260, 236], [24, 124], [336, 124], [100, 18], [260, 18], [24, 236], [24, 18]], zonas: [
+        { k: 'ring', t: 'bloqueo', r: [122, 66, 116, 116], deja: ['mini', 'dron', 'aerea'] },
+        { k: 'mesa', t: 'bloqueo', r: [128, 190, 104, 9], deja: ['mini', 'dron', 'aerea'] },
+        { k: 'pasillo', t: 'bloqueo', s: [330, 22, 240, 70, 6], deja: DE_MANO },
+        { k: 'tribuna', t: 'alto', r: [70, 4, 220, 30] }, { k: 'tribuna', t: 'alto', r: [70, 214, 220, 44] },
+        { k: 'tribuna', t: 'alto', r: [4, 44, 54, 160] }, { k: 'tribuna', t: 'alto', r: [302, 44, 54, 160] }] },
+      lucha: { centro: [180, 124], eje: 'h', libres: [[100, 236], [260, 236], [24, 124], [336, 124], [100, 18], [260, 18], [24, 236], [24, 18]], zonas: [
+        { k: 'ring', t: 'bloqueo', r: [122, 66, 116, 116], deja: ['mini', 'dron', 'aerea'] },
+        { k: 'mesa', t: 'bloqueo', r: [128, 190, 104, 9], deja: ['mini', 'dron', 'aerea'] },
+        { k: 'escenario', t: 'bloqueo', r: [150, 4, 60, 22], deja: EN_ESCENA },
+        { k: 'pasillo', t: 'bloqueo', r: [172, 26, 16, 40], deja: DE_MANO },
+        { k: 'tribuna', t: 'alto', r: [70, 4, 78, 30] }, { k: 'tribuna', t: 'alto', r: [212, 4, 78, 30] }, { k: 'tribuna', t: 'alto', r: [70, 214, 220, 44] },
+        { k: 'tribuna', t: 'alto', r: [4, 44, 54, 160] }, { k: 'tribuna', t: 'alto', r: [302, 44, 54, 160] }] },
+      concierto: { centro: [180, 72], libres: [[140, 200], [220, 200], [60, 150], [300, 200], [40, 110], [320, 96]], zonas: [
+        { k: 'escenario', t: 'bloqueo', r: [58, 6, 244, 80], deja: EN_ESCENA },
+        { k: 'parlantes', t: 'obstaculo', o: 'parlante', r: [44, 30, 10, 36] }, { k: 'parlantes', t: 'obstaculo', o: 'parlante', r: [306, 30, 10, 36] },
+        { k: 'foh', t: 'alto', r: [156, 180, 48, 32] }, { k: 'foh', t: 'obstaculo', o: 'torre', r: [160, 184, 40, 26] },
+        { k: 'publico', t: 'gente', r: [14, 100, 332, 160] }] },
+      misa: { centro: [180, 40], libres: [[100, 200], [260, 200], [100, 150], [266, 50], [96, 52]], zonas: [
+        { k: 'fuera', t: 'bloqueo', r: [0, 0, 84, 264], deja: ['dron'] }, { k: 'fuera', t: 'bloqueo', r: [276, 0, 84, 264], deja: ['dron'] },
+        { k: 'presbiterio', t: 'bloqueo', r: [140, 8, 80, 40], deja: ['ptz', 'mini', 'dron'] },
+        { k: 'pasillo', t: 'bloqueo', r: [170, 66, 20, 168], deja: DE_MANO },
+        { k: 'coro', t: 'alto', r: [86, 236, 188, 20] },
+        { k: 'pilar', t: 'obstaculo', o: 'pilar', c: [91, 112, 5] }, { k: 'pilar', t: 'obstaculo', o: 'pilar', c: [91, 172, 5] },
+        { k: 'pilar', t: 'obstaculo', o: 'pilar', c: [269, 112, 5] }, { k: 'pilar', t: 'obstaculo', o: 'pilar', c: [269, 172, 5] }] },
+      boda: { centro: [180, 54], libres: [[40, 230], [320, 240], [40, 60], [320, 140], [100, 246], [260, 246]], zonas: [
+        { k: 'novios', t: 'bloqueo', r: [158, 36, 44, 26], deja: ['mini', 'mano', 'bolsillo', 'dron', 'aerea'] },
+        { k: 'pasillo', t: 'bloqueo', r: [170, 66, 20, 186], deja: DE_MANO }] },
+      graduacion: { centro: [180, 36], libres: [[40, 230], [320, 240], [40, 60], [320, 140], [100, 246], [260, 246]], zonas: [
+        { k: 'escenario', t: 'bloqueo', r: [64, 8, 232, 52], deja: EN_ESCENA },
+        { k: 'pasillo', t: 'bloqueo', r: [172, 66, 16, 124], deja: DE_MANO }, { k: 'pasillo', t: 'bloqueo', r: [172, 218, 16, 38], deja: DE_MANO },
+        { k: 'tarima', t: 'alto', r: [156, 192, 48, 24] },
+        { k: 'columna', t: 'obstaculo', o: 'columna', c: [72, 112, 6] }, { k: 'columna', t: 'obstaculo', o: 'columna', c: [288, 112, 6] }] },
+      prensa: { centro: [180, 30], libres: [[40, 230], [320, 240], [40, 60], [320, 140], [100, 246], [260, 246]], zonas: [
+        { k: 'mesa', t: 'bloqueo', r: [100, 18, 160, 22], deja: ['mini', 'ptz'] },
+        { k: 'pasillo', t: 'bloqueo', r: [168, 66, 24, 120], deja: DE_MANO },
+        { k: 'tarima', t: 'alto', r: [96, 192, 168, 44] }] },
+      marca: { centro: [180, 58], libres: [[300, 240], [60, 244], [300, 110], [20, 120], [110, 160]], zonas: [
+        { k: 'escenario', t: 'bloqueo', r: [48, 8, 264, 88], deja: EN_ESCENA }] },
+      autos: { centro: [180, 58], libres: [[300, 240], [60, 244], [300, 110], [20, 120], [110, 160]], zonas: [
+        { k: 'auto', t: 'bloqueo', c: [180, 56, 30], deja: ['mini', 'dron', 'aerea'] },
+        { k: 'escenario', t: 'bloqueo', r: [48, 8, 264, 88], deja: EN_ESCENA },
+        { k: 'pista', t: 'bloqueo', r: [316, 6, 38, 252], deja: AIRE }] },
+      calle: { centro: [154, 90], libres: [[60, 112], [250, 156], [300, 92], [40, 172], [200, 178]], zonas: [
+        { k: 'edificio', t: 'bloqueo', r: [6, 6, 348, 72], deja: ['dron'] }, { k: 'edificio', t: 'bloqueo', r: [6, 186, 348, 72], deja: ['dron'] }] },
+    },
+    // Lugar (dibujo) de cada evento y las marcas de piso de sus tomas
+    eventos: {
+      misa: { lugar: 'misa', pos: { fondo: [180, 244, 180, 30], ptz_lateral: [266, 94, 228, 50], coro: [120, 246, 180, 30] } },
+      funeral: { lugar: 'misa', pos: { discreta: [264, 140, 182, 82], oficiante: [98, 94, 176, 40] } },
+      boda: { lugar: 'boda', pos: { frontal_altar: [222, 28, 184, 54], contraplano_fondo: [180, 246, 180, 52], gimbal: [122, 150, 150, 120], dron: [324, 62, 180, 124] } },
+      prensa: { lugar: 'prensa', pos: { frontal_mesa: [180, 204, 180, 36], abierta_ptz: [146, 216, 180, 30], reaccion: [318, 84, 200, 130] } },
+      irl: { lugar: 'calle', pos: { gimbal: [134, 90, 154, 90], accion: [166, 103, 154, 91] } },
+      barrial: { lugar: 'barrial', pos: { principal: [180, 236, 180, 124], cerrada: [197, 236, 180, 124], cancha: [236, 207, 236, 150], dron: [292, 30, 180, 124] } },
+      graduacion: { lugar: 'graduacion', pos: { frontal: [180, 204, 180, 36], lateral_diplomas: [310, 44, 148, 34], jib_publico: [64, 132, 130, 168], reaccion_familias: [312, 196, 240, 196] } },
+      lucha_libre: { lugar: 'lucha', pos: { hardcam: [180, 238, 180, 124], hombro_izq: [112, 120, 150, 124], hombro_der: [248, 128, 210, 124], rampa: [196, 66, 180, 24], pov: [228, 172, 180, 124] } },
+      lanzamiento: { lugar: 'marca', pos: { frontal: [180, 240, 180, 58], abierta: [148, 244, 180, 44], gimbal_invitados: [236, 172, 200, 150], cenital_revelacion: [180, 52, 180, 60], photocall: [44, 216, 18, 216] } },
+      boxeo: { lugar: 'boxeo', pos: { principal: [180, 238, 180, 124], esquina1: [244, 60, 200, 104], esquina2: [116, 188, 160, 144], cerrada: [198, 238, 180, 124],
+        contraplano: [180, 22, 180, 124], cenital: [180, 124, 180, 124], postes: [132, 76, 180, 124] } },
+      lanzamiento_autos: { lugar: 'autos', pos: { frontal: [180, 240, 180, 58], jib_revelacion: [86, 108, 160, 62], gimbal_auto: [234, 82, 204, 62], dolly: [180, 110, 180, 64],
+        pov_auto: [174, 56, 200, 56], dron: [334, 160, 334, 220], photocall: [44, 216, 18, 216] } },
+      concierto: { lugar: 'concierto', pos: { foh: [180, 192, 180, 66], abierta: [200, 196, 180, 52], foso: [118, 93, 130, 66], jib: [254, 132, 200, 74], roboticas: [214, 40, 192, 40],
+        riel: [180, 104, 180, 60], steadicam: [100, 64, 150, 66], dron: [322, 126, 180, 124] } },
+      ligapro: { lugar: 'estadio', pos: 'futbol' }, final: { lugar: 'estadio', pos: 'futbol' }, internacional_unilateral: { lugar: 'estadio', pos: 'futbol' },
+      internacional_host: { lugar: 'estadio', pos: 'futbol' },
+    },
+    futbol: { principal: [180, 236, 180, 124], cerrada: [197, 236, 180, 124], cerrada2: [163, 236, 180, 124], arco_izq_alto: [26, 124, 110, 124], arco_der_alto: [334, 124, 250, 124],
+      cancha: [236, 207, 236, 150], contraplano: [180, 22, 180, 124], superlenta: [118, 222, 78, 124], superlenta2: [242, 222, 282, 124], baja_izq: [52, 160, 100, 124],
+      baja_der: [308, 88, 260, 124], steadicam: [168, 214, 150, 170], dron: [292, 30, 180, 124], cablecam: [180, 124, 180, 124], presentador: [64, 230, 80, 212],
+      zona_mixta: [154, 210, 130, 214], comcam: [242, 247, 242, 258] },
+    // Qué toma es cada posición: general (plano abierto), cerrado (lente largo a lo importante), reaccion (caras, de
+    // cerca), especial (grúa, riel, robóticas...) y aereo (dron, cablecam, cenital)
+    tipoToma: {
+      general: ['principal', 'hardcam', 'abierta', 'abierta_ptz', 'fondo', 'contraplano', 'contraplano_fondo', 'frontal_altar', 'discreta', 'beauty', 'tactica', 'coro'],
+      cerrado: ['cerrada', 'cerrada2', 'foh', 'frontal', 'frontal_mesa', 'area_izq', 'area_der', 'arco_izq_alto', 'arco_der_alto', 'superlenta', 'superlenta2', 'rampa',
+        'lateral_diplomas', 'oficiante', 'ptz_lateral'],
+      reaccion: ['reaccion', 'reaccion_familias', 'esquina1', 'esquina2', 'hombro_izq', 'hombro_der', 'cancha', 'foso', 'photocall', 'zona_mixta', 'presentador',
+        'gimbal_invitados', 'steadicam', 'steadicam2', 'gimbal_auto'],
+      aereo: ['dron', 'cablecam', 'cenital', 'cenital_revelacion'],
+    },
+  };
+
   /* ---------- Eventos ---------- */
   // Plantilla "rol min/ideal". crew = la del juego (cabe en 12 personas contándote a ti; tú cubres una cámara y,
   // si no llevas productor, haces de productor). crewReal = la de docs/eventos_y_personal.json (referencia).
@@ -1499,7 +1656,7 @@
     return Math.max(COMBO_CREDITOS.minimo, Math.ceil(COMBO_CREDITOS.porRaiz * Math.sqrt(p) / 10) * 10);
   }
 
-  const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE,
+  const Datos = { TEXTOS, ROLES_DATA, ROLE_ALIAS, TIERS_DATA, CATALOGO, ITEM_ALIAS, CATEGORIAS, CONSUMIBLES, CLASE_CAMARA, AJUSTE, CAM_GEO,
     EVENTOS, INTERNACIONALES, NOMBRES, APELLIDOS, TAUNTS, FLOTA, COMBO_CREDITOS, INTL_CREDITOS, creditosJuego };
   if (typeof module !== 'undefined' && module.exports) module.exports = Datos;
   else root.Datos = Datos;

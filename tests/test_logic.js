@@ -807,10 +807,24 @@ console.log(`Contratos internacionales vistos: ${intlIds.size} · jugados por el
    mejor (+5 a +15 %), uno malo claramente peor. */
 // Calidad base sin el tope de 100 (en el modo libre muchos eventos llegan a 100 y no se vería la diferencia)
 const crudo = (cq) => cq.parts.reduce((a, p) => a + p[1], 0);
+// Cámaras libres: sitios a probar para la cámara de una toma (la marca sugerida, más cerca de lo que filma, a los lados;
+// para el plan malo, también del otro lado y lejos). El validador descarta los que no se pueden (cancha, escenario...).
+function sitiosToma(g, key, malo) {
+  const m = g && g.marcas.find((x) => x.key === key);
+  if (!m || m.kind === 'aereo') return [];
+  const tx = m.tx * 100 / g.W, ty = m.ty * 100 / g.H;
+  const out = [];
+  const add = (x, y) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && x <= 100 && y >= 0 && y <= 100 && !out.some((p) => p[0] === x && p[1] === y)) out.push([x, y]); };
+  [0.3, 0.5, 0.65].forEach((u) => add(m.nx + u * (tx - m.nx), m.ny + u * (ty - m.ny)));
+  add(m.nx + 6, m.ny); add(m.nx - 6, m.ny); add(m.nx, m.ny + 6); add(m.nx, m.ny - 6);
+  if (malo) { add(2 * tx - m.nx, 2 * ty - m.ny); add(m.nx + (m.nx < 50 ? 40 : -40), m.ny); add(m.nx, m.ny + (m.ny < 50 ? 40 : -40)); }
+  return out;
+}
 function buscarPlan(s, c, staffIds, equipIds, signo, sinQuitar) {
   const staff = s.staff.filter((p) => staffIds.includes(p.id)), equip = s.equip.filter((e) => equipIds.includes(e.id));
   const q = (col) => crudo(G.computeQuality(s, c, staff, equip, col));
   const auto = G.cameraPlan(s, c, equipIds, staffIds);
+  const geo = G.camGeo(c);
   const posKeys = auto.positions.map((p) => p.key);
   const cams = auto.camaras;
   let col = auto.colocacion.map((x) => Object.assign({}, x));
@@ -827,7 +841,7 @@ function buscarPlan(s, c, staffIds, equipIds, signo, sinQuitar) {
         const k = col.map((x) => Object.assign({}, x));
         const ocupa = k.find((x) => x.p === pk);
         const yo = k.find((x) => x.e === cm.equipId);
-        if (yo) { if (ocupa) ocupa.p = yo.p; yo.p = pk; } else {
+        if (yo) { if (ocupa) { ocupa.p = yo.p; delete ocupa.x; delete ocupa.y; } yo.p = pk; delete yo.x; delete yo.y; } else {
           if (ocupa && sinQuitar) return;
           if (ocupa) k.splice(k.indexOf(ocupa), 1);
           k.push({ p: pk, e: cm.equipId });
@@ -835,6 +849,8 @@ function buscarPlan(s, c, staffIds, equipIds, signo, sinQuitar) {
         probar(k);
       });
       if (de && !sinQuitar) probar(col.filter((x) => x !== de).map((x) => Object.assign({}, x)));
+      // Mover la cámara dentro del plano (cámaras libres)
+      if (de) sitiosToma(geo, de.p, signo < 0).forEach(([x, y]) => { const k = col.map((z) => Object.assign({}, z)); const yo = k.find((z) => z.e === cm.equipId); yo.x = x; yo.y = y; probar(k); });
     });
     // Operadores: cambiar dos de lugar o poner a uno que no está en ninguna cámara
     ['camarografo', 'operador_ptz'].forEach((rol) => {
@@ -867,9 +883,12 @@ camMuestras.forEach((m) => {
   check(G.validarColocacion(s, c, m.equipIds, m.staffIds, plan.colocacion).ok, 'la colocación del automático no es válida');
   check(crudo(G.computeQuality(s, c, staff, equip, plan.colocacion)) === auto, 'la colocación del automático, puesta a mano, no da lo mismo');
   const multi = plan.camaras.length >= 2 && plan.positions.length >= 2;
-  const bueno = buscarPlan(s, c, m.staffIds, m.equipIds, 1).q;
+  const bp = buscarPlan(s, c, m.staffIds, m.equipIds, 1);
+  const bueno = bp.q;
   const malo = multi ? buscarPlan(s, c, m.staffIds, m.equipIds, -1, true).q : auto;
-  camRes.push({ ch: m.ch, multi, auto, bueno, malo, tipo: c.type, cams: c.cams || 1 });
+  // El plan pensado se vuelve a validar (con las cámaras movidas) y da lo mismo que en la búsqueda
+  check(G.validarColocacion(s, c, m.equipIds, m.staffIds, bp.col).ok && crudo(G.computeQuality(s, c, staff, equip, bp.col)) === bueno, 'el plan pensado (cámaras movidas) no se valida igual');
+  camRes.push({ ch: m.ch, multi, auto, bueno, malo, tipo: c.type, cams: c.cams || 1, movidas: bp.col.filter((x) => x.x !== undefined).length });
   if (process.env.CAM_VER && multi && camRes.length % 7 === 0) console.log(c.type, auto, bueno, malo, JSON.stringify(plan.positions.map((p) => [p.key, p.perfil, p.asignado, p.ajuste, p.razones.map((x) => x.texto + ' ' + x.pct).join('; ')])), JSON.stringify(plan.camaras.map((x) => x.tipo + '@' + x.en)));
 });
 const pct = (a, b) => (b ? (100 * (a - b)) / b : 0);
@@ -883,6 +902,7 @@ console.log('  por capítulo (pensado / malo vs. automático, %):', G.CHAPTERS.m
 }).join(' · '));
 // Lo que se exige, en los eventos de 3 cámaras o más (en uno de 2 cámaras con 2 posiciones fijas casi no hay qué decidir)
 const cam3 = camMulti.filter((r) => r.cams >= 3);
+console.log(`  cámaras libres: en ${camMulti.filter((r) => r.movidas).length} de ${camMulti.length} planes pensados conviene mover alguna cámara fuera de su marca`);
 console.log(`  eventos de 3+ cámaras (${cam3.length}): pensado ${fx(median(cam3.map((r) => pct(r.bueno, r.auto))))}% · malo ${fx(median(cam3.map((r) => pct(r.malo, r.auto))))}% · de 2 cámaras (${camMulti.length - cam3.length}): pensado ${fx(median(camMulti.filter((r) => r.cams < 3).map((r) => pct(r.bueno, r.auto))))}%`);
 if (cam3.length >= 20) {
   const gan = median(cam3.map((r) => pct(r.bueno, r.auto))), pierde2 = median(camMulti.map((r) => pct(r.malo, r.auto)));
@@ -890,6 +910,60 @@ if (cam3.length >= 20) {
   check(gan >= 5 && gan <= 15, `un plan de cámaras pensado debería rendir +5 a +15 % sobre el automático en los eventos de 3+ cámaras (mediana ${gan.toFixed(1)}%)`);
   check(pierde2 <= -10, `un plan de cámaras malo debería rendir claramente menos que el automático (mediana ${pierde2.toFixed(1)}%, máximo -10%)`);
 }
+
+/* ---------- Cámaras libres (28-oct): mover cada cámara a cualquier sitio del plano ---------- */
+(function () {
+  const s = G.newGame(31);
+  s.equip = s.equip.filter((e) => !e.starter);
+  const nid = () => { s.idc = (s.idc || 0) + 1; return s.idc; };
+  const eq = (t) => { const e = { id: nid(), type: t, condition: 95 }; s.equip.push(e); return e.id; };
+  ['cam_blackmagia_urso_broadcast_g3', 'lente_kanon_kx21x8_2', 'cam_zony_hxr_mk2500', 'cam_zony_hxr_mk2500', 'cam_cine', 'cam_basic', 'dron_basico', 'sw_vmax_pro_pc', 'audio_pro', 'encoder']
+    .forEach((t) => { if (G.CATALOG[t]) eq(t); });
+  ['camarografo', 'camarografo', 'camarografo', 'camarografo', 'director', 'sonidista', 'tecnico_transmision', 'piloto_dron'].forEach((role, i) => s.staff.push({ id: nid(), name: 'P' + i, role, skill: 3 + (i % 2), tier: 'junior', wage: 50, morale: 90, events: 5 }));
+  const eqIds = s.equip.map((e) => e.id), stIds = s.staff.map((p) => p.id);
+  const q = (c, col) => crudo(G.computeQuality(s, c, s.staff, s.equip, col));
+  // Todas las tomas de todos los eventos tienen su marca de piso (dentro del plano) y hacia dónde mira
+  Object.keys(G.EVENT_TYPES).forEach((t) => {
+    const c = { type: t, cams: 8 };
+    const g = G.camGeo(c);
+    const pl = G.cameraPlan(s, c, eqIds, stIds);
+    check(g && pl.positions.every((p) => g.marcas.some((m) => m.key === p.key && m.nx >= 0 && m.nx <= 100 && m.ny >= 0 && m.ny <= 100 && typeof m.tx === 'number' && m.kind)), `cámaras libres: a ${t} le falta la marca de alguna toma`);
+    check(pl.positions.every((p) => typeof p.toma === 'string' && p.toma.length && !/^toma\./.test(p.toma)), `cámaras libres: a ${t} le falta el nombre corto de alguna toma`);
+    // En su marca (con coordenadas) rinde exactamente lo mismo que sin coordenadas
+    const conXY = pl.colocacion.map((x) => { const m = g.marcas.find((z) => z.key === x.p); return Object.assign({}, x, { x: m.nx, y: m.ny }); });
+    check(G.validarColocacion(s, c, eqIds, stIds, conXY).ok && q(c, conXY) === q(c, pl.colocacion), `cámaras libres: en ${t}, una cámara en su marca no rinde lo mismo`);
+  });
+  // Graduación: la cámara de las reacciones más cerca de las familias rinde más; detrás de una columna, menos (y ✗)
+  const gr = G.addContract(s, 'graduacion'); gr.cams = 4;
+  const pg = G.cameraPlan(s, gr, eqIds, stIds);
+  const base = q(gr, pg.colocacion);
+  const mover = (col, k, x, y) => col.map((z) => (z.p === k ? Object.assign({}, z, { x, y }) : Object.assign({}, z)));
+  const reac = pg.positions.find((p) => p.key === 'reaccion_familias');
+  const cerca = mover(pg.colocacion, 'reaccion_familias', reac.nx - 10, reac.ny);
+  check(G.validarColocacion(s, gr, eqIds, stIds, cerca).ok && q(gr, cerca) > base, `cámaras libres: más cerca de las familias debería rendir más (${base} → ${q(gr, cerca)})`);
+  const tapada = mover(pg.colocacion, 'lateral_diplomas', 92, 51);
+  const pt = G.cameraPlan(s, gr, eqIds, stIds, tapada);
+  const dip = pt.positions.find((p) => p.key === 'lateral_diplomas');
+  check(q(gr, tapada) < base && dip.tapada && !dip.ok && dip.pista === 'tapada' && pt.tomasOk < pg.tomasOk, 'cámaras libres: detrás de una columna la toma queda tapada (✗ con su pista)');
+  // Fútbol: nada en la cancha salvo el dron; la cerrada del otro lado de la principal cruza el eje
+  const lp = G.addContract(s, 'ligapro'); lp.cams = 4;
+  const pf = G.cameraPlan(s, lp, eqIds, stIds);
+  const enCancha = mover(pf.colocacion, 'cerrada', 50, 50);
+  const vc = G.validarColocacion(s, lp, eqIds, stIds, enCancha);
+  check(!vc.ok && vc.motivo === 'punto', 'cámaras libres: una cámara en la cancha debería rechazarse');
+  const cruz = mover(pf.colocacion, 'cerrada', 55, 10);
+  const pc = G.cameraPlan(s, lp, eqIds, stIds, cruz);
+  check(G.validarColocacion(s, lp, eqIds, stIds, cruz).ok && pc.combos.some((x) => x.k === 'cam.g.eje' && x.pts < 0) && q(lp, cruz) < q(lp, pf.colocacion), 'cámaras libres: la cerrada en la tribuna de enfrente cruza el eje');
+  // Formatos: x sin y, fuera de la cuadrícula, con decimales
+  [[{ x: 50 }], [{ x: 101, y: 5 }], [{ x: 5.5, y: 5 }], [{ x: '5', y: 5 }]].forEach(([xy]) => {
+    const col = pf.colocacion.map((z, i) => (i ? Object.assign({}, z) : Object.assign({}, z, xy)));
+    check(G.validarColocacion(s, lp, eqIds, stIds, col).motivo === 'formato', `cámaras libres: coordenadas mal formadas aceptadas: ${JSON.stringify(xy)}`);
+  });
+  // startEvent guarda las coordenadas
+  const r = G.startEvent(s, gr.id, stIds, eqIds, cerca);
+  check(r.ok && s.currentEvent.colocacion.some((z) => z.p === 'reaccion_familias' && z.x === reac.nx - 10), 'cámaras libres: el evento no guardó dónde quedó la cámara');
+  console.log(`Cámaras libres: graduación ${base} → más cerca de las familias ${q(gr, cerca)} · detrás de una columna ${q(gr, tapada)}; fútbol cruzando el eje ${q(lp, pf.colocacion)} → ${q(lp, cruz)}`);
+})();
 
 if (errors) { console.error(`\n❌ ${errors} errores encontrados`); process.exit(1); }
 console.log('\n✅ Lógica OK: sin errores');

@@ -1450,6 +1450,9 @@
     sinOp: { fija: 0.6, robotica: 0.6, pov: 0.6, tribuna: 0.45, otra: 0.25 },
     set: 3, sinGeneral: 5,  // abierta + cerrada + reacción · sin plano general (eventos de 2+ cámaras)
     maxColocacion: 16,
+    topeGeo: 1.15,          // ajuste máximo con lo que suma el sitio (en alto, más cerca...)
+    eje: 3, ejeMax: 6,      // cámaras libres: una cerrada del otro lado de la principal (cruza el eje)
+    sitio: 3, sitioMax: 6,  // cámaras libres: una cámara en un sitio mejor que su marca sugerida (por cámara, por plan)
   };
   // La posición clave de cada evento (la que cuenta la jugada o las reacciones que no se repiten): ahí va tu mejor camarógrafo
   const CLAVE = { barrial: 'cerrada', ligapro: 'cerrada', final: 'cerrada2', internacional_host: 'cerrada2', boxeo: 'cerrada', lucha_libre: 'hombro_izq',
@@ -1483,8 +1486,127 @@
   const esImportante = (p, i) => i === 0 || p.perfil === 'cerrada' || p.perfil === 'lenta' || esReaccion(p);
   const rankOp = (a, b) => ((b.skill + tierBonus(b)) - (a.skill + tierBonus(a))) || (a.id - b.id);
 
+  /* ---------- Cámaras libres (28-oct): dónde está cada cámara en el plano ----------
+     Cada toma (posición) tiene una marca de piso sugerida (js/datos.js CAM_GEO) y hacia dónde mira. Una cámara puede ir
+     en cualquier sitio libre del plano (cuadrícula de 1 %: x, y de 0 a 100); desde ahí rinde según la distancia a lo que
+     filma (con su lente), el ángulo, si algo la tapa y si está en alto. Todo se mide CONTRA la marca sugerida: en la marca
+     la cámara rinde exactamente lo de siempre (así el automático y el plan "por posiciones" no cambian), y moverla bien
+     (más cerca con un lente corto, en alto para un plano general...) rinde más; moverla mal, menos. */
+  const GEO = D.CAM_GEO || null;
+  const GW = GEO ? GEO.W : 360, GH = GEO ? GEO.H : 264;
+  const aPx = (x, y) => [x * GW / 100, y * GH / 100];
+  const aPct = (px, py) => [clamp(Math.round(px * 100 / GW), 0, 100), clamp(Math.round(py * 100 / GH), 0, 100)];
+  const TOMA_DE = {};
+  if (GEO) Object.keys(GEO.tipoToma).forEach((k) => GEO.tipoToma[k].forEach((p) => { TOMA_DE[p] = k; }));
+  const geoCache = {};
+  // La geometría de un evento: lugar (zonas), y por toma: marca sugerida (en % de la cuadrícula), objetivo (px) y tipo
+  function geoEvento(c) {
+    if (!GEO || !c) return null;
+    const ev = GEO.eventos[c.type] || GEO.eventos.misa;
+    const lugar = GEO.lugares[ev.lugar];
+    if (!lugar) return null;
+    const pos = positionsFor(c);
+    const ck = c.type + ':' + pos.map((p) => p.key).join(',');
+    if (geoCache[ck]) return geoCache[ck];
+    const tabla = ev.pos === 'futbol' ? GEO.futbol : ev.pos;
+    const libres = lugar.libres.slice();
+    const marcas = {};
+    pos.forEach((p, i) => {
+      const t = EVENT_TYPES[c.type] || {};
+      let m = tabla[p.key];
+      if (!m) { const l = libres.shift() || [20 + (i * 23) % 320, 252]; m = [l[0], l[1], lugar.centro[0], lugar.centro[1]]; }
+      const [nx, ny] = aPct(m[0], m[1]);
+      const kind = p.perfil === 'aerea' || TOMA_DE[p.key] === 'aereo' ? 'aereo' : TOMA_DE[p.key] || (/^extra_/.test(p.key) ? 'general' : 'especial');
+      marcas[p.key] = { nx, ny, tx: m[2], ty: m[3], kind, eje: !!(lugar.eje && t.deporte && (kind === 'general' || kind === 'cerrado') && !/^(contraplano|arco_|baja_|robotica_arco)/.test(p.key)) };
+    });
+    geoCache[ck] = { lugar: ev.lugar, zonas: lugar.zonas, centro: lugar.centro, eje: lugar.eje || null, marcas };
+    return geoCache[ck];
+  }
+  const dentro = (z, x, y) => {
+    if (z.r) return x >= z.r[0] && x <= z.r[0] + z.r[2] && y >= z.r[1] && y <= z.r[1] + z.r[3];
+    if (z.c) return Math.hypot(x - z.c[0], y - z.c[1]) <= z.c[2];
+    if (z.s) { const [x1, y1, x2, y2, w] = z.s; const L2 = (x2 - x1) ** 2 + (y2 - y1) ** 2; const u = clamp(((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / L2, 0, 1); return Math.hypot(x - (x1 + u * (x2 - x1)), y - (y1 + u * (y2 - y1))) <= w; }
+    return false;
+  };
+  // ¿El segmento P→T atraviesa la zona? (se muestrea cada 2 px; P y T dentro de la zona no cuentan)
+  function corta(z, P, T) {
+    if (dentro(z, P[0], P[1]) || dentro(z, T[0], T[1])) return false;
+    const n = Math.max(2, Math.ceil(Math.hypot(T[0] - P[0], T[1] - P[1]) / 2));
+    for (let i = 1; i < n; i++) { const u = i / n; if (dentro(z, P[0] + u * (T[0] - P[0]), P[1] + u * (T[1] - P[1]))) return true; }
+    return false;
+  }
+  // ¿Puede ir una cámara con ese cuerpo en (x, y)%? null = sí; si no, [motivo, zona]
+  function puntoInvalido(g, cuerpo, x, y) {
+    const [px, py] = aPx(x, y);
+    for (const z of g.zonas) {
+      if (!dentro(z, px, py)) continue;
+      if (z.t === 'bloqueo' && !(z.deja || []).includes(cuerpo)) return ['punto', z.k];
+      if (z.t === 'alto' && cuerpo === 'grua') return ['grua_alto', z.k];
+    }
+    return null;
+  }
+  // Cómo rinde la cámara en (x, y) para la toma `m`, comparado con la marca sugerida. Devuelve los factores (1 = como en la
+  // marca), el nivel de lente que pide desde ahí (0-3) y si cruza el eje se calcula aparte (necesita la principal).
+  function geoToma(g, m, cuerpo, x, y) {
+    const P = aPx(x, y), N = aPx(m.nx, m.ny), T = [m.tx, m.ty];
+    const out = { factor: 1, terms: [], r: 1, alto: false, tapada: null, publico: false };
+    const alto = (Q) => g.zonas.some((z) => z.t === 'alto' && dentro(z, Q[0], Q[1]));
+    out.alto = alto(P);
+    if (m.kind === 'aereo' || (x === m.nx && y === m.ny)) return out;
+    const term = (k, f, p) => { if (Math.abs(f - 1) >= 0.005) { out.terms.push({ k, f, p: p || null }); out.factor *= f; } };
+    const d = Math.hypot(P[0] - T[0], P[1] - T[1]), dN = Math.hypot(N[0] - T[0], N[1] - T[1]);
+    out.r = d / Math.max(dN, 40);
+    // Ángulo: hacia dónde mira la toma desde la marca contra desde aquí
+    const ang = (Q) => Math.atan2(Q[1] - T[1], Q[0] - T[0]);
+    let da = Math.abs(ang(P) - ang(N)) * 180 / Math.PI; if (da > 180) da = 360 - da;
+    if (d < 4) da = 0;
+    const TOL = { general: 35, cerrado: 45, reaccion: 80, especial: 60 }[m.kind] || 60;
+    term('cam.g.angulo', da <= TOL ? 1 : Math.max(0.4, 1 - (da - TOL) / 150));
+    // Algo en medio (pilar, torre de sonido, parlante): la mitad; entre el público de pie, una fija a ras del piso
+    const tapa = (Q) => g.zonas.find((z) => z.t === 'obstaculo' && corta(z, Q, T)) || null;
+    const tP = tapa(P), tN = tapa(N);
+    if (tP && !tN) { term('cam.g.tapada', 0.5, { que: { k: 'cam.o.' + tP.o } }); out.tapada = tP.o; }
+    const fijaPiso = ['tripode', 'cine', 'riel', 'grua'].includes(cuerpo);
+    const gente = (Q) => fijaPiso && !alto(Q) && g.zonas.some((z) => z.t === 'gente' && dentro(z, Q[0], Q[1]));
+    if (gente(P) && !gente(N)) { term('cam.g.publico', 0.85); out.publico = true; }
+    // En alto: el plano general gana; las reacciones (caras) pierden
+    const ALTO = { general: 1.12, cerrado: 1.05, reaccion: 0.94, especial: 1 }[m.kind] || 1;
+    const aP = out.alto ? ALTO : 1, aN = alto(N) ? ALTO : 1;
+    if (aP !== aN) term(m.kind === 'reaccion' ? (aP < aN ? 'cam.g.alto_caras' : 'cam.g.caras') : aP > aN ? 'cam.g.alto' : 'cam.g.bajo', aP / aN);
+    // Un plano general muy cerca ya no entra todo; las demás tomas ganan un poco más cerca (caras, detalle, plano más
+    // limpio), pero demasiado encima estorban y pierden la acción
+    if (m.kind === 'general' && out.r < 0.55) term('cam.g.cerca', 0.65 + 0.35 * (out.r / 0.55));
+    else if (m.kind !== 'general' && out.r < 0.25) term('cam.g.encima', 0.85);
+    else if (m.kind !== 'general' && out.r < 0.7) term('cam.g.cerca_bien', { reaccion: 1.08, cerrado: 1.05 }[m.kind] || 1.03);
+    return out;
+  }
+  // Nivel de lente que pide la toma desde (x, y): el de la marca (lejana = nec) ± según la distancia
+  function lenteGeo(m, needOld, geo) {
+    if (!geo || m.kind === 'aereo') return needOld;
+    const r = geo.r;
+    let n = needOld + (r > 1.5 ? 1 : 0) + (r > 2.5 ? 1 : 0);
+    if (m.kind !== 'general') n -= (r < 0.7 ? 1 : 0) + (r < 0.45 ? 1 : 0);
+    return clamp(n, 0, 3);
+  }
+  /* Para la pantalla: el lugar (zonas en px del dibujo) y las marcas sugeridas de cada toma de un contrato */
+  function camGeo(c) {
+    const g = geoEvento(c);
+    if (!g) return null;
+    return { W: GW, H: GH, lugar: g.lugar, centro: g.centro.slice(), eje: g.eje, zonas: g.zonas.map((z) => Object.assign({}, z)),
+      marcas: Object.keys(g.marcas).map((k) => Object.assign({ key: k }, g.marcas[k])) };
+  }
+
+  // Nombre corto de la toma (lista de tomas clave): el del evento, el general o el de la posición
+  function nombreToma(c, p, i) {
+    const k1 = 'toma.' + c.type + '.' + p.key, k2 = 'toma.' + p.key;
+    if (Object.prototype.hasOwnProperty.call(TEXTOS, k1)) return tx(k1);
+    if (Object.prototype.hasOwnProperty.call(TEXTOS, k2)) return tx(k2);
+    if (/^extra_/.test(p.key)) return tx('toma.extra', { n: i + 1 });
+    return p.nombre;
+  }
+
   /* Colocación a mano: posición → cámara (y operador). Lo inválido se salta y queda el primer error. */
-  function leerColocacion(pos, ready, staff, col) {
+  function leerColocacion(pos, ready, staff, col, g) {
     const asg = new Map();
     let error = null;
     const fail = (m, p) => { if (!error) error = [m, p || null]; };
@@ -1499,6 +1621,17 @@
       if (!r) return fail('camara', { id: x.e });
       if (camUsada.has(r)) return fail('camara_repetida', { item: equipName(r.e) });
       if (posicionImposible(p.perfil, r.clase)) return fail('imposible', { item: equipName(r.e), pos: p.nombre });
+      // Dónde está en el plano (opcional): x, y enteros de 0 a 100; sin ellos, en la marca sugerida de la toma
+      let gx = null, gy = null;
+      if (x.x !== undefined || x.y !== undefined) {
+        if (!Number.isInteger(x.x) || !Number.isInteger(x.y) || x.x < 0 || x.x > 100 || x.y < 0 || x.y > 100 || !g) return fail('formato');
+        const m = g.marcas[p.key];
+        if (!(m && m.nx === x.x && m.ny === x.y)) {
+          const mal = puntoInvalido(g, CUERPO[r.clase] || 'mano', x.x, x.y);
+          if (mal) return fail(mal[0], { item: equipName(r.e), zona: { k: 'cam.z.' + mal[1] } });
+          gx = x.x; gy = x.y;
+        }
+      }
       let o;
       if (x.o === 0 || x.o === null) o = 0;
       else if (x.o !== undefined) {
@@ -1510,7 +1643,7 @@
         else { o = op.id; if (rol === 'camarografo') opUsado.add(op.id); else ptzUso[op.id] = (ptzUso[op.id] || 0) + 1; }
       }
       camUsada.add(r);
-      asg.set(p, { r, o, orden: pos.indexOf(p) });
+      asg.set(p, { r, o, orden: pos.indexOf(p), x: gx, y: gy });
     });
     return { asg, error };
   }
@@ -1592,7 +1725,8 @@
     const { ready, blocked } = readyCams(equip, staff);
     const t = EVENT_TYPES[c.type] || {};
     const manual = Array.isArray(col);
-    const leido = manual ? leerColocacion(pos, ready, staff, col) : null;
+    const g = geoEvento(c);
+    const leido = manual ? leerColocacion(pos, ready, staff, col, g) : null;
     const asg = manual ? leido.asg : colocarAuto(pos, ready, staff, legado);
     asignarOperadores(asg, staff);
     const usados = [];
@@ -1607,8 +1741,11 @@
     const mueve = t.deporte || t.escenario || c.type === 'concierto';
     let sysCams = 0;
     const out = pos.map((p, i) => {
-      const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional,
-        asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, base: 0, ajuste: 0, mods: 0, operado: false, operador: null, razones: [] };
+      const m = g ? g.marcas[p.key] : null;
+      const o = { key: p.key, nombre: p.nombre, ideal: p.ideal, perfil: p.perfil, opcional: p.opcional, toma: nombreToma(c, p, i),
+        asignado: null, equipId: null, equipo: null, lente: null, q: 0, fit: 0, base: 0, ajuste: 0, mods: 0, operado: false, operador: null, razones: [],
+        x: m ? m.nx : null, y: m ? m.ny : null, nx: m ? m.nx : null, ny: m ? m.ny : null, tx: m ? r2(m.tx * 100 / GW) : null, ty: m ? r2(m.ty * 100 / GH) : null,
+        kind: m ? m.kind : null, movida: false, geo: 1, lenteFalta: false };
       const a = asg.get(p);
       if (!a) return o;
       const r = a.r;
@@ -1634,11 +1771,27 @@
       }
       const fSinOp = legado ? 0.5 : CAMR.sinOp[p.perfil] || CAMR.sinOp.otra;
       if (!a.operado) add(fSinOp >= 0.6 ? 'cam.r.fija_sola' : 'cam.r.sin_operador', -Math.round((1 - fSinOp) * 100));
-      // Reglas de la posición (puntos de calidad)
-      if (esLejana(p)) {
-        if (al === 0) pts(t.deporte ? 'cam.r.corto_cancha' : 'cam.r.corto', -CAMR.cortoLejos);
-        else if (al < nec) pts('cam.r.zoom_corto', -(nec - al) * CAMR.zoomCorto[p.perfil === 'cerrada' ? 1 : 0]);
+      // Dónde está en el plano (cámaras libres): factores contra la marca sugerida
+      const gt = a.x != null && m ? geoToma(g, m, cu, a.x, a.y) : null;
+      if (gt) {
+        o.x = a.x; o.y = a.y; o.movida = true;
+        gt.terms.forEach((x) => add(x.k, (x.f - 1) * 100, x.p));
       }
+      // Reglas de la posición (puntos de calidad). El lente que pide la toma depende de la distancia (cámaras libres)
+      const need0 = esLejana(p) ? nec : 0;
+      const need = gt ? lenteGeo(m, need0, gt) : need0;
+      if (need > 0) {
+        if (al === 0) pts(need0 > 0 ? (t.deporte ? 'cam.r.corto_cancha' : 'cam.r.corto') : 'cam.g.lejos', -CAMR.cortoLejos);
+        else if (al < need) pts('cam.r.zoom_corto', -(need - al) * CAMR.zoomCorto[p.perfil === 'cerrada' ? 1 : 0]);
+      }
+      o.lenteFalta = need > 0 && al < need;
+      if (gt && need < need0 && (al === 0 || al < need0)) add('cam.g.llega', 0);
+      o.geo = gt ? r2(clamp(gt.factor, 0.2, 1.15)) : 1;
+      // Un sitio mejor que la marca sugerida suma puntos (lo que se nota al aire); uno peor resta por el ajuste
+      if (gt && o.geo > 1.02 && a.operado) pts('cam.g.sitio', Math.min(CAMR.sitio, Math.round((o.geo - 1) * 20)) || 1);
+      o.alto = gt ? gt.alto : null;
+      o.tapada = gt ? gt.tapada : null;
+      o.publico = gt ? gt.publico : false;
       if (i === 0 && t.deporte && p.perfil === 'tribuna' && al >= 2 && a.operado) pts('cam.r.principal_larga', CAMR.principalLarga);
       if (cu === 'ptz' && esReaccion(p)) pts('cam.r.ptz_reaccion', -CAMR.ptzReaccion);
       if (inal && mueve && a.operado && ['hombro', 'gimbal', 'movil'].includes(p.perfil) && cu !== 'dron') pts('cam.r.inalambrica', CAMR.inalambrica);
@@ -1665,6 +1818,13 @@
       const e2 = esq.map((k) => out.find((o) => o.key === k));
       if (e2.every((o) => o && o.asignado && o.cuerpo === 'mano' && o.operado)) e2.forEach((o, n) => o.razones.push({ k: 'cam.r.combo_esquinas', pts: n ? 0 : CAMR.esquinas, p: null, par: true }));
     }
+    // Cámaras libres: en deportes, la principal y las cerradas del mismo lado de la cancha o del ring (si una cruza el
+    // eje, la acción cambia de dirección al cortar entre ellas)
+    if (g && g.eje && p0 && p0.asignado) {
+      const lado = (o) => { const py = o.y * GH / 100; return py < g.centro[1] - 14 ? -1 : py > g.centro[1] + 14 ? 1 : 0; };
+      const l0 = lado(p0);
+      if (l0) out.forEach((o, i) => { if (i > 0 && o.asignado && (o.movida || p0.movida) && g.marcas[o.key] && g.marcas[o.key].eje && lado(o) === -l0) { o.ejeCruzado = true; o.razones.push({ k: 'cam.g.eje', pts: -CAMR.eje, p: null }); } });
+    }
     // Tu mejor camarógrafo en la posición clave (la cerrada en el fútbol, la torre en un concierto...)
     const clave = out.find((o) => o.key === CLAVE[c.type]) || null;
     const camOps = staff.filter((q0) => normRole(q0.role) === 'camarografo');
@@ -1679,7 +1839,7 @@
     out.forEach((o) => {
       if (!o.asignado) return;
       o.mods = o.razones.filter((x) => typeof x.pct === 'number' && /^cam\.r\.op_/.test(x.k)).reduce((s0, x) => s0 + x.pct, 0);
-      o.ajuste = r2(clamp(o.fit + o.mods / 100, 0, CAMR.tope) * (o.operado ? 1 : legado ? 0.5 : (CAMR.sinOp[o.perfil] || CAMR.sinOp.otra)));
+      o.ajuste = r2(Math.min(CAMR.topeGeo, clamp(o.fit + o.mods / 100, 0, CAMR.tope) * (o.geo || 1)) * (o.operado ? 1 : legado ? 0.5 : (CAMR.sinOp[o.perfil] || CAMR.sinOp.otra)));
       o.razones.forEach((x) => { x.texto = tx(x.k, x.p || undefined); });
     });
     // Combos y fallas del plan (puntos de calidad), con los topes; más los del plan entero
@@ -1694,6 +1854,8 @@
       if (cb.k === 'cam.r.inalambrica') cb.pts = Math.min(cb.pts, CAMR.inalambricaMax);
       if (cb.k === 'cam.r.sensor_chico') cb.pts = Math.max(cb.pts, -CAMR.sensorMax);
       if (cb.k === 'cam.r.cable') cb.pts = Math.max(cb.pts, -CAMR.cableMax);
+      if (cb.k === 'cam.g.eje') cb.pts = Math.max(cb.pts, -CAMR.ejeMax);
+      if (cb.k === 'cam.g.sitio') cb.pts = Math.min(cb.pts, CAMR.sitioMax);
     });
     const ok6 = (o) => o.asignado && o.ajuste >= 0.6;
     if ((c.cams || 1) >= 2) {
@@ -1705,6 +1867,15 @@
     }
     // Peso "al aire" de cada posición: la principal y la posición clave salen más (ahí conviene la mejor cámara)
     out.forEach((o, i) => { o.aire = i === 0 || o.key === CLAVE[c.type] ? CAMR.aire : 1; });
+    // Tomas clave (la lista con ✓ / ✗ del plano): bien cubierta si rinde 60 % o más, el lente llega y no cruza el eje;
+    // si no, lo primero que conviene arreglar
+    out.forEach((o) => {
+      const gk = (k) => o.razones.some((x) => x.k === k && x.pct < 0);
+      o.ok = !!(o.asignado && o.ajuste >= 0.6 && !o.lenteFalta && !o.ejeCruzado && !o.tapada);
+      o.pista = !o.asignado ? 'sin_cam' : !o.operado ? 'operador' : o.lenteFalta ? 'lente' : o.tapada ? 'tapada' : o.ejeCruzado ? 'eje'
+        : o.publico ? 'publico' : gk('cam.g.angulo') ? 'angulo' : gk('cam.g.cerca') ? 'cerca' : gk('cam.g.bajo') ? 'bajo' : o.fit < 0.6 ? 'tipo' : null;
+      o.pistaTexto = o.pista ? tx('cam.p.' + o.pista, { ideal: o.ideal || '' }) : '';
+    });
     const req = out.filter((p) => !p.opcional);
     const cubiertas = req.filter((p) => p.asignado).length;
     const camaras = ready.map((r) => ({ equipId: r.e.id, tipo: r.e.type, nombre: equipName(r.e), clase: r.clase, cuerpo: CUERPO[r.clase] || 'mano',
@@ -1715,7 +1886,8 @@
       bloqueados: blocked, usados, sistema: sysCams, sinOperador: req.filter((p) => p.asignado && !p.operado).length,
       manual, error: leido && leido.error ? { motivo: leido.error[0], texto: tx('msg.col.' + leido.error[0], leido.error[1] || undefined) } : null,
       combos, puntosCombos: combos.reduce((a, x) => a + x.pts, 0), camaras,
-      colocacion: out.filter((o) => o.asignado).map((o) => ({ p: o.key, e: o.equipId, o: o.operador ? o.operador.id : 0 })),
+      colocacion: out.filter((o) => o.asignado).map((o) => Object.assign({ p: o.key, e: o.equipId, o: o.operador ? o.operador.id : 0 }, o.movida ? { x: o.x, y: o.y } : {})),
+      tomasOk: req.filter((p) => p.ok).length, lugar: g ? g.lugar : null,
     };
   }
 
@@ -1736,7 +1908,7 @@
     const equip = equipOf(s, ids);
     const staff = staffIds ? staffOf(s, staffIds) : s.staff.slice();
     const { ready } = readyCams(equip, staff);
-    const { error } = leerColocacion(positionsFor(c), ready, staff, col);
+    const { error } = leerColocacion(positionsFor(c), ready, staff, col, geoEvento(c));
     return error ? mal(error[0], error[1]) : { ok: true };
   }
 
@@ -3170,7 +3342,7 @@
       tutorial,
       crewPlan: crew,
       cameraPlan: base.cameraPlan,
-      colocacion: col ? col.map((x) => ({ p: x.p, e: x.e, o: x.o === undefined ? undefined : x.o })) : null,
+      colocacion: col ? col.map((x) => Object.assign({ p: x.p, e: x.e, o: x.o === undefined ? undefined : x.o }, x.x !== undefined ? { x: x.x, y: x.y } : {})) : null,
     };
     // Movilización (se cobra al terminar). Los intentos en línea no la tienen: el servidor los repite sin ella.
     if (!esIntento(s)) ev.transporte = planTransporte(s, contract, ev.staffIds, ev.equipIds);
@@ -3778,7 +3950,7 @@
     // Personal internacional
     cursoIntl, cursoIntlCosto, puedeCursoIntl, darCursoIntl, searchStaffIntl, ayudaIntl, intlPersonalDisponible, isIntlExp, nuevoNombre: staffName, INTL_CREDITOS: D.INTL_CREDITOS,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, camGeo, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     elegirOpcion, // imprevistos v2: la opción razonable (bot de pruebas y fantasma de los duelos)
     crewPlan, cameraPlan, validarColocacion, CAMARAS_REGLAS: CAMR, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
