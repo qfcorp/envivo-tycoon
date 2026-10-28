@@ -337,7 +337,8 @@ function botTurn(s) {
   if (!best) { G.nextDay(s); return; }
   if (!G.startEvent(s, best.c.id, best.lo.staffIds, best.lo.equipIds).ok) { G.nextDay(s); return; }
   let inc, guard = 0;
-  while ((inc = G.currentIncident(s)) && guard++ < 10) G.resolveIncident(s, inc.choices.find((x) => x.ok).i);
+  // Imprevistos v2: el orden de los botones se baraja; el bot decide con lo que se ve (como el de tests/test_logic.js)
+  while ((inc = G.currentIncident(s)) && guard++ < 14) G.resolveIncident(s, G.elegirOpcion(s, inc));
   G.finishEvent(s);
 }
 const MARCAS = [50, 100, 200, 300];

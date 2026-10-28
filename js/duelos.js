@@ -33,7 +33,7 @@
     'duelo.ganaste': 'Ganaste', 'duelo.perdiste': 'Perdiste', 'duelo.empate': 'Empate', 'duelo.defendiste': 'Defendiste',
     'duelo.te_ganaron': 'Te ganaron', 'duelo.vencido': 'Se acabó el tiempo', 'duelo.imposible': 'Jugada no válida',
     'duelo.retar_pregunta': '¿Retar a <b>{rival}</b> por el contrato <b>{cliente}</b> ({nivel})?<br><span class="small muted">Usas 1 de tus duelos de hoy. Tienes {min} minutos para jugarlo; si no lo terminas, pierdes.</span>',
-    'duelo.si_retar': '¡A competir!', 'duelo.preparando': 'Preparando el duelo…', 'duelo.en_vivo': 'EN VIVO', 'duelo.imprevisto': 'Imprevisto {n} de {total}',
+    'duelo.si_retar': '¡A competir!', 'duelo.preparando': 'Preparando el duelo…', 'duelo.en_vivo': 'EN VIVO', 'duelo.imprevisto': 'Imprevisto {n} de {total}', 'duelo.prob': '{n} % de salir bien',
     'duelo.siguiente': 'Siguiente', 'duelo.terminar': 'Ver resultado', 'duelo.enviando': 'El servidor está repitiendo tu jugada…',
     'duelo.tu': 'Tú', 'duelo.calidad': 'Calidad', 'duelo.cambio': 'Puntaje {n}', 'duelo.fama': '+{n} de fama',
     'duelo.volver': 'Volver a los duelos', 'duelo.otra_vez': 'Retar a otra productora', 'duelo.sus_imprevistos': 'Su jugada (equipo guardado)',
@@ -183,7 +183,7 @@
       el.innerHTML = `<div class="dl-vivo">${escena(clave, false)}
         <div class="card"><div class="dl-paso">${esc(T('duelo.imprevisto', { n: inc.n, total: inc.total }))}</div>
           <p class="dl-texto">${esc(inc.text)}</p>
-          ${inc.choices.map((o) => `<button class="dl-op" data-${pref}="op" data-i="${o.i}" ${o.ok ? '' : 'disabled'}>${esc(o.label)}${o.ok ? '' : `<small>${esc(o.why || '')}</small>`}</button>`).join('')}
+          ${inc.choices.map((o) => `<button class="dl-op" data-${pref}="op" data-i="${o.i}" ${o.ok ? '' : 'disabled'}>${esc(o.label)}${typeof o.prob === 'number' ? `<small>${esc(T('duelo.prob', { n: Math.round(o.prob * 100) }))}</small>` : ''}${o.ok ? '' : `<small>${esc(o.why || '')}</small>`}</button>`).join('')}
         </div></div>`;
       el.querySelectorAll(`[data-${pref}="op"]`).forEach((b) => {
         b.onclick = () => {

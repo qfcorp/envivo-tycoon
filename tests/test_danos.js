@@ -136,15 +136,17 @@ function armarPartida(cambios) {
         if (!r.ok) return { err: r.msg };
         const inc = c.currentEvent.incidents;
         if (inc.length !== 1 || inc[0].key !== 'lluvia') return { err: 'imprevistos: ' + inc.map((i) => i.key).join(',') };
-        if (!G.resolveIncident(c, 1).ok) return { err: 'no se pudo elegir' };
+        // Imprevistos v2: el orden de los botones se baraja; se busca la opción por su clave (fundas de plástico)
+        const op = G.currentIncident(c).choices.find((x) => x.k === 'inc.lluvia.o1');
+        if (!op || !G.resolveIncident(c, op.i).ok) return { err: 'no se pudo elegir' };
         if (c.equip.find((e) => e.id === altaId).condition <= 60) { S.seed = seed; return { seed }; }
       }
       return { err: 'sin semilla' };
     }, { cid: P.cid, altaId: P.altaId });
     bien(!!busc.seed, '3: hay una semilla con la cámara mojada' + (busc.err ? ': ' + busc.err : ''));
     await page.click('#modal [data-act="go-live"]');
-    await page.waitForSelector('#modal [data-act="choose"][data-i="1"]:not([disabled])', { timeout: 15000 });
-    await page.click('#modal [data-act="choose"][data-i="1"]');
+    await page.waitForSelector('#modal [data-act="choose"][data-k="inc.lluvia.o1"]:not([disabled])', { timeout: 15000 });
+    await page.click('#modal [data-act="choose"][data-k="inc.lluvia.o1"]');
     await page.waitForSelector('#modal [data-act="finish"]', { timeout: 5000 });
     const dinero0 = await page.evaluate(() => window.__game.state.money);
     await page.click('#modal [data-act="finish"]');
@@ -208,7 +210,7 @@ function armarPartida(cambios) {
       const Q = armarPartida({ money: 2000 });
       const { G, s } = Q;
       const ok = G.startEvent(s, Q.cid, s.staff.map((p) => p.id), [Q.bajaId, Q.altaId]);
-      while (G.currentIncident(s)) G.resolveIncident(s, 1);
+      for (let g = 0, inc; (inc = G.currentIncident(s)) && g < 12; g++) { const op = inc.choices.find((x) => x.k === 'inc.lluvia.o1') || inc.choices.find((x) => x.ok); G.resolveIncident(s, op.i); }
       const f = G.finishEvent(s);
       s.money = 5;
       const danos = s.equip.filter((e) => [Q.bajaId, Q.altaId].includes(e.id)).map((e) => ({ id: e.id, type: e.type, antes: e.id === Q.bajaId ? 25 : 90, despues: e.id === Q.bajaId ? e.condition : Math.min(e.condition, 55), causas: e.id === Q.bajaId ? [] : ['lluvia'] }));
