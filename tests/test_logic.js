@@ -160,10 +160,12 @@ function botTurn(s) {
   crewStats.events++;
   crewStats.falta += ev.crewPlan.falta;
   let inc, guard = 0;
-  while ((inc = G.currentIncident(s)) && guard++ < 10) {
+  while ((inc = G.currentIncident(s)) && guard++ < 14) {
     check(inc.choices.some((ch) => ch.ok), 'imprevisto sin ninguna opción disponible: ' + inc.text);
     check(typeof inc.k === 'string' && G.TEXTOS[inc.k] !== undefined, 'imprevisto sin clave de texto: ' + inc.key);
-    const ch = inc.choices.find((x) => x.ok);
+    // Imprevistos v2: el bot decide con lo que se ve (equipo, % de salir bien, costo, caja, momento), no "el primer botón"
+    const ch = inc.choices[G.elegirOpcion(s, inc)];
+    check(ch && ch.ok, 'elegirOpcion devolvió una opción no disponible: ' + inc.key);
     const rr = G.resolveIncident(s, ch.i);
     check(rr.ok && typeof rr.msg === 'string' && G.TEXTOS[rr.k] !== undefined, 'resolveIncident falló o sin clave de texto: ' + inc.key);
   }
@@ -730,7 +732,8 @@ function soloTurn(s) {
   const c = s.contracts.filter((x) => !x.internacional).sort((x, y) => y.pay - x.pay)[0];
   if (!c || !G.startEvent(s, c.id, [own.id], [cam.id]).ok) { G.nextDay(s); return; }
   let inc, guard = 0;
-  while ((inc = G.currentIncident(s)) && guard++ < 10) { const en = inc.choices.filter((x) => x.ok); G.resolveIncident(s, en[en.length - 1].i); }
+  // Imprevistos v2: el orden se baraja; "lo peor" es la opción disponible que menos vale
+  while ((inc = G.currentIncident(s)) && guard++ < 10) { const en = inc.choices.filter((x) => x.ok); G.resolveIncident(s, en.reduce((a, b) => (b.valor < a.valor ? b : a), en[0]).i); }
   G.finishEvent(s);
 }
 const ECO = 60;

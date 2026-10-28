@@ -168,7 +168,7 @@ honestos.forEach(({ base, intento, jugado }, k) => {
   // e) Opciones fuera de rango / no disponibles / de más / de menos / no enteras
   if (jugado.decisiones.length) {
     const i = ri(0, jugado.decisiones.length - 1);
-    const fuera = clon(jugado.decisiones); fuera[i] = elige([3, 7, -1, 99]);
+    const fuera = clon(jugado.decisiones); fuera[i] = elige([9, 7, -1, 99]); // imprevistos v2: hasta 5 opciones en pantalla (0-4)
     const ve = V.validate(Object.assign(clon(intento), { decisiones: fuera }));
     anota('opción fuera de rango', !ve.valido); ok(!ve.valido && ve.detalle.motivo === 'opcion_invalida', `opción fuera de rango ${k}: ${ve.detalle.motivo}`);
     const raro = clon(jugado.decisiones); raro[i] = elige([0.5, '1', null, true, [0]]);

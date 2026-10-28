@@ -2548,11 +2548,41 @@
       ${liveScene(c.type, key)}
       <div class="row between" style="margin-top:10px"><span class="row" style="gap:6px"><span class="live"><i></i>${T('vivo.en_vivo')}</span>${viTag()}</span><span class="small muted">${bueno ? T('vivo.momento', { i: inc.n, total: inc.total }) : T('vivo.imprevisto', { i: inc.n, total: inc.total })}</span></div>
       <div class="small muted" style="margin-top:8px">${esc(eventName(c.type))} · ${esc(TL(c.client))}</div>
+      ${incCtxHtml(inc)}
       <div class="incident">${esc(noEmoji(gtx(inc, inc.text)))}</div>
       ${rolInc}
-      ${inc.choices.map((ch) => `<button class="btn choice" data-act="choose" data-i="${ch.i}" ${ch.ok ? '' : 'disabled'}>
-        ${esc(gtx(ch, ch.label))}${ch.ok ? '' : `<small>${T('vivo.no_disponible', { why: esc(ch.whyK ? gtx({ k: ch.whyK, p: ch.whyP }, ch.why) : TL(ch.why)) })}</small>`}</button>`).join('')}
+      ${inc.choices.map((ch) => `<button class="btn choice" data-act="choose" data-i="${ch.i}" data-k="${esc(ch.k || '')}" ${ch.ok ? '' : 'disabled'}>
+        ${esc(gtx(ch, ch.label))}${incOddsHtml(ch)}${ch.ok ? '' : `<small>${T('vivo.no_disponible', { why: esc(ch.whyK ? gtx({ k: ch.whyK, p: ch.whyP }, ch.why) : TL(ch.why)) })}</small>`}</button>`).join('')}
+      ${(inc.ocultas || []).length ? `<p class="incocultas">${I('lock', 'sm')}${T('vivo.ocultas', { lista: esc([...new Set(inc.ocultas.map((o) => gtx({ k: o.whyK, p: o.whyP }, o.why)))].slice(0, 3).join(' · ')) })}</p>` : ''}
       ${VI ? `<button class="btn sm vi-salir" data-act="vi-salir">${T('online.dejar')}</button>` : ''}`);
+  }
+  /* Imprevistos v2: el contexto que se ve (momento, clima, caja, cliente), las probabilidades y lo que hizo cada decisión */
+  function incCtxHtml(inc) {
+    const ctx = (inc && inc.ctx) || [];
+    if (!ctx.length) return '';
+    return `<div class="incctx">${ctx.map((c) => `<span class="${esc(c.tipo || '')}">${esc(gtx(c, c.text))}</span>`).join('')}</div>`;
+  }
+  function incOddsHtml(ch) {
+    const t = [];
+    if (typeof ch.prob === 'number') t.push(`<em class="${ch.prob < 0.5 ? 'riesgo' : ''}">${T('vivo.prob', { n: Math.round(ch.prob * 100) })}</em>`);
+    else t.push(`<em>${T('vivo.seguro')}</em>`);
+    if (ch.costo > 0 && !String(ch.label || '').includes(M(ch.costo))) t.push(`<em class="costo">${T('vivo.costo', { m: M(ch.costo) })}</em>`);
+    if (ch.equipo) t.push(`<em class="equipo">${T('vivo.lo_trajiste')}</em>`);
+    return `<span class="odds">${t.join('')}</span>`;
+  }
+  // Fichas con lo que hizo una decisión: calidad, dinero, fama, desgaste, repuestos y si trae otro imprevisto
+  function incEfxHtml(x) {
+    if (!x) return '';
+    const t = [];
+    const q = x.q || 0;
+    t.push(`<span class="${q > 0 ? 'up' : q < 0 ? 'down' : ''}">${T('vivo.efx_calidad', { n: (q > 0 ? '+' : '') + q })}</span>`);
+    if (typeof x.prob === 'number') t.push(`<span>${T(x.salio ? 'vivo.efx_salio_bien' : 'vivo.efx_salio_mal', { n: Math.round(x.prob * 100) })}</span>`);
+    if (x.din) t.push(`<span class="${x.din > 0 ? 'up' : 'down'}">${x.din > 0 ? '+' : '-'}${M(Math.abs(x.din))}</span>`);
+    if (x.fama) t.push(`<span class="${x.fama > 0 ? 'up' : 'down'}">${T('vivo.efx_fama', { n: (x.fama > 0 ? '+' : '') + x.fama })}</span>`);
+    (x.desg || []).forEach((d) => { const nmE2 = (G.CATALOG[d.type] || {}).name || d.type; t.push(`<span class="down">${d.perdido ? T('vivo.efx_perdido', { item: esc(TL(nmE2)) }) : T('vivo.efx_desg', { item: esc(TL(nmE2)), n: d.n })}</span>`); });
+    (x.repuesto || []).forEach((k) => t.push(`<span>${T('vivo.efx_repuesto', { item: esc(TL((G.CONSUMABLES[k] || {}).name || k)) })}</span>`));
+    if (x.sigue) t.push(`<span class="down">${T('vivo.efx_sigue')}</span>`);
+    return `<div class="efx">${t.join('')}</div>`;
   }
 
   function choose(i) {
@@ -2576,6 +2606,7 @@
       <div class="row" style="margin-top:10px;gap:6px"><span class="live"><i></i>${T('vivo.en_vivo')}</span>${viTag()}</div>
       <div class="incident">${esc(gtx(r, r.msg))}</div>
       <p>${T('vivo.calidad')} <span class="delta ${cls}">${r.q > 0 ? '+' : ''}${r.q}</span></p>
+      ${incEfxHtml(Object.assign({}, r, (s.currentEvent.incidents[s.currentEvent.step - 1] || {}).result || {}))}
       <button class="btn main" data-act="${more ? 'next-inc' : 'finish'}">${more ? T('comun.continuar') : T('vivo.terminar')}</button>`);
   }
 
@@ -2756,6 +2787,7 @@
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
+      ${decisionesRes(r)}
       <details><summary>${T('res.ver_detalle')}</summary>
         <p class="small"><b>${T('res.calidad_inicial', { n: r.base })}</b></p>
         ${(r.incidents || []).map((i) => { const x = i.result || {}; return `<p class="small">${esc(noEmoji(gtx(i, i.text)))}<br><span class="muted">→ ${esc(gtx(x, x.msg || ''))} (${x.q > 0 ? '+' : ''}${x.q || 0})</span></p>`; }).join('')}
@@ -2768,6 +2800,17 @@
     if (quebro) return;
     if (r.stars >= 4) confetti(r.stars === 5 ? 28 : 20);
     else if (r.stars === 3) confetti(10);
+  }
+
+  /* Imprevistos v2: "Tus decisiones" en el resultado: qué pasó, qué elegiste y lo que hizo (calidad, dinero, fama, desgaste) */
+  function decisionesRes(r) {
+    const l = (r.incidents || []).filter((i) => i.result);
+    if (!l.length) return '';
+    return `<div class="sectitle">${T('res.decisiones')}</div><div class="decis" id="resDecisiones">${l.map((i) => { const x = i.result;
+      return `<div class="decis-i">${i.cadena ? `<div class="small muted">${T('res.cadena')}</div>` : ''}<div class="small">${esc(noEmoji(gtx(i, i.text)))}</div>
+        ${x.op ? `<div class="small"><b>${T('res.elegiste', { op: esc(gtx({ k: x.op, p: x.opP }, '')) })}</b></div>` : ''}
+        <div class="small muted">${esc(gtx(x, x.msg || ''))}</div>${incEfxHtml(x)}</div>`; }).join('')}
+      ${r.famaImprevistos ? `<p class="small ${r.famaImprevistos > 0 ? 'up' : 'down'}">${T('res.fama_decisiones', { n: (r.famaImprevistos > 0 ? '+' : '') + r.famaImprevistos })}</p>` : ''}</div>`;
   }
 
   /* Gastos fijos del día en el resultado (varios eventos por día): cuánto son, cuándo se cobran y la parte de este evento.

@@ -22,9 +22,16 @@ const V = require(path.join(__dirname, '..', 'validador', 'validador.js'));
 const Intento = require(path.join(__dirname, '..', 'validador', 'intento.js'));
 
 const POLITICAS = {
-  // "Productor prudente": la primera opción disponible (las opciones de cada imprevisto vienen ordenadas
-  // de la más preparada a la más improvisada). No mira el futuro ni el azar: un retador atento le puede ganar.
-  prudente: (inc) => { const op = inc.choices.find((c) => c.ok); return op ? op.i : 0; },
+  // "Productor prudente": la opción que más vale en promedio con lo que se ve (choice.valor de js/logic.js, imprevistos v2),
+  // castigando un poco las apuestas (prob baja). Desde los imprevistos v2 el orden de los botones se baraja: "la primera"
+  // ya no es la más preparada. Sin valor (lógica vieja): la primera disponible, como antes. Un retador atento le puede ganar.
+  prudente: (inc) => {
+    const ok = inc.choices.filter((c) => c.ok);
+    if (!ok.length) return 0;
+    if (!ok.every((c) => typeof c.valor === 'number')) return ok[0].i;
+    const v = (c) => c.valor - (typeof c.prob === 'number' ? (1 - c.prob) * 3 : 0);
+    return ok.reduce((b, c) => (v(c) > v(b) ? c : b), ok[0]).i;
+  },
   // "Productor arriesgado": la opción disponible del medio (para variar, no se usa por defecto)
   arriesgado: (inc) => { const op = inc.choices.filter((c) => c.ok); return op.length ? op[Math.floor((op.length - 1) / 2)].i : 0; },
 };
