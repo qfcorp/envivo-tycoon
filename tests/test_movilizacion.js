@@ -21,7 +21,8 @@ function jugar(s, cid, staffIds, equipIds, elegir) {
   let inc, n = 0;
   while ((inc = G.currentIncident(s)) && n++ < 12) {
     const okc = inc.choices.filter((c) => c.ok);
-    G.resolveIncident(s, (elegir === 'peor' ? okc[okc.length - 1] : okc[0]).i);
+    // Imprevistos v2: el orden se baraja; "peor" = la opción disponible que menos vale
+    G.resolveIncident(s, (elegir === 'peor' ? okc.reduce((a, b) => (b.valor < a.valor ? b : a), okc[0]) : okc[0]).i);
   }
   return G.finishEvent(s);
 }
@@ -61,7 +62,9 @@ sec('Capítulo 0: el taxi del primer evento cuesta $4-6 y el evento nunca pierde
         // fijos se cobran al cerrar el día (si este evento lo cerró, ya se cobraron)
         const premio = r.chapterDone ? r.chapterDone.reward : 0;
         const fijos = r.dia ? (r.dia.cerrado ? r.dia.gastos : 0) : r.dailyCost;
-        ok(s.money === money0 + r.payNow - r.wages - r.transporte.total - fijos + premio, `seed ${seed}: la caja cuadra con el transporte`);
+        // Imprevistos v2: lo que movieron las decisiones (comprar un cable, alquilar un generador, una toma extra pagada...)
+        const imprevistos = (r.incidents || []).reduce((a, i) => a + ((i.result && i.result.din) || 0), 0);
+        ok(s.money === money0 + r.payNow - r.wages - r.transporte.total - fijos + premio + imprevistos, `seed ${seed}: la caja cuadra con el transporte`);
       }
     }
   }
