@@ -839,6 +839,25 @@
   .pp-acc .pp-aire{flex:1;font-family:var(--f-head);font-size:19px;letter-spacing:.4px}
   @media (max-width:370px){.sn-k{font-size:14.5px;gap:4px}.sn-col .sn-k{font-size:12.5px}.mk-t b{font-size:15px}.pp-k{font-size:12.5px}.pp-acc .pp-sig{font-size:12.5px}}
   @media (prefers-reduced-motion:reduce){.subpanel.sp-in{animation:none}.mk-t:not(:disabled):active{transform:none}}
+  /* Partida en la nube: indicador de arriba (en la nube / solo en este aparato) y franja "¿Ya tienes cuenta?" (js/ui.js pintarNube) */
+  .nubeind{display:flex;align-items:center;gap:6px;width:100%;margin-top:6px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--muted);font:inherit;font-size:12px;line-height:1.3;text-align:start;min-width:0}
+  .nubeind[hidden]{display:none}
+  .nubeind span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .nubeind .ico{flex:none;width:14px;height:14px}
+  .nubeind.ok{color:#9fe3bd;border-color:#1f4d36}
+  .nubeind.local{color:#ffd78a;border-color:#5a4214;background:#2a2210}
+  .nubeind.mal{color:#ffd0d0;border-color:#ff3b3b;background:#3a1519}
+  .nubebar{display:block;background:#2a2210;border:1px solid #c98a1a;color:#ffe2a6;border-radius:12px;padding:10px 12px;margin:2px 0 12px}
+  .nubebar[hidden]{display:none}
+  .nubebar.mal{background:#3a1519;border-color:#ff3b3b;color:#ffd0d0}
+  .nubebar p{margin:0 0 8px;font-size:14px;font-weight:600}
+  .nubebar .small{font-weight:400;opacity:.9}
+  .nubebar .nb-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .nubebar .nb-btns .btn{flex:1 1 auto;width:auto;margin:0}
+  .nube-op{display:block;text-align:start;line-height:1.45}
+  .nube-op .nube-op-t{display:flex;align-items:center;gap:6px;font-weight:700}
+  .nube-op .nube-op-t em{font-style:normal;font-size:11px;padding:1px 6px;border-radius:999px;background:#1f4d36;color:#9fe3bd;margin-inline-start:auto}
+  .nube-op .small{display:block}
 </style>
 </head>
 <body>
@@ -850,9 +869,11 @@
     <div class="chip c-gem" id="cGem" hidden data-act="tab" data-tab="tienda" data-sub="creditos" role="button" tabindex="0"><span class="ci" data-ico="gem"></span><span class="cv"><small id="lGem">Créditos</small><b id="hGem">0</b></span></div>
     <div class="chip c-day" id="cDay" data-ayuda="dia"><span class="ci" data-ico="calendar"></span><span class="cv"><small data-i18n="head.dia">Día</small><b id="hDay">1</b></span></div>
   </div>
+  <button class="nubeind" id="nubeInd" data-act="nube-ind" hidden></button>
 </header>
 
 <main class="gut">
+  <div class="nubebar" id="nubeBar" role="status" hidden></div>
   <section id="tab-inicio" class="on"></section>
   <section id="tab-clientes"></section>
   <section id="tab-personal"></section>

@@ -160,6 +160,15 @@ $r = $cel->post('/api/partida', ['datos' => $partida(10, 1), 'base' => 4, 'dispo
 check('Ahora el celular es el viejo: base 4 -> 409 partida_desactualizada', [409, 'partida_desactualizada', 5, $DA], [$cel->http, $r['codigo'] ?? null, $r['nube']['rev'] ?? null, $r['nube']['activo']['dispositivo'] ?? null]);
 
 // =====================================================================
+titulo('Un aparato nuevo (otra sesión, sin versión guardada) nunca pisa la nube con avance');
+$DN = 'dnuevo' . bin2hex(random_bytes(6));
+$r = $cel->post('/api/partida', ['datos' => $partida(1, 500), 'base' => 0, 'dispositivo' => $DN, 'tomar' => true]);
+check('Primer guardado de un aparato nuevo con base 0 (la nube va en rev 5) -> 409 partida_desactualizada, ni con "tomar"', [409, 'partida_desactualizada', 5], [$cel->http, $r['codigo'] ?? null, $r['nube']['rev'] ?? null]);
+$r = $cel->post('/api/partida/activar', ['base' => 0, 'dispositivo' => $DN]);
+check('…tampoco puede tomar la partida con base 0 -> 409', [409, 'partida_desactualizada'], [$cel->http, $r['codigo'] ?? null]);
+check('…la nube sigue igual (rev 5, la de la computadora)', [5, $DA], [(int) $enNube($J)['rev'], $activo($J)]);
+
+// =====================================================================
 titulo('Las dos avanzaron y el jugador eligió "la de aquí": tomar con la versión al día');
 $r = $cel->post('/api/partida', ['datos' => $partida(12, 7), 'base' => 5, 'dispositivo' => $DB]);
 check('El celular con base 5 pero sin ser el activo -> 409 otro_dispositivo', [409, 'otro_dispositivo'], [$cel->http, $r['codigo'] ?? null]);
