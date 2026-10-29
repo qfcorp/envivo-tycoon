@@ -22,7 +22,8 @@ namespace EnVivo;
  *  - Avance (stats.events, luego day, luego chapter): una partida con MENOS avance que la de la nube nunca la
  *    reemplaza (409 partida_retroceso, ni con "tomar"; un juego viejo con una partida del día 28 pisó la del día 72).
  *    Con MÁS avance se guarda aunque `base` esté vieja o haya otro aparato activo (se jugó sin internet), salvo justo
- *    después de restaurar desde el panel. Volver atrás: solo el Centro de Control ("Restaurar esta").
+ *    después de restaurar desde el panel. Volver atrás: solo el Centro de Control ("Restaurar esta"). Excepción:
+ *    `nueva: true` (partida nueva tras la quiebra) solo si la de la nube tiene gameOver: true, con base y dispositivo al día.
  *  - Versión del juego: guardar y tomar la partida piden X-EnVivo-Version >= MIN_CLIENTE (si no, 426 cliente_viejo).
  *  - Historial (migraciones/partidas_historial.sql): antes de pisar la partida, la versión anterior se copia a
  *    partidas_historial en la misma transacción (la del dueño, fama 100, quedó pisada por otro aparato con fama 9 y solo
@@ -92,12 +93,17 @@ final class Partidas
         $disp = self::dispositivo($in['dispositivo'] ?? null);
         if ($base !== null && $disp === null) throw new Fallo('Falta el dispositivo de la partida.', 400, ['codigo' => 'partida_invalida']);
         $tomar = ($in['tomar'] ?? false) === true;
-        return Db::tx(function () use ($jugador, $datos, $base, $disp, $tomar): array {
-            $p = Db::fila('SELECT rev, dispositivo, actualizado, ' . self::RESUMEN_SQL . ' FROM partidas WHERE jugador_id = ?', [$jugador]);
+        $empezar = ($in['nueva'] ?? false) === true;   // partida nueva después de la quiebra (el juego reinicia en el día 1)
+        return Db::tx(function () use ($jugador, $datos, $base, $disp, $tomar, $empezar): array {
+            $p = Db::fila("SELECT rev, dispositivo, actualizado, CASE WHEN json_valid(datos) THEN json_type(datos, '$.gameOver') END AS fin, " . self::RESUMEN_SQL . ' FROM partidas WHERE jugador_id = ?', [$jugador]);
             $a = Db::fila('SELECT dispositivo FROM partida_activa WHERE jugador_id = ?', [$jugador]);
             $rev = $p ? (int) $p['rev'] : 0;
             $nueva = self::resumenDe($datos);
             $avance = $p ? self::compararAvance($nueva, $p) : 0;
+            // Única excepción del juego: la partida de la nube terminó en quiebra (gameOver: true) y el jugador empezó otra
+            // ("nueva": true). Igual rigen base y dispositivo; la terminada queda en el historial (motivo 'nueva').
+            $reinicio = $empezar && $p && ($p['fin'] ?? null) === 'true';
+            if ($reinicio && $avance < 0) $avance = 0;
             // Nunca se reemplaza la partida con una de MENOS avance (ni con "tomar"): un juego viejo en la caché de un
             // celular, con una partida del día 28, pisó la del día 72. Volver atrás solo desde el Centro de Control.
             if ($avance < 0) {
@@ -125,7 +131,7 @@ final class Partidas
                 $porAvance = $base === null ? (($p && $p['dispositivo'] !== null) || $a) : ($rev !== $base || ($a && $a['dispositivo'] !== $disp && !$tomar));
             }
             $t = time();
-            if ($p) self::alHistorial($jugador, $t, self::menos($p['fama'], $nueva['fama'] ?? null) ? 'retroceso' : ($porAvance ? 'otro_avance' : ($tomar ? 'tomar' : 'guardado')));
+            if ($p) self::alHistorial($jugador, $t, $reinicio ? 'nueva' : (self::menos($p['fama'], $nueva['fama'] ?? null) ? 'retroceso' : ($porAvance ? 'otro_avance' : ($tomar ? 'tomar' : 'guardado'))));
             Db::q('INSERT INTO partidas (jugador_id, datos, actualizado, rev, dispositivo) VALUES (?, ?, ?, ?, ?)
                    ON CONFLICT (jugador_id) DO UPDATE SET datos = excluded.datos, actualizado = excluded.actualizado, rev = excluded.rev, dispositivo = excluded.dispositivo',
                 [$jugador, $datos, $t, $rev + 1, $disp]);
@@ -160,7 +166,7 @@ final class Partidas
     public const HIST_ULTIMAS = 30;
     public const HIST_DIAS = 60;
     public const HIST_DIAS_ESPECIALES = 90;
-    /** Tope de especiales (tomar / retroceso / otro_avance / antes_de_restaurar) por jugador, para que la tabla no crezca sin fin. */
+    /** Tope de especiales (tomar / retroceso / otro_avance / nueva / antes_de_restaurar) por jugador, para que la tabla no crezca sin fin. */
     public const HIST_MAX_ESPECIALES = 100;
     /** Código que queda como "dispositivo" de una versión restaurada desde el panel (ninguna pestaña la toma como suya). */
     public const DISP_PANEL = 'panel_restaurar';

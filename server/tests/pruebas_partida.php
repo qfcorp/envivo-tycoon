@@ -309,6 +309,36 @@ check('Se compara primero por eventos: más días (30) pero menos eventos (17 < 
 $r = $ob->post('/api/partida', ['datos' => $pe(19, 8), 'base' => 2, 'dispositivo' => $DB]);
 check('…más eventos (19 > 18) aunque menos días (8 < 9) -> 200 (más avance)', [200, 4], [$ob->http, $r['rev'] ?? null]);
 
+titulo('Quiebra: "nueva": true empieza otra partida (día 1) solo si la de la nube terminó (gameOver: true)');
+$pq = fn(int $dia, int $eventos, bool $fin) => json_encode(['day' => $dia, 'rep' => 30, 'money' => -500, 'chapter' => 3, 'gameOver' => $fin, 'stats' => ['events' => $eventos]]);
+[$qa, $JQ] = $cuenta();
+$qb = new Nav($URL, 'qb', $qa);
+$qa->post('/api/partida/activar', ['base' => 0, 'dispositivo' => $DA]);
+$qa->post('/api/partida', ['datos' => $pq(40, 90, false), 'base' => 0, 'dispositivo' => $DA]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 1, 'dispositivo' => $DA, 'nueva' => true]);
+check('Sin quiebra en la nube: "nueva": true con el día 1 -> 409 partida_retroceso', [409, 'partida_retroceso', 1], [$qa->http, $r['codigo'] ?? null, (int) $enNube($JQ)['rev']]);
+$r = $qa->post('/api/partida', ['datos' => $pq(41, 92, true), 'base' => 1, 'dispositivo' => $DA]);
+check('Quiebra: se guarda la partida terminada (gameOver: true) -> rev 2', [200, 2], [$qa->http, $r['rev'] ?? null]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 2, 'dispositivo' => $DA]);
+check('…la partida nueva SIN "nueva": true -> 409 partida_retroceso', [409, 'partida_retroceso'], [$qa->http, $r['codigo'] ?? null]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 2, 'dispositivo' => $DA, 'nueva' => 'si']);
+check('…"nueva" que no es true no cuenta -> 409 partida_retroceso', [409, 'partida_retroceso'], [$qa->http, $r['codigo'] ?? null]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 1, 'dispositivo' => $DA, 'nueva' => true]);
+check('…con "nueva": true pero base vieja (1) -> 409 partida_desactualizada (rigen las reglas de siempre)', [409, 'partida_desactualizada', 2], [$qa->http, $r['codigo'] ?? null, (int) $enNube($JQ)['rev']]);
+$qb->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 2, 'dispositivo' => $DB, 'nueva' => true]);
+check('…desde otro aparato que no es el activo -> 409 otro_dispositivo', [409, 2], [$qb->http, (int) $enNube($JQ)['rev']]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 2, 'dispositivo' => $DA, 'nueva' => true]);
+check('…con "nueva": true, base al día y el aparato activo -> 200 rev 3 con el día 1', [200, 3, $pr(1, 5, 1500)], [$qa->http, $r['rev'] ?? null, $enNube($JQ)['datos']]);
+check('…la terminada (rev 2, gameOver) queda en el historial con motivo nueva', [2, 'nueva', $pq(41, 92, true)], [(int) $fin($JQ)['rev'], $fin($JQ)['motivo'], $fin($JQ)['datos']]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1400), 'base' => 3, 'dispositivo' => $DA, 'nueva' => true]);
+check('Ya no hay quiebra en la nube: con "nueva" y el mismo avance se guarda normal (guardado)', [200, 4, 'guardado'], [$qa->http, $r['rev'] ?? null, $fin($JQ)['motivo']]);
+$qa->post('/api/partida', ['datos' => $pr(3, 5, 1400), 'base' => 4, 'dispositivo' => $DA]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 5, 'dispositivo' => $DA, 'nueva' => true]);
+check('…y otra vez el día 1 con "nueva" (sin quiebra en la nube) -> 409 partida_retroceso', [409, 'partida_retroceso'], [$qa->http, $r['codigo'] ?? null]);
+$qa->post('/api/partida', ['datos' => json_encode(['day' => 9, 'rep' => 1, 'money' => 1, 'gameOver' => 1, 'stats' => ['events' => 20]]), 'base' => 5, 'dispositivo' => $DA]);
+$r = $qa->post('/api/partida', ['datos' => $pr(1, 5, 1500), 'base' => 6, 'dispositivo' => $DA, 'nueva' => true]);
+check('gameOver tiene que ser true (1 no cuenta) -> 409 partida_retroceso', [409, 'partida_retroceso'], [$qa->http, $r['codigo'] ?? null]);
+
 titulo('Versión mínima del juego (X-EnVivo-Version >= Partidas::MIN_CLIENTE, si no 426 cliente_viejo)');
 check('numeroVersion: envivo-v47 -> 47; v47, envivo-v, texto o null -> null', [47, null, null, null, null], [Partidas::numeroVersion('envivo-v47'), Partidas::numeroVersion('v47'), Partidas::numeroVersion('envivo-v'), Partidas::numeroVersion('<x>'), Partidas::numeroVersion(null)]);
 $api = (string) file_get_contents($RAIZ . '/js/api.js');

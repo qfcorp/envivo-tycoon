@@ -220,8 +220,8 @@ function cc_partidas_historial(int $id): string
     if (!Control::tabla('partidas_historial')) return $tit . cc_no_disponible('Historial de partidas', 'Falta la tabla partidas_historial (partidas_historial.sql).') . '</section>';
     $disp = fn($d) => $d === null ? '<span class="tenue">juego viejo</span>' : ($d === Partidas::DISP_PANEL ? cc_chip('panel', 'aviso') : '<code title="' . e((string) $d) . '">' . e(mb_substr((string) $d, 0, 8)) . '…</code>');
     $n = fn($v) => is_numeric($v) ? cc_num($v) : '—';
-    $mot = fn(string $m) => cc_chip(['guardado' => 'guardado', 'tomar' => 'tomar', 'retroceso' => 'retroceso', 'otro_avance' => 'otro aparato con más avance', 'antes_de_restaurar' => 'antes de restaurar'][$m] ?? $m,
-        ['tomar' => 'aviso', 'retroceso' => 'mal', 'otro_avance' => 'aviso', 'antes_de_restaurar' => 'aviso'][$m] ?? '');
+    $mot = fn(string $m) => cc_chip(['guardado' => 'guardado', 'tomar' => 'tomar', 'retroceso' => 'retroceso', 'otro_avance' => 'otro aparato con más avance', 'nueva' => 'quiebra: partida nueva', 'antes_de_restaurar' => 'antes de restaurar'][$m] ?? $m,
+        ['tomar' => 'aviso', 'retroceso' => 'mal', 'otro_avance' => 'aviso', 'nueva' => 'aviso', 'antes_de_restaurar' => 'aviso'][$m] ?? '');
     $act = Partidas::actual($id);
     $h = $tit . '<p class="tenue">Antes de cada guardado, la versión anterior se copia aquí. Se guardan las últimas ' . Partidas::HIST_ULTIMAS
        . ', la más nueva de cada día de los últimos ' . Partidas::HIST_DIAS . ' días y, por ' . Partidas::HIST_DIAS_ESPECIALES
