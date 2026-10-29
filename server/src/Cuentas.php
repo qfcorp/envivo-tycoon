@@ -67,7 +67,7 @@ final class Cuentas
             }
             if (Migraciones::columnas('vip_jugadores') !== null) Db::q('UPDATE vip_jugadores SET ocultar_mecenas = 1 WHERE jugador_id = ?', [$jugador]);
             // Módulos nuevos (si están): enlaces de clave, avisos push y la vitrina pública de Visitas no deben quedar
-            foreach (['recuperaciones', 'push_suscripciones', 'push_cola', 'push_jugador', 'visitas_vitrinas', 'visitas_ajustes'] as $tabla) {
+            foreach (['partidas_historial', 'recuperaciones', 'push_suscripciones', 'push_cola', 'push_jugador', 'visitas_vitrinas', 'visitas_ajustes'] as $tabla) {
                 if (Migraciones::columnas($tabla) !== null) Db::q("DELETE FROM $tabla WHERE jugador_id = ?", [$jugador]);
             }
             Db::q("UPDATE jugadores SET email = ?, nombre = 'Cuenta borrada', alias = NULL, alias_clave = NULL, clave_hash = '!', estado = 'borrado',

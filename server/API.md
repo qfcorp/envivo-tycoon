@@ -66,6 +66,15 @@ así una pestaña vieja (la computadora que quedó abierta mientras se jugaba en
   - Juego viejo (sin `base`, en la caché de algún celular): se acepta solo mientras la cuenta nunca usó el juego con versión
     (la partida no tiene `dispositivo` y no hay activo); si no → 409 `partida_desactualizada` (y queda anotado en el registro
     de PHP como "EN VIVO partida: juego viejo sin versión rechazado"). Aceptarlo siempre volvería a abrir el error.
+- **Historial** (`src/migraciones/partidas_historial.sql`, sin cambios para el juego): antes de cada guardado que pasa, en la
+  misma transacción, la versión anterior se copia a `partidas_historial` con `motivo` `guardado`, `tomar` (la pisó un
+  guardado con `"tomar": true`) o `retroceso` (la nueva tiene menos `rep` o menos `day`). Se conservan por jugador las últimas
+  30, la más nueva de cada día de los últimos 60 días y las especiales (`tomar`, `retroceso`, `antes_de_restaurar`) por 90 días
+  (máx. 100); lo demás se poda en la misma transacción. Borrar la cuenta borra también el historial.
+- **Restaurar** (solo el Centro de Control, ficha del jugador → "Partidas guardadas (historial)" → "Restaurar esta",
+  `Partidas::restaurar`): la versión elegida pasa a ser la partida con `rev` = actual + 1 y `dispositivo` = `panel_restaurar`
+  (la actual va antes al historial con motivo `antes_de_restaurar`), se borra `partida_activa` y queda en la auditoría
+  (`partida_restaurar`). Cada aparato ve `rev` > su `base` y sigue el flujo normal de "partida más nueva"; ninguno puede pisarla.
 
 ## Gastar créditos (requiere sesión)
 `POST /api/gastar` `{ "item": "dron4k" }` → `{ "ok": true, "creditos": 120, "entrega": { ...entrega creada... } }`
