@@ -47,6 +47,8 @@
       version: (root.Game && root.Game.SAVE_VERSION) || null, dia: s ? s.day : null, capitulo: s ? s.chapter + 1 : null,
       dinero: s ? Math.round(s.money) : null, idioma: (root.I18N && root.I18N.idioma) || navigator.language,
       pantalla: `${innerWidth}x${innerHeight}`, navegador: String(navigator.userAgent).slice(0, 180),
+      // Copias de la partida que se reemplazó en este aparato (js/ui.js respaldar): soporte sabe si hay de dónde recuperar
+      copias: (() => { try { return root.__respaldos ? root.__respaldos.lista() : []; } catch (e) { return []; } })(),
     };
   }
   const fecha = (iso) => { try { return new Date(iso).toLocaleString((root.I18N && root.I18N.idioma) || 'es-EC', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };

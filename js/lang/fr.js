@@ -253,11 +253,6 @@
     "avisoc.gratis": "Il faut juste ton nom, ton e-mail et un mot de passe. C’est gratuit.",
     "avisoc.ahora_no": "Pas maintenant",
 
-    "nube.titulo": "Quelle partie veux-tu utiliser ?",
-    "nube.texto": "Tu as une partie sauvegardée sur ton compte et une autre sur ce téléphone.",
-    "nube.nube": "Dans le cloud",
-    "nube.local": "Sur ce téléphone",
-    "nube.reemplaza": "Celle que tu ne choisis pas sera remplacée.",
     "nube.otro_titulo": "Ta partie a été ouverte sur un autre appareil",
     "nube.otro_texto": "Tu as continué à jouer sur un autre téléphone, ordinateur ou onglet. Pour ne pas perdre cette progression, plus rien n'est sauvegardé ici.",
     "nube.otro_usar": "Utiliser la partie la plus récente",

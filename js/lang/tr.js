@@ -253,11 +253,6 @@
     "avisoc.gratis": "Sadece adın, e-postan ve bir şifre. Ücretsiz.",
     "avisoc.ahora_no": "Şimdi değil",
 
-    "nube.titulo": "Hangi oyunu kullanmak istersin?",
-    "nube.texto": "Hesabında kayıtlı bir oyun ve bu telefonda başka bir oyun var.",
-    "nube.nube": "Bulutta",
-    "nube.local": "Bu telefonda",
-    "nube.reemplaza": "Seçmediğin oyunun yerine bu geçer.",
     "nube.otro_titulo": "Oyunun başka bir cihazda açıldı",
     "nube.otro_texto": "Başka bir telefonda, bilgisayarda veya sekmede oynamaya devam ettin. O ilerlemeyi kaybetmemek için burada artık hiçbir şey kaydedilmiyor.",
     "nube.otro_usar": "En yeni oyunu kullan",

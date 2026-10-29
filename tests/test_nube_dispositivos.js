@@ -6,14 +6,13 @@
    Casos:
      0. La computadora juega con cuenta y guarda en la nube (fama 260, día 31). Indicador "Partida en la nube".
      A. Celular SIN sesión con una partida vieja de invitado (fama 20, día 5): franja "¿Ya tienes cuenta?" e indicador
-        "Solo en este celular (sin cuenta)". Al entrar: pregunta cuál usar, con día, fama, dinero, capítulo y última vez
-        de cada una; no pisa ninguna sin elegir. Elige la de la nube → fama 260. La computadora ve "Tu partida se abrió
-        en otro dispositivo" al volver a ella.
+        "Solo en este celular (sin cuenta)". Al entrar: sin preguntar, se queda la de más avance (la de la nube, fama
+        260) y se avisa; la vieja nunca se sube. La computadora ve "Tu partida se abrió en otro aparato" al volver a ella.
      B. Celular CON sesión y la partida guardada aquí de una versión vieja de la nube: al abrir baja la más nueva sola
         (con aviso), nunca sube la vieja; un guardado con la versión vieja → 409 (el servidor no la acepta).
      C. Instalación nueva (sin partida en el celular) con sesión: baja la de la nube.
      D. Sesión vencida o la app instalada sin la sesión de Chrome (partida de esta cuenta, pero sin galleta): franja
-        "Tu sesión se cerró en este dispositivo"; al entrar, si aquí se siguió jugando, pregunta cuál usar.
+        "Tu sesión se cerró en este dispositivo"; al entrar, aquí se jugaron más eventos: se sube la de aquí, sin preguntar.
      E. El servidor no respondió al abrir (celular lento): el indicador lo dice y, al volver a la app, se conecta y baja
         la partida más nueva (antes se quedaba jugando la copia vieja en silencio hasta recargar).
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_nube_dispositivos.js */
@@ -161,19 +160,15 @@ async function entrarUI(page, cuenta) {
       await A.screenshot({ path: path.join(OUT, 'disp_a_sin_sesion.png') });
       bien(!(await desborde(A)), 'A: sin desborde horizontal');
       await entrarUI(A, cuenta);
-      await A.waitForSelector('#overlay.on #modal [data-act="partida"][data-k="local"]', { timeout: 10000 }).catch(() => {});
-      const txt = (await A.locator('#modal').innerText().catch(() => '')).replace(/\s+/g, ' ');
-      bien(!!(await eleccion(A)), 'A: al entrar pregunta qué partida usar (no pisa ninguna)');
-      bien(/Fama 260/.test(txt) && /Fama 20\b/.test(txt), `A: la comparación muestra la fama de cada una`);
-      bien(/Día 31/.test(txt) && /Día 5\b/.test(txt) && /Capítulo/.test(txt) && /\$/.test(txt), 'A: …el día, el capítulo y el dinero');
-      bien(/Última vez/i.test(txt) && /hace 3 días/.test(txt), 'A: …y la última vez que se jugó cada una');
-      await A.screenshot({ path: path.join(OUT, 'disp_a_elegir.png') });
-      n = await enNube(A);
-      bien(n.rep === 260 && subidas.length === 0, `A: mientras elige, la nube sigue con la de la computadora (fama ${n.rep}) y no se subió nada`);
-      await A.click('#overlay.on #modal [data-act="partida"][data-k="nube"]');
-      await A.waitForTimeout(1500);
+      await A.waitForFunction(() => window.__game.state.day === 31, null, { timeout: 10000 }).catch(() => {});
+      await A.waitForTimeout(800);
+      bien(!(await eleccion(A)), 'A: al entrar no pregunta: se queda la de más avance');
       const d1 = await estado(A);
-      bien(d1.rep === 260 && d1.dia === 31 && d1.hdr === '260', `A: eligió la de la nube: fama ${d1.rep}, día ${d1.dia}`);
+      bien(d1.rep === 260 && d1.dia === 31 && d1.hdr === '260', `A: cargó la de la nube: fama ${d1.rep}, día ${d1.dia}`);
+      const tA = await toastTxt(A);
+      bien(/más avance/.test(tA), `A: avisa: "${tA}"`);
+      n = await enNube(A);
+      bien(n.rep === 260 && subidas.every((x) => { try { return JSON.parse(x.datos).day !== 5; } catch (e) { return true; } }), `A: la nube sigue con la de la computadora (fama ${n.rep}); la vieja nunca se subió`);
       const indA = await indicador(A);
       bien(/Partida en la nube/.test(indA), `A: indicador ahora: "${indA}"`);
       bien(!(await franja(A)), 'A: ya no sale la franja');
@@ -204,11 +199,11 @@ async function entrarUI(page, cuenta) {
       bien(dB.rep === 300 && dB.dia === 35, `B: al abrir bajó la más nueva de la nube (fama ${dB.rep}, día ${dB.dia})`);
       bien(subB.every((x) => x.base === undefined || x.base >= n.rev), `B: nunca subió la vieja (${subB.length} guardado(s), bases ${subB.map((x) => x.base).join(',') || '-'})`);
       const tB = await toastTxt(B);
-      bien(/partida más nueva/.test(tB), `B: avisa que cargó la más nueva: "${tB}"`);
+      bien(/más avance|partida más nueva/.test(tB), `B: avisa que cargó la de la nube: "${tB}"`);
       n = await enNube(B);
       bien(n.rep === 300 && n.activo === (await nubeInfo(B)).disp, 'B: la nube sigue con fama 300 y el celular la tomó');
       const viejo = await B.evaluate(async (s) => { try { await window.Api.subirPartida(s, { base: 1, dispositivo: window.__nube.dispositivo }); return 200; } catch (e) { return e.status + ' ' + e.codigo; } }, partida(VIEJA));
-      bien(viejo === '409 partida_desactualizada', `B: un guardado con versión vieja → ${viejo}`);
+      bien(viejo === '409 partida_desactualizada' || viejo === '409 partida_retroceso', `B: un guardado con versión vieja → ${viejo}`);
       bien(eB.length === 0, 'B: sin errores de JS' + (eB.length ? ': ' + eB.join(' | ') : ''));
       await B.close(); await cA.close();
     }
@@ -239,15 +234,11 @@ async function entrarUI(page, cuenta) {
       bien(/Solo en este celular/.test(ind), `D: indicador: "${ind}"`);
       await D.screenshot({ path: path.join(OUT, 'disp_d_sesion_cerrada.png') });
       await entrarUI(D, cuenta);
-      await D.waitForSelector('#overlay.on #modal [data-act="partida"][data-k="local"]', { timeout: 10000 }).catch(() => {});
-      const txt = (await D.locator('#modal').innerText().catch(() => '')).replace(/\s+/g, ' ');
-      bien(!!(await eleccion(D)) && /Fama 285/.test(txt) && /Fama 300/.test(txt), 'D: pregunta cuál usar (fama 300 en la nube, 285 aquí)');
-      bien(/hace 20 min/.test(txt), 'D: …con la última vez que se jugó aquí (hace 20 min)');
-      bien(subidas.length === 0 && (await enNube(D)).rep === 300, 'D: no subió nada mientras elige');
-      await D.click('#overlay.on #modal [data-act="partida"][data-k="nube"]');
-      await D.waitForTimeout(1500);
+      await nubeLista(D).catch(() => {}); await D.waitForTimeout(1500);
+      bien(!(await eleccion(D)), 'D: no pregunta');
       const d = await estado(D);
-      bien(d.rep === 300 && d.dia === 35, `D: eligió la de la nube (fama ${d.rep})`);
+      const nD = await enNube(D);
+      bien(d.rep === 285 && d.dia === 34 && nD.rep === 285 && nD.dia === 34, `D: aquí había más eventos (45 contra 40): se subió la de aquí (nube fama ${nD.rep}, día ${nD.dia})`);
       bien(eD.length === 0, 'D: sin errores de JS' + (eD.length ? ': ' + eD.join(' | ') : ''));
       await cD.close();
     }
@@ -257,11 +248,11 @@ async function entrarUI(page, cuenta) {
       const cE = await contexto(browser, 'cel', { galletas, partida: partida({ day: 33, rep: 280, money: 85000, events: 44, chapter: 3 }), nube: { cuenta: cuentaId, rev: 1, clave: [33, 85000, 44].join('|') } });
       const { page: E, errores: eE, subidas } = await abrirPagina(cE, srv.base, { estadoFalla: 1 });
       const ind = await indicador(E);
-      bien(/Sin conexión con la nube/.test(ind), `E: sin respuesta del servidor: el indicador lo dice ("${ind}")`);
+      bien(/Sin conexión/.test(ind), `E: sin respuesta del servidor: el indicador lo dice ("${ind}")`);
       await E.evaluate(() => window.dispatchEvent(new Event('focus')));
       await nubeLista(E).catch(() => {}); await E.waitForTimeout(1500);
       const d = await estado(E);
-      bien(d.rep === 300 && d.dia === 35, `E: al volver a la app se conectó y bajó la más nueva (fama ${d.rep}, día ${d.dia})`);
+      bien(d.rep === 285 && d.dia === 34, `E: al volver a la app se conectó y bajó la de más avance (fama ${d.rep}, día ${d.dia})`);
       bien(subidas.every((x) => x.base === undefined || x.base >= n.rev), 'E: nunca subió la vieja');
       bien(eE.length === 0, 'E: sin errores de JS' + (eE.length ? ': ' + eE.join(' | ') : ''));
       await cE.close();

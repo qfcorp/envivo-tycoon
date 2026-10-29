@@ -50,7 +50,7 @@
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v47', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -103,7 +103,7 @@
   Api.partida = () => req('GET', '/api/partida');
   Api.partidaMeta = (dispositivo) => req('GET', '/api/partida/meta?' + new URLSearchParams({ dispositivo: dispositivo || '' }).toString(), undefined, 10000);
   Api.activarPartida = (base, dispositivo) => req('POST', '/api/partida/activar', { base, dispositivo });
-  Api.subirPartida = (datos, o) => req('POST', '/api/partida', o ? { datos, base: o.base, dispositivo: o.dispositivo, tomar: !!o.tomar } : { datos }, 20000);
+  Api.subirPartida = (datos, o) => req('POST', '/api/partida', o ? { datos, base: o.base, dispositivo: o.dispositivo, tomar: !!o.tomar, nueva: !!o.nueva } : { datos }, 20000);
   Api.gastar = (item) => req('POST', '/api/gastar', { item });
   Api.bonoVip = () => req('POST', '/api/vip/bono', {});
   // metodo: undefined = tarjeta (Pago Plux) · 'paypal' = PayPal (solo web, server/src/PayPal.php)

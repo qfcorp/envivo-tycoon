@@ -253,11 +253,6 @@
     "avisoc.gratis": "只需要名字、邮箱和密码。完全免费。",
     "avisoc.ahora_no": "以后再说",
 
-    "nube.titulo": "你想使用哪个存档？",
-    "nube.texto": "你的账号里有一个存档，这台手机上还有一个。",
-    "nube.nube": "云端存档",
-    "nube.local": "本机存档",
-    "nube.reemplaza": "未选择的存档将被覆盖。",
     "nube.otro_titulo": "你的游戏已在其他设备上打开",
     "nube.otro_texto": "你在其他手机、电脑或标签页上继续游戏了。为了不丢失那些进度，这里不再保存任何内容。",
     "nube.otro_usar": "使用最新的进度",

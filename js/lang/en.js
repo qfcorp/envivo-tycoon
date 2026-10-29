@@ -253,11 +253,6 @@
     "avisoc.gratis": "It only asks for your name, email and a password. It is free.",
     "avisoc.ahora_no": "Not now",
 
-    "nube.titulo": "Which game do you want to use?",
-    "nube.texto": "You have one game saved in your account and another on this phone.",
-    "nube.nube": "In the cloud",
-    "nube.local": "On this phone",
-    "nube.reemplaza": "The one you don't pick will be replaced.",
     "nube.otro_titulo": "Your game was opened on another device",
     "nube.otro_texto": "You kept playing on another phone, computer or tab. So you don't lose that progress, nothing is saved here anymore.",
     "nube.otro_usar": "Use the newest game",

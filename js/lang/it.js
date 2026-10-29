@@ -253,11 +253,6 @@
     "avisoc.gratis": "Servono solo nome, email e una password. È gratis.",
     "avisoc.ahora_no": "Non ora",
 
-    "nube.titulo": "Quale partita vuoi usare?",
-    "nube.texto": "Hai una partita salvata nel tuo account e un'altra su questo telefono.",
-    "nube.nube": "Nel cloud",
-    "nube.local": "Su questo telefono",
-    "nube.reemplaza": "Quella che non scegli verrà sostituita.",
     "nube.otro_titulo": "La tua partita è stata aperta su un altro dispositivo",
     "nube.otro_texto": "Hai continuato a giocare su un altro telefono, computer o scheda. Per non perdere quei progressi, qui non si salva più nulla.",
     "nube.otro_usar": "Usa la partita più recente",
