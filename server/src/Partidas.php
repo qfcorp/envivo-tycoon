@@ -19,6 +19,11 @@ namespace EnVivo;
  *    nuevo (la partida no tiene dispositivo y no hay dispositivo activo). Si ya lo usó, un juego viejo podría pisar
  *    avance nuevo (el error de siempre), así que recibe 409 partida_desactualizada; se anota en el registro para saber
  *    cuándo ya no quedan juegos viejos.
+ *  - Avance (stats.events, luego day, luego chapter): una partida con MENOS avance que la de la nube nunca la
+ *    reemplaza (409 partida_retroceso, ni con "tomar"; un juego viejo con una partida del día 28 pisó la del día 72).
+ *    Con MÁS avance se guarda aunque `base` esté vieja o haya otro aparato activo (se jugó sin internet), salvo justo
+ *    después de restaurar desde el panel. Volver atrás: solo el Centro de Control ("Restaurar esta").
+ *  - Versión del juego: guardar y tomar la partida piden X-EnVivo-Version >= MIN_CLIENTE (si no, 426 cliente_viejo).
  *  - Historial (migraciones/partidas_historial.sql): antes de pisar la partida, la versión anterior se copia a
  *    partidas_historial en la misma transacción (la del dueño, fama 100, quedó pisada por otro aparato con fama 9 y solo
  *    había los respaldos de la noche). El Centro de Control la lista y puede restaurar una (Partidas::restaurar).
@@ -88,22 +93,39 @@ final class Partidas
         if ($base !== null && $disp === null) throw new Fallo('Falta el dispositivo de la partida.', 400, ['codigo' => 'partida_invalida']);
         $tomar = ($in['tomar'] ?? false) === true;
         return Db::tx(function () use ($jugador, $datos, $base, $disp, $tomar): array {
-            $p = Db::fila("SELECT rev, dispositivo, CASE WHEN json_valid(datos) THEN json_extract(datos, '$.rep') END AS rep,
-                                  CASE WHEN json_valid(datos) THEN json_extract(datos, '$.day') END AS dia FROM partidas WHERE jugador_id = ?", [$jugador]);
+            $p = Db::fila('SELECT rev, dispositivo, actualizado, ' . self::RESUMEN_SQL . ' FROM partidas WHERE jugador_id = ?', [$jugador]);
             $a = Db::fila('SELECT dispositivo FROM partida_activa WHERE jugador_id = ?', [$jugador]);
             $rev = $p ? (int) $p['rev'] : 0;
-            if ($base === null) {
-                // Juego viejo: solo si la cuenta nunca usó el juego con versión (si no, podría pisar avance nuevo)
-                if (($p && $p['dispositivo'] !== null) || $a) {
-                    error_log('EN VIVO partida: juego viejo sin versión rechazado (jugador ' . $jugador . ')');
-                    throw self::conflicto($jugador, 'partida_desactualizada', null);
+            $nueva = self::resumenDe($datos);
+            $avance = $p ? self::compararAvance($nueva, $p) : 0;
+            // Nunca se reemplaza la partida con una de MENOS avance (ni con "tomar"): un juego viejo en la caché de un
+            // celular, con una partida del día 28, pisó la del día 72. Volver atrás solo desde el Centro de Control.
+            if ($avance < 0) {
+                throw new Fallo('La partida de la nube tiene más avance que la de este aparato. Se va a cargar la de la nube.', 409, [
+                    'codigo' => 'partida_retroceso', 'nube' => self::meta($jugador, $disp),
+                    'actual' => self::resumenSalida($p) + ['actualizado' => Db::iso((int) $p['actualizado'])],
+                    'nueva' => self::resumenSalida($nueva) + ['actualizado' => null]]);
+            }
+            // Con MÁS avance (p. ej. se jugó sin internet con una versión vieja) se guarda aunque la versión o el aparato
+            // activo no coincidan: decide el avance, no la versión. La que se pisa queda en el historial (otro_avance).
+            // Salvo justo después de restaurar desde el panel: hasta que un aparato cargue la restaurada (base al día), manda la versión.
+            $porAvance = false;
+            if ($avance === 0 || ($p && $p['dispositivo'] === self::DISP_PANEL)) {
+                if ($base === null) {
+                    // Juego viejo: solo si la cuenta nunca usó el juego con versión (si no, podría pisar avance nuevo)
+                    if (($p && $p['dispositivo'] !== null) || $a) {
+                        error_log('EN VIVO partida: juego viejo sin versión rechazado (jugador ' . $jugador . ')');
+                        throw self::conflicto($jugador, 'partida_desactualizada', null);
+                    }
+                } else {
+                    if ($rev !== $base) throw self::conflicto($jugador, 'partida_desactualizada', $disp);
+                    if ($a && $a['dispositivo'] !== $disp && !$tomar) throw self::conflicto($jugador, 'otro_dispositivo', $disp);
                 }
             } else {
-                if ($rev !== $base) throw self::conflicto($jugador, 'partida_desactualizada', $disp);
-                if ($a && $a['dispositivo'] !== $disp && !$tomar) throw self::conflicto($jugador, 'otro_dispositivo', $disp);
+                $porAvance = $base === null ? (($p && $p['dispositivo'] !== null) || $a) : ($rev !== $base || ($a && $a['dispositivo'] !== $disp && !$tomar));
             }
             $t = time();
-            if ($p) self::alHistorial($jugador, $t, $tomar ? 'tomar' : (self::retrocede($p, $datos) ? 'retroceso' : 'guardado'));
+            if ($p) self::alHistorial($jugador, $t, self::menos($p['fama'], $nueva['fama'] ?? null) ? 'retroceso' : ($porAvance ? 'otro_avance' : ($tomar ? 'tomar' : 'guardado')));
             Db::q('INSERT INTO partidas (jugador_id, datos, actualizado, rev, dispositivo) VALUES (?, ?, ?, ?, ?)
                    ON CONFLICT (jugador_id) DO UPDATE SET datos = excluded.datos, actualizado = excluded.actualizado, rev = excluded.rev, dispositivo = excluded.dispositivo',
                 [$jugador, $datos, $t, $rev + 1, $disp]);
@@ -138,17 +160,74 @@ final class Partidas
     public const HIST_ULTIMAS = 30;
     public const HIST_DIAS = 60;
     public const HIST_DIAS_ESPECIALES = 90;
-    /** Tope de especiales (tomar / retroceso / antes_de_restaurar) por jugador, para que la tabla no crezca sin fin. */
+    /** Tope de especiales (tomar / retroceso / otro_avance / antes_de_restaurar) por jugador, para que la tabla no crezca sin fin. */
     public const HIST_MAX_ESPECIALES = 100;
     /** Código que queda como "dispositivo" de una versión restaurada desde el panel (ninguna pestaña la toma como suya). */
     public const DISP_PANEL = 'panel_restaurar';
 
-    /** ¿La partida nueva tiene menos fama (rep) o menos días (day) que la que va a pisar? */
-    private static function retrocede(array $anterior, string $datos): bool
+    /** Columnas de resumen sacadas del JSON de `datos` (día, fama, dinero, eventos, capítulo). */
+    private const RESUMEN_SQL = "CASE WHEN json_valid(datos) THEN json_extract(datos, '$.day') END AS dia,
+        CASE WHEN json_valid(datos) THEN json_extract(datos, '$.rep') END AS fama,
+        CASE WHEN json_valid(datos) THEN json_extract(datos, '$.money') END AS dinero,
+        CASE WHEN json_valid(datos) THEN json_extract(datos, '$.stats.events') END AS eventos,
+        CASE WHEN json_valid(datos) THEN json_extract(datos, '$.chapter') END AS capitulo";
+
+    /** Resumen de una partida en texto JSON (ya validado). */
+    private static function resumenDe(string $datos): array
     {
-        $n = Db::fila("SELECT json_extract(?, '$.rep') AS rep, json_extract(?, '$.day') AS dia", [$datos, $datos]);
-        $menos = fn($viejo, $nuevo) => is_numeric($viejo) && is_numeric($nuevo) && (float) $nuevo < (float) $viejo;
-        return $menos($anterior['rep'] ?? null, $n['rep'] ?? null) || $menos($anterior['dia'] ?? null, $n['dia'] ?? null);
+        return Db::fila('SELECT ' . self::RESUMEN_SQL . ' FROM (SELECT ? AS datos)', [$datos]) ?? [];
+    }
+
+    /** Resumen para la respuesta: números (o null si la partida no lo trae). */
+    private static function resumenSalida(array $r): array
+    {
+        $o = [];
+        foreach (['dia', 'fama', 'dinero', 'eventos', 'capitulo'] as $k) $o[$k] = is_numeric($r[$k] ?? null) ? $r[$k] + 0 : null;
+        return $o;
+    }
+
+    private static function menos(mixed $antes, mixed $ahora): bool
+    {
+        return is_numeric($antes) && is_numeric($ahora) && (float) $ahora < (float) $antes;
+    }
+
+    /**
+     * Compara el avance de dos partidas: primero los eventos jugados (stats.events), luego el día y luego el capítulo.
+     * 1 = $a tiene más, -1 = menos, 0 = igual (o no se puede comparar: falta el dato en alguna).
+     */
+    private static function compararAvance(array $a, array $b): int
+    {
+        foreach (['eventos', 'dia', 'capitulo'] as $k) {
+            if (!is_numeric($a[$k] ?? null) || !is_numeric($b[$k] ?? null)) continue;
+            $c = (float) $a[$k] <=> (float) $b[$k];
+            if ($c !== 0) return $c;
+        }
+        return 0;
+    }
+
+    // ------------------------------------------------------------------------------------- versión mínima del juego
+    /**
+     * Versión mínima del juego que puede guardar o tomar la partida (la VERSION de sw.js, que js/api.js manda en la
+     * cabecera X-EnVivo-Version). Un juego viejo en la caché de un celular pisó una partida con mucho más avance.
+     * Se cambia con ENVIVO_MIN_CLIENTE en config.env ("no" la apaga). Subirla cuando el juego nuevo ya esté publicado.
+     */
+    public const MIN_CLIENTE = 'envivo-v47';
+
+    /** Número de una versión del juego ("envivo-v47" -> 47), o null si no es válida. */
+    public static function numeroVersion(mixed $v): ?int
+    {
+        return is_string($v) && preg_match('/^envivo-v(\d{1,6})$/', trim($v), $m) ? (int) $m[1] : null;
+    }
+
+    /** POST /api/partida y /api/partida/activar: juego más viejo que el mínimo (o sin versión) -> 426 cliente_viejo. */
+    public static function exigirCliente(mixed $version): void
+    {
+        $min = trim(Config::get('ENVIVO_MIN_CLIENTE', self::MIN_CLIENTE));
+        if (in_array(strtolower($min), ['no', '0', 'ninguna'], true)) return;
+        $nMin = self::numeroVersion($min);
+        if ($nMin === null) { error_log('EN VIVO partida: ENVIVO_MIN_CLIENTE no válido (' . mb_substr($min, 0, 40) . '), se usa ' . self::MIN_CLIENTE); $nMin = (int) self::numeroVersion(self::MIN_CLIENTE); }
+        $n = self::numeroVersion($version);
+        if ($n === null || $n < $nMin) throw new Fallo('Hay una versión nueva del juego. Se va a actualizar.', 426, ['codigo' => 'cliente_viejo', 'minima' => 'envivo-v' . $nMin]);
     }
 
     /** Copia la partida actual del jugador al historial (si hay) y poda. Llamar dentro de Db::tx. */

@@ -5,9 +5,10 @@
 --  - rev, datos, actualizado, dispositivo: la versión tal como estaba en `partidas`.
 --  - guardado_en: cuándo pasó al historial (cuándo la pisó la versión siguiente), segundos Unix.
 --  - motivo: 'guardado' (normal), 'tomar' (la pisó un guardado con "tomar": true), 'retroceso' (la pisó una partida con
---    menos fama o menos días), 'antes_de_restaurar' (el panel restauró otra versión encima).
+--    menos fama; con menos avance nunca se guarda), 'otro_avance' (la pisó otro aparato con versión vieja pero más
+--    avance), 'antes_de_restaurar' (el panel restauró otra versión encima).
 -- Se conservan por jugador: las últimas 30, la más nueva de cada día de los últimos 60 días y las de motivo
--- tomar / retroceso / antes_de_restaurar por 90 días (Partidas::podar). Al borrar la cuenta se borran también.
+-- tomar / retroceso / otro_avance / antes_de_restaurar por 90 días (Partidas::podar). Al borrar la cuenta se borran también.
 
 CREATE TABLE IF NOT EXISTS partidas_historial (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

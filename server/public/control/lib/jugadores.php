@@ -220,12 +220,12 @@ function cc_partidas_historial(int $id): string
     if (!Control::tabla('partidas_historial')) return $tit . cc_no_disponible('Historial de partidas', 'Falta la tabla partidas_historial (partidas_historial.sql).') . '</section>';
     $disp = fn($d) => $d === null ? '<span class="tenue">juego viejo</span>' : ($d === Partidas::DISP_PANEL ? cc_chip('panel', 'aviso') : '<code title="' . e((string) $d) . '">' . e(mb_substr((string) $d, 0, 8)) . '…</code>');
     $n = fn($v) => is_numeric($v) ? cc_num($v) : '—';
-    $mot = fn(string $m) => cc_chip(['guardado' => 'guardado', 'tomar' => 'tomar', 'retroceso' => 'retroceso', 'antes_de_restaurar' => 'antes de restaurar'][$m] ?? $m,
-        ['tomar' => 'aviso', 'retroceso' => 'mal', 'antes_de_restaurar' => 'aviso'][$m] ?? '');
+    $mot = fn(string $m) => cc_chip(['guardado' => 'guardado', 'tomar' => 'tomar', 'retroceso' => 'retroceso', 'otro_avance' => 'otro aparato con más avance', 'antes_de_restaurar' => 'antes de restaurar'][$m] ?? $m,
+        ['tomar' => 'aviso', 'retroceso' => 'mal', 'otro_avance' => 'aviso', 'antes_de_restaurar' => 'aviso'][$m] ?? '');
     $act = Partidas::actual($id);
     $h = $tit . '<p class="tenue">Antes de cada guardado, la versión anterior se copia aquí. Se guardan las últimas ' . Partidas::HIST_ULTIMAS
        . ', la más nueva de cada día de los últimos ' . Partidas::HIST_DIAS . ' días y, por ' . Partidas::HIST_DIAS_ESPECIALES
-       . ' días, las que se pisaron con «tomar» o con menos fama o menos días (retroceso). «Restaurar esta» la vuelve la partida actual (versión nueva): '
+       . ' días, las que se pisaron con «tomar», con menos fama (retroceso) o desde otro aparato con más avance. El juego nunca deja reemplazar la partida con una de menos avance: volver atrás solo se puede aquí. «Restaurar esta» la vuelve la partida actual (versión nueva): '
        . 'la actual pasa antes al historial y todos los aparatos tienen que cargar la de la nube. Queda en la auditoría.</p>';
     $h .= '<dl class="datos" id="partida-actual"><dt>Partida actual</dt><dd>' . ($act
         ? 'rev <b>' . $act['rev'] . '</b> · ' . e(cc_fecha($act['actualizado'])) . ' · ' . $disp($act['dispositivo']) . ' · fama ' . $n($act['rep']) . ' · día ' . $n($act['dia']) . ' · $' . $n($act['dinero'])
