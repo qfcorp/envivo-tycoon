@@ -58,7 +58,23 @@ así una pestaña vieja (la computadora que quedó abierta mientras se jugaba en
   volver a la pestaña, al volver internet y cada minuto mientras se ve).
 - `POST /api/partida/activar` `{ "base": n, "dispositivo" }` → `{ "ok": true, ...meta }`: este dispositivo pasa a ser el activo
   (al abrir el juego o al elegir "Usar la partida más nueva"). Solo si `base` = `rev` de la nube; si no → 409 `partida_desactualizada`.
-- `POST /api/partida` `{ "datos": "<texto JSON>", "base": n, "dispositivo", "tomar"?: true }` (máx. 300 KB) → `{ "ok": true, "actualizado": "ISO", "rev": n+1 }`
+- **Versión del juego**: `POST /api/partida` y `POST /api/partida/activar` piden la cabecera `X-EnVivo-Version` (la `VERSION`
+  de `sw.js`, ej. `envivo-v47`; la manda `js/api.js`) ≥ `Partidas::MIN_CLIENTE` (`ENVIVO_MIN_CLIENTE` en config.env; `no` la
+  apaga). Más vieja, no válida o sin la cabecera → 426 `cliente_viejo` ("Hay una versión nueva del juego. Se va a
+  actualizar.", con `minima`). Leer la partida (`GET`) no la pide. Sin sesión → 401 primero.
+- `POST /api/partida` `{ "datos": "<texto JSON>", "base": n, "dispositivo", "tomar"?: true, "nueva"?: true }` (máx. 300 KB) → `{ "ok": true, "actualizado": "ISO", "rev": n+1 }`
+  - **Avance primero** (se compara `stats.events`, luego `day`, luego `chapter`; un dato que falta no cuenta):
+    - Menos avance que la de la nube → SIEMPRE 409 `partida_retroceso` (ni con `tomar`; no hay forma de forzarlo desde el
+      juego), con `nube` (meta), `actual` (la de la nube: `dia`, `fama`, `dinero`, `eventos`, `capitulo`, `actualizado`) y
+      `nueva` (la de aquí, igual con `actualizado: null`). El juego debe cargar la de la nube. Volver atrás solo se puede
+      desde el Centro de Control ("Restaurar esta").
+    - MÁS avance → se guarda aunque `base` esté vieja o haya otro dispositivo activo (se jugó sin internet); este dispositivo
+      pasa a ser el activo y la que se pisó queda en el historial con motivo `otro_avance`. Excepción: justo después de
+      restaurar desde el panel (`guardo` = `panel_restaurar`) rigen `base` y dispositivo hasta que un aparato la cargue.
+    - Mismo avance (o no se puede comparar) → las reglas de abajo.
+    - Excepción: `"nueva": true` (después de la quiebra el juego reinicia en el día 1) se acepta con menos avance SOLO si la
+      de la nube tiene `gameOver: true`, y con las reglas normales de `base` y dispositivo; la terminada queda en el historial
+      con motivo `nueva`. Si la de la nube no terminó en quiebra → 409 `partida_retroceso` como siempre.
   - `base` ≠ `rev` de la nube (otro dispositivo guardó) → 409 `partida_desactualizada` con `nube` (no se guarda nada).
   - Hay otro dispositivo activo → 409 `otro_dispositivo` con `nube`, salvo `"tomar": true` (el jugador eligió quedarse con la
     partida de este aparato después de ver las dos; igual exige `base` al día).
@@ -66,6 +82,16 @@ así una pestaña vieja (la computadora que quedó abierta mientras se jugaba en
   - Juego viejo (sin `base`, en la caché de algún celular): se acepta solo mientras la cuenta nunca usó el juego con versión
     (la partida no tiene `dispositivo` y no hay activo); si no → 409 `partida_desactualizada` (y queda anotado en el registro
     de PHP como "EN VIVO partida: juego viejo sin versión rechazado"). Aceptarlo siempre volvería a abrir el error.
+- **Historial** (`src/migraciones/partidas_historial.sql`, sin cambios para el juego): antes de cada guardado que pasa, en la
+  misma transacción, la versión anterior se copia a `partidas_historial` con `motivo` `guardado`, `tomar` (la pisó un
+  guardado con `"tomar": true`), `retroceso` (la nueva tiene menos `rep`) `otro_avance` (la pisó otro aparato con más
+  avance y versión vieja) o `nueva` (terminó en quiebra y se empezó otra). Se conservan por jugador las últimas
+  30, la más nueva de cada día de los últimos 60 días y las especiales (`tomar`, `retroceso`, `otro_avance`, `antes_de_restaurar`) por 90 días
+  (máx. 100); lo demás se poda en la misma transacción. Borrar la cuenta borra también el historial.
+- **Restaurar** (solo el Centro de Control, ficha del jugador → "Partidas guardadas (historial)" → "Restaurar esta",
+  `Partidas::restaurar`): la versión elegida pasa a ser la partida con `rev` = actual + 1 y `dispositivo` = `panel_restaurar`
+  (la actual va antes al historial con motivo `antes_de_restaurar`), se borra `partida_activa` y queda en la auditoría
+  (`partida_restaurar`). Cada aparato ve `rev` > su `base` y sigue el flujo normal de "partida más nueva"; ninguno puede pisarla.
 
 ## Gastar créditos (requiere sesión)
 `POST /api/gastar` `{ "item": "dron4k" }` → `{ "ok": true, "creditos": 120, "entrega": { ...entrega creada... } }`

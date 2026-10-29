@@ -85,7 +85,7 @@ try {
         '/partida' => api_partida($metodo),
         // Versión de la partida y dispositivo activo, sin los datos (el juego la mira al volver a la pestaña y cada minuto)
         '/partida/meta' => $soloGet() && Http::json(200, ['ok' => true] + \EnVivo\Partidas::meta(requiere_sesion(), \EnVivo\Partidas::dispositivo($_GET['dispositivo'] ?? null))),
-        '/partida/activar' => $soloPost() && Http::json(200, \EnVivo\Partidas::activar(requiere_sesion(), Http::entrada(10000))),
+        '/partida/activar' => $soloPost() && Http::json(200, \EnVivo\Partidas::activar(partida_cliente(requiere_sesion()), Http::entrada(10000))),
         '/gastar' => $soloPost() && api_gastar(),
         '/vip/bono' => $soloPost() && api_vip_bono(),
         '/orden' => $soloPost() && api_orden(),
@@ -203,11 +203,19 @@ function api_salir(): never
     Http::json(200, ['ok' => true]);
 }
 
+/** Guardar o tomar la partida solo con un juego al día (cabecera X-EnVivo-Version >= Partidas::MIN_CLIENTE): si no, 426 cliente_viejo. */
+function partida_cliente(int $j): int
+{
+    \EnVivo\Partidas::exigirCliente($_SERVER['HTTP_X_ENVIVO_VERSION'] ?? null);
+    return $j;
+}
+
 function api_partida(string $metodo): never
 {
     $j = requiere_sesion();
     if ($metodo === 'GET') Http::json(200, \EnVivo\Partidas::leer($j));
     if ($metodo !== 'POST') Http::error(405, 'Usa GET o POST.');
+    partida_cliente($j);
     // Con versión (base) y dispositivo: no pisa una partida más nueva de otro dispositivo (src/Partidas.php)
     Http::json(200, \EnVivo\Partidas::guardar($j, Http::entrada(2 * 1024 * 1024)));
 }

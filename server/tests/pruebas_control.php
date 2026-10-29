@@ -429,6 +429,35 @@ check('Desactivar el Pase VIP -> ok, /api/estado vip_activo false, auditoría; o
 check('Jugador que no existe -> error', true, str_starts_with($c->accion(['accion' => 'jugador_vip_nivel', 'jugador_id' => 999, 'nivel' => 3], '/control/?t=jugadores&id=999'), 'error:'));
 $exec('DELETE FROM sesiones WHERE token_hash = ?', [hash('sha256', $tokCaro)]);
 
+// ------------------------------------------------------------------------------------------------ historial de partidas
+titulo('Ficha: "Partidas guardadas (historial)" y "Restaurar esta" (Partidas::restaurar)');
+$pj = fn(int $dia, int $rep, int $dinero) => json_encode(['v' => 4, 'day' => $dia, 'rep' => $rep, 'money' => $dinero, 'staff' => []]);
+$exec('INSERT INTO partidas (jugador_id, datos, actualizado, rev, dispositivo) VALUES (3, ?, ?, 8, ?)', [$pj(12, 9, 300), $t - 60, 'dotroaparato0000001']);
+$exec('INSERT INTO partida_activa (jugador_id, dispositivo, desde) VALUES (3, ?, ?)', ['dotroaparato0000001', $t - 60]);
+$exec("INSERT INTO partidas_historial (jugador_id, rev, datos, actualizado, dispositivo, guardado_en, motivo) VALUES (3, 6, ?, ?, 'dcompu00000000000001', ?, 'guardado'), (3, 7, ?, ?, 'dcompu00000000000001', ?, 'retroceso')",
+    [$pj(40, 95, 90000), $t - 2 * $D, $t - $D, $pj(41, 100, 120000), $t - $D, $t - 60]);
+$exec("INSERT INTO partidas_historial (jugador_id, rev, datos, actualizado, dispositivo, guardado_en, motivo) VALUES (2, 3, ?, ?, 'dgabi0000000000001', ?, 'guardado')", [$pj(5, 20, 1000), $t - $D, $t - 30]);
+$hBuena = (int) $val('SELECT id FROM partidas_historial WHERE jugador_id = 3 AND rev = 7');
+$hAjena = (int) $val('SELECT id FROM partidas_historial WHERE jugador_id = 2');
+$c->get('/control/?t=jugadores&id=3');
+$bloque = preg_match('/<section class="panel" id="partidas-historial">.*?<\/section>/s', $c->cuerpo, $m) ? $m[0] : '';
+check('Ficha: bloque con la partida actual (rev 8, fama 9, día 12) y 2 versiones con fama, día, dinero, motivo y "Restaurar esta"', [true, true, 2, true, true, true, 2],
+    [str_contains($bloque, 'Partidas guardadas (historial)'), (bool) preg_match('/id="partida-actual">.*?rev <b>8<\/b>.*?fama 9 · día 12/s', $bloque),
+     preg_match_all('/<tr><td>\d\d\/\d\d\/\d{4} \d\d:\d\d/', $bloque), str_contains($bloque, '<td>100</td><td>41</td><td>$120.000</td>'), str_contains($bloque, 'retroceso'), str_contains($bloque, 'dcompu00…'),
+     preg_match_all('/>Restaurar esta</', $bloque)]);
+check('Los botones "Restaurar esta" llevan CSRF y piden confirmación', true, (function () use ($bloque) {
+    preg_match_all('/<form method="post"[^>]*>(?:(?!<\/form>).)*name="accion" value="jugador_partida_restaurar".*?<\/form>/s', $bloque, $m);
+    return count($m[0]) === 2 && count(array_filter($m[0], fn($f) => !preg_match('/name="csrf" value="[a-f0-9]{64}"/', $f) || !str_contains($f, 'data-confirmar='))) === 0;
+})());
+check('Restaurar sin código CSRF -> 403 y nada cambia', [403, 8, 0], [$c->post(['accion' => 'jugador_partida_restaurar', 'jugador_id' => 3, 'historial_id' => $hBuena]), (int) $val('SELECT rev FROM partidas WHERE jugador_id = 3'), $aud('partida_restaurar')]);
+check('Restaurar una versión de OTRO jugador -> error y nada cambia', [true, 8], [str_starts_with($c->accion(['accion' => 'jugador_partida_restaurar', 'jugador_id' => 3, 'historial_id' => $hAjena], '/control/?t=jugadores&id=3'), 'error:'), (int) $val('SELECT rev FROM partidas WHERE jugador_id = 3')]);
+$r = $c->accion(['accion' => 'jugador_partida_restaurar', 'jugador_id' => 3, 'historial_id' => $hBuena], '/control/?t=jugadores&id=3');
+check('Restaurar la rev 7 (fama 100) -> ok, rev 9 con esos datos, sin dispositivo activo, la de fama 9 al historial (antes_de_restaurar), auditoría', [true, 9, $pj(41, 100, 120000), 'panel_restaurar', 0, $pj(12, 9, 300), 1, $QUIEN, true],
+    [str_starts_with($r, 'ok:'), (int) $val('SELECT rev FROM partidas WHERE jugador_id = 3'), $val('SELECT datos FROM partidas WHERE jugador_id = 3'), $val('SELECT dispositivo FROM partidas WHERE jugador_id = 3'),
+     (int) $val('SELECT COUNT(*) FROM partida_activa WHERE jugador_id = 3'), $val("SELECT datos FROM partidas_historial WHERE jugador_id = 3 AND motivo = 'antes_de_restaurar' AND rev = 8"),
+     $aud('partida_restaurar'), $ultAud('partida_restaurar')['quien'] ?? null, str_contains($ultAud('partida_restaurar')['detalle'] ?? '', 'rev 7')]);
+si('La ficha ya muestra rev 9 como actual y 3 versiones', (bool) preg_match('/id="partida-actual">.*?rev <b>9<\/b>/s', $c->cuerpo) && preg_match('/<section class="panel" id="partidas-historial">.*?<\/section>/s', $c->cuerpo, $m) && preg_match_all('/value="jugador_partida_restaurar"/', $m[0]) === 3);
+
 // ------------------------------------------------------------------------------------------------ mercado (antes de los reembolsos: suspender congela publicaciones)
 titulo('Mercado (Mercado::moderar): congelar, reactivar, quitar');
 check('Congelar la publicación 3 (dron de Gabi)', [true, 'congelada', 1], [str_starts_with($c->accion(['accion' => 'mercado_congelar', 'publicacion_id' => 3], '/control/?t=mercado'), 'ok:'), $val('SELECT estado FROM mercado_publicaciones WHERE id = 3'), $aud('mercado_congelar')]);

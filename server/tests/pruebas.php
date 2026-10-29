@@ -46,7 +46,7 @@ final class Nav {
     public function get(string $r, array $cab = []): int { return $this->pedir('GET', $r, null, $cab); }
     /** POST JSON a la API (con la cabecera X-Envivo: 1, salvo que $conCabecera sea false). */
     public function api(string $r, array $d = [], bool $conCabecera = true, array $cab = []): array {
-        $this->pedir('POST', $r, json_encode($d), array_merge(['Content-Type: application/json'], $conCabecera ? ['X-Envivo: 1'] : [], $cab));
+        $this->pedir('POST', $r, json_encode($d), array_merge(['Content-Type: application/json'], $conCabecera ? ['X-Envivo: 1', 'X-EnVivo-Version: envivo-v47'] : [], $cab));
         return json_decode($this->cuerpo, true) ?? ['crudo' => $this->cuerpo];
     }
     public function apiGet(string $r): array { $this->get($r); return json_decode($this->cuerpo, true) ?? ['crudo' => $this->cuerpo]; }

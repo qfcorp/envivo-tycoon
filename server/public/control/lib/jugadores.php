@@ -2,12 +2,12 @@
 declare(strict_types=1);
 
 // Pestaña "Jugadores": buscar por correo, alias, nombre o número; ficha con compras, libro de créditos, entregas,
-// inventario, VIP/tarjeta, estado de la cuenta, sanciones del chat, transferencias, soporte y auditoría.
-// Acciones: dar/quitar créditos (motivo obligatorio, tope diario), activo/suspendido/baneado, cerrar sesiones, sanciones
+// inventario, VIP/tarjeta, historial de partidas guardadas, estado de la cuenta, sanciones del chat, transferencias, soporte y auditoría.
+// Acciones: dar/quitar créditos (motivo obligatorio, tope diario), activo/suspendido/baneado, cerrar sesiones, restaurar una partida guardada, sanciones
 // del chat y cancelar transferencias de cuenta. Todo con las clases del servidor (Control, Cuentas, Sesiones, Transferencias).
 defined('ENVIVO_CONTROL') || exit;
 
-use EnVivo\{Auditoria, Catalogo, Control, Db, Fallo, Monedero, Transferencias, Vip};
+use EnVivo\{Auditoria, Catalogo, Control, Db, Fallo, Monedero, Partidas, Transferencias, Vip};
 
 function cc_estado_cuenta(string $e): string { return cc_chip($e, ['activo' => 'ok', 'suspendido' => 'aviso', 'baneado' => 'mal'][$e] ?? ''); }
 
@@ -110,6 +110,7 @@ function cc_ficha_jugador(int $id): string
     }
     $h .= '</div></div></section>';
     $h .= cc_vip_pruebas($id);
+    $h .= cc_partidas_historial($id);
 
     // Compras
     $compras = Db::todas('SELECT * FROM compras WHERE jugador_id = ? ORDER BY id DESC LIMIT 50', [$id]);
@@ -209,6 +210,37 @@ function cc_vip_pruebas(int $id): string
     return $h . '</div></section>';
 }
 
+/**
+ * Bloque "Partidas guardadas (historial)" de la ficha (Partidas::historial, migraciones/partidas_historial.sql): la partida
+ * actual y cada versión anterior con fecha, rev, dispositivo, fama, día, dinero y motivo, y "Restaurar esta".
+ */
+function cc_partidas_historial(int $id): string
+{
+    $tit = '<section class="panel" id="partidas-historial"><h2>Partidas guardadas (historial)</h2>';
+    if (!Control::tabla('partidas_historial')) return $tit . cc_no_disponible('Historial de partidas', 'Falta la tabla partidas_historial (partidas_historial.sql).') . '</section>';
+    $disp = fn($d) => $d === null ? '<span class="tenue">juego viejo</span>' : ($d === Partidas::DISP_PANEL ? cc_chip('panel', 'aviso') : '<code title="' . e((string) $d) . '">' . e(mb_substr((string) $d, 0, 8)) . '…</code>');
+    $n = fn($v) => is_numeric($v) ? cc_num($v) : '—';
+    $mot = fn(string $m) => cc_chip(['guardado' => 'guardado', 'tomar' => 'tomar', 'retroceso' => 'retroceso', 'otro_avance' => 'otro aparato con más avance', 'nueva' => 'quiebra: partida nueva', 'antes_de_restaurar' => 'antes de restaurar'][$m] ?? $m,
+        ['tomar' => 'aviso', 'retroceso' => 'mal', 'otro_avance' => 'aviso', 'nueva' => 'aviso', 'antes_de_restaurar' => 'aviso'][$m] ?? '');
+    $act = Partidas::actual($id);
+    $h = $tit . '<p class="tenue">Antes de cada guardado, la versión anterior se copia aquí. Se guardan las últimas ' . Partidas::HIST_ULTIMAS
+       . ', la más nueva de cada día de los últimos ' . Partidas::HIST_DIAS . ' días y, por ' . Partidas::HIST_DIAS_ESPECIALES
+       . ' días, las que se pisaron con «tomar», con menos fama (retroceso) o desde otro aparato con más avance. El juego nunca deja reemplazar la partida con una de menos avance: volver atrás solo se puede aquí. «Restaurar esta» la vuelve la partida actual (versión nueva): '
+       . 'la actual pasa antes al historial y todos los aparatos tienen que cargar la de la nube. Queda en la auditoría.</p>';
+    $h .= '<dl class="datos" id="partida-actual"><dt>Partida actual</dt><dd>' . ($act
+        ? 'rev <b>' . $act['rev'] . '</b> · ' . e(cc_fecha($act['actualizado'])) . ' · ' . $disp($act['dispositivo']) . ' · fama ' . $n($act['rep']) . ' · día ' . $n($act['dia']) . ' · $' . $n($act['dinero'])
+        : 'Sin partida en la nube.') . '</dd></dl>';
+    $filas = Partidas::historial($id);
+    $h .= cc_tabla(['Fecha', 'Rev', 'Dispositivo', 'Fama', 'Día', 'Dinero', 'Motivo', ''], array_map(fn($v) => [
+        e(cc_fecha($v['actualizado'])) . '<br><span class="tenue">pisada ' . e(cc_fecha($v['guardado_en'])) . '</span>', (string) $v['rev'], $disp($v['dispositivo']),
+        $n($v['rep']), $n($v['dia']), '$' . $n($v['dinero']), $mot($v['motivo']),
+        cc_boton('jugador_partida_restaurar', ['jugador_id' => $id, 'historial_id' => $v['id']], 'Restaurar esta', 'btn btn-chico btn-sec',
+            '¿Restaurar la versión rev ' . $v['rev'] . ' del ' . cc_fecha($v['actualizado']) . ' (fama ' . (is_numeric($v['rep']) ? $v['rep'] : '—') . ', día ' . (is_numeric($v['dia']) ? $v['dia'] : '—')
+            . ') como partida actual? La actual pasa al historial y todos los aparatos tendrán que cargar la de la nube.')], $filas),
+        'Todavía no hay versiones anteriores.', 'tabla-partidas-historial');
+    return $h . '</section>';
+}
+
 function cc_a_jugadores(string $accion, string $q): string
 {
     if ($accion === 'transferencia_cancelar') {
@@ -246,6 +278,11 @@ function cc_a_jugadores(string $accion, string $q): string
             $n = filter_var(cc_post('nivel'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => Vip::MAX]]);
             Fallo::si($n === false, 'Elige un nivel VIP del 1 al ' . Vip::MAX . '.', 400);
             return 'Nivel VIP forzado: VIP ' . Vip::forzarNivel($id, (int) $n, $q) . ' (solo pruebas). El juego lo ve al abrir o recargar.';
+        case 'jugador_partida_restaurar':
+            $hid = cc_post_int('historial_id');
+            Fallo::si($hid <= 0, 'Falta la versión a restaurar.', 400);
+            $r = Partidas::restaurar($id, $hid, $q);
+            return 'Partida restaurada: la versión rev ' . $r['de_rev'] . ' es ahora la actual (rev ' . $r['rev'] . '). Cada aparato la carga al revisar la nube (al abrir, al volver a la pestaña o en un minuto).';
         case 'jugador_sesiones':
             return 'Se cerraron ' . Control::revocarSesiones($id, $q) . ' sesiones.';
     }
