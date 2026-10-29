@@ -13,8 +13,8 @@
         dispositivo; reparar en el resultado; la fama y el 100% quedan aquí, en la nube y al recargar.
      3. Con cuenta, la respuesta de un guardado se pierde (el servidor sí lo guardó): el siguiente guardado y la
         revisión siguen sobre esa versión, sin aviso; la nube queda igual que el celular.
-     4. Otro dispositivo de verdad toma la partida: sigue el aviso; si aquí hubo avance después, "Usar la partida más
-        nueva" pregunta cuál usar (no la pisa sin preguntar) y quedarse con la de aquí conserva la fama.
+     4. Otro dispositivo de verdad toma la partida: sigue el aviso; si aquí hubo avance después, "Recargar" no vuelve
+        atrás: se abre otra vez y se queda la de más avance (la de aquí, con su fama), sin preguntar.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_fama.js */
 'use strict';
 const path = require('path');
@@ -412,14 +412,14 @@ const franjaDice = (ini, n) => (n ? new RegExp('^' + n + ' equipos? necesita').t
       await A.waitForTimeout(300);
       const d1 = await estado(A);
       bien(d1.dia === d0.dia + 1 && !!(await avisoOtro(A)), '4: avanzó un día en el celular y el aviso vuelve');
+      // "Recargar" con más avance aquí (un día más): nunca se vuelve atrás; se abre otra vez y la regla de siempre
+      // (se queda la de más avance, sin preguntar) sube la de aquí
       await A.click('#overlay.on #modal [data-nube-otro] [data-act="partida"]');
-      await A.waitForSelector('#overlay.on #modal [data-act="partida"][data-k="local"]', { timeout: 8000 }).catch(() => {});
-      const txt = await A.locator('#modal').innerText().catch(() => '');
-      bien(!!(await elegirNube(A)) && /¿Qué partida quieres usar\?/.test(txt), '4: "Usar la partida más nueva" con avance aquí: pregunta cuál usar (no la pisa)');
-      bien(txt.includes('Día ' + d1.dia), `4: …con el día de la de aquí (${d1.dia})`);
-      await A.screenshot({ path: path.join(OUT, 'fama_elegir.png') });
-      await A.click('#overlay.on #modal [data-act="partida"][data-k="local"]');
-      await A.waitForTimeout(900);
+      await A.waitForLoadState('domcontentloaded'); await A.waitForTimeout(500);
+      await nubeLista(A).catch(() => {}); await A.waitForTimeout(1200);
+      bien(!(await elegirNube(A)), '4: "Recargar" con avance aquí no pregunta ni vuelve atrás');
+      const dA = await estado(A);
+      bien(dA.dia === d1.dia, `4: …sigue con el día de la de aquí (${dA.dia})`);
       const n = await enNube(A);
       const na = await nubeInfo(A);
       bien(n.dia === d1.dia && n.rep === d1.rep && n.activo === na.disp && !na.bloqueo, `4: eligió la de aquí: la nube tiene su día ${n.dia} y su fama ${n.rep}`);

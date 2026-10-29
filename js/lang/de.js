@@ -253,11 +253,6 @@
     "avisoc.gratis": "Nur Name, E-Mail und ein Passwort. Kostenlos.",
     "avisoc.ahora_no": "Jetzt nicht",
 
-    "nube.titulo": "Welchen Spielstand möchtest du nutzen?",
-    "nube.texto": "Du hast einen Spielstand in deinem Konto und einen auf diesem Handy.",
-    "nube.nube": "In der Cloud",
-    "nube.local": "Auf diesem Handy",
-    "nube.reemplaza": "Der andere wird überschrieben.",
     "nube.otro_titulo": "Dein Spiel wurde auf einem anderen Gerät geöffnet",
     "nube.otro_texto": "Du hast auf einem anderen Handy, Computer oder Tab weitergespielt. Damit dieser Fortschritt nicht verloren geht, wird hier nichts mehr gespeichert.",
     "nube.otro_usar": "Neuesten Spielstand verwenden",

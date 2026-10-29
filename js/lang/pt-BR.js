@@ -253,11 +253,6 @@
     "avisoc.gratis": "Só pede seu nome, e-mail e uma senha. É grátis.",
     "avisoc.ahora_no": "Agora não",
 
-    "nube.titulo": "Qual jogo você quer usar?",
-    "nube.texto": "Você tem um jogo salvo na sua conta e outro neste celular.",
-    "nube.nube": "Na nuvem",
-    "nube.local": "Neste celular",
-    "nube.reemplaza": "O que você não escolher será substituído.",
     "nube.otro_titulo": "Seu jogo foi aberto em outro dispositivo",
     "nube.otro_texto": "Você continuou jogando em outro celular, computador ou aba. Para não perder esse progresso, nada mais é salvo aqui.",
     "nube.otro_usar": "Usar o jogo mais recente",

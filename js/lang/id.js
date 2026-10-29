@@ -253,11 +253,6 @@
     "avisoc.gratis": "Hanya perlu nama, email, dan kata sandi. Gratis.",
     "avisoc.ahora_no": "Nanti saja",
 
-    "nube.titulo": "Permainan mana yang mau dipakai?",
-    "nube.texto": "Kamu punya satu permainan di akunmu dan satu lagi di ponsel ini.",
-    "nube.nube": "Di cloud",
-    "nube.local": "Di ponsel ini",
-    "nube.reemplaza": "Yang tidak kamu pilih akan diganti.",
     "nube.otro_titulo": "Permainanmu dibuka di perangkat lain",
     "nube.otro_texto": "Kamu lanjut bermain di ponsel, komputer, atau tab lain. Agar kemajuan itu tidak hilang, di sini tidak ada lagi yang disimpan.",
     "nube.otro_usar": "Pakai permainan terbaru",

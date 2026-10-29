@@ -183,17 +183,26 @@
   }
   /* ---------- Partida en la nube ----------
      Una partida por cuenta, con versión (server/src/Partidas.php). Esta pestaña recuerda de qué versión de la nube partió
-     (nubeInfo.rev, guardada junto a la partida) y la manda al guardar. Si otro celular, computadora o pestaña guardó o
-     tiene la partida abierta, el servidor responde 409 y aquí NO se pisa nada:
-       - Al abrir el juego o entrar a la cuenta: si la nube es más nueva y aquí no hubo avance, se usa la de la nube; si
-         las dos avanzaron, se pregunta cuál usar (día, dinero y eventos de cada una). Después esta pestaña toma la partida.
-       - Con el juego abierto (al volver a la pestaña, al volver internet y cada minuto mientras se ve): si otro dispositivo
-         la tomó, "Tu partida se abrió en otro dispositivo" → "Usar la partida más nueva" (baja la de la nube y abre el
-         juego otra vez); aquí ya no se sube nada. Si aquí hay avance que la nube no tiene, se pregunta cuál usar.
-       - Sin internet se juega igual (se guarda en el celular); al volver la red se resuelve con las mismas reglas. */
+     (nubeInfo.rev, guardada junto a la partida) y la manda al guardar.
+
+     Regla única (decisión del dueño, 28-oct, como en Kingshot): el jugador NUNCA puede quedarse con una partida con menos
+     avance, y nunca elige. Caso que lo motivó: la computadora iba en el día 72; el celular abrió el juego viejo (v45 de la
+     caché) con su partida del día 28, esa partida terminó encima de la nube y la computadora la bajó sola.
+       - Al abrir el juego con cuenta sale "Sincronizando tu partida…" (pantalla de carga) hasta que responde el servidor.
+         Se comparan las dos (eventos, después día, después capítulo; empate → la de la nube, que es la versión más alta):
+         la nube igual o con más avance → se carga la de la nube; aquí más avance (p. ej. se jugó sin internet) → se sube
+         la de aquí. Sin ventana para elegir: un aviso corto dice qué pasó.
+       - Antes de reemplazar la partida de aquí se guarda una copia en este aparato (las 3 últimas,
+         envivo_tycoon_save_respaldo), sin pantalla para el jugador: la recupera soporte (va en el diagnóstico de soporte).
+       - Sin internet se juega con la de aquí ("Sin conexión · se sincronizará"); al volver la red, la misma regla. Si la
+         carga tarda más de 8 s: "Reintentar" y "Jugar sin conexión".
+       - Otro aparato abre el juego: ese se queda con la partida (el último que abre). Aquí: "Tu partida se abrió en otro
+         aparato" → "Recargar", que carga la de la nube (aquí ya no se sube nada).
+       - El servidor rechaza un guardado con menos avance (409 partida_retroceso): aquí se carga la de la nube.
+       - Juego viejo para el servidor (426 cliente_viejo): no se guarda nada, se actualiza el juego y se abre otra vez. */
   const Api = window.Api || { disponible: false, logueado: () => false };
   const Pm = window.Premium;
-  const NUBE_KEY = 'envivo_nube';   // { cuenta, rev, clave }: versión de la nube de la que partió la partida guardada aquí
+  const NUBE_KEY = 'envivo_nube';   // { cuenta, rev, clave, p }: versión de la nube de la que partió la partida guardada aquí
   const NUBE_AVISO = 'envivo_nube_cargada';
   // Código de esta pestaña (nuevo cada vez que se abre el juego): así otra pestaña del mismo navegador también cuenta
   const NUBE_DISP = (() => {
@@ -206,17 +215,16 @@
   let nubeBloqueo = false;     // otro dispositivo guardó o tomó la partida: aquí no se sube ni se guarda nada
   let nubeRecargando = false;  // se bajó la partida de la nube y el juego se abre otra vez
   let nubePendiente = false;   // hubo guardados que la nube todavía no tiene
+  let nubeNueva = false;       // partida nueva después de quebrar: se sube con `nueva` (el servidor solo la acepta encima de una quebrada)
   let nubeSubiendo = null, nubeRevisando = null, nubeUltima = 0;
   let nubeHora = null;         // cuándo se guardó en la nube la versión que tiene esta pestaña (ms, para el indicador)
   const GUARDADO_KEY = 'envivo_guardado_en';   // cuándo se guardó la partida en este aparato (ms)
   // Solo cuenta como "jugada" cuando cambia el avance (día, dinero, eventos): abrir el juego también guarda y no es jugar.
-  // Una partida de antes de esto (sin hora) queda "sin dato" hasta que se avance.
   function marcarGuardado() {
     const k = nubeClave(S), g = lsGet(GUARDADO_KEY);
     if (g && typeof g === 'object' && g.k === k) return;
     lsSet(GUARDADO_KEY, { t: g || !(S.stats.events > 0) ? Date.now() : null, k });
   }
-  const guardadoEn = () => { const g = lsGet(GUARDADO_KEY); const t = g && typeof g === 'object' ? Number(g.t) : Number(g); return t > 0 ? t : null; };
   const nubeVio = (r) => { const t = r && r.actualizado ? Date.parse(r.actualizado) : NaN; if (!isNaN(t)) nubeHora = t; };
   const nubeCuenta = () => (Api.estado && Api.estado.jugador ? Api.estado.jugador.id : null);
   const nubeActiva = () => !!(Api.disponible && Api.logueado && Api.logueado());
@@ -224,41 +232,64 @@
   const nubeClave = (x) => (x ? [x.day, x.money, x.stats ? x.stats.events : 0].join('|') : '');
   // ¿Aquí hay avance (día, dinero o eventos) que la versión de la nube de la que partió no tiene?
   const nubeAvance = () => !nubeInfo || nubeInfo.cuenta !== nubeCuenta() || nubeClave(S) !== nubeInfo.clave;
-  function nubeMarcar(rev, clave) { nubeInfo = { cuenta: nubeCuenta(), rev, clave }; lsSet(NUBE_KEY, nubeInfo); }
+  /* Avance de una partida: eventos, día, capítulo (y fama, solo para mostrar). Acepta la partida o el resumen guardado en
+     nubeInfo.p (el avance de la versión de la nube de la que partió esta pestaña). Eventos, día y capítulo nunca bajan en
+     una misma partida: si bajan, es otra partida (o una copia vieja). */
+  const nubeProg = (x) => {
+    if (!x) return { e: 0, d: 0, c: 0, f: 0 };
+    if (typeof x.e === 'number' && !x.stats) return x;
+    return { e: (x.stats && Number(x.stats.events)) || 0, d: Number(x.day) || 0, c: x.storyDone ? 99 : (Number(x.chapter) || 0), f: Math.floor(Number(x.rep) || 0) };
+  };
+  // >0: `a` tiene más avance; <0: `b`; 0: igual (entonces gana la de la nube, la versión más alta)
+  function nubeCmp(a, b) {
+    const p = nubeProg(a), q = nubeProg(b);
+    return (p.e - q.e) || (p.d - q.d) || (p.c - q.c);
+  }
+  // p: avance de la versión de la nube que queda (undefined = el que ya tenía; null = sin dato)
+  function nubeMarcar(rev, clave, p) {
+    const antes = nubeInfo && nubeInfo.cuenta === nubeCuenta() ? nubeInfo.p || null : null;
+    nubeInfo = { cuenta: nubeCuenta(), rev, clave, p: p === undefined ? antes : (p ? nubeProg(p) : null) };
+    lsSet(NUBE_KEY, nubeInfo);
+  }
   const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
-  const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo'));
+  const esClienteViejo = (e) => !!(e && (e.status === 426 || e.codigo === 'cliente_viejo'));
+  const esRetroceso = (e) => !!(e && e.codigo === 'partida_retroceso');
+  const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo' || e.codigo === 'partida_retroceso'));
   /* ¿La versión más nueva de la nube la guardó ESTA pestaña y nadie más la tiene abierta? Pasa cuando la respuesta de un
-     guardado no llegó (red lenta del celular, se pasó el tiempo, se cortó) o cuando se revisó la nube justo mientras
-     subía (al volver a la pestaña, cada minuto). Antes eso se tomaba como "otro dispositivo": se dejaba de guardar y
-     "Usar la partida más nueva" volvía a una versión vieja (la fama y las reparaciones del último evento se perdían).
-     Lo que hay en la nube salió de esta misma partida, así que la de aquí es igual o más nueva: se sigue sobre esa versión. */
+     guardado no llegó (red lenta, se cortó) o cuando se revisó la nube justo mientras subía: se sigue sobre esa versión. */
   const nubeEsMia = (n) => !!(n && n.guardo && n.guardo === NUBE_DISP && Number.isInteger(n.rev) && (!n.activo || n.activo.dispositivo === NUBE_DISP));
   function nubeLuego() {
-    if (!nubeActiva() || cloudPendiente) return;
+    if (!nubeActiva()) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
     clearTimeout(nubeT);
     nubeT = setTimeout(subirNube, 4000);
   }
   async function subirNube(tomar, reintento) {
-    if (!nubeActiva() || cloudPendiente || nubeBloqueo || nubeRecargando) return;
+    if (!nubeActiva() || nubeBloqueo || nubeRecargando) return;
     const base = nubeBase();
     if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
     if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar, reintento); }    // un guardado a la vez
     clearTimeout(nubeT);
-    const datos = G.serialize(S), clave = nubeClave(S);
+    // La de aquí tiene menos avance que la versión de la nube de la que partió (otra partida, una copia vieja): no se
+    // sube; se carga la de la nube (el servidor tampoco la aceptaría: partida_retroceso)
+    if (!nubeNueva && nubeInfo && nubeInfo.p && nubeCmp(S, nubeInfo.p) < 0) return nubeCargarNube();
+    const datos = G.serialize(S), clave = nubeClave(S), prog = nubeProg(S), nueva = nubeNueva;
     nubePendiente = false;
     let bien = false, otraVez = false;
     nubeSubiendo = (async () => {
       try {
-        const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar });
-        nubeMarcar(r.rev, clave); nubeEstado = 'ok'; bien = true;
+        const r = await Api.subirPartida(datos, { base, dispositivo: NUBE_DISP, tomar: !!tomar, nueva });
+        nubeMarcar(r.rev, clave, prog); nubeEstado = 'ok'; bien = true;
+        if (nueva) nubeNueva = false;
         nubeHora = Date.parse(r.actualizado) || Date.now();
       } catch (e) {
         nubePendiente = true; nubeEstado = 'error';
+        if (esClienteViejo(e)) { clienteViejo(); return; }   // juego viejo: no se guarda nada, se actualiza y se abre otra vez
+        if (esRetroceso(e)) { nubePendiente = false; nubeCargarNube(); return; }   // la nube tiene más avance: se carga esa
         const n = e && e.respuesta ? e.respuesta.nube : null;
         // Un guardado anterior de esta pestaña sí llegó (no llegó la respuesta): se sigue sobre esa versión, una vez
         if (e && e.codigo === 'partida_desactualizada' && !reintento && nubeEsMia(n) && n.rev > base) { nubeMarcar(n.rev, ''); otraVez = true; }
-        else if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: no se pisa
+        else if (esConflicto(e)) nubeConflicto();   // otro dispositivo guardó o tomó la partida: aquí ya no se sube
       }
     })();
     try { await nubeSubiendo; } finally { nubeSubiendo = null; pintarNube(); }
@@ -267,7 +298,7 @@
   }
   // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
   function revisarNube(motivo) {
-    if (!nubeActiva() || cloudPendiente || nubeRecargando) return Promise.resolve();
+    if (!nubeActiva() || nubeRecargando) return Promise.resolve();
     if (nubeBloqueo) { if (motivo !== 'reloj') nubeAvisoOtro(); return Promise.resolve(); }
     if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
     return nubeRevisando;
@@ -276,18 +307,19 @@
     // Primero que termine el guardado que está subiendo (si no, su versión nueva parece de "otro dispositivo")
     if (nubeSubiendo) { try { await nubeSubiendo; } catch (e) { /* nada */ } }
     const base = nubeBase();
-    if (base === null) return nubeSinBase();
+    if (base === null) return nubeResolver();
     let m;
-    try { m = await Api.partidaMeta(NUBE_DISP); } catch (e) { return; }   // sin red: se sigue con la del celular
+    try { m = await Api.partidaMeta(NUBE_DISP); } catch (e) { return; }   // sin red: se sigue con la de aquí
     // Mientras se preguntaba, esta pestaña subió otra versión: se pregunta otra vez con la versión al día
     if ((nubeSubiendo || nubeBase() !== base) && (vueltas || 0) < 3) return nubeRevisar(intentos, (vueltas || 0) + 1);
-    if (!m.hay || m.rev < base) return nubeSinBase();
+    if (!m.hay || m.rev < base) return nubeResolver();
     // La versión nueva es un guardado de esta misma pestaña cuya respuesta no llegó: se sigue sobre ella (y se sube lo de aquí)
     if (m.rev > base && nubeEsMia(m)) {
       nubeMarcar(m.rev, '');
       return nubeLista !== nubeCuenta() ? nubeTomar(intentos) : subirNube();
     }
-    if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeMasNueva();
+    // Otro aparato guardó: con el juego abierto aquí, ese se quedó con la partida; al abrir, la regla de siempre
+    if (m.rev > base) return nubeLista === nubeCuenta() ? nubeConflicto() : nubeResolver();
     if (m.rev === base && !nubePendiente) nubeVio(m);
     if (nubeLista !== nubeCuenta()) return nubeTomar(intentos);              // al día: esta pestaña toma la partida
     if (m.activo && m.activo.dispositivo !== NUBE_DISP) return nubeConflicto();   // otro dispositivo la tomó
@@ -296,103 +328,225 @@
   // Esta pestaña pasa a ser la que juega (los demás dispositivos dejan de guardar). Solo con la partida al día.
   async function nubeTomar(intentos) {
     try { await Api.activarPartida(nubeBase(), NUBE_DISP); }
-    catch (e) { if (esConflicto(e) && (intentos || 0) < 2) return nubeRevisar((intentos || 0) + 1); return; }   // alguien guardó justo ahora
+    catch (e) {
+      if (esClienteViejo(e)) { clienteViejo(); return; }
+      if (esConflicto(e) && (intentos || 0) < 2) return nubeRevisar((intentos || 0) + 1);   // alguien guardó justo ahora
+      return;
+    }
     nubeLista = nubeCuenta(); nubeBloqueo = false;
     pintarNube();
-    try { if (sessionStorage.getItem(NUBE_AVISO)) { sessionStorage.removeItem(NUBE_AVISO); toast(T('nube.cargada')); } } catch (e) { /* nada */ }
+    try {
+      const k = sessionStorage.getItem(NUBE_AVISO);
+      if (k) { sessionStorage.removeItem(NUBE_AVISO); toast(T(k === '1' ? 'nube.cargada' : k, { aparato: aparato() })); }
+    } catch (e) { /* nada */ }
     if (nubePendiente || nubeAvance()) return subirNube();
   }
-  // Esta pestaña nunca se sincronizó con esta cuenta: comparar con la de la nube
-  async function nubeSinBase() {
+  /* La regla única: se trae la partida de la nube y se queda la de más avance (empate: la de la nube). Nunca se pregunta. */
+  async function nubeResolver() {
     let r;
-    try { r = await Api.partida(); } catch (e) { return; }
+    try { r = await Api.partida(); } catch (e) { return; }   // sin red: se juega con la de aquí y se vuelve a intentar
     const nube = nubeLeer(r);
     nubeVio(r);
+    const hayAqui = S.stats.events > 0 || S.day > 1;
     if (!nube) {   // no hay en la nube: sube la de aquí (no se pisa nada) y se avisa
-      nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta();
-      if (S.stats.events > 0 || S.day > 1) toast(T('nube.subida', { aparato: aparato() }));
+      nubeMarcar(r.rev || 0, '', null); nubeLista = nubeCuenta();
+      if (hayAqui) toast(T('nube.subida', { aparato: aparato() }));
       return subirNube(true);
     }
-    if (S.stats.events === 0 && S.day <= 1) return nubeUsar(nube, r.datos, r.rev, false);       // aquí recién empieza: nada que perder
-    if (nubeClave(nube) === nubeClave(S)) { nubeMarcar(r.rev, nubeClave(nube)); return nubeTomar(0); }   // es la misma partida
-    return nubeElegir(nube, r.datos, r.rev, r.actualizado);   // dos partidas distintas: siempre se pregunta
+    if (nubeClave(nube) === nubeClave(S)) { nubeMarcar(r.rev, nubeClave(nube), nube); return nubeTomar(0); }   // la misma partida
+    if (nubeCmp(S, nube) > 0) {
+      // Aquí hay más avance (se jugó sin internet, o la nube quedó con una copia vieja): se sube la de aquí encima.
+      // La de la nube queda como copia en este aparato.
+      respaldar(nube);
+      nubeMarcar(r.rev, nubeClave(nube), null);
+      nubeLista = nubeCuenta(); nubeBloqueo = false; nubePendiente = true;
+      toast(T('nube.auto_aqui', { aparato: aparato() }));
+      try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* nada */ }
+      return subirNube(true);
+    }
+    // La de la nube tiene igual o más avance: se carga (la de aquí queda como copia)
+    return nubeUsar(nube, r.datos, r.rev, nubeLista === nubeCuenta(), hayAqui ? 'nube.auto_nube' : 'nube.cargada');
   }
-  // Al abrir el juego: la nube tiene una versión más nueva que la de aquí
-  async function nubeMasNueva() {
+  // Se carga la de la nube (el servidor dijo que tiene más avance, o la de aquí bajó de avance)
+  async function nubeCargarNube() {
+    clearTimeout(nubeT);
     let r;
     try { r = await Api.partida(); } catch (e) { return; }
     const nube = nubeLeer(r);
-    if (!nube) return nubeSinBase();
     nubeVio(r);
-    // Aquí no se avanzó desde la versión de la que partió: la de la nube la contiene, se usa (con aviso, nunca en silencio)
-    if (!nubeAvance() || nubeClave(nube) === nubeClave(S)) return nubeUsar(nube, r.datos, r.rev, false);
-    return nubeElegir(nube, r.datos, r.rev, r.actualizado);   // las dos avanzaron: que el jugador elija
+    if (!nube || nubeClave(nube) === nubeClave(S)) { if (nube) nubeMarcar(r.rev, nubeClave(nube), nube); return; }
+    return nubeUsar(nube, r.datos, r.rev, nubeLista === nubeCuenta(), 'nube.auto_nube');
   }
   // Usar la partida de la nube. En pleno evento o con el juego abierto hace rato: se guarda aquí y el juego se abre otra vez.
-  function nubeUsar(nube, datos, rev, recargar) {
+  // Antes, la de aquí queda como copia en este aparato (las 3 últimas). `aviso`: clave del texto que se muestra después.
+  function nubeUsar(nube, datos, rev, recargar, aviso) {
+    const cambia = nubeClave(nube) !== nubeClave(S);
+    if (cambia) respaldar();
+    const k = aviso || 'nube.cargada';
     if (recargar || S.currentEvent || VI) {
       nubeRecargando = true; nubeBloqueo = true; clearTimeout(nubeT);
       try {
         localStorage.setItem(SAVE_KEY, datos);
-        nubeMarcar(rev, nubeClave(nube));
-        try { sessionStorage.setItem(NUBE_AVISO, '1'); } catch (e) { /* sin aviso */ }
+        nubeMarcar(rev, nubeClave(nube), nube);
+        try { sessionStorage.setItem(NUBE_AVISO, k); } catch (e) { /* sin aviso */ }
+        cargaMostrar('nube.carga_t');
         location.reload();
         return;
       } catch (e) { nubeRecargando = false; nubeBloqueo = false; }   // no se pudo guardar aquí: se usa sin abrir otra vez
     }
-    const cambia = nubeClave(nube) !== nubeClave(S);
     S = nube;
     aplicarFecha();
-    nubeMarcar(rev, nubeClave(nube));
+    nubeMarcar(rev, nubeClave(nube), nube);
     try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
     nubePendiente = false;
-    if (cambia) { try { sessionStorage.setItem(NUBE_AVISO, '1'); } catch (e) { toast(T('nube.cargada')); } }   // nubeTomar lo avisa
+    if (cambia) { try { sessionStorage.setItem(NUBE_AVISO, k); } catch (e) { toast(T(k, { aparato: aparato() })); } }   // nubeTomar lo avisa
     render();
     return nubeTomar(0);
   }
-  // Otra pestaña o dispositivo guardó o tomó la partida: aquí se deja de subir y se avisa
-  async function nubeConflicto() {
+  // Otro aparato o pestaña abrió (o guardó) la partida: se queda con ella. Aquí ya no se sube nada.
+  function nubeConflicto() {
     nubeBloqueo = true; clearTimeout(nubeT);
-    if (nubeAvance()) {   // aquí hay avance que la nube no tiene: que el jugador elija (nunca se pisa sin preguntar)
-      try {
-        const r = await Api.partida();
-        const nube = nubeLeer(r);
-        if (nube && nubeClave(nube) !== nubeClave(S)) return nubeElegir(nube, r.datos, r.rev, r.actualizado);
-      } catch (e) { /* sin red: la ventana de abajo */ }
-    }
     nubeAvisoOtro();
   }
+
+  /* ---------- Copias de la partida en este aparato (para soporte) ----------
+     Antes de reemplazar la partida de aquí (por la de la nube o una partida nueva) se guarda una copia: las 3 últimas,
+     en envivo_tycoon_save_respaldo. Sin pantalla para el jugador: soporte la ve en el diagnóstico (js/soporte.js) y puede
+     recuperarla (window.__respaldos). */
+  const RESPALDO_KEY = 'envivo_tycoon_save_respaldo';
+  const RESPALDO_MAX = 3;
+  function respaldos() {
+    const r = lsGet(RESPALDO_KEY);
+    return Array.isArray(r) ? r.filter((x) => x && typeof x.datos === 'string' && x.p) : [];
+  }
+  function respaldar(x0) {
+    try {
+      const x = x0 || S;   // la de aquí, o la de la nube cuando se sube la de aquí encima
+      if (!x || !(x.stats.events > 0 || x.day > 1)) return;   // una partida recién empezada no vale la pena
+      const clave = nubeClave(x);
+      const xs = respaldos().filter((y) => y.clave !== clave);
+      xs.unshift({ t: Date.now(), clave, p: nubeProg(x), dinero: x.money, datos: G.serialize(x) });
+      let n = Math.min(RESPALDO_MAX, xs.length);
+      // Sin espacio: se guardan menos copias (primero la más nueva)
+      while (n > 0) { try { localStorage.setItem(RESPALDO_KEY, JSON.stringify(xs.slice(0, n))); return; } catch (e) { n--; } }
+    } catch (e) { /* nada */ }
+  }
+  // Para soporte (consola) y las pruebas: lista de copias y recuperar una (queda como la partida de aquí)
+  window.__respaldos = {
+    lista: () => respaldos().map((x, i) => ({ i, cuando: new Date(x.t).toISOString(), eventos: x.p.e, dia: x.p.d, fama: x.p.f, dinero: x.dinero })),
+    recuperar(i) {
+      const x = respaldos()[i];
+      if (!x) return false;
+      respaldar();
+      try { localStorage.setItem(SAVE_KEY, x.datos); } catch (e) { return false; }
+      nubeRecargando = true; location.reload();
+      return true;
+    },
+  };
+
+  /* ---------- Pantalla de carga: "Sincronizando tu partida…" ---------- */
+  let cargaT = null;
+  function cargaEl() {
+    let el = document.getElementById('nubeCarga');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'nubeCarga'; el.className = 'nubecarga'; el.hidden = true;
+      el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  // titulo: clave del texto; botones: [[acción, clave]] (si no, salen "Reintentar" y "Jugar sin conexión" a los 8 s)
+  function cargaMostrar(titulo, texto, botones) {
+    const el = cargaEl();
+    el.innerHTML = `<div class="nc-caja"><div class="nc-giro" aria-hidden="true"></div>
+        <p class="nc-titulo">${T(titulo || 'nube.carga_t')}</p>
+        <p class="small muted nc-texto">${texto ? T(texto) : ''}</p>
+        <div class="nc-btns"></div></div>`;
+    el.hidden = false;
+    clearTimeout(cargaT);
+    if (botones) cargaBotones(botones);
+    else cargaT = setTimeout(() => cargaOpciones(), 8000);
+  }
+  function cargaBotones(botones) {
+    const el = cargaEl();
+    const b = el.querySelector('.nc-btns');
+    if (b) b.innerHTML = botones.map(([a, k], i) => `<button class="btn ${i ? '' : 'main'}" data-act="${a}">${T(k)}</button>`).join('');
+  }
+  // Tarda mucho o no hay servidor: reintentar o jugar con la de aquí
+  function cargaOpciones(fallo) {
+    const el = cargaEl();
+    if (el.hidden) return;
+    const t = el.querySelector('.nc-texto');
+    if (t) t.textContent = T(fallo ? 'nube.carga_sin_red' : 'nube.carga_lenta');
+    cargaBotones([['carga-reintentar', 'nube.carga_reintentar'], ['carga-local', 'nube.carga_local']]);
+  }
+  function cargaOcultar() {
+    if (nubeRecargando || actualizandoJuego) return;   // se abre otra vez: la pantalla se queda
+    clearTimeout(cargaT);
+    const el = document.getElementById('nubeCarga');
+    if (el) { el.hidden = true; el.innerHTML = ''; }
+  }
+  const cargaVisible = () => { const el = document.getElementById('nubeCarga'); return !!(el && !el.hidden); };
+  async function cargaReintentar() {
+    cargaMostrar('nube.carga_t');
+    try {
+      if (Api.disponible !== true && Api.iniciar) await Api.iniciar();
+      if (!Api.disponible) { cargaOpciones(true); return; }
+      await alConectar(false, true);
+    } catch (e) { cargaOpciones(true); }
+  }
+
+  /* ---------- Juego viejo (426 cliente_viejo) ----------
+     El servidor no acepta guardados de un juego más viejo que el mínimo (el celular del dueño abrió el juego v45 de la
+     caché). Aquí no se guarda NADA más: pantalla de carga, se borra la caché del juego, se busca el service worker nuevo
+     y se abre el juego otra vez. Si recién se hizo y el servidor sigue diciendo lo mismo, no se recarga en bucle. */
+  let actualizandoJuego = false;
+  function clienteViejo() {
+    if (actualizandoJuego) return;
+    actualizandoJuego = true;
+    nubeRecargando = true; nubeBloqueo = true; nubePendiente = false; clearTimeout(nubeT);   // save() ya no guarda
+    pintarNube();
+    let reciente = false;
+    try { const t = Number(sessionStorage.getItem('envivo_cliente_viejo')) || 0; reciente = Date.now() - t < 60000; sessionStorage.setItem('envivo_cliente_viejo', String(Date.now())); } catch (e) { /* nada */ }
+    if (reciente) { cargaMostrar('nube.viejo_titulo', 'nube.viejo_texto2', [['recargar-juego', 'nube.viejo_boton']]); return; }
+    cargaMostrar('nube.carga_actualizando', 'nube.viejo_texto', []);
+    const recargar = () => { try { location.reload(); } catch (e) { /* nada */ } };
+    const borrar = () => (window.caches && caches.keys ? caches.keys().then((ks) => Promise.all(ks.filter((k) => /^envivo-v\d+-shell$/.test(k)).map((k) => caches.delete(k)))).catch(() => {}) : Promise.resolve());
+    const sw = (() => { try { return navigator.serviceWorker && navigator.serviceWorker.getRegistration ? navigator.serviceWorker : null; } catch (e) { return null; } })();
+    const actualizar = sw ? sw.getRegistration().then((reg) => (reg ? reg.update() : null)).catch(() => {}) : Promise.resolve();
+    Promise.race([Promise.all([borrar(), actualizar]), new Promise((r) => setTimeout(r, 4000))]).then(() => setTimeout(recargar, 300), recargar);
+  }
+  window.__clienteViejo = () => actualizandoJuego;   // para las pruebas automáticas
   function nubeAvisoOtro() {
     pintarNube();
-    if (nubeRecargando || cloudPendiente) return;
+    if (nubeRecargando) return;
     if ($('overlay').classList.contains('on') && $('modal').querySelector('[data-nube-otro]')) return;
     eleccion = () => nubeUsarNueva();
     openModal(`<div data-nube-otro><h2>${I('cloud')} ${T('nube.otro_titulo')}</h2>
       <p>${T('nube.otro_texto')}</p>
-      <button class="btn main" data-act="partida" data-k="nueva">${I('cloud')}${T('nube.otro_usar')}</button>
+      <button class="btn main" data-act="partida" data-k="nueva">${I('refresh')}${T('nube.otro_usar')}</button>
       <p class="small muted">${T('nube.otro_nota')}</p></div>`);
   }
+  // "Recargar": carga la de la nube y abre el juego otra vez. Nunca sube la de aquí.
   async function nubeUsarNueva() {
     let r;
     try { r = await Api.partida(); } catch (e) { toast(T('nube.sin_red')); eleccion = () => nubeUsarNueva(); return; }
     const nube = nubeLeer(r);
-    // Aquí hay avance que esa versión no tiene (p. ej. un evento que terminó con el aviso tapado por el resultado):
-    // se pregunta cuál usar, nunca se pisa sin preguntar
-    if (nube && nubeAvance() && nubeClave(nube) !== nubeClave(S)) { closeModal(); nubeElegir(nube, r.datos, r.rev, r.actualizado); return; }
+    closeModal();
+    // Si la de aquí tuviera más avance (nunca se vuelve atrás): se abre otra vez y la regla de siempre la sube
+    if (nube && nubeCmp(S, nube) > 0) { try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* nada */ } nubeRecargando = true; cargaMostrar('nube.carga_t'); location.reload(); return; }
     if (nube) { nubeUsar(nube, r.datos, r.rev, true); return; }
-    // La otra pestaña no guardó nada todavía: esta toma la partida con la suya
-    closeModal(); nubeBloqueo = false; nubeMarcar(r.rev || 0, ''); nubeLista = nubeCuenta(); render();
-    await subirNube(true);
+    nubeRecargando = true; cargaMostrar('nube.carga_t'); location.reload();   // la nube todavía está vacía: abrir otra vez
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') { clearTimeout(nubeT); if (nubePendiente) subirNube(); }
     else nubeFoco();
   });
   function nubeFoco() { const t = Date.now(); if (t - nubeUltima < 3000) return; nubeUltima = t; if (!reconectar()) revisarNube('foco'); }
-  /* El servidor no respondió al abrir (celular lento, sin señal un momento): antes el juego se quedaba con la partida de
-     este aparato, sin cuenta ni nube, hasta recargar (si aquí había una copia vieja, se seguía jugando esa en silencio).
-     Ahora se vuelve a intentar al volver a la app, al volver internet y cada 30 s; al conectar se revisa la nube como al
-     abrir. Devuelve true si está intentando (entonces no hace falta revisar la nube aparte). */
+  /* El servidor no respondió al abrir (celular lento, sin señal): se juega con la de aquí ("Sin conexión · se
+     sincronizará") y se vuelve a intentar al volver a la app, al volver internet y cada 30 s; al conectar, la misma regla.
+     Devuelve true si está intentando (entonces no hace falta revisar la nube aparte). */
   let reconectando = false;
   function reconectar() {
     if (Api.disponible !== false || !Api.iniciar || !conServidorWeb()) return false;
@@ -400,7 +554,7 @@
     reconectando = true;
     Api.iniciar().then(async () => {
       if (!Api.disponible) return;
-      await alConectar(false);
+      await alConectar(false, cargaVisible());
       if (window.Chat && window.Chat.iniciar) { try { window.Chat.iniciar(ctxChat()); } catch (e) { /* sin chat */ } }
     }).catch(() => {}).finally(() => { reconectando = false; pintarNube(); });
     return true;
@@ -418,7 +572,6 @@
   // Para las pruebas automáticas
   window.__nube = { dispositivo: NUBE_DISP, get info() { return nubeInfo; }, get bloqueo() { return nubeBloqueo; }, get lista() { return nubeLista; },
     revisar: (m) => revisarNube(m || 'foco'), subir: async () => { if (nubeSubiendo) await nubeSubiendo; return subirNube(); } };
-  let cloudPendiente = false;   // mientras el jugador elige entre la partida de la nube y la del celular
 
   /* ---------- En qué partida estás: indicador de arriba y franja "¿Ya tienes cuenta?" ----------
      El dueño abrió el juego en el celular sin sesión (cada aparato, y también la app instalada y la pestaña de Chrome,
@@ -442,9 +595,9 @@
   function nubeIndicador() {
     if (!S || Api.disponible === null) return null;
     if (!Api.disponible) return conServidorWeb() && cuentaPrevia() ? { c: 'mal', ic: icoAparato(), t: T('nube.ind_sin_red', { aparato: aparato() }) } : null;
+    if (actualizandoJuego) return { c: 'local', ic: I('refresh', 'sm'), t: T('nube.ind_actualizando') };
     if (!Api.logueado()) return { c: 'local', ic: icoAparato(), t: T('nube.ind_solo', { aparato: aparato() }) };
     if (nubeBloqueo && !nubeRecargando) return { c: 'mal', ic: I('cloud', 'sm'), t: T('nube.ind_otro') };
-    if (cloudPendiente) return { c: 'local', ic: I('cloud', 'sm'), t: T('nube.ind_elegir') };
     if (nubeLista !== nubeCuenta()) return { c: '', ic: I('cloud', 'sm'), t: T('nube.ind_revisando') };
     if (nubeEstado === 'error') return { c: 'local', ic: I('cloud', 'sm'), t: T('nube.ind_pendiente') };
     return { c: 'ok', ic: I('cloud', 'sm'), t: nubeHora ? T('nube.ind_guardada', { cuando: haceTxt(nubeHora) }) : T('nube.ind_nube') };
@@ -1971,14 +2124,16 @@
   }
 
   // Después de iniciar sesión o al abrir el juego con sesión: entregas, VIP y partida en la nube
-  async function alConectar(recienEntro) {
+  // pantalla: con cuenta se muestra "Sincronizando tu partida…" hasta resolver cuál partida queda (al abrir y al entrar)
+  async function alConectar(recienEntro, pantalla) {
     const E = Api.estado;
     if (!E) { render(); return; }
     if (Pm) syncVip();
     if (E.logueado) {
       if (recienEntro) { nubeLista = null; nubeBloqueo = false; }   // otra cuenta (o la misma otra vez): revisar desde cero
-      await revisarNube('carga');
-    }
+      if (pantalla || recienEntro) cargaMostrar('nube.carga_t');
+      try { await revisarNube('carga'); } finally { cargaOcultar(); }
+    } else cargaOcultar();
     aplicarEntregas();
     render();
   }
@@ -2005,43 +2160,7 @@
     if (hechos.length) { save(); toast(TL(hechos[0]) + (hechos.length > 1 ? ' ' + T('comun.mas', { n: hechos.length - 1 }) : '')); snd.play('chapter'); }
   }
 
-  // Una opción de la comparación: día, fama, dinero, capítulo, eventos y la última vez que se jugó
-  function opcionPartida(x, k, titulo, ic, cuando, mas) {
-    const cap = G.CHAPTERS[x.chapter] ? esc(TL(G.CHAPTERS[x.chapter].title)) : T('historia.completa');
-    return `<button class="btn nube-op" data-act="partida" data-k="${k}">
-        <span class="nube-op-t">${ic}${titulo}${mas ? `<em>${T('nube.mas_avance')}</em>` : ''}</span>
-        <span class="small"><b>${T('comun.dia_n', { n: x.day })} · ${T('nube.op_fama', { n: N(Math.floor(x.rep || 0)) })} · ${M(x.money)}</b></span>
-        <span class="small muted">${cap} · ${T('inicio.eventos', { n: x.stats.events })}</span>
-        <span class="small muted">${cuando ? T('nube.ultima', { cuando: haceTxt(cuando) }) : T('nube.ultima_nd')}</span></button>`;
-  }
-  // La partida de la nube y la de aquí son distintas: el jugador elige (la otra se reemplaza; nunca sin preguntar)
-  function nubeElegir(nube, datos, rev, actualizado) {
-    clearTimeout(nubeT);
-    cloudPendiente = true;
-    pintarNube();
-    return new Promise((listo) => {
-      eleccion = (cual) => {
-        cloudPendiente = false;
-        closeModal();
-        if (cual === 'nube') { nubeVio({ actualizado }); listo(nubeUsar(nube, datos, rev, nubeLista === nubeCuenta())); return; }
-        // La de aquí: se sube encima de esa versión de la nube y esta pestaña toma la partida
-        nubeBloqueo = false;
-        nubeMarcar(rev, nubeClave(nube));
-        nubeLista = nubeCuenta(); nubePendiente = true;
-        save(); render(); listo(subirNube(true));
-      };
-      const tNube = actualizado ? Date.parse(actualizado) : NaN, tAqui = guardadoEn();
-      const avance = (x) => [x.chapter || 0, x.stats.events || 0, x.day || 0];
-      const an = avance(nube), aq = avance(S);
-      const cmp = an[0] - aq[0] || an[1] - aq[1] || an[2] - aq[2];
-      openModal(`<h2>${T('nube.titulo')}</h2>
-        <p class="small muted">${T('nube.texto2', { aparato: aparato() })}</p>
-        ${opcionPartida(nube, 'nube', T('nube.nube'), I('cloud'), isNaN(tNube) ? null : tNube, cmp > 0)}
-        ${opcionPartida(S, 'local', T('nube.local2', { aparato: aparato() }), icoAparato(), tAqui, cmp < 0)}
-        <p class="small muted">${T('nube.reemplaza')}</p>`);
-    });
-  }
-  let eleccion = null;
+  let eleccion = null;   // qué hace el botón de la ventana "Tu partida se abrió en otro aparato"
 
   // Se llama directo desde el clic: en la app, GooglePlay.comprar() va primero (sin nada esperado antes),
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
@@ -3696,8 +3815,15 @@
         if (capDeCola && Array.isArray(S.capCompletados) && S.capCompletados.length) { S.capCompletados.shift(); save(); }
         capDeCola = false;
         lsSet(RES_KEY, null); closeModal(); mus.go('menu'); render(); continuar(); break;
-      case 'new-game': ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { S = G.newGame(); aplicarFecha(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); }); break;
-      case 'restart': S = G.newGame(); aplicarFecha(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); break;
+      // Partida nueva con cuenta: la pregunta avisa que también se reemplaza la de la nube (lo eligió el jugador: se sube sin volver a preguntar)
+      case 'carga-reintentar': cargaReintentar(); break;
+      case 'carga-local': cargaOcultar(); pintarNube(); break;
+      case 'recargar-juego': try { location.reload(); } catch (err) { /* nada */ } break;
+      // Con cuenta la partida es la de la nube y nunca se vuelve atrás (el servidor no acepta menos avance): se explica
+      case 'new-game': if (nubeActiva() || (cuentaPrevia() && Api.disponible === false)) { openModal(`<h2>${T('inicio.nueva')}</h2><p>${T('inicio.nueva_cuenta')}</p><button class="btn main" data-act="close">${T('comun.cerrar')}</button>`); break; }
+        ask(T('inicio.nueva_q'), T('inicio.nueva_si'), () => { respaldar(); S = G.newGame(); aplicarFecha(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); }); break;
+      // Después de quebrar: la partida nueva se sube con `nueva` (el servidor la acepta solo encima de una partida quebrada)
+      case 'restart': respaldar(); nubeNueva = !!(nubeActiva() || cuentaPrevia()); S = G.newGame(); aplicarFecha(); olvidarDia(); if (Pm && Api.estado) Pm.prepararPartidaNueva(S, Api.estado.entregas); save(); closeModal(); tab = 'inicio'; mus.go('menu'); render(); showChapterIntro(); break;
     }
   });
 
@@ -3808,8 +3934,12 @@
     GP = GP || window.GooglePlay || null;
     const volvioDePago = /[?&]compra=ok\b/.test(location.search);
     if (volvioDePago) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ } }
+    // Con cuenta (esta partida ya estuvo en una cuenta): "Sincronizando tu partida…" antes de jugar
+    const pantalla = !!(cuentaPrevia() && conServidorWeb() && window.Api && window.Api.iniciar);
+    if (pantalla) cargaMostrar('nube.carga_t');
     if (window.Api && window.Api.iniciar) await window.Api.iniciar();
-    await alConectar(false);
+    if (pantalla && !Api.disponible) cargaOpciones(true);   // sin servidor: reintentar o jugar sin conexión
+    await alConectar(false, pantalla);
     if (window.Chat && Api.disponible) window.Chat.iniciar(ctxChat());
     if (Api.estado && Api.estado.logueado) {
       // La partida de la nube ya se revisó en alConectar (más nueva, igual o hay que elegir): solo las entregas
