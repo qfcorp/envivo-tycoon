@@ -63,7 +63,7 @@ final class Compras
             if ($transferencia !== null || !PayPal::permite((float) $p['precio'])) {
                 throw new Fallo('PayPal está disponible para compras desde ' . Http::dinero(PayPal::minimo()) . '. Paga con tarjeta.', 409, ['codigo' => 'paypal_minimo', 'minimo' => PayPal::minimo()]);
             }
-        } elseif (!Plux::configurado()) {
+        } elseif (!Plux::configurado() && !TukanPagos::activo()) {
             throw new Fallo('El pago con tarjeta todavía no está disponible. Intenta más tarde.', 503, ['codigo' => 'plux_no_disponible']);
         }
         return Db::tx(function () use ($jugador, $producto, $p, $transferencia, $paypal): array {

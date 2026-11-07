@@ -181,7 +181,9 @@ final class Cuentas
     public static function estado(?int $jugador): array
     {
         $j = $jugador ? self::porId($jugador) : null;
-        $plux = ['disponible' => Plux::configurado(), 'ambiente' => Plux::ambiente()];
+        // Tarjeta: por Tukán Pagos (src/TukanPagos.php) si está encendido; si no, el Plux propio del juego
+        $plux = TukanPagos::activo() ? ['disponible' => true, 'ambiente' => TukanPagos::ambiente(), 'por' => 'tukanpagos']
+                                     : ['disponible' => Plux::configurado(), 'ambiente' => Plux::ambiente()];
         $paypal = PayPal::estado();   // {disponible, ambiente, minimo}: el juego solo lo muestra en la web (nunca en la app de Google Play)
         if (!$j) {
             return ['ok' => true, 'logueado' => false, 'jugador' => null, 'creditos' => 0, 'vip_hasta' => null, 'vip_activo' => false, 'vip_bono_hoy' => false,

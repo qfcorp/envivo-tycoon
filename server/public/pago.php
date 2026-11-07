@@ -6,12 +6,14 @@ declare(strict_types=1);
 // - Compra con canal web_paypal (POST /api/orden con metodo "paypal"): datos de la factura y «Pagar con PayPal», que va a
 //   POST /api/paypal/crear y de ahí a PayPal (redirección: nada de JavaScript de PayPal aquí, la CSP sigue siendo 'self').
 // - El valor es FIJO (del catálogo, con IVA incluido) y no se puede cambiar desde la página.
-// - La tarjeta se cifra en el navegador (assets/pago.js con CryptoJS + JSEncrypt) y va cifrada a /api/plux/pago.
+// - Con Tukán Pagos encendido (src/TukanPagos.php, server/TUKAN_PAGOS.md): datos de la factura y «Pagar con tarjeta», que va a
+//   POST /api/tukanpagos/crear y de ahí a la página de pago de Tukán Pagos (la tarjeta se pone allá, nunca aquí).
+// - Sin Tukán Pagos: la tarjeta se cifra en el navegador (assets/pago.js con CryptoJS + JSEncrypt) y va cifrada a /api/plux/pago.
 //   Este servidor nunca ve el número, la fecha ni el CVV.
 
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Ajustes, Catalogo, Compras, Cuentas, Db, Http, PayPal, Plux, Sesiones};
+use EnVivo\{Ajustes, Catalogo, Compras, Cuentas, Db, Http, PayPal, Plux, Sesiones, TukanPagos};
 
 try {
     Db::pdo();
@@ -20,10 +22,11 @@ try {
     $c = Compras::porToken(is_string($_GET['o'] ?? null) ? $_GET['o'] : '');
     if (!$c || (int) $c['jugador_id'] !== $j) Http::pagina(404, 'Compra no encontrada', 'Vuelve al juego y toca Comprar otra vez.');
     if ($c['estado'] === 'pagado') Http::redirigir('/?compra=ok');
-    if ($c['estado'] !== 'pendiente') Http::pagina(409, 'Esta compra ya no está abierta', 'Vuelve al juego y empieza otra compra.');
+    $tkp = !(($c['canal'] ?? 'web_plux') === 'web_paypal') && TukanPagos::activo();
+    if ($c['estado'] !== 'pendiente' && !($tkp && $c['estado'] === 'rechazado')) Http::pagina(409, 'Esta compra ya no está abierta', 'Vuelve al juego y empieza otra compra.');
     $paypal = ($c['canal'] ?? 'web_plux') === 'web_paypal';
     if ($paypal && !PayPal::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con PayPal todavía no está listo. Vuelve a la tienda y paga con tarjeta.');
-    if (!$paypal && !Plux::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con tarjeta todavía no está listo. Intenta más tarde.');
+    if (!$paypal && !$tkp && !Plux::configurado()) Http::pagina(503, 'Pago no disponible', 'El pago con tarjeta todavía no está listo. Intenta más tarde.');
     if (Ajustes::mantenimiento()) Http::pagina(503, 'Tienda en mantenimiento', Ajustes::mensajeMantenimiento());
     if (Cuentas::estadoCuenta($j) !== 'activo') Http::pagina(403, 'Cuenta suspendida', Cuentas::aviso(Cuentas::estadoCuenta($j)) ?? 'Tu cuenta no está activa.');
     $p = Catalogo::productoCompra((string) $c['producto']);
@@ -43,6 +46,7 @@ $avisos = [
     'incompleto' => 'La respuesta del banco llegó incompleta. Intenta otra vez o usa otra tarjeta.',
     'paypal_cancelado' => 'No se completó el pago en PayPal y no se cobró nada. Puedes intentarlo otra vez.',
     'paypal_rechazado' => 'PayPal no aprobó el pago. Prueba con otra forma de pago en PayPal o vuelve a la tienda y paga con tarjeta.',
+    'tkp_confirmando' => 'Estamos confirmando tu pago con el banco. Si ya pagaste, en unos minutos aparece en tu cuenta: no pagues otra vez. Si no pagaste, puedes intentarlo de nuevo.',
     'paypal_error' => 'No pudimos confirmar el pago con PayPal. Si PayPal te cobró, no pagues otra vez: escríbenos desde «Ayuda y soporte» en el juego.',
 ];
 $aviso = $avisos[(string) ($_GET['r'] ?? '')] ?? '';
@@ -81,7 +85,39 @@ if ($paypal):   // -------------------------------------------------------------
 </body></html>
 <?php
     exit;
-endif;   // ------------------------------------------------------------------------ tarjeta (Pago Plux)
+endif;
+if ($tkp):   // ----------------------------------------------------------------- tarjeta por Tukán Pagos
+?>
+<main class="caja" id="tkp-caja" data-o="<?= $e($c['token']) ?>">
+  <div class="marca">EN VIVO <b>Tycoon</b></div>
+<?php if (TukanPagos::ambiente() === 'sandbox'): ?>
+  <div class="aviso aviso-info"><b>MODO DE PRUEBAS (sandbox):</b> no se cobra dinero real. Usa solo tarjetas de prueba de Plux.</div>
+<?php endif; ?>
+  <h1>Pagar con tarjeta</h1>
+  <section class="producto">
+    <div class="producto-nombre"><?= $e($p['nombre']) ?></div>
+    <div class="producto-detalle"><?= $e($p['detalle']) ?></div>
+    <div class="producto-total"><span>Total a pagar</span><output id="valor-fijo"><?= $e($total) ?></output></div>
+    <div class="tenue">Incluye IVA 15 %. El valor es fijo y no se puede cambiar.</div>
+  </section>
+<?php if ($aviso !== ''): ?>
+  <div class="aviso aviso-error" id="aviso-regreso"><?= $e($aviso) ?></div>
+<?php endif; ?>
+<?= class_exists(\EnVivo\Facturacion::class) ? \EnVivo\Facturacion::htmlPago($c, $jug, true) : '' /* datos para la factura SRI */ ?>
+  <label class="casilla"><input type="checkbox" id="tkp-terminos"> <span>Acepto los <a href="/terminos.html" target="_blank" rel="noopener">términos y condiciones</a> y la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
+  <button type="button" class="boton grande" id="tkp-pagar">🔒 Pagar <?= $e($total) ?> con tarjeta</button>
+  <div id="tkp-mensaje" aria-live="polite"></div>
+  <p class="tenue seguro">Te llevamos a la página segura de pago de Tukán Software (Pago Plux) para poner tu tarjeta. Nosotros no vemos ni guardamos los datos de tu tarjeta. Al terminar vuelves solo al juego.</p>
+  <p class="tenue">Si eres menor de edad, pide permiso a tus padres antes de comprar.</p>
+  <p class="tenue">¿Problemas con un pago? Usa la opción «Ayuda y soporte» dentro del juego.</p>
+  <p class="pie"><a href="/">← Volver al juego</a> · <a href="/terminos.html" target="_blank" rel="noopener">Términos</a> · <a href="/privacidad.html" target="_blank" rel="noopener">Privacidad</a></p>
+</main>
+<script src="/pago-assets/factura.js?v=1"></script>
+<script src="/pago-assets/tukanpagos.js?v=1"></script>
+</body></html>
+<?php
+    exit;
+endif;   // ------------------------------------------------------------------------ tarjeta (Pago Plux propio)
 ?>
 <main class="caja" id="plux-caja" data-o="<?= $e($c['token']) ?>" data-llave="<?= $e(Plux::llavePem()) ?>">
   <div class="marca">EN VIVO <b>Tycoon</b></div>
