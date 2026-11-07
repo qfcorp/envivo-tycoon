@@ -160,6 +160,15 @@ $(solo_cf)
         $(ocultar)
         fastcgi_pass unix:$SOCK;
     }
+    # Panel Tukan Central: cifras del juego y entrada al Centro de Control (token firmado; src/ConectorCentral.php)
+    location = /tukan_central.php {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $PUB/tukan_central.php;
+        fastcgi_param SCRIPT_NAME /tukan_central.php;
+        fastcgi_param HTTP_PROXY "";
+        $(ocultar)
+        fastcgi_pass unix:$SOCK;
+    }
     location = /admin.php {
         include /etc/nginx/fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $PUB/admin.php;

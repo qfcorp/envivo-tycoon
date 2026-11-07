@@ -92,6 +92,18 @@ Con el juego conectado al Panel (`FACTURACION_POR_PANEL=1`, `src/PanelVentas.php
 Revisar: `sudo -u www-data php /var/www/envivo/server/bin/panel_ventas.php estado` (enviadas, pendientes, rechazadas).
 Desconectar: `sudo bash /var/www/envivo/server/deploy/conectar_central.sh --quitar`.
 
+### La tarjeta del juego en el Panel (7 nov 2026)
+El Panel revisa cada programa cada 15 minutos por `/tukan_central.php` (Protocolo Tukán v1). Antes el juego no lo tenía y la
+tarjeta decía «Sin conexión: el conector está apagado o no existe (404)». Ahora (`src/ConectorCentral.php`,
+`public/tukan_central.php`, mismo ID y secreto que las ventas):
+- **estado**: la tarjeta muestra jugadores, nuevos en 30 días, ventas del mes y del mes anterior (sin IVA y sin las de prueba),
+  VIP activos, ventas por mandar al Panel y casos de soporte abiertos.
+- **Entrar a EN VIVO Tycoon** (sso): abre el Centro de Control sin pedir clave ni código (el Panel ya pidió los dos pasos) y queda
+  en la auditoría («Entró desde el Panel Tukán Central»). Respeta `ENVIVO_CONTROL_IPS`.
+- Tokens de un solo uso (tabla `tukan_central_nonces`), 30 pedidos por minuto por conexión, y 404 si el juego no está conectado.
+- nginx: `location = /tukan_central.php` (deploy/nginx-sitio.sh). Después de actualizar: `sudo bash /var/www/envivo/server/deploy/instalar.sh`.
+- Pruebas: `tests/pruebas_conector_central.php` (25: rechazos del protocolo, sso y el Panel de verdad viendo el juego «En línea»).
+
 | Archivo | Qué hace |
 |---|---|
 | `src/PanelVentas.php`, `src/migraciones/panel_ventas.sql` | Cola de ventas y reversos, firma y envío al Panel |
