@@ -37,7 +37,7 @@ PayPal y Google Play no cambian.
    - dirección de aviso: `https://juego.tukanec.com/api/tukanpagos/aviso`
    - inicio de las direcciones de regreso: `https://juego.tukanec.com`
    - Copia la **clave** (`tkp_…`) y el **secreto de avisos** (se ven una sola vez).
-2. En el VPS-1, actualizar el juego y conectarlo:
+2. En el VPS del ERP (149.56.111.193), actualizar el juego y conectarlo:
    ```
    sudo bash /var/www/envivo/server/deploy/actualizar.sh
    sudo bash /var/www/envivo/server/deploy/configurar_tukanpagos.sh
@@ -84,7 +84,7 @@ Con el juego conectado al Panel (`FACTURACION_POR_PANEL=1`, `src/PanelVentas.php
 
 ### Conectar el juego al Panel (Dimitry, una sola vez)
 1. En el Panel: **Programas → Agregar → EN VIVO Tycoon** (dirección `https://juego.tukanec.com`). El Panel muestra un comando.
-2. Pega ese comando en el VPS-1. Es así (el Panel pone el ID y el SECRETO):
+2. Pega ese comando en el VPS del ERP (149.56.111.193). Es así (el Panel pone el ID y el SECRETO):
    `sudo bash /var/www/envivo/server/deploy/conectar_central.sh ID SECRETO https://panel.tukanec.com`
    Debe terminar en `RESULTADO: todo bien`.
 3. En el Panel deben estar encendidos la facturación y el local de TuFactura (Ajustes → Facturación), como para los demás.
