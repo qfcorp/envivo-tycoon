@@ -26,8 +26,8 @@ PayPal y Google Play no cambian.
    - la **consulta del servidor** a Tukán Pagos cuando el jugador vuelve (`/api/tukanpagos/volver`).
    Nunca lo que diga el navegador. El monto tiene que ser **exactamente** el de la compra (si no, no se entrega y queda
    un aviso `tukanpagos_monto` en el Centro de Control).
-6. `Compras::aprobar()` entrega una sola vez (aviso + regreso, en cualquier orden). La **factura SRI** se crea igual que
-   antes (TuFactura, `INTEGRAR_FACTURACION.md`). Tukán Pagos no factura: no hay factura doble.
+6. `Compras::aprobar()` entrega una sola vez (aviso + regreso, en cualquier orden). La **factura** la hace el **Panel
+   Tukán con TuFactura**, igual que en todos los sistemas (sección «Factura» abajo). Tukán Pagos no factura.
 7. Tarjeta rechazada: vuelve a la página de pago con «Tu banco no aprobó el pago» y puede intentar otra vez (mismo cobro).
 
 ## Encenderlo (Dimitry, una sola vez)
@@ -63,3 +63,37 @@ Revisar: `sudo -u www-data php /var/www/envivo/server/bin/tukanpagos.php probar`
 | `deploy/configurar_tukanpagos.sh`, `bin/tukanpagos.php` | Conectar y revisar |
 | `deploy/nginx-sitio.sh` | `/api/tukanpagos/aviso` y `/volver` funcionan aunque la tienda esté en mantenimiento |
 | `tests/pruebas_tukanpagos.php`, `tests/tukanpagos_falso.php` | 46 pruebas con un Tukán Pagos falso (y el botón en un navegador de verdad) |
+
+## Factura: igual que en todos los sistemas (Panel Tukán + TuFactura)
+
+Pedido de Dimitry (6 nov 2026): «la factura debe hacerla igual que todos los sistemas, debemos igualar todos los sistemas».
+Con el juego conectado al Panel (`FACTURACION_POR_PANEL=1`, `src/PanelVentas.php`):
+
+- **Cada venta aprobada**, de cualquier canal (tarjeta por Tukán Pagos o Plux propio, PayPal, Google Play), se manda
+  firmada al Panel (`POST https://panel.tukanec.com/ventas_api.php`, token v2 de tipo «venta» con el secreto del juego).
+- El Panel la anota en **Más → Cobros y facturas** (programa «EN VIVO Tycoon», monto sin IVA, como los cobros con Plux) y
+  emite la **factura con TuFactura** sola: con la cédula / RUC que el comprador puso en la página de pago, o a
+  **consumidor final** (solo hasta $50; si pasa, queda «por decidir»). Si TuFactura está apagado queda «por decidir».
+- **Ventas de prueba** (Plux / Tukán Pagos / PayPal en sandbox, compra de prueba de Google): el Panel no las factura ni
+  las suma en Finanzas.
+- **Reembolso o contracargo**: el cobro queda anulado en el Panel; si ya tenía factura, el Panel avisa que falta la nota
+  de crédito en TuFactura.
+- La facturación propia del juego (`src/Facturacion.php`, el ERP) **se apaga sola**: una sola factura por venta.
+- Si el Panel no contesta, la venta queda en la cola (`panel_ventas`) y `bin/tareas.php` la vuelve a mandar. El Panel
+  nunca anota dos veces la misma venta (referencia `envivo-compra-<id>`).
+
+### Conectar el juego al Panel (Dimitry, una sola vez)
+1. En el Panel: **Programas → Agregar → EN VIVO Tycoon** (dirección `https://juego.tukanec.com`). El Panel muestra un comando.
+2. Pega ese comando en el VPS-1. Es así (el Panel pone el ID y el SECRETO):
+   `sudo bash /var/www/envivo/server/deploy/conectar_central.sh ID SECRETO https://panel.tukanec.com`
+   Debe terminar en `RESULTADO: todo bien`.
+3. En el Panel deben estar encendidos la facturación y el local de TuFactura (Ajustes → Facturación), como para los demás.
+
+Revisar: `sudo -u www-data php /var/www/envivo/server/bin/panel_ventas.php estado` (enviadas, pendientes, rechazadas).
+Desconectar: `sudo bash /var/www/envivo/server/deploy/conectar_central.sh --quitar`.
+
+| Archivo | Qué hace |
+|---|---|
+| `src/PanelVentas.php`, `src/migraciones/panel_ventas.sql` | Cola de ventas y reversos, firma y envío al Panel |
+| `bin/panel_ventas.php`, `deploy/conectar_central.sh` | Revisar, mandar a mano, conectar |
+| `tests/pruebas_panel_ventas.php` | 25 pruebas de punta a punta: juego → Panel de verdad → TuFactura de mentira |

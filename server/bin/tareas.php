@@ -18,6 +18,7 @@ try {
     $vencidas = Mercado::vencer();
     $liberadas = Mercado::liberar();
     $google = \EnVivo\Google::configurado() ? \EnVivo\Google::avisosPendientes() : 0;
+    $panel = \EnVivo\PanelVentas::activo() ? \EnVivo\PanelVentas::enviarPendientes(200) : 0;   // ventas que no llegaron al Panel Tukán (se facturan allá)
     $chat = Chat::limpiarViejos();
     $ses = Db::q('DELETE FROM sesiones WHERE expira < ?', [time()])->rowCount();
     $int = Db::q('DELETE FROM intentos WHERE minuto < ?', [intdiv(time(), 60) - 24 * 60])->rowCount();
@@ -27,7 +28,7 @@ try {
     $dP = Duelos::revalidarPendientes() + Desafio::revalidarPendientes();     // si el validador estuvo caído
     $dC = Desafio::cerrarPendientes();                                        // premios del ranking del día anterior
     $dT = Duelos::cerrarTemporada(Duelos::temporada(strtotime(date('Y-m-01') . ' -1 day')));   // premios de la temporada que terminó
-    echo date('Y-m-d H:i') . " tareas OK: $vencidas publicaciones vencidas devueltas, $liberadas ventas liberadas, $google avisos a Google, $chat mensajes viejos borrados, $ses sesiones vencidas, $int intentos viejos, duelos/desafío: $dV vencidos, $dP revalidados, $dC días cerrados, $dT premios de temporada\n";
+    echo date('Y-m-d H:i') . " tareas OK: $vencidas publicaciones vencidas devueltas, $liberadas ventas liberadas, $google avisos a Google, $panel ventas al Panel Tukan, $chat mensajes viejos borrados, $ses sesiones vencidas, $int intentos viejos, duelos/desafío: $dV vencidos, $dP revalidados, $dC días cerrados, $dT premios de temporada\n";
 } catch (\Throwable $e) {
     fwrite(STDERR, 'ERROR en tareas: ' . $e->getMessage() . "\n");
     exit(1);

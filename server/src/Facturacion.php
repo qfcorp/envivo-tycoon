@@ -44,7 +44,8 @@ final class Facturacion
     public static function ahora(): int { return self::$reloj !== null ? (int) (self::$reloj)() : time(); }
 
     // ============================================================================================ configuración
-    public static function activa(): bool { return Config::get('FACTURACION_ACTIVA', '1') !== '0'; }
+    /** Apagada si FACTURACION_ACTIVA=0 o si las ventas se facturan por el Panel Tukán (src/PanelVentas.php): una sola factura por venta. */
+    public static function activa(): bool { return Config::get('FACTURACION_ACTIVA', '1') !== '0' && !(class_exists(PanelVentas::class) && PanelVentas::activo()); }
     public static function facturaGoogle(): bool { return Config::get('FACTURACION_GOOGLE', '1') !== '0'; }
     public static function clave(): string { return Config::get('FACTURACION_CLAVE'); }
     public static function claveLista(): bool { return strlen(self::clave()) >= 32; }
