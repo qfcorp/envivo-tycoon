@@ -369,7 +369,12 @@
     "fuera_de_combo": "existe · api.php (POST /api/gastar \"juego:\" / \"personal:\", Monedero::gastarCombo) · 403",
     "tope_combo": "existe · api.php (POST /api/gastar \"juego:\" / \"personal:\", Monedero::gastarCombo) · 409",
     "clave_actual_falta": "existe · Cuentas.php cambiarClave (POST /api/cuenta/clave) · 400 · texto en español en todos los idiomas hasta la traducción final",
-    "clave_igual": "existe · Cuentas.php cambiarClave (POST /api/cuenta/clave) · 400 · texto en español en todos los idiomas hasta la traducción final"
+    "clave_igual": "existe · Cuentas.php cambiarClave (POST /api/cuenta/clave) · 400 · texto en español en todos los idiomas hasta la traducción final",
+    "tukanpagos_no_responde": "existe · TukanPagos.php · 502",
+    "tukanpagos_no_disponible": "existe · TukanPagosApi.php · 503",
+    "firma_invalida": "existe · TukanPagosApi.php · 401",
+    "usar_tukanpagos": "existe · api.php · 409 (pago directo con Plux cerrado cuando Tukán Pagos está encendido)",
+    "invalido": "existe · ConectorCentral.php (token del conector central no válido)"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -739,7 +744,12 @@
     "fuera_de_combo": "Con créditos solo se completa el combo de un equipo que canjeaste con créditos y que está en tu bodega.",
     "tope_combo": "Ya llegaste al tope de esa pieza (o de ese rol) en el combo con créditos.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1109,7 +1119,12 @@
     "fuera_de_combo": "Credits can only complete the combo of gear you redeemed with credits and still have in your storage.",
     "tope_combo": "You already reached the limit for that part (or role) in the credits combo.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1479,7 +1494,12 @@
     "fuera_de_combo": "Com créditos só dá para completar o combo de um equipamento que você resgatou com créditos e que está no seu depósito.",
     "tope_combo": "Você já chegou ao limite dessa peça (ou função) no combo com créditos.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1849,7 +1869,12 @@
     "fuera_de_combo": "Avec des crédits, tu ne peux compléter que le combo d’un équipement échangé contre des crédits et présent dans ton entrepôt.",
     "tope_combo": "Tu as déjà atteint la limite de cette pièce (ou de ce rôle) dans le combo avec crédits.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2219,7 +2244,12 @@
     "fuera_de_combo": "Mit Credits kannst du nur das Combo eines Geräts vervollständigen, das du mit Credits eingelöst hast und das in deinem Lager ist.",
     "tope_combo": "Du hast das Limit für dieses Teil (oder diese Rolle) im Credit-Combo schon erreicht.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2589,7 +2619,12 @@
     "fuera_de_combo": "Con i crediti puoi completare solo il combo di un’attrezzatura riscattata con crediti e presente nel tuo magazzino.",
     "tope_combo": "Hai già raggiunto il limite per quel pezzo (o ruolo) nel combo con crediti.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -2959,7 +2994,12 @@
     "fuera_de_combo": "За кредиты можно докупить только комплект к оборудованию, которое ты получил за кредиты и которое есть на твоём складе.",
     "tope_combo": "Ты уже достиг лимита для этой детали (или роли) в комплекте за кредиты.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3329,7 +3369,12 @@
     "fuera_de_combo": "Kredilerle yalnızca kredilerle aldığın ve deponda olan bir ekipmanın setini tamamlayabilirsin.",
     "tope_combo": "Kredili sette o parça (ya da rol) için sınıra zaten ulaştın.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -3699,7 +3744,12 @@
     "fuera_de_combo": "Dengan kredit kamu hanya bisa melengkapi combo peralatan yang kamu tukar dengan kredit dan masih ada di gudangmu.",
     "tope_combo": "Kamu sudah mencapai batas untuk bagian (atau peran) itu di combo kredit.",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -4069,6 +4119,11 @@
     "fuera_de_combo": "只能用积分补齐你用积分兑换、且仍在仓库中的设备所需的组合。",
     "tope_combo": "这个部件（或职位）在积分组合中已达上限。",
     "clave_actual_falta": "Escribe tu contraseña actual.",
-    "clave_igual": "La contraseña nueva debe ser distinta de la actual."
+    "clave_igual": "La contraseña nueva debe ser distinta de la actual.",
+    "tukanpagos_no_responde": "No pudimos preparar el pago con tarjeta. No se hizo ningún cobro: intenta otra vez en un momento.",
+    "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
+    "firma_invalida": "Firma no válida.",
+    "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
+    "invalido": "Datos no válidos."
   }
 }
