@@ -227,7 +227,8 @@
   }
   const nubeVio = (r) => { const t = r && r.actualizado ? Date.parse(r.actualizado) : NaN; if (!isNaN(t)) nubeHora = t; };
   const nubeCuenta = () => (Api.estado && Api.estado.jugador ? Api.estado.jugador.id : null);
-  const nubeActiva = () => !!(Api.disponible && Api.logueado && Api.logueado());
+  let nubeSaliendo = false;    // "Cerrar sesión" en curso: desde que se toca ya no se sube nada (la partida queda aquí)
+  const nubeActiva = () => !!(!nubeSaliendo && Api.disponible && Api.logueado && Api.logueado());
   const nubeBase = () => (nubeInfo && nubeInfo.cuenta === nubeCuenta() && Number.isInteger(nubeInfo.rev) ? nubeInfo.rev : null);
   const nubeClave = (x) => (x ? [x.day, x.money, x.stats ? x.stats.events : 0].join('|') : '');
   // ¿Aquí hay avance (día, dinero o eventos) que la versión de la nube de la que partió no tiene?
@@ -954,6 +955,9 @@
           <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
           ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
         </div>${costBox}${turnoTxt ? `<div class="small turno-hoy" style="margin-top:8px">${I('calendar', 'sm')} ${turnoTxt}</div>` : ''}</div>`;
+    // Cuenta en el menú ⋯ Más (donde el jugador busca "Cuenta"): con sesión la tarjeta (Cambiar contraseña, Cerrar sesión)
+    const cuentaMas = Api.logueado && Api.logueado() && window.Cuenta && window.Cuenta.tarjeta ? window.Cuenta.tarjeta()
+      : (Api.disponible ? `<button class="btn" data-act="cuenta" data-modo="entrar">${I('user')}${T('cuenta.entrar_tu')}</button>` : '');
     const mas = `${installCard()}<button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
       ${soporteBtn()}${unirseDiscordBtn()}
       ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}
@@ -968,7 +972,7 @@
     return {
       S, A, T, I, esc, M, ctx, toast, snd: () => snd.play('tap'),
       etapa, local: venueName(), nombre: (S.productora || '').trim(),
-      modulos, extras: { historia: story, ultimo: ult, ayuda, local, cuenta: cuentaCard(), mas },
+      modulos, extras: { historia: story, ultimo: ult, ayuda, local, cuenta: cuentaCard(), mas, mas_arriba: cuentaMas },
       ofertas: S.contracts.length, danos: equiposEnRiesgo().length, dnstrip: stripDanos(),
       logueado: !!(Api.logueado && Api.logueado()), tutorial: tutorialHecho(),
       equipos: S.equip.length, camTipo: cams.length ? cams[cams.length - 1].type : 'cam_basic', vehiculos, vehTipo, personas: S.staff.length, trofeos, misHechas,
@@ -1000,6 +1004,8 @@
   const sinCuenta = () => !!(Api.disponible && Api.estado && !Api.logueado());
   const tutorialHecho = () => !!(S.storyDone || S.chapter >= 1);
   function cuentaCard() {
+    // Con sesión: tarjeta "Tu cuenta" en Tu sede (Cambiar contraseña y Cerrar sesión, js/cuenta.js)
+    if (Api.disponible && Api.logueado && Api.logueado()) return window.Cuenta && window.Cuenta.tarjeta ? window.Cuenta.tarjeta() : '';
     if (!sinCuenta() || !tutorialHecho()) return '';
     return `<div class="card aviso-cuenta">
       <p class="small muted" style="margin:0 0 4px">${T('avisoc.det', { d: S.day, n: S.stats.events })}</p>
@@ -2121,6 +2127,30 @@
     } catch (e) {
       $('cu-error').textContent = TL(e.message); btn.disabled = false; snd.play('error');
     }
+  }
+
+  /* Cerrar sesión (Inicio → Tu sede / ⋯ Más y Tienda → Tu cuenta). Reglas de la nube (nube-proteger): la partida de este
+     aparato se queda tal cual y NO se sube nada: se cancela el guardado pendiente y, desde que se toca, nubeActiva() es
+     falso. Al volver a entrar, alConectar revisa la nube desde cero y se queda la de más avance, como siempre. */
+  async function cerrarSesion() {
+    if (nubeSaliendo) return;
+    nubeSaliendo = true;
+    clearTimeout(nubeT); nubeT = null;
+    try {
+      if (nubeSubiendo) { try { await nubeSubiendo; } catch (e) { /* nada */ } }   // un guardado que ya salía termina (no se corta a medias)
+      await Api.salir();
+    } catch (err) {
+      nubeSaliendo = false;
+      toast(TL(err.message));
+      return;
+    }
+    nubeLista = null; nubeBloqueo = false; nubePendiente = false;
+    nubeSaliendo = false;
+    if (Pm) Pm.setVip(false);
+    invalidarOnline(); vistaOnline = 'hub';
+    toast(T('cuenta.salio'));
+    if (window.Chat) window.Chat.refrescar();
+    render();
   }
 
   // Después de iniciar sesión o al abrir el juego con sesión: entregas, VIP y partida en la nube
@@ -3666,7 +3696,8 @@
       case 'cuenta-info': avisoCuenta(); break;
       case 'cuenta-borrar': if (window.Cuenta) window.Cuenta.abrirBorrar({ openModal, closeModal, toast, snd, alBorrar: () => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; if (window.Chat) window.Chat.refrescar(); render(); } }); break;
       case 'nombre': abrirNombre(); break;
-      case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
+      case 'salir': cerrarSesion(); break;
+      case 'cuenta-clave': if (window.Cuenta && window.Cuenta.abrirClave) window.Cuenta.abrirClave({ openModal, closeModal, toast, snd }); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
       case 'comprar': comprar(el.dataset.k, el.dataset.metodo); break;

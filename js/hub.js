@@ -522,7 +522,8 @@
     if (k === 'antena') html = `<button class="btn main" data-act="tab" data-tab="online">${d.I('online')}${esc(t('ir_online'))}</button>` + (html || `<p class="small muted">${esc(t('antena_vacia'))}</p>`);
     if (k === 'buzon' && !html) html = `<p class="small muted">${esc(t('buzon_vacio'))}</p><button class="btn" data-ext="buzon" data-acc="abrir">${d.I('gift')}${esc(t('buzon_abrir'))}</button>`;
     if (k === 'mas') {
-      html = (d.modulos || []).filter((m) => m.html && lugarDeModulo(m) === 'mas').map((m) => m.html).join('') + (d.extras && d.extras.mas ? d.extras.mas : '');
+      // extras.mas_arriba (la tarjeta "Tu cuenta" que manda ui.js) va primero: ahí busca el jugador cerrar sesión
+      html = (d.extras && d.extras.mas_arriba ? d.extras.mas_arriba : '') + (d.modulos || []).filter((m) => m.html && lugarDeModulo(m) === 'mas').map((m) => m.html).join('') + (d.extras && d.extras.mas ? d.extras.mas : '');
     }
     return html;
   }

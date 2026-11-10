@@ -46,6 +46,14 @@ los ids aplicados dentro de su partida (`s.premium.aplicadas`).
   Clave mínimo 8 caracteres. Email único.
 - `POST /api/entrar` `{ "email", "clave" }` → estado. Límite de intentos por IP y por email.
 - `POST /api/salir` → `{ "ok": true }`
+- `POST /api/cuenta/clave` `{ "actual", "nueva", "idioma"? }` (requiere sesión) → `{ "ok": true, "mensaje", "sesiones_cerradas": n }`.
+  Cambia la contraseña con la sesión abierta: mismas reglas y hash que el registro (8–200 caracteres, bcrypt). Cierra las
+  DEMÁS sesiones del jugador (la de este aparato sigue), anula los enlaces de recuperación pendientes, limpia el bloqueo por
+  claves equivocadas de `/api/entrar`, anota `clave_cambiada` en la auditoría (`clave_cambio_fallido` si la actual es mala)
+  y manda el correo "tu contraseña cambió" (plantilla `clave_cambiada`, idioma de `idioma` o de `Accept-Language`).
+  Errores: 401 `sesion_requerida` · 400 `clave_actual_falta` · 400 `clave_incorrecta` (la actual no es) · 400 `clave_corta`
+  (`min`) / `clave_larga` · 400 `clave_igual` (la nueva es la misma) · 429 `limite_intentos` (10 intentos por cuenta y 30 por
+  conexión cada 10 minutos) · 403 `cuenta_baneada` / `cuenta_borrada`. El juego: Inicio → ⋯ Más / Tu sede → tarjeta "Tu cuenta".
 
 ## Partida en la nube (requiere sesión) — con versión y un solo dispositivo activo (`src/Partidas.php`)
 Una partida por cuenta. Cada guardado sube `rev` en 1. `dispositivo` es un código al azar de la pestaña (8–64 de
@@ -191,6 +199,7 @@ Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos`
 | ruta | cuerpo | respuesta |
 |---|---|---|
 | `/api/tarjeta/reclamar` | — | `{creditos, recibidos: 20, tarjeta_reclamada_hoy: true}`; 403 `tarjeta_requerida`, 409 `ya_reclamado` |
+| `/api/cuenta/clave` | `{actual, nueva}` | `{ok, mensaje, sesiones_cerradas}`; cambia la contraseña con sesión y cierra las otras sesiones (ver «Cuenta» arriba) |
 | `/api/cuenta/borrar` | `{confirmar: "BORRAR", clave}` | `{borrada: true}`; anonimiza la cuenta, conserva las compras (SRI). Página pública: `/borrar-cuenta.html` |
 | `/api/cuenta/terminos` | `{acepta_terminos: true, edad_16: true}` (GET: solo consulta) | `{terminos: {version, aceptados, aceptado_en, edad_minima}}`; 400 `terminos_requeridos` / `edad_requerida`. Sin aceptar, `POST /api/chat` → 403 `terminos_pendientes` |
 | `/api/cuenta/transferir/iniciar` | `{email_nuevo}` | crea la orden de `transferencia_cuenta` ($9,99) para pagar con `/pago.php` |

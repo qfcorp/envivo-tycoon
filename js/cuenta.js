@@ -2,7 +2,9 @@
    EN VIVO Tycoon — Cuenta: lo que pide Google Play dentro del juego (server/INTEGRAR_CUENTA.md)
    - Registro: casillas "Acepto los Términos y la Política de privacidad" y "Tengo 16 años o más"
      (Cuenta.camposRegistro / faltaRegistro / datosRegistro, las usa abrirCuenta de ui.js).
-   - Tienda → Tu cuenta: "Borrar mi cuenta" (Cuenta.botones / abrirBorrar): explica qué se pierde, pide la clave y
+   - Tarjeta "Tu cuenta" (Cuenta.tarjeta, la pone ui.js en Inicio → Tu sede y ⋯ Más): nombre, correo, "Cambiar contraseña"
+     (Cuenta.abrirClave → POST /api/cuenta/clave {actual, nueva}) y "Cerrar sesión" (data-act="salir", lo hace ui.js).
+   - Tienda → Tu cuenta: "Cerrar sesión" (ui.js) y "Borrar mi cuenta" (Cuenta.botones / abrirBorrar): explica qué se pierde, pide la clave y
      escribir BORRAR, llama POST /api/cuenta/borrar, cierra la sesión y deja la partida de este dispositivo.
    - Cuentas creadas antes (o que cambiaron de dueño): antes del chat, el mercado y los modos en línea se pide UNA vez
      aceptar (POST /api/cuenta/terminos). El servidor no deja escribir en el chat sin aceptar (terminos_pendientes).
@@ -208,7 +210,9 @@
       .cu-lista{margin:6px 0 10px;padding-inline-start:20px;font-size:14px;line-height:1.45}
       .cu-lista li{margin:3px 0}
       .cu-nota{font-size:13px;color:var(--muted);margin:6px 0}
-      .cu-ok{font-size:14px;color:var(--green);margin:8px 0}`;
+      .cu-ok{font-size:14px;color:var(--green);margin:8px 0}
+      .cu-tit{margin:0 0 4px;display:flex;align-items:center;gap:6px}
+      .cu-quien{margin:0 0 8px;overflow-wrap:anywhere}`;
     document.head.appendChild(s);
   }
 
@@ -348,7 +352,86 @@
     (ctx.toast || toast)(T('borrada'));
   }
 
+  // ---------------------------------------------------------------- tarjeta "Tu cuenta" y cambiar la contraseña
+  // Textos nuevos solo en español (js/lang/es.js, claves cuenta.*): los demás idiomas caen al español hasta la traducción.
+  const CLAVE_MIN = 8;
+  function TI(k, p) {
+    try { if (root.I18N && root.I18N.T) { const t = root.I18N.T(k, p); if (t && t !== k) return t; } } catch (e) { /* nada */ }
+    return k;
+  }
+  const ico = (n) => { try { return root.Art && root.Art.icon ? root.Art.icon(n, 'sm') : ''; } catch (e) { return ''; } };
+  const logueado = () => { const A = Api(); return !!(A && A.disponible && A.estado && A.estado.logueado && A.estado.jugador); };
+  /** Tarjeta "Tu cuenta" (Inicio → Tu sede y ⋯ Más): nombre, correo, Cambiar contraseña y Cerrar sesión. '' sin sesión. */
+  function tarjeta() {
+    if (!logueado()) return '';
+    css();
+    const j = Api().estado.jugador;
+    return `<div class="card cu-tarjeta" data-cuenta-tarjeta="1">
+      <h3 class="cu-tit">${ico('user')} ${esc(TI('cuenta.tu_cuenta'))}</h3>
+      <p class="small muted cu-quien">${esc(j.nombre)}<br>${esc(j.email)}</p>
+      <button class="btn" data-act="cuenta-clave">${ico('lock')}${esc(TI('cuenta.cambiar_clave'))}</button>
+      <button class="btn" data-act="salir">${esc(TI('cuenta.salir'))}</button>
+      <button class="btn sm" data-act="tab" data-tab="tienda" data-sub="creditos">${esc(TI('cuenta.mas_opciones'))}</button></div>`;
+  }
+  let ctxC = null;
+  function abrirClave(ctx) {
+    ctxC = ctx || {};
+    css();
+    const campo = (id, txt, auto) => `<label class="field">${esc(txt)}<input id="${id}" type="password" autocomplete="${auto}" maxlength="200" spellcheck="false" autocapitalize="off"></label>`;
+    const html = `<div class="row between"><h2>${esc(TI('cuenta.cambiar_clave'))}</h2><button class="btn sm" data-act="close" aria-label="${esc(TI('comun.cerrar'))}">${cruz()}</button></div>
+      <form id="formClaveCuenta" autocomplete="on" novalidate>
+        ${campo('cuC-actual', TI('cuenta.clave_actual'), 'current-password')}
+        ${campo('cuC-nueva', TI('cuenta.clave_nueva', { n: CLAVE_MIN }), 'new-password')}
+        ${campo('cuC-repite', TI('cuenta.clave_repite'), 'new-password')}
+        <label class="cu-check"><input type="checkbox" id="cuC-ver"><span>${esc(TI('cuenta.clave_ver'))}</span></label>
+        <p class="small neg" id="cuC-error" aria-live="polite"></p>
+        <button class="btn main" type="submit" id="cuC-btn">${esc(TI('cuenta.clave_guardar'))}</button>
+      </form>
+      <p class="cu-nota">${esc(TI('cuenta.clave_nota'))}</p>
+      <button class="btn" data-act="close">${esc(TI('comun.cancelar'))}</button>`;
+    if (ctxC.openModal) ctxC.openModal(html); else abrirVentana(html);
+    setTimeout(() => { const a = $('cuC-actual'); if (a) try { a.focus(); } catch (e) { /* nada */ } }, 50);
+  }
+  /** Revisa el formulario: el texto del error o '' si se puede enviar. */
+  function faltaClave(actual, nueva, repite) {
+    if (!actual) return TI('cuenta.clave_e_actual');
+    if (nueva.length < CLAVE_MIN) return TI('cuenta.clave_e_corta', { n: CLAVE_MIN });
+    if (nueva.length > 200) return TI('error.clave_larga');
+    if (nueva !== repite) return TI('cuenta.clave_e_distintas');
+    if (nueva === actual) return TI('cuenta.clave_e_igual');
+    return '';
+  }
+  async function enviarClave() {
+    const err = $('cuC-error'), btn = $('cuC-btn');
+    if (!err || !btn) return;
+    const actual = ($('cuC-actual') || {}).value || '', nueva = ($('cuC-nueva') || {}).value || '', repite = ($('cuC-repite') || {}).value || '';
+    const sonido = (n) => { try { if (ctxC && ctxC.snd) ctxC.snd.play(n); } catch (x) { /* nada */ } };
+    const f = faltaClave(actual, nueva, repite);
+    if (f) { err.textContent = f; sonido('error'); return; }
+    btn.disabled = true; err.textContent = '';
+    try {
+      await post('/api/cuenta/clave', { actual, nueva, idioma: idioma() });
+    } catch (e) {
+      const propio = { clave_incorrecta: 'cuenta.clave_e_incorrecta', clave_igual: 'cuenta.clave_e_igual', clave_actual_falta: 'cuenta.clave_e_actual' }[e.codigo];
+      err.textContent = propio ? TI(propio) : e.message;
+      btn.disabled = false; sonido('error');
+      if (e.codigo === 'clave_incorrecta') { const a = $('cuC-actual'); if (a) { a.value = ''; try { a.focus(); } catch (x) { /* nada */ } } }
+      if (e.codigo === 'sesion_requerida' || e.status === 401) { const A = Api(); try { if (A) await A.refrescar(); } catch (x) { /* nada */ } }
+      return;
+    }
+    const ctx = ctxC || {}; ctxC = null;
+    if (ctx.closeModal) ctx.closeModal(); else cerrarVentana();
+    try { if (ctx.snd) ctx.snd.play('hire'); } catch (x) { /* nada */ }
+    (ctx.toast || toast)(TI('cuenta.clave_lista'));
+  }
+
   // ---------------------------------------------------------------- eventos
+  document.addEventListener('change', (e) => {
+    if (!e.target || e.target.id !== 'cuC-ver') return;
+    const tipo = e.target.checked ? 'text' : 'password';
+    ['cuC-actual', 'cuC-nueva', 'cuC-repite'].forEach((id) => { const i = $(id); if (i) i.type = tipo; });
+  });
+  document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'formClaveCuenta') { e.preventDefault(); enviarClave(); } });
   document.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('[data-cuenta]');
     if (b && !b.disabled && b.dataset.cuenta === 'aceptar') { aceptar(); return; }
@@ -403,6 +486,11 @@
       <a class="cu-web" href="/borrar-cuenta.html" target="_blank" rel="noopener">${esc(T('borrar_web'))}</a>`; },
     /** ctx: { openModal, closeModal, toast, snd, alBorrar } (todo opcional). */
     abrirBorrar,
+    /** Tarjeta "Tu cuenta" para Inicio (Tu sede y ⋯ Más); '' sin sesión. */
+    tarjeta,
+    /** Ventana "Cambiar contraseña" (POST /api/cuenta/clave). ctx: { openModal, closeModal, toast, snd } (opcional). */
+    abrirClave,
+    faltaClave,
     pendiente,
     pedirAceptar,
   };
