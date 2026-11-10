@@ -399,7 +399,7 @@ si('…la página muestra el aviso', $a->http === 200 && $a->tiene('llegó incom
 $a->get('/api/plux/3ds?pti=PTI-1&pcc=MALO&ptk=TK-1');
 check('El banco no aprueba (3DS falla) -> página de pago con aviso, sin entregar', ['/pago.php?o=' . $tok3b . '&r=rechazado', 'pendiente'], [$a->lugar, $compra($tok3b)['estado']]);
 $sinSesion = new Nav($URL, 'sin_sesion_3ds');
-$sinSesion->get('/api/plux/3ds?pti=PTI-1&pcc=PCC-1&ptk=TK-zzz');
+$sinSesion->get('/api/plux/3ds?pti=PTI-1&pcc=PCC-1&ptk=TK-zzz&prc=PRC-zzz');
 check('3DS aprobado en un navegador sin sesión: no se pierde (queda un aviso para el admin)', [200, 1], [$sinSesion->http, (int) $val("SELECT COUNT(*) FROM avisos WHERE tipo = 'plux_sin_relacionar'")]);
 [$otroJ] = $nuevo('OtroJ');
 $otroJ->get($vuelta);

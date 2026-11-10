@@ -96,7 +96,7 @@ $x1->get('/pago.php?o=' . $tokBarata);   // abrir otra página de pago NO cambia
 $r = $pagar($x1, $tokCara, '5555555555554444');
 $x1->get($r['detail']['url']);
 $v3 = $x1->lugar;
-file_put_contents(getenv('FALSO_LOG') . '.ref_' . preg_replace('/^.*ptk=TK-/', '', $v3), '0.01');   // Plux "confirma" otro valor
+file_put_contents(getenv('FALSO_LOG') . '.ref_' . preg_replace('/^.*ptk=TK-([^&]*).*$/', '$1', $v3), '0.01');   // Plux "confirma" otro valor
 $x1->get($v3);
 check('Confirmación con otro valor -> NO se aprueba', ['pendiente', $sx, true], [$compra($tokCara)['estado'], $saldo($JX1), str_contains((string) $val("SELECT detalle FROM avisos WHERE tipo = 'plux_3ds_no_coincide' ORDER BY id DESC LIMIT 1"), 'valor')]);
 $r = $pagar($x1, $tokCara, '5555555555554444');

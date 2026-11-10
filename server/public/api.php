@@ -339,6 +339,7 @@ function api_plux_3ds(): never
 {
     $g = fn(string $k, int $n) => mb_substr(trim(is_string($_GET[$k] ?? null) ? $_GET[$k] : (is_string($_POST[$k] ?? null) ? $_POST[$k] : '')), 0, $n);
     $pti = $g('pti', 500); $pcc = $g('pcc', 500); $ptk = $g('ptk', 2000);
+    $prc = $g('prc', 500);   // prc: identificador del proceso. Plux (10 nov 2026) pide mandar los 4 (pti, pcc, ptk, prc) al cerrar el 3D Secure; sin prc no crea la suscripción.
     $j = Sesiones::jugadorId();
     $cid = Sesiones::compraRecordada();
     $c = $cid ? Compras::porId($cid) : null;
@@ -355,7 +356,7 @@ function api_plux_3ds(): never
         if ($c) Http::redirigir('/pago.php?o=' . $c['token'] . '&r=rechazado');
         Http::pagina(409, 'Pago no completado', 'Esa confirmación del banco ya se usó.');
     }
-    $r = Plux::llamar(Plux::RUTA_3DS, ['pti' => $pti, 'pcc' => $pcc, 'ptk' => $ptk]);
+    $r = Plux::llamar(Plux::RUTA_3DS, ['pti' => $pti, 'pcc' => $pcc, 'ptk' => $ptk] + ($prc !== '' ? ['prc' => $prc] : []));
     $tr = Plux::transaccion($r);
     if (!$c) {
         // Sin sesión (otro navegador o se borraron las galletas): se intenta por el número de transacción.
