@@ -116,6 +116,7 @@ try {
         '/tarjeta/reclamar' => $soloPost() && api_tarjeta_reclamar(),
         // Transferencia oficial de cuenta (src/Transferencias.php)
         '/cuenta/borrar' => $soloPost() && api_cuenta_borrar(),
+        '/cuenta/clave' => $soloPost() && api_cuenta_clave(),
         '/cuenta/transferir/iniciar' => $soloPost() && api_transferir_iniciar(),
         '/cuenta/transferir/confirmar' => $soloPost() && api_transferir_confirmar(),
         '/cuenta/transferir/cancelar' => $soloPost() && api_transferir_cancelar(),
@@ -573,6 +574,17 @@ function api_soporte_responder(): never
 {
     $in = Http::entrada(20000);
     Http::json(200, Soporte::responder(requiere_sesion(), entero_de($in, 'caso_id'), $in['mensaje'] ?? ''));
+}
+
+// ---------------------------------------------------------------------------------------------- cambiar la contraseña
+/** POST /api/cuenta/clave {actual, nueva}: cambia la contraseña con la sesión abierta (ver Cuentas::cambiarClave). */
+function api_cuenta_clave(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(10000);
+    $idioma = texto_de($in, 'idioma') !== '' ? texto_de($in, 'idioma') : \EnVivo\CorreoPlantillas::idiomaDeCabecera((string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
+    $cerradas = Cuentas::cambiarClave($j, texto_de($in, 'actual'), texto_de($in, 'nueva'), $idioma);
+    Http::json(200, ['ok' => true, 'mensaje' => 'Listo: tu contraseña cambió. Cerramos tu sesión en los otros dispositivos.', 'sesiones_cerradas' => $cerradas]);
 }
 
 // ---------------------------------------------------------------------------------------------- borrar la cuenta

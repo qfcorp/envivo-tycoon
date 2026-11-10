@@ -85,6 +85,49 @@ final class Cuentas
         }
     }
 
+    public const MAX_CLAVE_CUENTA = 10;   // intentos de cambiar la contraseña por cuenta cada 10 minutos
+    public const MAX_CLAVE_IP = 30;       // por conexión cada 10 minutos
+
+    /**
+     * Cambiar la contraseña con la sesión abierta (POST /api/cuenta/clave {actual, nueva}). Pide la clave actual, usa las
+     * mismas reglas y el mismo hash que el registro, cierra las DEMÁS sesiones (la de este aparato sigue abierta), anota en
+     * la auditoría y manda el aviso "tu contraseña cambió" igual que Recuperar. Devuelve cuántas sesiones se cerraron.
+     */
+    public static function cambiarClave(int $jugador, string $actual, string $nueva, string $idioma = 'es'): int
+    {
+        if (Limite::contar('claveip:' . Http::ip(), self::MAX_CLAVE_IP) || Limite::contar('clave:' . $jugador, self::MAX_CLAVE_CUENTA))
+            throw new Fallo('Demasiados intentos. Espera unos minutos e intenta de nuevo.', 429, ['codigo' => 'limite_intentos']);
+        $j = self::porId($jugador);
+        Fallo::si(!$j, 'La cuenta no existe.', 404);
+        if (!in_array((string) $j['estado'], ['activo', 'suspendido'], true)) self::exigirActiva($jugador);   // baneada o borrada: 403
+        if ($actual === '') throw new Fallo('Escribe tu contraseña actual.', 400, ['codigo' => 'clave_actual_falta']);
+        if (strlen($nueva) < self::CLAVE_MIN) throw new Fallo('La clave debe tener al menos ' . self::CLAVE_MIN . ' caracteres.', 400, ['codigo' => 'clave_corta', 'min' => self::CLAVE_MIN]);
+        if (strlen($nueva) > 200) throw new Fallo('La clave es demasiado larga.', 400, ['codigo' => 'clave_larga']);
+        if (!password_verify($actual, (string) $j['clave_hash'])) {
+            try { Auditoria::anotar('jugador', 'clave_cambio_fallido', 'Intento de cambiar la contraseña con la clave actual equivocada.', $jugador); } catch (\Throwable) {}
+            throw new Fallo('La contraseña actual no es correcta.', 400, ['codigo' => 'clave_incorrecta']);
+        }
+        if (hash_equals($actual, $nueva)) throw new Fallo('La contraseña nueva debe ser distinta de la actual.', 400, ['codigo' => 'clave_igual']);
+        $hash = password_hash($nueva, PASSWORD_BCRYPT);
+        $cerradas = 0;
+        Db::tx(function () use ($jugador, $hash, &$cerradas): void {
+            Db::q("UPDATE jugadores SET clave_hash = ? WHERE id = ? AND estado IN ('activo', 'suspendido')", [$hash, $jugador]);
+            if (Migraciones::columnas('recuperaciones') !== null) Db::q('UPDATE recuperaciones SET usado = ? WHERE jugador_id = ? AND usado IS NULL', [time(), $jugador]);   // enlaces pedidos antes ya no sirven
+            $cerradas = Sesiones::revocarOtras($jugador);
+            Auditoria::anotar('jugador', 'clave_cambiada', 'El jugador cambió su contraseña desde el juego; se cerraron sus otras sesiones (' . $cerradas . ').', $jugador);
+        });
+        // Las claves equivocadas de antes ya no lo dejan esperando para entrar (igual que Recuperar)
+        try { Db::q('DELETE FROM intentos WHERE clave = ?', ['entrar:' . hash('sha256', self::normalizarEmail((string) $j['email']))]); } catch (\Throwable) {}
+        $para = (string) $j['email'];
+        $nombre = (string) $j['nombre'];
+        $idioma = CorreoPlantillas::idioma($idioma);
+        Correo::despues(function () use ($para, $nombre, $idioma): void {
+            $c = CorreoPlantillas::armar('clave_cambiada', $idioma, ['nombre' => $nombre, 'fecha' => date('Y-m-d H:i') . ' (' . Config::zona() . ')']);
+            Correo::enviar($para, $c['asunto'], $c['html'], $c['texto']);
+        });
+        return $cerradas;
+    }
+
     /** Marca de riesgo para el Centro de Control (no bloquea nada por sí sola). */
     public static function marcarRiesgo(int $jugador, string $motivo): void
     {

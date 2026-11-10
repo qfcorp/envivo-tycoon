@@ -56,6 +56,14 @@ final class Sesiones
     /** Cierra TODAS las sesiones de un jugador (transferencia de cuenta, baneo, "cerrar sesiones" del panel). */
     public static function revocarTodas(int $jugador): int { return Db::q('DELETE FROM sesiones WHERE jugador_id = ?', [$jugador])->rowCount(); }
 
+    /** Cierra las demás sesiones del jugador y deja abierta solo la de esta petición (cambiar la contraseña con sesión). */
+    public static function revocarOtras(int $jugador): int
+    {
+        $s = self::actual();
+        if (!$s || (int) $s['jugador_id'] !== $jugador) return self::revocarTodas($jugador);
+        return Db::q('DELETE FROM sesiones WHERE jugador_id = ? AND token_hash <> ?', [$jugador, $s['token_hash']])->rowCount();
+    }
+
     public static function jugadorId(): ?int
     {
         $s = self::actual();

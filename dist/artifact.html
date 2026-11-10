@@ -25524,6 +25524,22 @@
     'cuenta.hola': '¡Hola, {nombre}!',
     'cuenta.salir': 'Cerrar sesión',
     'cuenta.salio': 'Cerraste sesión. Tu partida sigue en este celular.',
+    'cuenta.tu_cuenta': 'Tu cuenta',
+    'cuenta.entrar_tu': 'Entrar a tu cuenta',
+    'cuenta.mas_opciones': 'Más opciones de la cuenta',
+    'cuenta.cambiar_clave': 'Cambiar contraseña',
+    'cuenta.clave_actual': 'Contraseña actual',
+    'cuenta.clave_nueva': 'Contraseña nueva (mínimo {n} caracteres)',
+    'cuenta.clave_repite': 'Repite la contraseña nueva',
+    'cuenta.clave_ver': 'Mostrar contraseñas',
+    'cuenta.clave_guardar': 'Guardar contraseña nueva',
+    'cuenta.clave_nota': 'Al cambiarla se cierra tu sesión en tus otros dispositivos; en este sigues dentro. ¿No recuerdas la actual? Cierra sesión y usa «¿Olvidaste tu contraseña?».',
+    'cuenta.clave_e_actual': 'Escribe tu contraseña actual.',
+    'cuenta.clave_e_corta': 'La contraseña nueva debe tener al menos {n} caracteres.',
+    'cuenta.clave_e_distintas': 'Las dos contraseñas nuevas no coinciden.',
+    'cuenta.clave_e_igual': 'La contraseña nueva debe ser distinta de la actual.',
+    'cuenta.clave_e_incorrecta': 'La contraseña actual no es correcta.',
+    'cuenta.clave_lista': 'Listo: tu contraseña cambió. Cerramos tu sesión en tus otros dispositivos.',
     'cuenta.para_comprar': 'Crea tu cuenta para comprar: así tus compras quedan guardadas.',
     'avisoc.t': 'Tu productora está solo en este celular',
     'avisoc.det': 'Día {d} · {n} eventos. Si se borran los datos del navegador o cambias de celular, se pierde todo. Con tu cuenta gratis queda guardada en la nube.',
@@ -25997,6 +26013,8 @@
     "error.paypal_metodo_distinto": "Esta compra es para pagar con tarjeta. Vuelve a la tienda y elige PayPal.",
     "error.paypal_error": "No se pudo conectar con PayPal. No se hizo ningún cobro: intenta otra vez en unos minutos.",
     "error.pago_metodo_distinto": "Esta compra es para pagar con PayPal. Vuelve a la tienda y elige «Pagar con tarjeta».",
+    "error.clave_actual_falta": "Escribe tu contraseña actual.",
+    "error.clave_igual": "La contraseña nueva debe ser distinta de la actual.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Música",
     "head.musica_on": "Activar música",
@@ -38851,7 +38869,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v47', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v48', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -40046,7 +40064,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
   const nubeVio = (r) => { const t = r && r.actualizado ? Date.parse(r.actualizado) : NaN; if (!isNaN(t)) nubeHora = t; };
   const nubeCuenta = () => (Api.estado && Api.estado.jugador ? Api.estado.jugador.id : null);
-  const nubeActiva = () => !!(Api.disponible && Api.logueado && Api.logueado());
+  let nubeSaliendo = false;    // "Cerrar sesión" en curso: desde que se toca ya no se sube nada (la partida queda aquí)
+  const nubeActiva = () => !!(!nubeSaliendo && Api.disponible && Api.logueado && Api.logueado());
   const nubeBase = () => (nubeInfo && nubeInfo.cuenta === nubeCuenta() && Number.isInteger(nubeInfo.rev) ? nubeInfo.rev : null);
   const nubeClave = (x) => (x ? [x.day, x.money, x.stats ? x.stats.events : 0].join('|') : '');
   // ¿Aquí hay avance (día, dinero o eventos) que la versión de la nube de la que partió no tiene?
@@ -40773,6 +40792,9 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
           <span class="tag">${I('rec')}${T('inicio.eventos', { n: S.stats.events })}</span>
           ${S.stats.fiveStars ? `<span class="tag">${I('star')}${T('inicio.eventos_5e', { n: S.stats.fiveStars })}</span>` : ''}
         </div>${costBox}${turnoTxt ? `<div class="small turno-hoy" style="margin-top:8px">${I('calendar', 'sm')} ${turnoTxt}</div>` : ''}</div>`;
+    // Cuenta en el menú ⋯ Más (donde el jugador busca "Cuenta"): con sesión la tarjeta (Cambiar contraseña, Cerrar sesión)
+    const cuentaMas = Api.logueado && Api.logueado() && window.Cuenta && window.Cuenta.tarjeta ? window.Cuenta.tarjeta()
+      : (Api.disponible ? `<button class="btn" data-act="cuenta" data-modo="entrar">${I('user')}${T('cuenta.entrar_tu')}</button>` : '');
     const mas = `${installCard()}<button class="btn" data-act="idioma">${I('stream')}${T('idioma.boton')}: ${esc(nombreIdioma())}</button>
       ${soporteBtn()}${unirseDiscordBtn()}
       ${window.Compartir ? window.Compartir.inicio(ctxInicio()) : ''}
@@ -40787,7 +40809,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     return {
       S, A, T, I, esc, M, ctx, toast, snd: () => snd.play('tap'),
       etapa, local: venueName(), nombre: (S.productora || '').trim(),
-      modulos, extras: { historia: story, ultimo: ult, ayuda, local, cuenta: cuentaCard(), mas },
+      modulos, extras: { historia: story, ultimo: ult, ayuda, local, cuenta: cuentaCard(), mas, mas_arriba: cuentaMas },
       ofertas: S.contracts.length, danos: equiposEnRiesgo().length, dnstrip: stripDanos(),
       logueado: !!(Api.logueado && Api.logueado()), tutorial: tutorialHecho(),
       equipos: S.equip.length, camTipo: cams.length ? cams[cams.length - 1].type : 'cam_basic', vehiculos, vehTipo, personas: S.staff.length, trofeos, misHechas,
@@ -40819,6 +40841,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   const sinCuenta = () => !!(Api.disponible && Api.estado && !Api.logueado());
   const tutorialHecho = () => !!(S.storyDone || S.chapter >= 1);
   function cuentaCard() {
+    // Con sesión: tarjeta "Tu cuenta" en Tu sede (Cambiar contraseña y Cerrar sesión, js/cuenta.js)
+    if (Api.disponible && Api.logueado && Api.logueado()) return window.Cuenta && window.Cuenta.tarjeta ? window.Cuenta.tarjeta() : '';
     if (!sinCuenta() || !tutorialHecho()) return '';
     return `<div class="card aviso-cuenta">
       <p class="small muted" style="margin:0 0 4px">${T('avisoc.det', { d: S.day, n: S.stats.events })}</p>
@@ -41940,6 +41964,30 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     } catch (e) {
       $('cu-error').textContent = TL(e.message); btn.disabled = false; snd.play('error');
     }
+  }
+
+  /* Cerrar sesión (Inicio → Tu sede / ⋯ Más y Tienda → Tu cuenta). Reglas de la nube (nube-proteger): la partida de este
+     aparato se queda tal cual y NO se sube nada: se cancela el guardado pendiente y, desde que se toca, nubeActiva() es
+     falso. Al volver a entrar, alConectar revisa la nube desde cero y se queda la de más avance, como siempre. */
+  async function cerrarSesion() {
+    if (nubeSaliendo) return;
+    nubeSaliendo = true;
+    clearTimeout(nubeT); nubeT = null;
+    try {
+      if (nubeSubiendo) { try { await nubeSubiendo; } catch (e) { /* nada */ } }   // un guardado que ya salía termina (no se corta a medias)
+      await Api.salir();
+    } catch (err) {
+      nubeSaliendo = false;
+      toast(TL(err.message));
+      return;
+    }
+    nubeLista = null; nubeBloqueo = false; nubePendiente = false;
+    nubeSaliendo = false;
+    if (Pm) Pm.setVip(false);
+    invalidarOnline(); vistaOnline = 'hub';
+    toast(T('cuenta.salio'));
+    if (window.Chat) window.Chat.refrescar();
+    render();
   }
 
   // Después de iniciar sesión o al abrir el juego con sesión: entregas, VIP y partida en la nube
@@ -43485,7 +43533,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       case 'cuenta-info': avisoCuenta(); break;
       case 'cuenta-borrar': if (window.Cuenta) window.Cuenta.abrirBorrar({ openModal, closeModal, toast, snd, alBorrar: () => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; if (window.Chat) window.Chat.refrescar(); render(); } }); break;
       case 'nombre': abrirNombre(); break;
-      case 'salir': Api.salir().then(() => { if (Pm) Pm.setVip(false); invalidarOnline(); vistaOnline = 'hub'; toast(T('cuenta.salio')); if (window.Chat) window.Chat.refrescar(); render(); }).catch((err) => toast(TL(err.message))); break;
+      case 'salir': cerrarSesion(); break;
+      case 'cuenta-clave': if (window.Cuenta && window.Cuenta.abrirClave) window.Cuenta.abrirClave({ openModal, closeModal, toast, snd }); break;
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
       case 'comprar': comprar(el.dataset.k, el.dataset.metodo); break;
@@ -44325,7 +44374,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (k === 'antena') html = `<button class="btn main" data-act="tab" data-tab="online">${d.I('online')}${esc(t('ir_online'))}</button>` + (html || `<p class="small muted">${esc(t('antena_vacia'))}</p>`);
     if (k === 'buzon' && !html) html = `<p class="small muted">${esc(t('buzon_vacio'))}</p><button class="btn" data-ext="buzon" data-acc="abrir">${d.I('gift')}${esc(t('buzon_abrir'))}</button>`;
     if (k === 'mas') {
-      html = (d.modulos || []).filter((m) => m.html && lugarDeModulo(m) === 'mas').map((m) => m.html).join('') + (d.extras && d.extras.mas ? d.extras.mas : '');
+      // extras.mas_arriba (la tarjeta "Tu cuenta" que manda ui.js) va primero: ahí busca el jugador cerrar sesión
+      html = (d.extras && d.extras.mas_arriba ? d.extras.mas_arriba : '') + (d.modulos || []).filter((m) => m.html && lugarDeModulo(m) === 'mas').map((m) => m.html).join('') + (d.extras && d.extras.mas ? d.extras.mas : '');
     }
     return html;
   }
@@ -60325,7 +60375,9 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
    EN VIVO Tycoon — Cuenta: lo que pide Google Play dentro del juego (server/INTEGRAR_CUENTA.md)
    - Registro: casillas "Acepto los Términos y la Política de privacidad" y "Tengo 16 años o más"
      (Cuenta.camposRegistro / faltaRegistro / datosRegistro, las usa abrirCuenta de ui.js).
-   - Tienda → Tu cuenta: "Borrar mi cuenta" (Cuenta.botones / abrirBorrar): explica qué se pierde, pide la clave y
+   - Tarjeta "Tu cuenta" (Cuenta.tarjeta, la pone ui.js en Inicio → Tu sede y ⋯ Más): nombre, correo, "Cambiar contraseña"
+     (Cuenta.abrirClave → POST /api/cuenta/clave {actual, nueva}) y "Cerrar sesión" (data-act="salir", lo hace ui.js).
+   - Tienda → Tu cuenta: "Cerrar sesión" (ui.js) y "Borrar mi cuenta" (Cuenta.botones / abrirBorrar): explica qué se pierde, pide la clave y
      escribir BORRAR, llama POST /api/cuenta/borrar, cierra la sesión y deja la partida de este dispositivo.
    - Cuentas creadas antes (o que cambiaron de dueño): antes del chat, el mercado y los modos en línea se pide UNA vez
      aceptar (POST /api/cuenta/terminos). El servidor no deja escribir en el chat sin aceptar (terminos_pendientes).
@@ -60531,7 +60583,9 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       .cu-lista{margin:6px 0 10px;padding-inline-start:20px;font-size:14px;line-height:1.45}
       .cu-lista li{margin:3px 0}
       .cu-nota{font-size:13px;color:var(--muted);margin:6px 0}
-      .cu-ok{font-size:14px;color:var(--green);margin:8px 0}`;
+      .cu-ok{font-size:14px;color:var(--green);margin:8px 0}
+      .cu-tit{margin:0 0 4px;display:flex;align-items:center;gap:6px}
+      .cu-quien{margin:0 0 8px;overflow-wrap:anywhere}`;
     document.head.appendChild(s);
   }
 
@@ -60671,7 +60725,86 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     (ctx.toast || toast)(T('borrada'));
   }
 
+  // ---------------------------------------------------------------- tarjeta "Tu cuenta" y cambiar la contraseña
+  // Textos nuevos solo en español (js/lang/es.js, claves cuenta.*): los demás idiomas caen al español hasta la traducción.
+  const CLAVE_MIN = 8;
+  function TI(k, p) {
+    try { if (root.I18N && root.I18N.T) { const t = root.I18N.T(k, p); if (t && t !== k) return t; } } catch (e) { /* nada */ }
+    return k;
+  }
+  const ico = (n) => { try { return root.Art && root.Art.icon ? root.Art.icon(n, 'sm') : ''; } catch (e) { return ''; } };
+  const logueado = () => { const A = Api(); return !!(A && A.disponible && A.estado && A.estado.logueado && A.estado.jugador); };
+  /** Tarjeta "Tu cuenta" (Inicio → Tu sede y ⋯ Más): nombre, correo, Cambiar contraseña y Cerrar sesión. '' sin sesión. */
+  function tarjeta() {
+    if (!logueado()) return '';
+    css();
+    const j = Api().estado.jugador;
+    return `<div class="card cu-tarjeta" data-cuenta-tarjeta="1">
+      <h3 class="cu-tit">${ico('user')} ${esc(TI('cuenta.tu_cuenta'))}</h3>
+      <p class="small muted cu-quien">${esc(j.nombre)}<br>${esc(j.email)}</p>
+      <button class="btn" data-act="cuenta-clave">${ico('lock')}${esc(TI('cuenta.cambiar_clave'))}</button>
+      <button class="btn" data-act="salir">${esc(TI('cuenta.salir'))}</button>
+      <button class="btn sm" data-act="tab" data-tab="tienda" data-sub="creditos">${esc(TI('cuenta.mas_opciones'))}</button></div>`;
+  }
+  let ctxC = null;
+  function abrirClave(ctx) {
+    ctxC = ctx || {};
+    css();
+    const campo = (id, txt, auto) => `<label class="field">${esc(txt)}<input id="${id}" type="password" autocomplete="${auto}" maxlength="200" spellcheck="false" autocapitalize="off"></label>`;
+    const html = `<div class="row between"><h2>${esc(TI('cuenta.cambiar_clave'))}</h2><button class="btn sm" data-act="close" aria-label="${esc(TI('comun.cerrar'))}">${cruz()}</button></div>
+      <form id="formClaveCuenta" autocomplete="on" novalidate>
+        ${campo('cuC-actual', TI('cuenta.clave_actual'), 'current-password')}
+        ${campo('cuC-nueva', TI('cuenta.clave_nueva', { n: CLAVE_MIN }), 'new-password')}
+        ${campo('cuC-repite', TI('cuenta.clave_repite'), 'new-password')}
+        <label class="cu-check"><input type="checkbox" id="cuC-ver"><span>${esc(TI('cuenta.clave_ver'))}</span></label>
+        <p class="small neg" id="cuC-error" aria-live="polite"></p>
+        <button class="btn main" type="submit" id="cuC-btn">${esc(TI('cuenta.clave_guardar'))}</button>
+      </form>
+      <p class="cu-nota">${esc(TI('cuenta.clave_nota'))}</p>
+      <button class="btn" data-act="close">${esc(TI('comun.cancelar'))}</button>`;
+    if (ctxC.openModal) ctxC.openModal(html); else abrirVentana(html);
+    setTimeout(() => { const a = $('cuC-actual'); if (a) try { a.focus(); } catch (e) { /* nada */ } }, 50);
+  }
+  /** Revisa el formulario: el texto del error o '' si se puede enviar. */
+  function faltaClave(actual, nueva, repite) {
+    if (!actual) return TI('cuenta.clave_e_actual');
+    if (nueva.length < CLAVE_MIN) return TI('cuenta.clave_e_corta', { n: CLAVE_MIN });
+    if (nueva.length > 200) return TI('error.clave_larga');
+    if (nueva !== repite) return TI('cuenta.clave_e_distintas');
+    if (nueva === actual) return TI('cuenta.clave_e_igual');
+    return '';
+  }
+  async function enviarClave() {
+    const err = $('cuC-error'), btn = $('cuC-btn');
+    if (!err || !btn) return;
+    const actual = ($('cuC-actual') || {}).value || '', nueva = ($('cuC-nueva') || {}).value || '', repite = ($('cuC-repite') || {}).value || '';
+    const sonido = (n) => { try { if (ctxC && ctxC.snd) ctxC.snd.play(n); } catch (x) { /* nada */ } };
+    const f = faltaClave(actual, nueva, repite);
+    if (f) { err.textContent = f; sonido('error'); return; }
+    btn.disabled = true; err.textContent = '';
+    try {
+      await post('/api/cuenta/clave', { actual, nueva, idioma: idioma() });
+    } catch (e) {
+      const propio = { clave_incorrecta: 'cuenta.clave_e_incorrecta', clave_igual: 'cuenta.clave_e_igual', clave_actual_falta: 'cuenta.clave_e_actual' }[e.codigo];
+      err.textContent = propio ? TI(propio) : e.message;
+      btn.disabled = false; sonido('error');
+      if (e.codigo === 'clave_incorrecta') { const a = $('cuC-actual'); if (a) { a.value = ''; try { a.focus(); } catch (x) { /* nada */ } } }
+      if (e.codigo === 'sesion_requerida' || e.status === 401) { const A = Api(); try { if (A) await A.refrescar(); } catch (x) { /* nada */ } }
+      return;
+    }
+    const ctx = ctxC || {}; ctxC = null;
+    if (ctx.closeModal) ctx.closeModal(); else cerrarVentana();
+    try { if (ctx.snd) ctx.snd.play('hire'); } catch (x) { /* nada */ }
+    (ctx.toast || toast)(TI('cuenta.clave_lista'));
+  }
+
   // ---------------------------------------------------------------- eventos
+  document.addEventListener('change', (e) => {
+    if (!e.target || e.target.id !== 'cuC-ver') return;
+    const tipo = e.target.checked ? 'text' : 'password';
+    ['cuC-actual', 'cuC-nueva', 'cuC-repite'].forEach((id) => { const i = $(id); if (i) i.type = tipo; });
+  });
+  document.addEventListener('submit', (e) => { if (e.target && e.target.id === 'formClaveCuenta') { e.preventDefault(); enviarClave(); } });
   document.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('[data-cuenta]');
     if (b && !b.disabled && b.dataset.cuenta === 'aceptar') { aceptar(); return; }
@@ -60726,6 +60859,11 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       <a class="cu-web" href="/borrar-cuenta.html" target="_blank" rel="noopener">${esc(T('borrar_web'))}</a>`; },
     /** ctx: { openModal, closeModal, toast, snd, alBorrar } (todo opcional). */
     abrirBorrar,
+    /** Tarjeta "Tu cuenta" para Inicio (Tu sede y ⋯ Más); '' sin sesión. */
+    tarjeta,
+    /** Ventana "Cambiar contraseña" (POST /api/cuenta/clave). ctx: { openModal, closeModal, toast, snd } (opcional). */
+    abrirClave,
+    faltaClave,
     pendiente,
     pedirAceptar,
   };
