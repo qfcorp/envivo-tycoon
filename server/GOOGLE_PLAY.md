@@ -48,6 +48,7 @@ Todos son **productos únicos** (ninguno es suscripción). Después de crear cad
 | `vip30` | Pase VIP 30 días | Sí |
 | `refuerzo_camarografo_senior`, `refuerzo_tecnico_internacional`, `alquiler_lente_box`, `seguro_evento`, `equipo_descansado` | Refuerzos | Sí |
 | `pase_premium` ($4.99), `pase_premium_plus` ($9.99) | Pase de Temporada (dura la temporada de 28 días; no es suscripción) | Sí (uno por temporada) |
+| `pase_semanal` ($1.49) | Mini Pase Semanal: premios premium de hasta 8 niveles que subas esa semana (sin créditos, cosméticos ni personal estrella) — server/INTEGRAR_PASE.md "Mejoras" | Sí (uno por semana del pase) |
 | `pack_obra_s` ($1.99), `pack_obra_m` ($4.99), `pack_obra_l` ($9.99) | Packs de obra de la sede oficial (contenido fijo) | Sí |
 | `pase_copa` ($2.99) | Pase de Copa: +5 intentos por día esa semana | Sí |
 | `equipo_obra_2` ($2.99) | Equipo de obra extra (permanente) de la sede oficial — server/INTEGRAR_MONETIZACION2.md | No (una vez por cuenta) |

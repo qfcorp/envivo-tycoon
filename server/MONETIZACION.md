@@ -74,6 +74,7 @@ cada módulo deja las líneas exactas en `server/INTEGRAR_<MODULO>.md` y el inte
 ## 4. Productos nuevos (para `Catalogo.php`, los agrega el integrador)
 
 - `pase_premium` $4.99 (30 días de la temporada), `pase_premium_plus` $9.99 (premium + 10 niveles ya desbloqueados).
+- `pase_semanal` $1.49 (Mini Pase Semanal: premio premium de hasta 8 niveles que subas esa semana; sin créditos, cosméticos ni personal estrella; ver INTEGRAR_PASE.md "Mejoras").
 - `pack_obra_s` $1.99 / `pack_obra_m` $4.99 / `pack_obra_l` $9.99: aceleradores de obra + materiales, contenido fijo visible.
 - `estrella_copa` (por créditos): contrato de personal estrella por N partidos de copa.
 - `pase_copa` (por créditos o $2.99): +5 intentos de preparación por día durante la copa de esa semana.

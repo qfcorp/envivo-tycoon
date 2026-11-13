@@ -170,3 +170,53 @@ Todas con sesión; POST con `X-Envivo: 1`. Errores `{ok:false, error, codigo}`.
 En `server/tests/correr.sh`, sección 3c, agregar `pase` a la lista de suites:
 `for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos pase; do`
 y la tabla `pase_xp` (y las otras tres) a la lista `for t in ...` de "Tablas del servidor creadas" si se quiere revisar.
+
+## Mejoras (rama `pase-mejoras`, 13-nov-2026) — ya integradas
+
+Archivos: `server/src/Pase.php`, `PaseApi.php`, `migraciones/pase_mejoras.sql` (tablas `pase_mini`, `pase_mini_usos`,
+`pase_banco`), `js/pase.js`, textos nuevos en `js/lang/es.js` (bloque `// pase_mejoras`, claves `pasem.*`, solo español).
+Pruebas: `php server/tests/pruebas_pase_mejoras.php` (en `correr.sh` §3d) y `node tests/test_pase_mejoras.js`.
+Ganchos de una línea ya puestos: `AyudaAsoc::donar` (XP `asoc_donar`), `js/ui.js` (`PLAY_EXTRA` con `pase_semanal` y
+`Pase.aplicarCosmeticos` en `aplicarEntregas`), `js/art.js` (`cosmeticosSede` dibuja el ícono de sede).
+Todo lo que da premios lo decide y valida el servidor, igual que antes.
+
+- **Candado en la fila gratis** (solo pantalla): sin premium, cada nivel sin premio gratis muestra el premio premium con 🔒
+  (celda `.tz`), y cada premio gratis lleva un sello 🔒 con el ícono del premium de ese nivel. Tocar explica cómo conseguirlo.
+- **Mini Pase Semanal** — producto nuevo `pase_semanal`, **$1,49**, tipo `pase` (Catalogo.php; no sale en la lista general).
+  - Vale la **semana del pase** en que se compra (lunes 00:00 a lunes 00:00, America/Guayaquil; 4 semanas por temporada).
+  - Desbloquea el premio **premium** de hasta **8 niveles** que subas **desde que lo compras** hasta que termina esa semana
+    (`nivel_desde` = tu nivel al comprar). Lo cubierto se puede reclamar toda la temporada (+3 días de gracia).
+  - **No da**: créditos, cosméticos (marco, adorno, título, ícono de sede), el contrato de personal estrella, ni niveles que
+    ya tenías (`Pase::MINI_EXCLUYE`, `Pase::miniPermite`). Esos siguen con candado "solo Pase Premium".
+  - Uno por semana (`409 mini_ya_activo`); con el premium activo no se vende (`409 pase_ya_premium`); sin temporada
+    `409 sin_temporada`. El premium se puede comprar después (trae todo). Pago duplicado → `pase_mini.estado = duplicada` y aviso.
+  - No canibaliza: 4 Mini ($5,96) cuestan más que el premium ($4,99) y dan como mucho 32 niveles sin los 420 créditos, sin
+    cosméticos, sin estrella y sin lo retroactivo.
+  - Reversión: deja de cubrir; lo reclamado con él queda `revisar = 1` + aviso `pase_revertido` (no hay créditos que
+    descontar). Revertir el premium NO marca lo que sostiene un Mini vigente.
+- **Misiones de jugar con otros**: nuevas diarias `d_asoc` (dona 1 vez a la investigación de tu asociación, +100) y
+  `d_juntos` (3 veces con otros: duelos, liga u obras/donaciones de la asociación, +120); semanales `s_asoc` (4 donaciones,
+  +400) y `s_juntos` (12 veces con otros, +450). Rotan con las demás (siguen 3 diarias y 3 semanales). Fuente nueva de XP
+  `asoc_donar` = 20 (gancho en `AyudaAsoc::donar`, ref `donacion:<id>`).
+- **Alternativa sin conexión** para TODAS las misiones del pase (`Pase::ALT`): reclamar misiones del juego (las de la partida,
+  `Misiones::reclamar` → fuente `misiones`) cumple la misión con la **mitad** de XP: 2 en el día para las diarias, 6 en la
+  semana para las semanales. Si después la cumples en línea, recibes lo que faltaba (ref `…:alt` y la normal; nunca más que
+  la XP completa). En `GET /api/pase` cada misión trae `alt {n, avance, xp, hecha}`, `via` (`en_linea`|`sin_conexion`|null)
+  y `juntos`.
+- **Ponerse al día** (`Pase::alDia`): si tu **primera XP de juego** de la temporada es del **día 8 en adelante**, durante
+  **3 días (72 h) desde esa primera partida** la XP de juego vale **el doble** y el tope diario también (1.400). No cuentan
+  como "empezar" los saltos, el plus ni ajustes. `al_dia {estado: activo|disponible|terminado|no, activo, factor, desde_dia,
+  dias, hasta}`.
+- **Banco de premios** (`Pase::BANCO*`): después del nivel 40, cada **2.000 XP** un cofre **fijo**, hasta **10** por
+  temporada: $1.000 del juego, 6 cables, 6 placas y 2 baterías; con premium además 6 paneles LED y 1 chip 4K. El contenido se
+  ve antes de abrir (`banco.contenido`, `banco.contenido_premium`). `POST /api/pase/banco {temporada?}` →
+  `{ok, cofres:[{temporada, n, premium, contenido}], entregas, creditos, pase}`; sin cofre `409 banco_vacio`. "Reclamar todo"
+  también los abre (`cofres` en la respuesta) y cuentan en `por_reclamar.banco`/`total`. Revertir el plus marca `revisar` los
+  cofres abiertos con XP que ya no tiene.
+- **Tema visual por temporada**: `temporada.visual {colores:[c1, c2], adornos}` (cabecera y barras de la pantalla). Tema nuevo
+  `copa_femenina` («Copa Global Femenina», 24 jun – 25 jul 2027; nombre inventado). **Nivel 40 premium** = ícono exclusivo de
+  sede (`cosmetico`, clase `sede`, item `pase_sede_t<N>_<tema>`); el **título de chat** pasa al nivel 30 y los 60 créditos
+  del 30 al 32 (antes acelerador de 5 h). Los créditos de la pista premium siguen sumando 420.
+- `productos.pase_semanal {id, precio, activo, mini: true, max_niveles}` y `mini {producto, max_niveles, excluye, semana,
+  semana_fin, quedan_seg, activo, nivel_desde, nivel_hasta, puede_comprar, niveles}` en `GET /api/pase`. Celdas premium que
+  se pueden reclamar con el Mini llevan `mini: true`; las que solo da el premium, `solo_premium: true`.

@@ -383,7 +383,9 @@
     "promo_ya_reclamada": "existe · BlackFriday.php · 409 · texto en español en todos los idiomas hasta la traducción final",
     "promo_dispositivo": "existe · BlackFriday.php · 409 (otra cuenta ya lo reclamó desde esta instalación del juego) · texto en español en todos los idiomas hasta la traducción final",
     "promo_conexion": "existe · BlackFriday.php · 409 (tope de cuentas por conexión, ajuste bf_ip_max) · texto en español en todos los idiomas hasta la traducción final",
-    "cupo_invalido": "existe · BlackFriday.php guardar (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final"
+    "cupo_invalido": "existe · BlackFriday.php guardar (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final",
+    "mini_ya_activo": "existe · Pase.php · 409",
+    "banco_vacio": "existe · Pase.php · 409"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -767,7 +769,9 @@
     "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
     "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
     "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
-    "cupo_invalido": "El cupo no es válido."
+    "cupo_invalido": "El cupo no es válido.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1151,7 +1155,9 @@
     "promo_ya_reclamada": "You've already claimed your free Black Friday VIP on this account.",
     "promo_dispositivo": "The free VIP was already claimed on this device with another account. It's one per person.",
     "promo_conexion": "Several free VIPs have already been claimed from this connection. It's one per person.",
-    "cupo_invalido": "The quota isn't valid."
+    "cupo_invalido": "The quota isn't valid.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1535,7 +1541,9 @@
     "promo_ya_reclamada": "Você já resgatou seu VIP grátis de Black Friday nesta conta.",
     "promo_dispositivo": "O VIP grátis já foi resgatado neste aparelho com outra conta. É um por pessoa.",
     "promo_conexion": "Vários VIP grátis já foram resgatados a partir desta conexão. É um por pessoa.",
-    "cupo_invalido": "O limite não é válido."
+    "cupo_invalido": "O limite não é válido.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1919,7 +1927,9 @@
     "promo_ya_reclamada": "Tu as déjà récupéré ton VIP gratuit du Black Friday sur ce compte.",
     "promo_dispositivo": "Le VIP gratuit a déjà été récupéré sur cet appareil avec un autre compte. C'est un par personne.",
     "promo_conexion": "Plusieurs VIP gratuits ont déjà été récupérés depuis cette connexion. C'est un par personne.",
-    "cupo_invalido": "Le quota n'est pas valide."
+    "cupo_invalido": "Le quota n'est pas valide.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2303,7 +2313,9 @@
     "promo_ya_reclamada": "Du hast dein Gratis-VIP zum Black Friday mit diesem Konto schon abgeholt.",
     "promo_dispositivo": "Das Gratis-VIP wurde auf diesem Gerät schon mit einem anderen Konto abgeholt. Nur eins pro Person.",
     "promo_conexion": "Über diese Verbindung wurden schon mehrere Gratis-VIP abgeholt. Nur eins pro Person.",
-    "cupo_invalido": "Das Kontingent ist ungültig."
+    "cupo_invalido": "Das Kontingent ist ungültig.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2687,7 +2699,9 @@
     "promo_ya_reclamada": "Hai già riscattato il tuo VIP gratuito del Black Friday con questo account.",
     "promo_dispositivo": "Il VIP gratuito è già stato riscattato su questo dispositivo con un altro account. Uno a persona.",
     "promo_conexion": "Da questa connessione sono già stati riscattati diversi VIP gratuiti. Uno a persona.",
-    "cupo_invalido": "Il limite non è valido."
+    "cupo_invalido": "Il limite non è valido.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -3071,7 +3085,9 @@
     "promo_ya_reclamada": "Ты уже получил бесплатный VIP «Чёрной пятницы» на этом аккаунте.",
     "promo_dispositivo": "Бесплатный VIP уже получен на этом устройстве с другого аккаунта. Один на человека.",
     "promo_conexion": "С этого подключения уже получили несколько бесплатных VIP. Один на человека.",
-    "cupo_invalido": "Неверный лимит."
+    "cupo_invalido": "Неверный лимит.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3455,7 +3471,9 @@
     "promo_ya_reclamada": "Bu hesapta Black Friday ücretsiz VIP'ini zaten aldın.",
     "promo_dispositivo": "Ücretsiz VIP bu cihazda başka bir hesapla zaten alındı. Kişi başı bir tane.",
     "promo_conexion": "Bu bağlantıdan zaten birkaç ücretsiz VIP alındı. Kişi başı bir tane.",
-    "cupo_invalido": "Kota geçersiz."
+    "cupo_invalido": "Kota geçersiz.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -3839,7 +3857,9 @@
     "promo_ya_reclamada": "Kamu sudah mengklaim VIP gratis Black Friday di akun ini.",
     "promo_dispositivo": "VIP gratis sudah diklaim dari perangkat ini dengan akun lain. Satu per orang.",
     "promo_conexion": "Sudah ada beberapa VIP gratis yang diklaim dari koneksi ini. Satu per orang.",
-    "cupo_invalido": "Kuota tidak valid."
+    "cupo_invalido": "Kuota tidak valid.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -4223,6 +4243,8 @@
     "promo_ya_reclamada": "此账号已领取过黑色星期五免费 VIP。",
     "promo_dispositivo": "此设备已用其他账号领取过免费 VIP。每人限领一个。",
     "promo_conexion": "此网络已领取过多个免费 VIP。每人限领一个。",
-    "cupo_invalido": "名额无效。"
+    "cupo_invalido": "名额无效。",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   }
 }

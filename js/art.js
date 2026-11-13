@@ -1381,6 +1381,13 @@
     if (has('banderines')) out.cielo += `<g class="hq-cosm hq-banderines"><path d="M40 20q140 30 280 0" stroke="#c5ccd6" fill="none"/>${Array.from({ length: 12 }, (_, i) => { const x = 50 + i * 23, y = 20 + Math.sin((i + 0.5) / 12 * Math.PI) * 14; return `<path d="M${x} ${y.toFixed(1)}l6 0-3 8z" fill="${['#ff5a5a', '#ffd27a', '#5ad1ff', '#7dff9a'][i % 4]}"/>`; }).join('')}</g>`;
     if (has('arbol')) out.piso += `<g class="hq-cosm hq-arbol" transform="translate(318 140)"><rect x="-2" y="-6" width="4" height="6" fill="#6b4a2a"/><path d="M0-44L-13-20h6L-15-6h30L7-20h6z" fill="#2f8f5b"/>${[[-6, -14, '#ff5a5a'], [5, -22, '#ffd27a'], [-3, -30, '#5ad1ff'], [8, -12, '#ff8fb1'], [-9, -9, '#ffd27a']].map(([x, y, col]) => `<circle cx="${x}" cy="${y}" r="1.8" fill="${col}" class="blink"/>`).join('')}<path d="M0-49l1.6 3.4h3.6l-2.9 2.2 1.1 3.6L0-42l-3.4 2.2 1.1-3.6-2.9-2.2h3.6z" fill="#ffd27a" class="twinkle"/></g>`;
     if (has('calabazas')) out.piso += `<g class="hq-cosm hq-calabazas">${[[48, 137], [312, 137]].map(([x, y]) => `<g transform="translate(${x} ${y})"><ellipse rx="7" ry="5" fill="#ff8a1f"/><path d="M-1-5v-3" stroke="#3b7a2a" stroke-width="2"/><path d="M-4-1l2-2 2 2zM1-1l2-2 2 2z" fill="#ffd27a"/></g>`).join('')}</g>`;
+    // Ícono exclusivo de sede del nivel 40 premium del Pase de Temporada (js/pase.js aplicarCosmeticos): banderín con el tema
+    const paseSede = c.filter((k) => /^pase_sede_t\d+_[a-z_]+$/.test(String(k))).pop();
+    if (paseSede) {
+      const ICO = { halloween: '🎃', navidad: '🎄', pase_nino: '⭐', fin_anio: '🎆', san_valentin: '💘', pascua: '🕊️', carnaval: '🎭', copa_femenina: '⚽', estadios: '🏟️', festivales: '🎪', estrenos: '🎬', conciertos: '🎸' };
+      const ico = ICO[paseSede.replace(/^pase_sede_t\d+_/, '')] || '⭐';
+      out.cielo += `<g class="hq-cosm hq-pase-sede" transform="translate(${roofX - 30} ${roofY - 34})"><path d="M0 0v34" stroke="#c5ccd6" stroke-width="1.6"/><path d="M0 1h24l-6 7 6 7H0z" fill="#ffb020"/><text x="9" y="12" font-size="10" text-anchor="middle">${ico}</text></g>`;
+    }
     if (has('flores')) out.piso += `<g class="hq-cosm hq-flores">${Array.from({ length: 7 }, (_, i) => `<circle cx="${150 + i * 10}" cy="${136 - Math.sin(i / 6 * Math.PI) * 6}" r="3" fill="${['#ffffff', '#f4d0ff', '#ffd27a'][i % 3]}"/>`).join('')}</g>`;
     return out;
   }

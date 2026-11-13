@@ -10,7 +10,7 @@ namespace EnVivo;
  */
 final class PaseApi
 {
-    public const RUTAS = ['/pase', '/pase/reclamar', '/pase/reclamar_todo', '/pase/saltar'];
+    public const RUTAS = ['/pase', '/pase/reclamar', '/pase/reclamar_todo', '/pase/saltar', '/pase/banco'];
 
     public static function esRuta(string $ruta): bool { return in_array($ruta, self::RUTAS, true); }
 
@@ -43,6 +43,9 @@ final class PaseApi
             case '/pase/saltar':
                 $in = $post();
                 Http::json(200, Pase::saltar($jugador, $entero($in, 'niveles')));
+            case '/pase/banco':   // banco de premios después del nivel 40 (cofres fijos)
+                $in = $post();
+                Http::json(200, Pase::abrirBanco($jugador, $entero($in, 'temporada', true)));
         }
         Http::error(404, 'No encontrado.');
     }
