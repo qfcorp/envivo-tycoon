@@ -19,6 +19,7 @@ foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'so
 require __DIR__ . '/lib/analitica.php';   // pestaña Analítica (server/INTEGRAR_ANALITICA.md)
 require __DIR__ . '/lib/buzon.php';   // Buzón y códigos (server/INTEGRAR_BUZON.md)
 require __DIR__ . '/lib/promo.php';   // Black Friday: VIP 30 días gratis (src/BlackFriday.php), en la pestaña Buzón y códigos
+require __DIR__ . '/lib/regreso.php';   // Avisos por etapa y regreso (src/Regreso.php), en la pestaña Notificaciones
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 
@@ -157,6 +158,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'push_') => cc_a_push($accion, $q),
             str_starts_with($accion, 'buzon_') => cc_a_buzon($accion, $q),
             str_starts_with($accion, 'promo_') => cc_a_promo($accion, $q),
+            str_starts_with($accion, 'regreso_') => cc_a_regreso($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);

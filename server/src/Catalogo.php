@@ -63,6 +63,14 @@ final class Catalogo
                 'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 10000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5]]],
             'oferta_sede_10' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta Sede nivel 10', 'detalle' => 'Tu sede llegó a nivel 10: 1.800 créditos, $25.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %', 'precio' => 9.99, 'creditos' => 1800, 'una_vez' => false,
                 'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 25000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 10], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 10], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+        // Oferta de regreso (src/Regreso.php): una sola vez por ausencia, solo en la pantalla «¡Volviste!» de quien volvió tras
+        // 7+ días (oferta_regreso: no sale en la tienda general). Contenido fijo. regreso_s si nunca pagó (o compraba poco).
+        'regreso_s' => ['tipo' => 'oferta', 'oferta_regreso' => true, 'modulo' => 'Regreso', 'nombre' => 'Oferta de regreso', 'detalle' => 'Una sola vez, por tu regreso: 150 créditos, $3.000 del juego, 3 cables y 3 baterías', 'precio' => 0.99, 'creditos' => 150, 'una_vez' => false,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 3000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 3], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 3]]],
+        'regreso_m' => ['tipo' => 'oferta', 'oferta_regreso' => true, 'modulo' => 'Regreso', 'nombre' => 'Oferta de regreso Plus', 'detalle' => 'Una sola vez, por tu regreso: 900 créditos, $8.000 del juego, 5 cables, 5 baterías y todo tu equipo al 100 %', 'precio' => 4.99, 'creditos' => 900, 'una_vez' => false,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 8000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+        'regreso_l' => ['tipo' => 'oferta', 'oferta_regreso' => true, 'modulo' => 'Regreso', 'nombre' => 'Gran oferta de regreso', 'detalle' => 'Una sola vez, por tu regreso: 2.000 créditos, $15.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %', 'precio' => 9.99, 'creditos' => 2000, 'una_vez' => false,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 15000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 10], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 10], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
         // No sale en la tienda: lo crea POST /api/cuenta/transferir/iniciar (lo paga el dueño actual de la cuenta)
         'transferencia_cuenta' => ['tipo' => 'transferencia', 'nombre' => 'Transferencia oficial de cuenta', 'detalle' => 'Pasa esta cuenta (con todo lo comprado) a otro correo', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false, 'oculto' => true],
     ];
@@ -354,7 +362,7 @@ final class Catalogo
         $p = [];
         foreach (array_keys(self::PRODUCTOS) as $id) {
             $x = self::producto($id);
-            if (!$x['activo'] || !empty($x['oculto']) || !empty($x['oferta_vip']) || in_array($x['tipo'], self::TIPOS_CON_PANTALLA, true)) continue;
+            if (!$x['activo'] || !empty($x['oculto']) || !empty($x['oferta_vip']) || !empty($x['oferta_regreso']) || in_array($x['tipo'], self::TIPOS_CON_PANTALLA, true)) continue;
             $p[] = ['id' => $id, 'nombre' => $x['nombre'], 'detalle' => $x['detalle'], 'precio' => $x['precio'], 'creditos' => $x['creditos'], 'una_vez' => $x['una_vez'], 'tipo' => $x['tipo'],
                     'precio_base' => $x['precio_base'], 'creditos_base' => $x['creditos_base'], 'oferta' => $x['oferta']]
                  + (isset($x['dias']) ? ['dias' => $x['dias']] : []) + (isset($x['creditos_dia']) ? ['creditos_dia' => $x['creditos_dia']] : []);

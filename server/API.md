@@ -242,6 +242,20 @@ bloque «Black Friday» (ajustes `bf_activa`, `bf_desde`, `bf_hasta`, `bf_cupo`,
   de lo ya reclamado.
 - **Juego:** `js/black_friday.js` pone una franja arriba de Inicio solo con fase `activa` o `agotada` (contador cada minuto).
 
+## Regreso del jugador y avisos por etapa (`src/Regreso.php`, `src/RegresoApi.php`, `server/INTEGRAR_REGRESO.md`)
+| ruta | cuerpo | respuesta |
+|---|---|---|
+| GET\|POST `/api/regreso` | `{zona?: 'America/Guayaquil'}` (sesión; POST con `X-Envivo: 1`) | `{ok, ausencia: null \| {id, dias, nivel: 7\|14\|30, regalo: {nivel, creditos, entregas: [{tipo, item, cantidad, nombre}]}, ventaja: {dias: 3, pago_pct: 25, xp_mult: 2}, oferta: bool, reclamable: true}, ventaja: null \| {id, hasta, hasta_ms, pago_pct, xp_mult}, oferta: null \| {producto, nombre, detalle, precio, creditos, entregas, vence}}`. Guarda la zona (para no avisar de noche en la hora del jugador) y la señal de vida. 401 `sesion_requerida`, 403 `cabecera_requerida` |
+| POST `/api/regreso/reclamar` | `{id}` (sesión y `X-Envivo: 1`) | lo mismo + `{entregas, creditos_recibidos, regalo, creditos}`. Créditos al Monedero (motivo `regreso`, ref `regreso:<id>`); dinero / repuestos / reparar como entregas (origen `regreso:<id>`, las aplica el juego con `/api/estado`). Una vez por ausencia. 404 `regreso_no_disponible`, 409 `regreso_ya_reclamado` / `regreso_apagado`, 400 `datos_invalidos`, 403 `cuenta_*` |
+| GET `/api/regreso/baja?t=<32 hex>` | — (enlace del correo, sin sesión) | página HTML con un botón (no da de baja sola: los revisores de enlaces no la activan). 404 si el código no existe |
+| POST `/api/regreso/baja` | `t=<32 hex>` (formulario, sin `X-Envivo`) | página «Listo»: no más correos de regreso para esa cuenta (auditoría `regreso_baja_correo`) |
+
+- **Ofertas** `regreso_s` ($0.99, nunca pagó o compraba < $3), `regreso_m` ($4.99, < $8), `regreso_l` ($9.99): tipo `oferta`,
+  `oferta_regreso: true` (no salen en la tienda general). `Compras::exigirComprable` → `Regreso::exigirOferta` (409 `oferta_no_disponible`
+  si no es la suya, venció a las 72 h o ya la compró); el gancho `compra_aprobada` la marca usada.
+- **Push** (categorías `etapa` y `regreso` → interruptor `premio`; `cierre` → `duelo`): máximo `Push::TOPE_REGRESO` (2) al día y silencio
+  de 22:00 a 08:00 en la zona del jugador. El recordatorio viejo de `Push` a los 3/7/14 días no sale si Regreso lo cubre.
+
 ## Monetización (server/MONETIZACION.md)
 - **Ganchos** (`src/Ganchos.php`): `Compras::aprobar` emite `compra_aprobada {compra_id, jugador_id, producto, monto_usd,
   canal: 'plux'|'paypal'|'google'}` (dentro de su transacción, cada oyente en un SAVEPOINT; no se emite si no se entregó nada: producto

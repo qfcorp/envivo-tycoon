@@ -167,6 +167,9 @@ en el servidor; créalos igual y **actívalos cuando yo te confirme** que su mó
 | `oferta_campeon` | Oferta del campeón | Por tu primera Copa: 1.000 créditos, dinero del juego y repuestos. Contenido fijo. | 4,99 | Con tope | VIP |
 | `oferta_sede_5` | Oferta Sede nivel 5 | Tu sede llegó a nivel 5: 800 créditos, dinero del juego y repuestos. Contenido fijo. | 4,99 | Con tope | VIP |
 | `oferta_sede_10` | Oferta Sede nivel 10 | Tu sede llegó a nivel 10: 1.800 créditos, dinero del juego y repuestos. Contenido fijo. | 9,99 | Con tope | VIP |
+| `regreso_s` | Oferta de regreso | Una sola vez, por tu regreso: 150 créditos, $3.000 del juego, 3 cables y 3 baterías. Contenido fijo. | 0,99 | 1 por ausencia | Regreso |
+| `regreso_m` | Oferta de regreso Plus | Una sola vez, por tu regreso: 900 créditos, $8.000 del juego, 5 cables, 5 baterías y todo tu equipo al 100 %. Contenido fijo. | 4,99 | 1 por ausencia | Regreso |
+| `regreso_l` | Gran oferta de regreso | Una sola vez, por tu regreso: 2.000 créditos, $15.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %. Contenido fijo. | 9,99 | 1 por ausencia | Regreso |
 | *(otros)* | *Los que agreguen los ayudantes de monetización (ofertas de temporada, packs de eventos especiales…)* | | | | ⏳ se agregan a esta tabla cuando lleguen a `Catalogo.php` |
 
 **No crear en Play:** `transferencia_cuenta` (solo se vende en la web) ni `estrella_copa` (se paga solo con créditos).

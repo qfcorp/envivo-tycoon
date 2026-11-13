@@ -54,6 +54,7 @@ Todos son **productos únicos** (ninguno es suscripción). Después de crear cad
 | `fondo_crecimiento` ($19.99) | Fondo de crecimiento: premios fijos por nivel de la sede oficial | No (una vez por cuenta) |
 | `tarjeta_semanal` ($1.99) | Tarjeta semanal (7 días: 15 créditos + materiales cada día) | Sí |
 | `oferta_vip_s` ($1.99), `oferta_vip_m` ($4.99), `oferta_vip_l` ($9.99), `oferta_campeon` ($4.99), `oferta_sede_5` ($4.99), `oferta_sede_10` ($9.99) | Ofertas por logros (aparecen al subir de nivel VIP, ganar una copa o subir la sede) | Con tope por oferta (lo controla el servidor) |
+| `regreso_s` ($0.99), `regreso_m` ($4.99), `regreso_l` ($9.99) | Oferta de regreso (pantalla «¡Volviste!» tras 7+ días sin entrar; según lo que compraba antes) — server/INTEGRAR_REGRESO.md | Una vez por ausencia (lo controla el servidor). Mientras no existan en Play, dentro de la app la oferta simplemente no sale |
 
 `estrella_copa` (personal estrella) **no** se crea en Play: se paga solo con créditos dentro del juego.
 

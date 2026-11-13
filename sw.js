@@ -64,6 +64,7 @@ const SHELL = [
   './js/push.js',       // notificaciones push: aviso previo y ajustes (opcional)
   './js/buzon.js',      // buzón y códigos de regalo
   './js/black_friday.js', // Black Friday: VIP 30 días gratis (franja de Inicio)
+  './js/regreso.js',    // regreso del jugador: «¡Volviste!» y 3 días de ventaja
   './js/i18n.js',
   './js/lang/es.js',     // solo el español: los demás idiomas se guardan al elegirlos (ver arriba)
   './manifest.webmanifest',
