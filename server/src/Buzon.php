@@ -626,6 +626,8 @@ final class Buzon
         $canal = $canal === 'web' ? 'web' : 'juego';
         // Palabra de la promo de Black Friday (BlackFriday.php): VIP 30 días gratis del mismo cupo que el botón de Inicio
         if (class_exists(BlackFriday::class) && BlackFriday::esCodigo($cod)) return BlackFriday::canjearCodigo($jugador, $canal, $instalacion);
+        // Código de un Productor Aliado (Aliados.php): regalo pequeño y queda asociado al creador
+        if (class_exists(Aliados::class) && Aliados::esCodigo($cod)) return Aliados::canjearCodigo($jugador, $cod, $canal, $instalacion);
         // Fuera de la transacción: el intento fallido tiene que quedar anotado (dentro se desharía con el error)
         $c0 = Db::fila('SELECT id, activo FROM buzon_codigos WHERE codigo = ?', [$cod]);
         if (!$c0 || !(int) $c0['activo']) $fallar('Ese código no existe o ya no está activo. Revisa que esté bien escrito.', 404, 'codigo_invalido');

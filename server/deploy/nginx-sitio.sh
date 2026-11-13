@@ -203,6 +203,8 @@ $(solo_cf)
     # Recuperar la contraseña (server/INTEGRAR_CORREO.md): página con JavaScript propio (/pago-assets/recuperar.js), CSP del juego
     location = /recuperar.html { root $PUB; add_header Cache-Control "no-store"; $(cab_juego) }
     location = /canjear.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_juego) }
+    # Productores Aliados (server/INTEGRAR_INVITAR.md): página pública del programa de creadores (js/aliados_web.js), CSP del juego
+    location = /aliados.html { root $PUB; add_header Cache-Control "no-cache"; $(cab_juego) }
     # App de Android (Trusted Web Activity): Digital Asset Links. El archivo va en la raiz del juego: .well-known/assetlinks.json
     location = /.well-known/assetlinks.json { default_type application/json; add_header Cache-Control "no-cache"; $(cab) try_files \$uri =404; }
     location ^~ /pago-assets/ {

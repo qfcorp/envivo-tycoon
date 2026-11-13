@@ -138,6 +138,7 @@ final class Visitas
             }
         }
         $v['estrellas'] = $est;
+        $v['distintivos'] = class_exists(Invitaciones::class) ? Invitaciones::distintivos($jugador) : [];   // Productor Aliado y letrero dorado (INTEGRAR_INVITAR.md)
         return $v;
     }
 

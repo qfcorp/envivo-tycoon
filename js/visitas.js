@@ -426,12 +426,12 @@
     const est = (v.estrellas || []).map((x) => `<div class="vis-fila"><span>🌟 ${esc(x.nombre)}</span><span class="d">${esc(nombreRol(x.rol))}</span></div>`).join('');
     const flota = (v.flota || []).map((x) => `<div class="vis-fila"><span>${esc(nombreItem(x.tipo))}</span><span class="d">× ${esc(x.n)}</span></div>`).join('');
     el.innerHTML = `
-      <div class="vis-hq" data-vis-hq="${esc(v.etapa)}">${dibujoSede(v)}</div>
+      <div class="vis-hq" data-vis-hq="${esc(v.etapa)}">${dibujoSede(v)}${root.Invitar ? root.Invitar.letrero(v) : ''}</div>
       <div class="card vis-nom"><div class="g"><h2>${esc(nombre)}</h2>
         ${v.productora && v.alias && v.productora !== v.alias ? `<div class="small muted">${esc(v.alias)}</div>` : ''}
         <div class="vis-tags">${as ? `<span class="vis-tag as" style="color:${color};border-color:${color}">[${esc(as.siglas)}] ${esc(as.nombre)}</span>` : ''}
           <span class="vis-tag">${esc(T('fama', { n: v.fama_publica != null ? v.fama_publica : v.fama }))}</span><span class="vis-tag">${esc(T('dia', { n: num(v.dia || 1) }))}</span>
-          ${v.sede_nivel ? `<span class="vis-tag">${esc(T('sede', { n: v.sede_nivel }))}</span>` : ''}</div>
+          ${v.sede_nivel ? `<span class="vis-tag">${esc(T('sede', { n: v.sede_nivel }))}</span>` : ''}${root.Invitar ? root.Invitar.distintivosHtml(v) : ''}</div>
         ${v.sin_partida ? `<p class="small muted" style="margin:8px 0 0">${esc(T('sin_partida'))}</p>` : ''}
         ${d.propio ? `<p class="small muted" style="margin:8px 0 0">${esc(T('propia'))}</p>` : ''}</div></div>
       <div class="card vis-ap">

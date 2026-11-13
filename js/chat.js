@@ -125,6 +125,8 @@
     // Ayudas / Investigación / Tienda de la asociación (js/ayuda_asoc.js, server/INTEGRAR_AYUDA_ASOC.md)
     const barra = p.querySelector('#chat-asoc-barra');
     if (barra) { barra.hidden = !(root.AyudaAsoc && st.canal === 'asociacion' && (st.ctx.Api.estado || {}).asociacion); if (!barra.hidden) root.AyudaAsoc.barra(barra); }
+    // Botón "Invitar" de la asociación (js/invitar.js, server/INTEGRAR_INVITAR.md)
+    if (root.Invitar) root.Invitar.enAsociacion(p, st.canal === 'asociacion' && !!(st.ctx.Api.estado || {}).asociacion);
     pintarLista(); pintarBoton(); ciclo();
   }
   function cerrar() { st.abierto = false; document.getElementById('chat-panel').hidden = true; pintarBoton(); ciclo(); }
