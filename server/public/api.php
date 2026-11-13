@@ -57,6 +57,8 @@ try {
     if (class_exists(\EnVivo\BuzonApi::class) && \EnVivo\BuzonApi::esRuta($ruta)) \EnVivo\BuzonApi::responder($ruta, $metodo, requiere_sesion());
     // Black Friday: VIP 30 días gratis para las primeras 100 cuentas (src/BlackFriday.php, API.md): /api/promo/black_friday*
     if (class_exists(\EnVivo\BlackFridayApi::class) && \EnVivo\BlackFridayApi::esRuta($ruta)) \EnVivo\BlackFridayApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Invita a tu equipo y Productores Aliados (server/INTEGRAR_INVITAR.md): /api/invitar*, /api/aliados/*
+    if (class_exists(\EnVivo\InvitarApi::class) && \EnVivo\InvitarApi::esRuta($ruta)) \EnVivo\InvitarApi::responder($ruta, $metodo, Sesiones::jugadorId());
     // Copa de Servidores (server/INTEGRAR_COPAS.md): /api/copa*
     if (\EnVivo\CopasApi::esRuta($ruta)) \EnVivo\CopasApi::responder($ruta, $metodo, requiere_sesion());
     // Personal estrella y Pase de Copa (server/INTEGRAR_ESTRELLAS.md): /api/estrellas* y /api/pase_copa/comprar
@@ -181,6 +183,7 @@ function api_registro(): never
     \EnVivo\Terminos::revisar($in);   // acepta_terminos y edad_16 (server/INTEGRAR_CUENTA.md)
     $id = Cuentas::registrar(texto_de($in, 'email'), texto_de($in, 'nombre'), texto_de($in, 'clave'));
     \EnVivo\Terminos::aceptar($id, 'registro');
+    if (class_exists(\EnVivo\Invitaciones::class)) \EnVivo\Invitaciones::alRegistrar($id, $in);   // ?ref= y código de creador (INTEGRAR_INVITAR.md); nunca falla
     Sesiones::abrir($id);
     Http::json(200, \EnVivo\Universos::estado($id) + \EnVivo\Fusiones::estado($id) + Cuentas::estado($id) + \EnVivo\Discord::estado($id));
 }

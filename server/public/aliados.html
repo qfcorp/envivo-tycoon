@@ -1,0 +1,104 @@
+<!doctype html>
+<!--
+  Productores Aliados: página pública del programa de creadores (server/INTEGRAR_INVITAR.md, src/Aliados.php).
+  Explica el programa y deja postular (POST /api/aliados/postular → Centro de Control y correo a soporte). Sin datos privados:
+  no muestra creadores, códigos, porcentajes ni montos. Solo scripts propios (CSP del juego): js/aliados_web.js.
+-->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0f14">
+<title>Productores Aliados · EN VIVO Tycoon</title>
+<meta name="description" content="Programa de creadores de EN VIVO Tycoon: tu propio código, insignia en el juego y un porcentaje de las compras de tu comunidad.">
+<link rel="icon" href="/icons/favicon-32.png">
+<link rel="stylesheet" href="/pago-assets/estilo.css?v=2">
+<style>
+  .al-hero { text-align: center; margin: 4px 0 18px; }
+  .al-hero .al-tag { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; background: #ffb020; color: #1a1205; border-radius: 6px; padding: 2px 8px; }
+  .al-hero h1 { margin: 10px 0 6px; }
+  .al-sec { margin: 18px 0; }
+  .al-sec h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .al-lista { margin: 0; padding-left: 20px; line-height: 1.5; }
+  .al-lista li { margin: 4px 0; }
+  .al-niveles { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .al-niveles td { padding: 6px 4px; border-bottom: 1px solid #ffffff1a; vertical-align: top; }
+  .al-niveles td:first-child { font-weight: 700; white-space: nowrap; padding-right: 10px; }
+  .al-form { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+  .al-form label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--tenue); }
+  .al-form textarea { min-height: 90px; resize: vertical; font: inherit; }
+  .al-trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .al-ok[hidden], .al-form[hidden] { display: none; }
+  .al-nota { font-size: .85rem; }
+</style>
+</head>
+<body>
+<main class="caja">
+  <div class="marca">EN VIVO <b>Tycoon</b></div>
+  <div class="al-hero">
+    <span class="al-tag">Programa de creadores</span>
+    <h1>Productores Aliados</h1>
+    <p class="tenue">¿Haces videos o transmisiones? Juega EN VIVO Tycoon con tu comunidad y gana por cada jugador que llega con tu código.</p>
+  </div>
+
+  <section class="al-sec">
+    <h2>Lo que recibes</h2>
+    <ul class="al-lista">
+      <li><b>Tu propio código</b> (por ejemplo, PRODUCTOR-TUNOMBRE) y tu enlace para compartir.</li>
+      <li><b>Insignia «Productor Aliado»</b> en tu perfil del juego.</li>
+      <li><b>Créditos cada mes para jugar en tu propia cuenta</b> (según tu nivel).</li>
+      <li><b>Un porcentaje de las compras</b> de los jugadores que usaron tu código, pagado aparte <b>en dinero, como pago de publicidad</b>.</li>
+      <li>Acceso anticipado a las novedades y un canal privado con el equipo del juego.</li>
+    </ul>
+  </section>
+
+  <section class="al-sec">
+    <h2>Lo que recibe tu comunidad</h2>
+    <p>Quien escribe tu código en «Canjear código» (o al crear su cuenta) recibe un <b>regalo del juego</b>: dinero del juego y repuestos para sus primeros eventos. No es un descuento: los precios son los mismos para todos.</p>
+  </section>
+
+  <section class="al-sec">
+    <h2>Niveles</h2>
+    <table class="al-niveles">
+      <tr><td>Nivel 1</td><td>Desde 500 seguidores en tu red de videos cortos o 100 suscriptores en tu canal de videos o de transmisiones en vivo.</td></tr>
+      <tr><td>Nivel 2</td><td>2.000 seguidores o 1.000 suscriptores.</td></tr>
+      <tr><td>Nivel 3</td><td>5.000 seguidores o 3.000 suscriptores.</td></tr>
+      <tr><td>Nivel 4</td><td>10.000 seguidores o suscriptores.</td></tr>
+      <tr><td>Nivel 5</td><td>50.000 o más.</td></tr>
+    </table>
+    <p class="tenue al-nota">Buscamos sobre todo creadores de Ecuador, Perú, Colombia y México, y gente del mundo audiovisual (producción, transmisiones, eventos).</p>
+  </section>
+
+  <section class="al-sec">
+    <h2>Reglas claras</h2>
+    <ul class="al-lista">
+      <li>Indica siempre que es contenido pagado (por ejemplo, <b>#publicidad</b>).</li>
+      <li>Los créditos del juego son para jugar: <b>nunca se cambian por dinero</b>. Tu pago es aparte, por el porcentaje acordado.</li>
+      <li>No pidas calificaciones ni reseñas en la tienda a cambio del código.</li>
+      <li>No se permiten cuentas falsas ni usar tu propio código.</li>
+    </ul>
+  </section>
+
+  <section class="al-sec" id="al-postular">
+    <h2>Postula</h2>
+    <form class="al-form" id="al-form" autocomplete="on" novalidate>
+      <label>Tu nombre o el de tu canal<input id="al-nombre" maxlength="60" required autocomplete="name"></label>
+      <label>Correo para responderte<input id="al-correo" type="email" maxlength="120" required autocomplete="email"></label>
+      <label>Tus redes (enlaces o usuarios de tus canales)<input id="al-redes" maxlength="500" required></label>
+      <label>País<input id="al-pais" maxlength="40" autocomplete="country-name"></label>
+      <label>Cuéntanos sobre tu contenido (opcional)<textarea id="al-mensaje" maxlength="1000"></textarea></label>
+      <div class="al-trampa" aria-hidden="true"><label>No llenar<input id="al-sitio" tabindex="-1" autocomplete="off"></label></div>
+      <button class="boton grande" type="submit" id="al-enviar">Enviar postulación</button>
+    </form>
+    <div class="al-ok" id="al-ok" hidden role="status">
+      <h2>¡Gracias!</h2>
+      <p>Recibimos tu postulación. Te escribiremos al correo que dejaste.</p>
+    </div>
+    <p class="aviso aviso-error" id="al-error" role="alert" aria-live="polite"></p>
+  </section>
+
+  <p class="pie"><a href="/">Jugar EN VIVO Tycoon</a> · <a href="/terminos.html">Términos</a> · <a href="/privacidad.html">Privacidad</a></p>
+</main>
+<script src="/js/aliados_web.js"></script>
+</body>
+</html>
