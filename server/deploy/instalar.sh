@@ -23,6 +23,8 @@
 #   9. Rangos de Cloudflare (ops/cloudflare_ips.sh, cron semanal). Escribe el sitio de nginx /etc/nginx/sites-available/juego.tukanec.com, prueba con "nginx -t"
 #      y SOLO si la prueba sale bien recarga nginx (si sale mal, deja todo como estaba).
 #  10. Ofrece el certificado HTTPS con certbot.
+#  11. Respaldo nocturno, chequeo de salud y rotacion de registros: si falta algo corre ops/instalar_ops.sh (no duplica
+#      nada y hace un respaldo enseguida). Al final, AVISO GRANDE si el respaldo no quedo bien.
 #  Variables opcionales: DOMINIO (juego.tukanec.com), APP (/var/www/envivo), RAMA (main), PHPV (8.3).
 #  Los mensajes van sin tildes a proposito (se leen bien por SSH desde el celular).
 # =====================================================================
@@ -194,28 +196,9 @@ echo "== 6. Tablas de la base de datos"
 if sudo -u www-data env ENVIVO_CONFIG="$CONF" php "$APP/server/bin/migrar.php"; then echo "   listo"; else echo "   ERROR en las migraciones (mira el mensaje de arriba)"; exit 1; fi
 
 echo "== 7. Tareas programadas (tarea diaria 4:10, Google Play, Discord, Festival, Liga, Copa de Servidores, salud de servidores)"
-TAREA="10 4 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/tareas.php >> /var/log/envivo-tareas.log 2>&1"
-touch /var/log/envivo-tareas.log && chown www-data:www-data /var/log/envivo-tareas.log
-# Google Play: cada 6 horas reintenta avisos a Google y revisa compras anuladas (reembolsos / contracargos)
-# Todas las tareas programadas del juego (cron de www-data, con ENVIVO_CONFIG). Se reescriben cada vez (no se duplican).
-CRON_JUEGO="$(cat <<CRON
-$TAREA
-25 */6 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/google_anulados.php >> /var/log/envivo-tareas.log 2>&1
-*/10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/discord_sync.php >> /var/log/envivo-discord.log 2>&1
-*/10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/festival.php >> /var/log/envivo-festival.log 2>&1
-1 0 * * 1 ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
-15 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/liga.php >> /var/log/envivo-liga.log 2>&1
-*/10 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/copas.php >> /var/log/envivo-copas.log 2>&1
-20 0 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/salud_servidores.php >> /var/log/envivo-servidores.log 2>&1
-*/5 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/facturacion.php >> /var/log/envivo-facturacion.log 2>&1
-* * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/push_enviar.php >> /var/log/envivo-push.log 2>&1
-40 4 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/errores.php >> /var/log/envivo-tareas.log 2>&1
-40 0 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/analitica.php >> /var/log/envivo-tareas.log 2>&1
-35 1-23 * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/analitica.php --dias 2 > /dev/null 2>> /var/log/envivo-tareas.log
-CRON
-)"
-for l in envivo-tareas envivo-discord envivo-festival envivo-liga envivo-copas envivo-servidores envivo-facturacion envivo-push; do touch "/var/log/$l.log" && chown www-data:www-data "/var/log/$l.log"; done
-( crontab -u www-data -l 2> /dev/null | grep -v "$APP/server/bin/"; echo "$CRON_JUEGO" ) | crontab -u www-data - && echo "   listo (cron de www-data: tareas, google, discord, festival, liga, copas, salud de servidores, facturación)" || echo "   AVISO: no se pudo programar las tareas (revisa: crontab -u www-data -l)"
+# Todas las tareas del juego (cron de www-data): comun.sh/instalar_cron_juego (la misma que usa actualizar.sh).
+# Solo cambia las lineas del juego (no se duplican) y deja las demas como estaban.
+instalar_cron_juego "$APP" "$CONF"
 
 echo "== 8. Node y el validador de partidas (eventos en linea sin trampas)"
 VALIDADOR="no"
@@ -281,6 +264,9 @@ else
   echo "   certbot no esta instalado. Para instalarlo:  sudo apt install certbot python3-certbot-nginx"
 fi
 
+echo "== 11. Respaldo nocturno, chequeo de salud y rotacion de registros (ops/instalar_ops.sh, si falta algo)"
+asegurar_ops "$APP"
+
 echo
 echo "=========== RESULTADO ==========="
 echo "1) Version del juego: $(git -C "$APP" log -1 --format='%h %cd' --date=short 2> /dev/null)"
@@ -316,3 +302,4 @@ echo "     y luego:  sudo systemctl reload php$PHPV-fpm   (el juego lo muestra e
 echo " d3) Google Play (cuando publiques la app): sigue server/GOOGLE_PLAY.md"
 echo " e) Centro de Control (ventas, jugadores, soporte):   https://$DOMINIO/control/"
 echo " f) Para actualizar mas adelante:   sudo bash $APP/server/deploy/actualizar.sh"
+aviso_respaldo "$APP" || true

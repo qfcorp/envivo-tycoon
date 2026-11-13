@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Actualiza el juego y su servidor en el VPS: baja lo nuevo de GitHub, agrega a la configuracion las lineas nuevas
-# (sin cambiar las que ya estan), actualiza las tablas, reinicia el validador si cambio y recarga PHP.
+# (sin cambiar las que ya estan), actualiza las tablas, reinicia el validador si cambio, pone al dia las tareas
+# programadas (cron de www-data), instala el respaldo nocturno y el chequeo de salud si faltan (ops/instalar_ops.sh)
+# y recarga PHP. Al final avisa EN GRANDE si el respaldo nocturno no esta bien.
 # No borra nada (ni la base de datos ni los valores de /etc/envivo/config.env) y no toca los otros sitios.
 # Uso:   sudo bash /var/www/envivo/server/deploy/actualizar.sh
 #        sudo bash /var/www/envivo/server/deploy/actualizar.sh --version abc1234   VOLVER a una version (commit) de la
@@ -95,6 +97,14 @@ else
 fi
 [ -z "$PEDIDA" ] && actualizar_logrotate "$APP/server/deploy/ops/envivo.logrotate"
 
+echo "== 4b. Tareas programadas del juego (cron de www-data)"
+instalar_cron_juego "$APP" "$CONF"
+
+echo "== 4c. Respaldo nocturno, chequeo de salud y rotacion de registros"
+# Si falta algo (o cambio un script de ops/) se corre ops/instalar_ops.sh: no duplica nada y hace un respaldo enseguida.
+# Al volver a una version vieja (--version / --anterior) no se cambian (solo se revisa abajo que sigan instalados).
+if [ -z "$PEDIDA" ]; then asegurar_ops "$APP"; else echo "   (version anterior: no se cambian)"; fi
+
 echo "== 5. Recargar PHP (para que use el codigo nuevo)"
 # Grupo propio de PHP del juego (ops/pool_fpm.sh): si el sitio lo usa, se pone al dia y se revisa su socket
 if [ -n "$PEDIDA" ]; then POOL_LIB_USAR="$POOL_LIB"; else POOL_LIB_USAR="$APP/server/deploy/ops/pool_fpm.sh"; fi
@@ -109,3 +119,5 @@ if [ -n "$PEDIDA" ]; then
 else
   echo "Listo. Si cambio la configuracion de nginx del juego, corre tambien:  sudo bash $APP/server/deploy/instalar.sh"
 fi
+# Al final, para que se vea: si el respaldo nocturno no esta o el ultimo no fue bueno, un AVISO GRANDE
+aviso_respaldo "$APP" || true

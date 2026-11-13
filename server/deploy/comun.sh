@@ -7,9 +7,15 @@
 #   instalar_validador  clave del validador, servicio envivo-validador (systemd), lo enciende y prueba /salud
 #   salud_validador     solo la prueba de /salud
 #   actualizar_logrotate  pone al dia /etc/logrotate.d/envivo si ya estaba (lo crea ops/instalar_ops.sh)
+#   instalar_cron_juego   escribe las tareas programadas del juego en el cron de www-data (solo las lineas del juego:
+#                         las que llaman a $APP/server/bin/; las demas se quedan). Si ya estaban iguales, no toca nada.
+#   asegurar_ops          respaldo nocturno, chequeo de salud y rotacion de registros: si falta algo (o cambio el
+#                         script en el repo) corre ops/instalar_ops.sh, que no duplica nada y hace un respaldo enseguida
+#   aviso_respaldo        imprime un AVISO GRANDE si el respaldo nocturno no esta instalado o no hay un respaldo bueno
 #  Los mensajes van sin tildes a proposito (se leen bien por SSH desde el celular).
 #  Variables (para pruebas): CLAVE_VALIDADOR, UNIDAD_VALIDADOR, LOGROTATE_ENVIVO, NODE_MIN, NODE_VERSION, NODE_RUTA,
-#  SYSTEMD_RUN (carpeta que dice que systemd esta corriendo).
+#  SYSTEMD_RUN (carpeta que dice que systemd esta corriendo), CRONTAB, CRON_USUARIO, LOG_DIR, OPS_BIN, RESPALDOS_ENVIVO,
+#  INSTALAR_OPS (el instalador de ops a correr).
 # =====================================================================
 
 CLAVE_VALIDADOR="${CLAVE_VALIDADOR:-/etc/envivo/validador.clave}"
@@ -19,6 +25,11 @@ NODE_MIN="${NODE_MIN:-20}"
 NODE_VERSION="${NODE_VERSION:-22}"
 NODE_RUTA="${NODE_RUTA:-/usr/bin/node}"      # el node del servicio (el que instala NodeSource)
 SYSTEMD_RUN="${SYSTEMD_RUN:-/run/systemd/system}"
+CRONTAB="${CRONTAB:-crontab}"                  # el programa crontab (las pruebas ponen uno falso)
+CRON_USUARIO="${CRON_USUARIO:-www-data}"       # quien corre las tareas del juego
+LOG_DIR="${LOG_DIR:-/var/log}"
+OPS_BIN="${OPS_BIN:-/usr/local/bin}"           # donde ops/instalar_ops.sh deja respaldo_envivo.sh y salud_envivo.sh
+RESPALDOS_ENVIVO="${RESPALDOS_ENVIVO:-/var/backups/envivo}"
 VALIDADOR_URL_POR_DEFECTO="http://127.0.0.1:8790"
 
 # Un secreto al azar en hexadecimal ($1 = bytes)
@@ -181,4 +192,105 @@ actualizar_logrotate() {
     echo "   AVISO: logrotate no acepto $p; se deja $LOGROTATE_ENVIVO como estaba"
   fi
   rm -f "$prueba"
+}
+
+# ============================================================================================ tareas programadas
+# Las tareas del juego (cron de www-data, con ENVIVO_CONFIG). Uso: cron_juego APP CONF   (imprime el bloque)
+cron_juego() {
+  local app="$1" conf="$2"
+  cat <<CRON
+10 4 * * * ENVIVO_CONFIG=$conf php $app/server/bin/tareas.php >> $LOG_DIR/envivo-tareas.log 2>&1
+25 */6 * * * ENVIVO_CONFIG=$conf php $app/server/bin/google_anulados.php >> $LOG_DIR/envivo-tareas.log 2>&1
+*/10 * * * * ENVIVO_CONFIG=$conf php $app/server/bin/discord_sync.php >> $LOG_DIR/envivo-discord.log 2>&1
+*/10 * * * * ENVIVO_CONFIG=$conf php $app/server/bin/festival.php >> $LOG_DIR/envivo-festival.log 2>&1
+1 0 * * 1 ENVIVO_CONFIG=$conf php $app/server/bin/liga.php >> $LOG_DIR/envivo-liga.log 2>&1
+15 * * * * ENVIVO_CONFIG=$conf php $app/server/bin/liga.php >> $LOG_DIR/envivo-liga.log 2>&1
+*/10 * * * * ENVIVO_CONFIG=$conf php $app/server/bin/copas.php >> $LOG_DIR/envivo-copas.log 2>&1
+20 0 * * * ENVIVO_CONFIG=$conf php $app/server/bin/salud_servidores.php >> $LOG_DIR/envivo-servidores.log 2>&1
+*/5 * * * * ENVIVO_CONFIG=$conf php $app/server/bin/facturacion.php >> $LOG_DIR/envivo-facturacion.log 2>&1
+* * * * * ENVIVO_CONFIG=$conf php $app/server/bin/push_enviar.php >> $LOG_DIR/envivo-push.log 2>&1
+40 4 * * * ENVIVO_CONFIG=$conf php $app/server/bin/errores.php >> $LOG_DIR/envivo-tareas.log 2>&1
+40 0 * * * ENVIVO_CONFIG=$conf php $app/server/bin/analitica.php >> $LOG_DIR/envivo-tareas.log 2>&1
+35 1-23 * * * ENVIVO_CONFIG=$conf php $app/server/bin/analitica.php --dias 2 > /dev/null 2>> $LOG_DIR/envivo-tareas.log
+CRON
+}
+
+# instalar_cron_juego APP CONF: deja en el cron de www-data exactamente las tareas de cron_juego. Quita SOLO las lineas
+# del juego (las que llaman a APP/server/bin/: asi tambien se van las tareas viejas que ya no existen) y deja las demas
+# tal cual. Si ya estaba igual no reescribe nada. Se puede correr mil veces (instalar.sh y actualizar.sh).
+instalar_cron_juego() {
+  local app="$1" conf="$2" l actual nuevo
+  for l in envivo-tareas envivo-discord envivo-festival envivo-liga envivo-copas envivo-servidores envivo-facturacion envivo-push; do
+    touch "$LOG_DIR/$l.log" 2> /dev/null && chown "$CRON_USUARIO:$CRON_USUARIO" "$LOG_DIR/$l.log" 2> /dev/null
+  done
+  actual="$("$CRONTAB" -u "$CRON_USUARIO" -l 2> /dev/null)"
+  nuevo="$( { printf '%s\n' "$actual" | grep -vF "$app/server/bin/" | grep -v '^$'; cron_juego "$app" "$conf"; } )"
+  if [ "$actual" = "$nuevo" ]; then
+    echo "   cron de $CRON_USUARIO: ya estaba al dia ($(printf '%s\n' "$nuevo" | grep -cF "$app/server/bin/") tareas del juego)"
+    return 0
+  fi
+  if printf '%s\n' "$nuevo" | "$CRONTAB" -u "$CRON_USUARIO" -; then
+    echo "   cron de $CRON_USUARIO: puesto al dia ($(printf '%s\n' "$nuevo" | grep -cF "$app/server/bin/") tareas del juego: tareas, google, discord, festival, liga, copas, salud de servidores, facturacion, push, analitica)"
+  else
+    echo "   AVISO: no se pudo programar las tareas (revisa: sudo crontab -u $CRON_USUARIO -l)"; return 1
+  fi
+}
+
+# ============================================================================================ respaldo y salud (ops)
+# Que le falta al respaldo nocturno / chequeo de salud / rotacion de registros (vacio = nada).
+# Uso: ops_falta APP [COMPARAR]   COMPARAR=0 no cuenta un script distinto al del repo (solo lo que falta)
+ops_falta() {
+  local app="$1" comparar="${2:-1}" ops="$1/server/deploy/ops" f cron falta=""
+  for f in respaldo_envivo.sh salud_envivo.sh; do
+    if [ ! -x "$OPS_BIN/$f" ]; then falta="$falta, falta $f"
+    elif [ "$comparar" = "1" ] && [ -f "$ops/$f" ] && ! cmp -s "$ops/$f" "$OPS_BIN/$f"; then falta="$falta, $f cambio en el repo"; fi
+  done
+  cron="$("$CRONTAB" -u root -l 2> /dev/null)"
+  grep -qF "$OPS_BIN/respaldo_envivo.sh" <<< "$cron" || falta="$falta, falta el respaldo de la 1:30 en el cron de root"
+  grep -qF "$OPS_BIN/salud_envivo.sh" <<< "$cron" || falta="$falta, falta el chequeo de salud en el cron de root"
+  [ -f "$LOGROTATE_ENVIVO" ] || falta="$falta, falta $LOGROTATE_ENVIVO"
+  printf '%s' "${falta#, }"
+}
+
+# asegurar_ops APP: si falta algo de ops (o cambio un script), corre ops/instalar_ops.sh. Ese instalador no duplica nada,
+# no toca a los otros sitios y al final hace un respaldo enseguida (y un chequeo de prueba sin mandar a Telegram).
+asegurar_ops() {
+  local app="$1" inst falta rc
+  inst="${INSTALAR_OPS:-$app/server/deploy/ops/instalar_ops.sh}"
+  falta="$(ops_falta "$app")"
+  if [ -z "$falta" ]; then echo "   respaldo nocturno, chequeo de salud y rotacion de registros: ya estaban (nada que hacer)"; return 0; fi
+  [ -f "$inst" ] || { echo "   AVISO: no esta $inst: no se puede instalar el respaldo"; return 1; }
+  echo "   $falta"
+  echo "   -> se corre ops/instalar_ops.sh (no duplica nada y hace un respaldo ahora mismo)"
+  BIN="$OPS_BIN" RESPALDOS="$RESPALDOS_ENVIVO" LOGROTATE="$LOGROTATE_ENVIVO" bash "$inst" < /dev/null 2>&1 | sed 's/^/     | /'
+  rc="${PIPESTATUS[0]}"
+  [ "$rc" = "0" ] || echo "   AVISO: ops/instalar_ops.sh termino con error ($rc)"
+  return "$rc"
+}
+
+# aviso_respaldo APP: si el respaldo nocturno no esta instalado o el ultimo respaldo no es bueno (o es de hace mas de
+# 26 h), imprime un AVISO GRANDE y sale con 1. Si todo esta bien imprime una linea y sale con 0.
+aviso_respaldo() {
+  local app="$1" falta est="" cuando="" resto="" r="$RESPALDOS_ENVIVO/ULTIMO_RESULTADO" problema=""
+  falta="$(ops_falta "$app" 0)"
+  [ -n "$falta" ] && problema="$falta"
+  if [ ! -f "$r" ]; then problema="${problema:+$problema; }todavia no hay ningun respaldo ($r)"
+  else
+    read -r est cuando resto < "$r"
+    if [ "$est" != "OK" ]; then problema="${problema:+$problema; }el ultimo respaldo FALLO: ${resto:-sin detalle}"
+    elif [[ "$cuando" =~ ^[0-9]+$ ]] && [ $(( $(date +%s) - cuando )) -gt $(( 26 * 3600 )) ]; then
+      problema="${problema:+$problema; }el ultimo respaldo es de hace $(( ($(date +%s) - cuando) / 3600 )) h"
+    fi
+  fi
+  if [ -z "$problema" ]; then echo "Respaldo nocturno: instalado, ultimo respaldo OK ($(date -d "@$cuando" '+%Y-%m-%d %H:%M' 2> /dev/null))."; return 0; fi
+  echo
+  echo "################################################################################"
+  echo "##  AVISO: EL RESPALDO DE LA BASE DEL JUEGO NO ESTA BIEN                       ##"
+  echo "##  Con pagos reales, perder la base = perder compras y creditos.               ##"
+  echo "################################################################################"
+  echo "   Que pasa: $problema"
+  echo "   Arreglo:  sudo bash $app/server/deploy/ops/instalar_ops.sh"
+  echo "             y mira:  sudo tail -n 30 /var/log/envivo-respaldo.log"
+  echo "################################################################################"
+  return 1
 }

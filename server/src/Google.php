@@ -115,8 +115,8 @@ final class Google
         // ¿Ya se registró? (el juego manda el mismo comprobante varias veces: al comprar y al abrir la app para "restaurar")
         $ya = self::existente($purchaseToken, $orderId);
         if ($ya) return self::yaRegistrada($jugador, $producto, $purchaseToken, $ya);
-        Ajustes::exigirTiendaAbierta();
-        Cuentas::exigirActiva($jugador);
+        // Auditoría M5: aquí NO se exige la tienda abierta ni la cuenta activa. Google YA cobró: si no se registra y se avisa
+        // a Google en 3 días, Google devuelve el dinero solo y el jugador se queda sin nada. Se entrega igual y se anota.
         [$c, $g] = self::api('GET', self::urlProducto($producto, $purchaseToken));
         if ($c === 404 || $c === 400 || $c === 410) throw new Fallo('Google Play no reconoce esa compra.', 402, ['codigo' => 'google_invalida']);
         if ($c !== 200 || !is_array($g)) { error_log('EN VIVO Google: purchases.products.get respondió ' . $c); throw new Fallo('No se pudo verificar la compra con Google Play. Intenta otra vez.', 502, ['codigo' => 'google_error']); }
@@ -129,25 +129,47 @@ final class Google
         if (isset($g['productId'])) Fallo::si((string) $g['productId'] !== $producto, 'Los datos de la compra no coinciden con Google Play.', 409, ['codigo' => 'google_no_coincide']);
         $cuenta = (string) ($g['obfuscatedExternalAccountId'] ?? '');
         Fallo::si($cuenta !== '' && !hash_equals('ev-' . $jugador, $cuenta), 'Esa compra de Google Play es de otra cuenta del juego.', 409, ['codigo' => 'google_otra_cuenta']);
+        // Cuenta de "Pruebas de licencias" de Play Console (purchaseType 0): Google no cobró. Se sabe ANTES de aprobar, así
+        // los ganchos de compra_aprobada ya la ven como prueba: Facturacion no crea factura del SRI y PanelVentas la anota
+        // con prueba=1 (auditoría A1). Se entrega igual (para que el dueño pruebe) y el Centro de Control no la cuenta como venta.
+        $prueba = (int) ($g['purchaseType'] ?? -1) === 0;
+        $quien = $prueba ? self::QUIEN_PRUEBA : 'Google Play';
         // Una sola transacción: si dos pedidos con el mismo comprobante llegan a la vez, el segundo ve la compra del primero
-        $r = Db::tx(function () use ($jugador, $p, $purchaseToken, $orden, $g): array {
+        $r = Db::tx(function () use ($jugador, $p, $purchaseToken, $orden, $g, $quien): array {
             $ya = self::existente($purchaseToken, $orden);
             if ($ya) return ['ya' => $ya];
-            // Si era de una sola vez y ya lo tenía, Google ya cobró: Compras::aprobar la deja pagada SIN entregar otra vez y con aviso.
+            // Auditoría L1: de una sola vez y ya lo tiene (p. ej. el paquete de inicio comprado por la web y otra vez en la
+            // app). NO se registra ni se avisa a Google: sin acknowledge, Google devuelve el dinero solo a los 3 días.
+            if (!empty($p['una_vez'])) {
+                $otra = Db::valor("SELECT id FROM compras WHERE jugador_id = ? AND producto = ? AND estado IN ('pagado', 'revertido')", [$jugador, $p['id']]);
+                if ($otra) return ['duplicada' => (int) $otra];
+            }
             $c = Compras::insertar($jugador, $p, 'google_play', null, ['order_id' => $orden, 'token' => $purchaseToken]);
-            Compras::aprobar((int) $c['id'], 'Google Play', $orden !== '' ? $orden : null, mb_substr((string) json_encode(Plux::limpiar($g), JSON_UNESCAPED_SLASHES), 0, 3000));
+            Compras::aprobar((int) $c['id'], $quien, $orden !== '' ? $orden : null, mb_substr((string) json_encode(Plux::limpiar($g), JSON_UNESCAPED_SLASHES), 0, 3000));
             return ['nueva' => Compras::porId((int) $c['id'])];
         });
         if (isset($r['ya'])) return self::yaRegistrada($jugador, $producto, $purchaseToken, $r['ya']);
-        if ((int) ($g['purchaseType'] ?? -1) === 0) {
-            // Cuenta de "Pruebas de licencias" de Play Console: Google no cobró. Se entrega igual (para que el dueño pruebe),
-            // pero queda marcada y el Centro de Control no la cuenta como venta.
-            Db::q("UPDATE compras SET pagado_por = 'Google Play (PRUEBA, sin cobro)' WHERE id = ?", [$r['nueva']['id']]);
-            Db::aviso('google_compra_prueba', 'La compra N° ' . $r['nueva']['id'] . ' es de PRUEBA (cuenta de pruebas de licencias de Google Play): Google no cobró.', (int) $r['nueva']['id']);
+        if (isset($r['duplicada'])) {
+            $ref = $orden !== '' ? $orden : substr(hash('sha256', $purchaseToken), 0, 16);
+            if (!Db::valor("SELECT 1 FROM avisos WHERE tipo = 'google_una_vez_duplicado' AND detalle LIKE ?", ['%' . $ref . '%'])) {
+                Db::aviso('google_una_vez_duplicado', 'El jugador ' . $jugador . ' compró otra vez en Google Play "' . $p['nombre'] . '" (orden ' . $ref . '), que es de una sola vez y ya tenía (compra N° ' . $r['duplicada'] . '). No se entregó ni se confirmó a Google: Google devuelve el dinero solo en unos 3 días.', $r['duplicada']);
+            }
+            throw new Fallo('Ya tienes «' . $p['nombre'] . '» (se compra una sola vez), así que no te lo entregamos otra vez. No te preocupes: Google Play te devolverá el dinero automáticamente en unos días.', 409, ['codigo' => 'google_ya_comprado']);
         }
+        $id = (int) $r['nueva']['id'];
+        if ($prueba) Db::aviso('google_compra_prueba', 'La compra N° ' . $id . ' es de PRUEBA (cuenta de pruebas de licencias de Google Play): Google no cobró. No se factura.', $id);
+        // M5: entregada aunque la tienda esté cerrada o la cuenta no esté activa (Google ya cobró). Queda la nota para el dueño.
+        $notas = [];
+        if (Ajustes::mantenimiento()) $notas[] = 'la tienda estaba en mantenimiento';
+        $estadoCuenta = Cuentas::estadoCuenta($jugador);
+        if ($estadoCuenta !== 'activo') $notas[] = 'la cuenta estaba ' . match ($estadoCuenta) { 'suspendido' => 'suspendida', 'baneado' => 'baneada', 'borrado' => 'borrada', default => $estadoCuenta };
+        if ($notas) Db::aviso('google_entregada_con_tienda_cerrada', 'La compra N° ' . $id . ' de Google Play (ya cobrada) se entregó aunque ' . implode(' y ', $notas) . '. Revisar si hace falta devolverla desde Play Console.', $id);
         self::avisar($r['nueva']);
-        return ['nueva' => true, 'compra' => Compras::porId((int) $r['nueva']['id'])];
+        return ['nueva' => true, 'compra' => Compras::porId($id)];
     }
+
+    /** pagado_por de una compra de la cuenta de pruebas de licencias (PanelVentas::esPrueba busca "PRUEBA"). */
+    public const QUIEN_PRUEBA = 'Google Play (PRUEBA, sin cobro)';
 
     private static function yaRegistrada(int $jugador, string $producto, string $purchaseToken, array $ya): array
     {

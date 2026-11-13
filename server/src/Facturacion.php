@@ -211,6 +211,9 @@ final class Facturacion
         $c = Compras::porId($d['compra_id']);
         if (!$c || $c['estado'] !== 'pagado') return;
         if (($c['canal'] ?? '') === 'google_play' && !self::facturaGoogle()) return;
+        // Compra de PRUEBA de Google Play (cuenta de pruebas de licencias, purchaseType 0): Google no cobró, no hay venta
+        // que facturar al SRI (auditoría A1). Google::verificar ya la aprueba con pagado_por "Google Play (PRUEBA, sin cobro)".
+        if (($c['canal'] ?? '') === 'google_play' && PanelVentas::esPrueba($c)) return;
         self::crearFactura($c);
     }
 

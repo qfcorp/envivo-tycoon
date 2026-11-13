@@ -205,6 +205,15 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   - Servidor: `POST /api/cuenta/clave {actual, nueva}` (`Cuentas::cambiarClave`): mismas reglas y bcrypt que el registro, pide la actual, cierra las **otras** sesiones (esta sigue), anula enlaces de recuperación, auditoría `clave_cambiada` / `clave_cambio_fallido`, correo "tu contraseña cambió", límite 10 por cuenta y 30 por conexión cada 10 min. Códigos nuevos `clave_actual_falta` y `clave_igual` (en español en todos los idiomas hasta la traducción final).
   - Pruebas: `server/tests/pruebas_cuenta_clave.php` (en `correr.sh`) y `tests/test_cuenta_clave.js`. Versión del juego `envivo-v48` (MIN_CLIENTE sigue en v47).
 
+- 2026-11-13: **Arreglos del servidor por la auditoría** (rama `arreglos-servidor`; hallazgos C1, A1, A2, A3, M1, M5 y L1).
+  - **C1 respaldo nocturno**: `actualizar.sh` e `instalar.sh` ahora corren `deploy/ops/instalar_ops.sh` si falta algo (scripts de respaldo y salud, cron de root, logrotate) o si cambió un script en el repo; no duplica nada y hace un respaldo enseguida. Al final imprimen un **AVISO GRANDE** si el respaldo no está instalado o el último falló / es de hace más de 26 h (`comun.sh`: `asegurar_ops`, `aviso_respaldo`).
+  - **A2 cron de www-data**: el bloque de tareas salió de `instalar.sh` a `comun.sh` (`cron_juego` / `instalar_cron_juego`) y lo llaman los dos scripts: reemplaza solo las líneas del juego (las que llaman a `server/bin/`), deja las demás, y si ya estaba igual no lo toca. Así el VPS recibe `google_anulados` (reembolsos de Google), facturación, push y analítica aunque se instaló antes.
+  - **A1 compras de PRUEBA de Google** (licencias de prueba, `purchaseType 0`): se aprueban ya con `pagado_por = "Google Play (PRUEBA, sin cobro)"`, así `Facturacion::alAprobar` NO crea factura del SRI y `PanelVentas` las anota con `prueba=1`. Nueva herramienta `php server/bin/google_pruebas.php` (solo lista) con las facturas o envíos al Panel que ya se hicieron por compras de prueba antes del arreglo: **Dimitry debe correrla en el VPS** y revisar con el contador las autorizadas (no se anula nada solo).
+  - **M5**: una compra de Google ya cobrada se entrega aunque la tienda esté en mantenimiento o la cuenta suspendida/baneada (antes se rechazaba y Google la reembolsaba a los 3 días); queda el aviso `google_entregada_con_tienda_cerrada` en el Centro de Control.
+  - **L1**: un producto de una sola vez que ya tenía (p. ej. el paquete de inicio por la web y otra vez en la app) ya no se confirma a Google → Google devuelve el dinero solo; el jugador ve «Ya tienes … Google Play te devolverá el dinero automáticamente» (409 `google_ya_comprado`) y queda el aviso `google_una_vez_duplicado`.
+  - **A3 (parte)**: la app ya revisaba las compras sin confirmar al abrir; ahora también al volver a la app desde segundo plano (como mucho cada 10 s). Prueba `tests/test_play_restaurar.js`. Versión del juego `envivo-v50`.
+  - Pruebas: `server/tests/pruebas_deploy.sh` (nuevo, en `correr.sh`), casos nuevos en `pruebas_soporte_google.php` y `pruebas_tienda_cuenta.php`.
+
 ## ⏭️ Pendiente (después del demo)
 - [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
 - [ ] Dimitry: crear el correo de soporte y completar RUC/correo/dirección en las páginas legales; revisión de abogado (también nombres parodia)
@@ -248,6 +257,9 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 - Herramienta nueva: `python3 tools/fusionar_errores.py` copia `docs/traducciones/errores_nuevos/*.json` a `errores.json` y a `js/lang`.
 
 ## ⏭️ Pendiente para salir (lanzamiento)
+- [ ] Google Play: notificaciones en tiempo real (RTDN, Pub/Sub → `/api/google/rtdn`) para enterarse de compras aunque la app no llame a verificar (auditoría A3; por ahora solo la app al abrir y al volver).
+- [ ] Contador (auditoría M1): ¿se factura al consumidor final cada venta de Google Play (`FACTURACION_GOOGLE=1`, hoy por defecto) aunque Google es quien cobra (merchant of record) y con el precio del catálogo, no el que cobró Google en cada país? ¿O `FACTURACION_GOOGLE=0` y facturar/declarar según los pagos que liquida Google? No se cambió nada hasta tener la respuesta.
+- [ ] Dimitry en el VPS: `sudo bash /var/www/envivo/server/deploy/actualizar.sh` (instala el respaldo y el cron que faltaban) y luego `sudo -u www-data env ENVIVO_CONFIG=/etc/envivo/config.env php /var/www/envivo/server/bin/google_pruebas.php`.
 - [ ] Dimitry: dirección de la empresa para [DIRECCIÓN] en los términos y la privacidad; revisión de abogado (`docs/LEGAL_REVISION.md`).
 - [ ] Dimitry: crear el servidor de Discord (`docs/DISCORD_CREAR_SERVIDOR.md`).
 - [ ] Dimitry: correo (Cloudflare Email Routing + Brevo, `docs/CORREO.md`).
