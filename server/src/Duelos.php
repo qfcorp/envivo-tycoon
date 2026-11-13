@@ -576,11 +576,12 @@ final class Duelos
             if ($calidad !== null && class_exists(Pase::class)) Pase::sumarXp($rj, Pase::XP['duelo'], 'duelo', 'duelo:' . $id);   // INTEGRAR_PASE.md §5
             try {
                 $quien = self::nombre($rj);
-                Chat::sistema($dj, match ($ganador) {
-                    'defensor' => '🛡️ Tu equipo de duelo le ganó a ' . $quien . ' (' . $cd . ' contra ' . ($calidad ?? 0) . '). Puntaje ' . ($nD - (int) $D['rating'] >= 0 ? '+' : '') . ($nD - (int) $D['rating']) . '.',
-                    'retador' => '⚔️ ' . $quien . ' le ganó a tu equipo de duelo (' . $calidad . ' contra ' . $cd . '). Puntaje ' . ($nD - (int) $D['rating']) . '.',
-                    default => '🤝 Empate con ' . $quien . ' en un duelo (' . $cd . ' a ' . $calidad . ').',
-                });
+                $dif = $nD - (int) $D['rating'];
+                match ($ganador) {
+                    'defensor' => Chat::sistemaPlantilla($dj, 'duelo_defensor', ['quien' => $quien, 'a' => $cd, 'b' => $calidad ?? 0, 'cambio' => ($dif >= 0 ? '+' : '') . $dif]),
+                    'retador' => Chat::sistemaPlantilla($dj, 'duelo_retador', ['quien' => $quien, 'a' => $calidad, 'b' => $cd, 'cambio' => (string) $dif]),
+                    default => Chat::sistemaPlantilla($dj, 'duelo_empate', ['quien' => $quien, 'a' => $cd, 'b' => $calidad]),
+                };
             } catch (\Throwable) { /* el chat es opcional */ }
         });
     }
@@ -661,7 +662,12 @@ final class Duelos
                     Monedero::entregar($j, 'fama', '-', $fama, 'duelo_temporada:' . $t);
                     Db::q('INSERT OR IGNORE INTO duelo_premios (temporada, jugador_id, servidor_id, puesto, rating, detalle_json, creado) VALUES (?, ?, ?, ?, ?, ?, ?)',
                         [$t, $j, (int) $s['servidor_id'], $p, (int) $f['rating'], self::json(['dinero' => $dinero, 'fama' => $fama]), time()]);
-                    try { Chat::sistema($j, '🏆 ' . self::nombreTemporada($t) . ' de duelos: terminaste en el puesto ' . $p . '. Premio: $' . number_format($dinero, 0, ',', '.') . ' y +' . $fama . ' de fama.'); } catch (\Throwable) {}
+                    try {
+                        [$anio, $mesN] = array_map('intval', explode('-', $t));
+                        Chat::sistemaPlantilla($j, 'duelo_temporada', ['anio' => $anio, 'puesto' => $p, 'fama' => $fama,
+                            'mes' => fn(string $L) => $L === 'es' ? (self::MESES[$mesN] ?? (string) $mesN) : (TextosSistema::nombre('mes', $mesN, $L) ?? (string) $mesN),
+                            'dinero' => fn(string $L) => TextosSistema::numero($dinero, $L)]);
+                    } catch (\Throwable) {}
                     $n++;
                 }
             }

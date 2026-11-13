@@ -258,7 +258,7 @@ final class Social
             Fallo::si(!$el || (int) $el['asociacion_id'] !== (int) $yo['asociacion_id'], 'Esa persona no está en tu asociación.', 404);
             Fallo::si($yo['cargo'] === 'vicepresidente' && $el['cargo'] !== 'socio', 'Un vicepresidente solo puede expulsar a socios.', 403);
             self::quitar($otro, (int) $el['asociacion_id'], $el['cargo']);
-            Chat::sistema($otro, 'Te sacaron de la asociación.');
+            Chat::sistemaPlantilla($otro, 'asoc_expulsado');
             return ['ok' => true];
         });
     }
@@ -278,7 +278,7 @@ final class Social
             Fallo::si((int) Db::valor('SELECT COUNT(*) FROM asociacion_miembros WHERE asociacion_id = ?', [$asoc]) >= self::MAX_MIEMBROS, 'Tu asociación está llena (' . self::MAX_MIEMBROS . ' miembros).', 409, ['codigo' => 'llena']);
             Db::q("INSERT INTO asociacion_miembros (asociacion_id, jugador_id, cargo, desde) VALUES (?, ?, 'socio', ?)", [$asoc, $otro, time()]);
             Db::q('DELETE FROM asociacion_solicitudes WHERE jugador_id = ?', [$otro]);
-            Chat::sistema($otro, 'Te aceptaron en la asociación.');
+            Chat::sistemaPlantilla($otro, 'asoc_aceptado');
             return ['ok' => true, 'estado' => 'aceptada'];
         });
     }

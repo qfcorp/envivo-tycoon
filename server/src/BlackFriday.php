@@ -183,8 +183,8 @@ final class BlackFriday
                 [self::PROMO, $jugador, $canal, $inst, $ip !== '' ? $ip : null, $antes, $nuevo, $t]);
             $num = $n + 1;
             try {
-                Buzon::enviar($jugador, '🎁 Black Friday: VIP 30 días GRATIS', 'Tu Pase VIP de ' . self::DIAS . ' días ya está activo (hasta el ' . date('d/m/Y', $nuevo) . '). '
-                    . 'Eres una de las ' . $c['cupo'] . " primeras productoras de Black Friday.\n¡Gracias por jugar EN VIVO Tycoon!", [], ['tipo' => 'evento', 'ref' => 'promo:' . self::PROMO]);
+                Buzon::enviarPlantilla($jugador, 'bf_t', 'bf_c', ['dias' => self::DIAS, 'fecha' => fn(string $L) => TextosSistema::fecha($nuevo, $L),
+                    'cupo' => $c['cupo']], [], ['tipo' => 'evento', 'ref' => 'promo:' . self::PROMO]);
             } catch (\Throwable) {
                 // el aviso del buzón es opcional: el VIP ya quedó
             }

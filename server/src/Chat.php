@@ -84,7 +84,7 @@ final class Chat
                 'creado' => Db::iso((int) $m['creado']), 'mio' => $m['jugador_id'] !== null && (int) $m['jugador_id'] === $yo];
     }
 
-    /** Avisos del juego con textos_json (GranProduccion): el del idioma de quien lee (Accept-Language); si no, "texto" (español). */
+    /** Avisos del juego con textos_json (GranProduccion, TextosSistema): el del idioma de quien lee (Accept-Language); si no, "texto" (español). */
     private static function textoEnIdioma(array $m): string
     {
         if ($m['jugador_id'] !== null || empty($m['textos_json'])) return (string) $m['texto'];
@@ -167,10 +167,49 @@ final class Chat
         });
     }
 
-    /** Aviso del juego para un jugador (canal sistema:<id>). */
-    public static function sistema(int $jugador, string $texto): void
+    /** Aviso del juego para un jugador (canal sistema:<id>). $textos: [idioma => texto] (se muestra el de quien lee). */
+    public static function sistema(int $jugador, string $texto, ?array $textos = null): void
     {
-        Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['sistema:' . $jugador, mb_substr($texto, 0, self::MAX_TEXTO), time()]);
+        self::aviso('sistema:' . $jugador, $texto, $textos);
+    }
+
+    /**
+     * Aviso del juego (sin autor) en un canal real (servidor:<id>, asociacion:<id>, sistema:<id>...). Con $textos
+     * ([idioma => texto]) se guardan en textos_json y textoEnIdioma elige el de quien lee; "texto" queda en español.
+     */
+    public static function aviso(string $canal, string $texto, ?array $textos = null, ?int $creado = null): void
+    {
+        $tj = null;
+        if ($textos) {
+            $o = [];
+            foreach ($textos as $L => $t) if (is_string($L) && is_string($t) && $t !== '') $o[$L] = mb_substr($t, 0, self::MAX_TEXTO);
+            $tj = $o ? json_encode($o, JSON_UNESCAPED_UNICODE) : null;
+        }
+        $texto = mb_substr($texto, 0, self::MAX_TEXTO);
+        if ($tj === null) {
+            Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', [$canal, $texto, $creado ?? time()]);
+            return;
+        }
+        try {
+            Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, textos_json, creado) VALUES (?, NULL, ?, ?, ?)', [$canal, $texto, $tj, $creado ?? time()]);
+        } catch (\PDOException $e) {
+            if (!str_contains($e->getMessage(), 'textos_json')) throw $e;
+            Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', [$canal, $texto, $creado ?? time()]);   // base sin la columna todavía
+        }
+    }
+
+    /** Aviso del sistema para un jugador con una plantilla de TextosSistema (los 10 idiomas). */
+    public static function sistemaPlantilla(int $jugador, string $clave, array $v = []): void
+    {
+        $tx = TextosSistema::todos($clave, $v);
+        self::sistema($jugador, $tx['es'], $tx);
+    }
+
+    /** Aviso en un canal con una plantilla de TextosSistema (los 10 idiomas). */
+    public static function avisoPlantilla(string $canal, string $clave, array $v = [], ?int $creado = null): void
+    {
+        $tx = TextosSistema::todos($clave, $v);
+        self::aviso($canal, $tx['es'], $tx, $creado);
     }
 
     /** ¿Puede este jugador ver el mensaje? (para reportar) */
@@ -236,8 +275,9 @@ final class Chat
         if ($quien !== null) Auditoria::anotar($quien, $tipo === 'expulsion' ? 'chat_expulsar' : 'chat_silenciar', ($tipo === 'silencio' ? $segundos . ' s: ' : '') . $motivo, $jugador);
         Db::q('INSERT INTO chat_sanciones (jugador_id, tipo, hasta, motivo, creado) VALUES (?, ?, ?, ?, ?)',
             [$jugador, $tipo, $segundos === null ? null : time() + $segundos, mb_substr($motivo, 0, 200), time()]);
-        self::sistema($jugador, $tipo === 'expulsion' ? 'Fuiste expulsado del chat por: ' . $motivo
-            : 'No podrás escribir en el chat por ' . ($segundos >= 86400 ? intdiv($segundos, 86400) . ' día(s)' : intdiv($segundos, 3600) . ' hora(s)') . '. Motivo: ' . $motivo);
+        // el motivo lo escribe el administrador: va tal cual dentro del aviso traducido
+        if ($tipo === 'expulsion') self::sistemaPlantilla($jugador, 'chat_expulsion', ['motivo' => $motivo]);
+        else self::sistemaPlantilla($jugador, $segundos >= 86400 ? 'chat_silencio_dias' : 'chat_silencio_horas', ['n' => $segundos >= 86400 ? intdiv($segundos, 86400) : intdiv($segundos, 3600), 'motivo' => $motivo]);
     }
 
     public static function levantar(int $jugador, ?string $quien = null): int

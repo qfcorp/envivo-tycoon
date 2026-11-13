@@ -46,7 +46,7 @@ final class Buzon
         if (self::$listo) return;
         Db::pdo();
         $n = (int) Db::valor("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('buzon', 'buzon_envios', 'buzon_codigos', 'buzon_canjes', 'buzon_borradores')");
-        if ($n < 5) Migraciones::aplicar('buzon.sql');
+        if ($n < 5 || !isset(Migraciones::columnas('buzon')['textos_json'])) Migraciones::aplicar('buzon.sql');   // tablas o la columna textos_json
         self::$listo = true;
     }
 
@@ -132,8 +132,9 @@ final class Buzon
     // ------------------------------------------------------------------------------------------ enviar a un jugador
     /**
      * Pone un mensaje en el buzón de un jugador. $op: tipo, remitente, ref (idempotencia: el mismo ref no se repite),
-     * expira (segundos Unix) o dias, envio_id. Devuelve el id del mensaje, o null si ese ref ya existía.
-     * Seguro dentro de otra transacción (Db::tx se suma a ella).
+     * expira (segundos Unix) o dias, envio_id, textos ([idioma => ['titulo' => .., 'cuerpo' => ..]]: los mensajes
+     * automáticos en los 10 idiomas, ver TextosSistema; titulo/cuerpo siguen en español). Devuelve el id del mensaje,
+     * o null si ese ref ya existía. Seguro dentro de otra transacción (Db::tx se suma a ella).
      */
     public static function enviar(int $jugador, string $titulo, string $cuerpo = '', array $adjuntos = [], array $op = []): ?int
     {
@@ -147,12 +148,37 @@ final class Buzon
         $t = self::ahora();
         $exp = self::expira($op, $t);
         $ref = isset($op['ref']) && $op['ref'] !== '' ? mb_substr((string) $op['ref'], 0, 120) : null;
-        return Db::tx(function () use ($jugador, $titulo, $cuerpo, $adj, $tipo, $rem, $t, $exp, $ref, $op): ?int {
+        $textos = self::textosJson($op['textos'] ?? null);
+        return Db::tx(function () use ($jugador, $titulo, $cuerpo, $adj, $tipo, $rem, $t, $exp, $ref, $op, $textos): ?int {
             Fallo::si(!Cuentas::porId($jugador), 'Ese jugador no existe.', 404, ['codigo' => 'jugador_no_existe']);
-            $n = Db::q('INSERT OR IGNORE INTO buzon (jugador_id, envio_id, tipo, remitente, titulo, cuerpo, adjuntos_json, ref, estado, creado, expira) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [$jugador, $op['envio_id'] ?? null, $tipo, $rem, $titulo, $cuerpo, json_encode($adj, JSON_UNESCAPED_UNICODE), $ref, 'sin_leer', $t, $exp])->rowCount();
+            $n = Db::q('INSERT OR IGNORE INTO buzon (jugador_id, envio_id, tipo, remitente, titulo, cuerpo, adjuntos_json, ref, estado, creado, expira, textos_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$jugador, $op['envio_id'] ?? null, $tipo, $rem, $titulo, $cuerpo, json_encode($adj, JSON_UNESCAPED_UNICODE), $ref, 'sin_leer', $t, $exp, $textos])->rowCount();
             return $n === 1 ? Db::ultimoId() : null;
         });
+    }
+
+    /**
+     * Mensaje automático con una plantilla de TextosSistema: guarda el español en titulo/cuerpo y los 10 idiomas en
+     * textos_json (Buzon::json muestra el de quien lee). $v: marcadores (ver TextosSistema). Mismo resultado que enviar().
+     */
+    public static function enviarPlantilla(int $jugador, string $claveTitulo, string $claveCuerpo, array $v = [], array $adjuntos = [], array $op = []): ?int
+    {
+        $tx = TextosSistema::buzon($claveTitulo, $claveCuerpo, $v);
+        return self::enviar($jugador, $tx['es']['titulo'], $tx['es']['cuerpo'], $adjuntos, ['textos' => $tx] + $op);
+    }
+
+    /** $op['textos'] limpio (mismos topes que titulo/cuerpo) como JSON, o null si no hay. */
+    private static function textosJson(mixed $tx): ?string
+    {
+        if (!is_array($tx) || $tx === []) return null;
+        $o = [];
+        foreach ($tx as $L => $x) {
+            if (!is_string($L) || !in_array($L, TextosSistema::IDIOMAS, true) || !is_array($x)) continue;
+            $ti = self::limpiarLinea((string) ($x['titulo'] ?? ''), self::MAX_TITULO);
+            if ($ti === '') continue;
+            $o[$L] = ['titulo' => $ti, 'cuerpo' => self::limpiarTexto((string) ($x['cuerpo'] ?? ''), self::MAX_CUERPO)];
+        }
+        return $o ? json_encode($o, JSON_UNESCAPED_UNICODE) : null;
     }
 
     private static function expira(array $op, int $t): int
@@ -362,15 +388,24 @@ final class Buzon
         return 'jugador_id = ? AND borrado = 0 AND (expira > ? OR (estado = \'reclamado\' AND reclamado > ?))';
     }
 
-    /** Un mensaje como lo ve el juego. */
+    /**
+     * Un mensaje como lo ve el juego. Los automáticos (textos_json) salen en el idioma de quien lee (Accept-Language
+     * que manda el juego); si ese idioma falta, o el mensaje lo escribió el dueño a mano, en español (titulo/cuerpo).
+     */
     public static function json(array $m): array
     {
         $t = self::ahora();
         $adj = json_decode((string) $m['adjuntos_json'], true);
         $adj = is_array($adj) ? $adj : [];
         $vencido = $m['expira'] !== null && (int) $m['expira'] <= $t;
+        [$titulo, $cuerpo] = [$m['titulo'], $m['cuerpo']];
+        if (!empty($m['textos_json'])) {
+            $tx = json_decode((string) $m['textos_json'], true);
+            $x = is_array($tx) ? ($tx[TextosSistema::idiomaLector()] ?? null) : null;
+            if (is_array($x) && is_string($x['titulo'] ?? null) && $x['titulo'] !== '') [$titulo, $cuerpo] = [$x['titulo'], (string) ($x['cuerpo'] ?? '')];
+        }
         return [
-            'id' => (int) $m['id'], 'tipo' => $m['tipo'], 'remitente' => $m['remitente'], 'titulo' => $m['titulo'], 'cuerpo' => $m['cuerpo'],
+            'id' => (int) $m['id'], 'tipo' => $m['tipo'], 'remitente' => $m['remitente'], 'titulo' => $titulo, 'cuerpo' => $cuerpo,
             'adjuntos' => self::adjuntosJson($adj), 'estado' => $m['estado'],
             'reclamable' => $adj !== [] && $m['estado'] !== 'reclamado' && !$vencido,
             'creado' => Db::iso((int) $m['creado']), 'expira' => Db::iso($m['expira'] === null ? null : (int) $m['expira']),
@@ -644,9 +679,15 @@ final class Buzon
             $ok = Db::q('UPDATE buzon_codigos SET usos = usos + 1 WHERE id = ? AND (usos_max = 0 OR usos < usos_max)', [(int) $c['id']])->rowCount();
             if ($ok !== 1) throw new Fallo('Este código ya se usó todas las veces posibles.', 409, ['codigo' => 'codigo_agotado']);
             $adj = json_decode((string) $c['adjuntos_json'], true) ?: [];
-            $cuerpo = $c['mensaje'] !== '' ? $c['mensaje'] : '¡Gracias por jugar EN VIVO Tycoon! Aquí está el regalo del código ' . $cod . '.';
+            // el título (y el texto, si lo escribió) es del dueño y queda tal cual; el texto automático va en los 10 idiomas
+            $tx = null;
+            if ($c['mensaje'] === '') {
+                $tx = [];
+                foreach (TextosSistema::todos('codigo_c', ['codigo' => $cod]) as $L => $txt) $tx[$L] = ['titulo' => (string) $c['titulo'], 'cuerpo' => $txt];
+            }
+            $cuerpo = $tx === null ? (string) $c['mensaje'] : $tx['es']['cuerpo'];
             $exp = $c['hasta'] !== null ? max($t + 7 * 86400, (int) $c['hasta']) : null;
-            $mid = self::enviar($jugador, (string) $c['titulo'], $cuerpo, $adj, ['tipo' => 'codigo', 'ref' => 'codigo:' . $c['id']] + ($exp ? ['expira' => $exp] : []));
+            $mid = self::enviar($jugador, (string) $c['titulo'], $cuerpo, $adj, ['tipo' => 'codigo', 'ref' => 'codigo:' . $c['id']] + ($exp ? ['expira' => $exp] : []) + ($tx ? ['textos' => $tx] : []));
             if ($mid === null) $mid = (int) Db::valor('SELECT id FROM buzon WHERE jugador_id = ? AND ref = ?', [$jugador, 'codigo:' . $c['id']]);
             Db::q('INSERT INTO buzon_canjes (codigo_id, jugador_id, lote, etiqueta, buzon_id, canal, creado) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [(int) $c['id'], $jugador, $c['lote'], (string) $c['etiqueta'], $mid, $canal, $t]);
