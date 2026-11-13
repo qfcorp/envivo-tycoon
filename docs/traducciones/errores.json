@@ -409,7 +409,9 @@
     "novato_terminado": "existe · RutaNovato.php · 409 · texto en español en todos los idiomas hasta la traducción final",
     "novato_clave": "existe · RutaNovato.php · 400 · texto en español en todos los idiomas hasta la traducción final",
     "novato_bloqueado": "existe · RutaNovato.php · 409 · extra.dia · texto en español en todos los idiomas hasta la traducción final",
-    "novato_incompleto": "existe · RutaNovato.php · 409 · extra.hechos · texto en español en todos los idiomas hasta la traducción final"
+    "novato_incompleto": "existe · RutaNovato.php · 409 · extra.hechos · texto en español en todos los idiomas hasta la traducción final",
+    "mini_ya_activo": "existe · Pase.php · 409",
+    "banco_vacio": "existe · Pase.php · 409"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -819,7 +821,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1229,7 +1233,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1639,7 +1645,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -2049,7 +2057,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2459,7 +2469,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2869,7 +2881,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -3279,7 +3293,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3689,7 +3705,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -4099,7 +4117,9 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -4509,6 +4529,8 @@
     "novato_terminado": "Tus primeros 7 días ya terminaron.",
     "novato_clave": "Ese premio no existe.",
     "novato_bloqueado": "Ese día todavía no se abre.",
-    "novato_incompleto": "Primero reclama los premios de los 7 días."
+    "novato_incompleto": "Primero reclama los premios de los 7 días.",
+    "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
   }
 }

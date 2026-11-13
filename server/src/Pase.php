@@ -21,6 +21,18 @@ namespace EnVivo;
  *   premium de los niveles que ya tiene.
  * - Saltos de nivel con créditos: SALTO_CREDITOS por nivel, máximo SALTOS_MAX por temporada.
  * - Al terminar una temporada, sus premios sin reclamar se pueden reclamar GRACIA_DIAS días más; después se pierden.
+ *
+ * Mejoras (rama pase-mejoras, server/INTEGRAR_PASE.md "Mejoras"):
+ * - Mini Pase Semanal (producto pase_semanal, $1,49): para quien no tiene el premium. Vale la semana del pase en que se
+ *   compra (lunes a lunes) y desbloquea el premio premium de hasta MINI_NIVELES niveles que subas DESDE que lo compras
+ *   hasta que termina esa semana. No da créditos, ni cosméticos, ni el contrato estrella (eso es solo del premium) ni
+ *   niveles que ya tenías. Uno por semana. Así 4 semanas cuestan más que el premium y dan bastante menos.
+ * - Misiones atadas a jugar con otros (duelos, liga, asociación) y alternativa SIN CONEXIÓN para todas: reclamar
+ *   misiones del juego (las de la partida, que se juegan sin conexión) cumple la misión del pase con la mitad de XP.
+ * - Ponerse al día: si tu primera partida de la temporada es del día 8 en adelante, durante 3 días ganas el doble de
+ *   XP por jugar (y el tope diario también se duplica).
+ * - Banco de premios: después del nivel 40, cada BANCO_CADA XP abre un cofre FIJO (contenido a la vista), hasta BANCO_MAX.
+ * - Tema visual por temporada (colores y adornos) e ícono exclusivo de sede en el nivel 40 premium.
  */
 final class Pase
 {
@@ -45,9 +57,18 @@ final class Pase
 
     /** XP por cada intento validado (lo que el integrador pasa a sumarXp). */
     public const XP = ['liga' => 40, 'festival' => 30, 'copa' => 40, 'duelo' => 40, 'desafio' => 60, 'obra_ayuda' => 25, 'copa_equipo' => 50,
+        'asoc_donar' => 20,  // donación a la investigación de la asociación (AyudaAsoc::donar)
         'misiones' => 15];   // Misiones del día/semana (server/INTEGRAR_MISIONES.md): 15 por misión del día, 40 por semanal
     /** Fuentes que cuentan como "evento en línea" para las misiones. */
     public const EVENTOS = ['liga', 'festival', 'copa', 'duelo', 'desafio'];
+    /** Fuentes que son "jugar con otros" (duelos, liga y asociación). */
+    public const JUNTOS = ['duelo', 'liga', 'obra_ayuda', 'asoc_donar'];
+    /**
+     * Alternativa sin conexión de TODAS las misiones del pase: reclamar N misiones del juego (las de la partida, js/misiones.js;
+     * fuente "misiones" que suma Misiones::reclamar) en el mismo periodo. Paga PCT % de la XP de la misión. Si después la
+     * cumples jugando en línea, recibes lo que faltaba (nunca más que la XP completa).
+     */
+    public const ALT = ['dia' => ['n' => 2, 'pct' => 50], 'semana' => ['n' => 6, 'pct' => 50]];
     /** Fuentes internas (no pasan por el tope diario). */
     private const INTERNAS = ['mision', 'salto', 'plus', 'plus_revertido', 'ajuste'];
 
@@ -60,6 +81,8 @@ final class Pase
         'd_obras' => ['fuentes' => ['obra_ayuda'], 'n' => 2, 'xp' => 120, 'texto' => 'Ayuda en 2 obras de tu asociación'],
         'd_festival' => ['fuentes' => ['festival'], 'n' => 2, 'xp' => 120, 'texto' => 'Juega 2 turnos del festival'],
         'd_copa' => ['fuentes' => ['copa'], 'n' => 2, 'xp' => 120, 'texto' => 'Suma 2 intentos de preparación de la copa'],
+        'd_asoc' => ['fuentes' => ['asoc_donar'], 'n' => 1, 'xp' => 100, 'texto' => 'Dona 1 vez a la investigación de tu asociación'],
+        'd_juntos' => ['fuentes' => self::JUNTOS, 'n' => 3, 'xp' => 120, 'texto' => 'Juega 3 veces con otros: duelos, liga o tu asociación'],
     ];
     public const MISIONES_SEMANA = [
         's_eventos' => ['fuentes' => self::EVENTOS, 'n' => 15, 'xp' => 600, 'texto' => 'Juega 15 eventos en línea'],
@@ -69,6 +92,8 @@ final class Pase
         's_obras' => ['fuentes' => ['obra_ayuda'], 'n' => 6, 'xp' => 400, 'texto' => 'Ayuda en 6 obras de tu asociación'],
         's_liga' => ['fuentes' => ['liga'], 'n' => 6, 'xp' => 400, 'texto' => 'Juega 6 intentos de encargos de la liga'],
         's_festival' => ['fuentes' => ['festival'], 'n' => 6, 'xp' => 400, 'texto' => 'Juega 6 turnos del festival'],
+        's_asoc' => ['fuentes' => ['asoc_donar'], 'n' => 4, 'xp' => 400, 'texto' => 'Dona 4 veces a la investigación de tu asociación'],
+        's_juntos' => ['fuentes' => self::JUNTOS, 'n' => 12, 'xp' => 450, 'texto' => 'Juega 12 veces con otros: duelos, liga o tu asociación'],
     ];
 
     /**
@@ -107,9 +132,9 @@ final class Pase
         27 => [['materiales', 'paneles', 8], ['reparar_todo', '-', 1]],
         28 => [null, ['acelerador', 'obra', 960]],
         29 => [['consumible', 'battery', 5], ['materiales', 'cables', 20]],
-        30 => [null, ['creditos', '-', 60]],
+        30 => [null, ['cosmetico', 'titulo', 1]],
         31 => [['materiales', 'credenciales', 8], ['materiales', 'placas', 15]],
-        32 => [null, ['acelerador', 'obra', 300]],
+        32 => [null, ['creditos', '-', 60]],
         33 => [['dinero', '-', 1500], ['materiales', 'paneles', 15]],
         34 => [null, ['creditos', '-', 70]],
         35 => [['materiales', 'chips', 2], ['estrella', 'comodin', 5]],
@@ -117,24 +142,45 @@ final class Pase
         37 => [['materiales', 'planos', 8], ['acelerador', 'obra', 1440]],
         38 => [null, ['creditos', '-', 90]],
         39 => [['dinero', '-', 2000], ['materiales', 'chips', 6]],
-        40 => [['cosmetico', 'insignia', 1], ['cosmetico', 'titulo', 1]],
+        40 => [['cosmetico', 'insignia', 1], ['cosmetico', 'sede', 1]],   // sede: ícono exclusivo de la sede con el tema de la temporada
     ];
     public const ESTRELLA_SUSTITUTO = ['materiales', 'chips', 8];
 
+    /** Mini Pase Semanal: producto, precio por defecto, niveles que cubre como máximo y premios que NO da (solo premium). */
+    public const MINI = 'pase_semanal';
+    public const MINI_PRECIO = 1.49;
+    public const MINI_NIVELES = 8;
+    public const MINI_EXCLUYE = ['creditos', 'cosmetico', 'estrella'];
+
+    /** Ponerse al día: empezar desde el día AL_DIA_DESDE (1 = primer día) da AL_DIA_FACTOR veces la XP de juego por AL_DIA_DIAS días. */
+    public const AL_DIA_DESDE = 8;
+    public const AL_DIA_DIAS = 3;
+    public const AL_DIA_FACTOR = 2;
+
+    /** Banco de premios después del nivel 40: un cofre fijo cada BANCO_CADA XP, hasta BANCO_MAX por temporada. */
+    public const BANCO_CADA = 2000;
+    public const BANCO_MAX = 10;
+    public const BANCO = [['dinero', '-', 1000], ['materiales', 'cables', 6], ['materiales', 'placas', 6], ['consumible', 'battery', 2]];
+    /** Lo que el cofre trae DE MÁS con el premium (también a la vista). */
+    public const BANCO_PREMIUM = [['materiales', 'paneles', 6], ['materiales', 'chips', 1]];
+
     /** Temas de fecha especial (mismas ventanas que js/temporadas.js) en orden de prioridad; y temas generales. */
+    /** colores: [principal, secundario] del tema visual de la pantalla del pase; adornos: los que salen en la cabecera. */
     public const TEMAS = [
-        'fin_anio' => ['icono' => '🎆', 'nombre' => 'Año Nuevo en vivo'],
-        'navidad' => ['icono' => '🎄', 'nombre' => 'Luces de Navidad'],
-        'carnaval' => ['icono' => '🎭', 'nombre' => 'Carnaval en vivo'],
-        'pascua' => ['icono' => '🕊️', 'nombre' => 'Semana Santa en vivo'],
-        'san_valentin' => ['icono' => '💘', 'nombre' => 'Amor en vivo'],
-        'halloween' => ['icono' => '🎃', 'nombre' => 'Noche de Calaveras'],
-        'pase_nino' => ['icono' => '⭐', 'nombre' => 'Pase del Niño'],
+        'fin_anio' => ['icono' => '🎆', 'nombre' => 'Año Nuevo en vivo', 'colores' => ['#ffd36b', '#6b4cff'], 'adornos' => '🎆🥂✨'],
+        'navidad' => ['icono' => '🎄', 'nombre' => 'Luces de Navidad', 'colores' => ['#2fbf71', '#e8453c'], 'adornos' => '❄️🎁⭐'],
+        'carnaval' => ['icono' => '🎭', 'nombre' => 'Carnaval en vivo', 'colores' => ['#ff4fa3', '#25c4ff'], 'adornos' => '🎭🎉💦'],
+        'pascua' => ['icono' => '🕊️', 'nombre' => 'Semana Santa en vivo', 'colores' => ['#b48cff', '#ffe38a'], 'adornos' => '🕊️🌸🕯️'],
+        'san_valentin' => ['icono' => '💘', 'nombre' => 'Amor en vivo', 'colores' => ['#ff5a8a', '#ffb3c7'], 'adornos' => '💘🌹💌'],
+        'halloween' => ['icono' => '🎃', 'nombre' => 'Noche de Calaveras', 'colores' => ['#ff8a1f', '#8e44ad'], 'adornos' => '🎃💀🕯️'],
+        'pase_nino' => ['icono' => '⭐', 'nombre' => 'Pase del Niño', 'colores' => ['#ffd27a', '#3d7bff'], 'adornos' => '⭐🎺🐑'],
+        // Torneo mundial de fútbol femenino 2027 (24 jun a 25 jul 2027), con nombre inventado (sin marcas reales)
+        'copa_femenina' => ['icono' => '⚽', 'nombre' => 'Copa Global Femenina', 'colores' => ['#7a5cff', '#2fd3a0'], 'adornos' => '⚽🏆📣'],
         // generales (sin fecha especial), rotan por número de temporada
-        'estadios' => ['icono' => '🏟️', 'nombre' => 'Gira de estadios'],
-        'festivales' => ['icono' => '🎪', 'nombre' => 'Verano de festivales'],
-        'estrenos' => ['icono' => '🎬', 'nombre' => 'Noches de estreno'],
-        'conciertos' => ['icono' => '🎸', 'nombre' => 'Gira de conciertos'],
+        'estadios' => ['icono' => '🏟️', 'nombre' => 'Gira de estadios', 'colores' => ['#3fb950', '#ffb020'], 'adornos' => '🏟️📺🎥'],
+        'festivales' => ['icono' => '🎪', 'nombre' => 'Verano de festivales', 'colores' => ['#ffb020', '#ff5a5a'], 'adornos' => '🎪☀️🎶'],
+        'estrenos' => ['icono' => '🎬', 'nombre' => 'Noches de estreno', 'colores' => ['#e9c46a', '#e76f51'], 'adornos' => '🎬🍿⭐'],
+        'conciertos' => ['icono' => '🎸', 'nombre' => 'Gira de conciertos', 'colores' => ['#5ad1ff', '#c06bff'], 'adornos' => '🎸🎤💡'],
     ];
     private const GENERALES = ['estadios', 'festivales', 'estrenos', 'conciertos'];
     /** Días mínimos de la ventana especial que deben caer dentro de la temporada para tomar su tema. */
@@ -158,6 +204,8 @@ final class Pase
         Db::pdo();
         $n = (int) Db::valor("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('pase_jugador', 'pase_xp', 'pase_reclamos', 'pase_compras')");
         if ($n < 4) Migraciones::aplicar('pase.sql');
+        $n = (int) Db::valor("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN ('pase_mini', 'pase_mini_usos', 'pase_banco')");
+        if ($n < 3) Migraciones::aplicar('pase_mejoras.sql');
         self::$listo = true;
     }
 
@@ -204,7 +252,8 @@ final class Pase
         $tema = self::temaDe($n);
         return ['numero' => $n, 'inicio' => $ini->getTimestamp(), 'fin' => $fin->getTimestamp(), 'tema' => $tema,
                 'icono' => self::TEMAS[$tema]['icono'], 'nombre_tema' => self::TEMAS[$tema]['nombre'],
-                'nombre' => 'Temporada ' . $n . ' · ' . self::TEMAS[$tema]['nombre']];
+                'nombre' => 'Temporada ' . $n . ' · ' . self::TEMAS[$tema]['nombre'],
+                'visual' => ['colores' => self::TEMAS[$tema]['colores'], 'adornos' => self::TEMAS[$tema]['adornos']]];
     }
 
     /** Número de la temporada en $t, o null antes de la Temporada 1. */
@@ -276,6 +325,7 @@ final class Pase
             'san_valentin' => [$md('02-07', $y), $md('02-14', $y)],
             'pascua' => [$e - 7, $e],
             'carnaval' => [$e - 51, $e - 47],
+            'copa_femenina' => $y === 2027 ? [$md('06-24', $y), $md('07-25', $y)] : [0, -1],
             default => [0, -1],
         };
     }
@@ -319,7 +369,8 @@ final class Pase
                 $dia = self::dia();
                 $hoy = (int) Db::valor('SELECT COALESCE(SUM(xp), 0) FROM pase_xp WHERE jugador_id = ? AND temporada = ? AND dia = ? AND fuente IN (' . self::lista(array_keys(self::XP)) . ')',
                     [$j, $t['numero'], $dia]);
-                $dar = max(0, min(max(0, $xp), self::topeXpDia() - $hoy));
+                $f = self::alDia($j, $t)['activo'] ? self::AL_DIA_FACTOR : 1;   // ponerse al día: doble XP y doble tope
+                $dar = max(0, min(max(0, $xp) * $f, self::topeXpDia() * $f - $hoy));
                 if (!self::anotar($j, $t['numero'], $fuente, $fuente . ':' . $ref, $dar)) return null;
                 $misiones = self::revisarMisiones($j, $t, $fuente);
                 return ['xp' => $dar, 'nivel' => self::nivel(self::xpTotal($j, $t['numero'])), 'misiones' => $misiones];
@@ -328,6 +379,29 @@ final class Pase
             error_log('EN VIVO pase sumarXp: ' . get_class($e) . ' ' . mb_substr($e->getMessage(), 0, 200));
             return null;
         }
+    }
+
+    /**
+     * Ponerse al día: {estado, activo, desde, hasta, factor, desde_dia, dias}. Tu "inicio" en la temporada es tu primera XP de
+     * juego (no cuentan saltos, plus ni ajustes). Si ese inicio es del día AL_DIA_DESDE en adelante, durante AL_DIA_DIAS días
+     * desde ese momento la XP de juego vale AL_DIA_FACTOR veces (y el tope diario también). estado: 'activo', 'disponible'
+     * (todavía no juegas y ya es tarde: se activa con tu primera partida), 'terminado' o 'no' (empezaste a tiempo).
+     */
+    public static function alDia(int $j, array $t): array
+    {
+        $ini = Db::valor('SELECT MIN(creado) FROM pase_xp WHERE jugador_id = ? AND temporada = ? AND fuente IN (' . self::lista(array_keys(self::XP)) . ')', [$j, $t['numero']]);
+        $tarde = $t['inicio'] + (self::AL_DIA_DESDE - 1) * 86400;
+        $ahora = self::ahora();
+        $base = ['factor' => self::AL_DIA_FACTOR, 'desde_dia' => self::AL_DIA_DESDE, 'dias' => self::AL_DIA_DIAS];
+        if ($ini === null) {
+            $disp = $ahora >= $tarde && $ahora < $t['fin'];
+            return $base + ['estado' => $disp ? 'disponible' : 'no', 'activo' => $disp, 'desde' => null, 'hasta' => null];
+        }
+        $ini = (int) $ini;
+        if ($ini < $tarde) return $base + ['estado' => 'no', 'activo' => false, 'desde' => null, 'hasta' => null];
+        $hasta = $ini + self::AL_DIA_DIAS * 86400;
+        $activo = $ahora < $hasta;
+        return $base + ['estado' => $activo ? 'activo' : 'terminado', 'activo' => $activo, 'desde' => $ini, 'hasta' => $hasta];
     }
 
     /** Anota una fila del libro de XP (INSERT OR IGNORE). true si es nueva. */
@@ -378,7 +452,20 @@ final class Pase
             [$j, $temporada, $desde, $hasta]);
     }
 
-    /** Da la XP de las misiones de esta fuente que se acaban de cumplir. Devuelve los ids cumplidos ahora. */
+    /** Avance de la alternativa sin conexión: misiones del juego reclamadas en el periodo (fuente "misiones"). */
+    private static function avanceAlt(int $j, int $temporada, string $desde, string $hasta): int
+    {
+        return (int) Db::valor("SELECT COUNT(*) FROM pase_xp WHERE jugador_id = ? AND temporada = ? AND dia >= ? AND dia <= ? AND fuente = 'misiones'", [$j, $temporada, $desde, $hasta]);
+    }
+
+    /** XP de la alternativa sin conexión de una misión (PCT % de su XP). */
+    public static function xpAlt(array $def, string $per): int { return intdiv((int) $def['xp'] * self::ALT[$per]['pct'], 100); }
+
+    /**
+     * Da la XP de las misiones de esta fuente que se acaban de cumplir. Devuelve los ids cumplidos ahora.
+     * En línea: la XP completa (menos lo que ya dio la alternativa). Sin conexión (fuente "misiones"): la XP de la alternativa,
+     * si la misión todavía no está hecha en línea. Refs: mision:<temporada>:<periodo>:<id> y …:<id>:alt (idempotentes).
+     */
     private static function revisarMisiones(int $j, array $t, string $fuente): array
     {
         $hechas = [];
@@ -387,9 +474,15 @@ final class Pase
             $a = $act[$per];
             foreach ($a['ids'] as $id) {
                 $def = $defs[$id];
-                if (!in_array($fuente, $def['fuentes'], true)) continue;
-                if (self::avanceMision($j, $t['numero'], $def, $a['desde'], $a['hasta']) < $def['n']) continue;
-                if (self::anotar($j, $t['numero'], 'mision', 'mision:' . $t['numero'] . ':' . $a['periodo'] . ':' . $id, (int) $def['xp'])) $hechas[] = $id;
+                $ref = 'mision:' . $t['numero'] . ':' . $a['periodo'] . ':' . $id;
+                if (in_array($fuente, $def['fuentes'], true) && self::avanceMision($j, $t['numero'], $def, $a['desde'], $a['hasta']) >= $def['n']) {
+                    $yaAlt = (int) (Db::valor('SELECT xp FROM pase_xp WHERE jugador_id = ? AND ref = ?', [$j, $ref . ':alt']) ?? 0);
+                    if (self::anotar($j, $t['numero'], 'mision', $ref, max(0, (int) $def['xp'] - $yaAlt))) $hechas[] = $id;
+                    continue;
+                }
+                if ($fuente !== 'misiones' || Db::valor('SELECT 1 FROM pase_xp WHERE jugador_id = ? AND ref = ?', [$j, $ref])) continue;
+                if (self::avanceAlt($j, $t['numero'], $a['desde'], $a['hasta']) < self::ALT[$per]['n']) continue;
+                if (self::anotar($j, $t['numero'], 'mision', $ref . ':alt', self::xpAlt($def, $per))) $hechas[] = $id;
             }
         }
         return $hechas;
@@ -405,7 +498,7 @@ final class Pase
         if ($r === null) return null;
         if ($r[0] === 'estrella' && !self::hayEstrellas()) $r = self::ESTRELLA_SUSTITUTO;
         $o = ['tipo' => $r[0], 'item' => $r[1], 'cantidad' => $r[2]];
-        if ($r[0] === 'cosmetico') $o = ['tipo' => 'cosmetico', 'item' => 'pase_' . $r[1] . '_t' . $temporada, 'cantidad' => 1, 'clase' => $r[1]];
+        if ($r[0] === 'cosmetico') $o = ['tipo' => 'cosmetico', 'item' => 'pase_' . $r[1] . '_t' . $temporada . ($r[1] === 'sede' ? '_' . self::temaDe($temporada) : ''), 'cantidad' => 1, 'clase' => $r[1]];
         return $o + ['nombre' => self::nombreRecompensa($o, $temporada)];
     }
 
@@ -426,7 +519,7 @@ final class Pase
             'estrella' => 'Contrato de personal estrella (' . $n . ' partidos)',
             'cosmetico' => match ($r['clase'] ?? '') {
                 'marco' => 'Marco de productora «' . $tema . '»', 'deco' => 'Adorno de sede «' . $tema . '»',
-                'titulo' => 'Título de chat «' . $tema . '»', default => 'Insignia «' . $tema . '»' },
+                'titulo' => 'Título de chat «' . $tema . '»', 'sede' => 'Ícono exclusivo de sede «' . $tema . '»', default => 'Insignia «' . $tema . '»' },
             default => $n . ' × ' . $r['item'],
         };
     }
@@ -461,9 +554,13 @@ final class Pase
         return $t['inicio'] <= $a && $a < $t['fin'] + self::GRACIA_DIAS * 86400;
     }
 
-    /** Las dos pistas con su estado: reclamado, disponible, bloqueado (nivel no alcanzado) o requiere_premium. */
+    /**
+     * Las dos pistas con su estado: reclamado, disponible, bloqueado (nivel no alcanzado) o requiere_premium. Un premio premium
+     * que se puede reclamar con el Mini Pase Semanal (sin el premium) lleva "mini": true.
+     */
     private static function pistas(int $j, array $t, int $nivel, bool $premium, bool $abierta): array
     {
+        $mini = $premium ? [] : self::miniNiveles($j, $t['numero']);
         $rec = [];
         foreach (Db::todas('SELECT nivel, pista, creditos, revisar FROM pase_reclamos WHERE temporada = ? AND jugador_id = ?', [$t['numero'], $j]) as $r) $rec[$r['pista']][(int) $r['nivel']] = $r;
         $o = ['gratis' => [], 'premium' => []];
@@ -474,10 +571,12 @@ final class Pase
                 $r = self::recompensa($n, $pista, $t['numero']);
                 if ($r === null) continue;
                 $hecho = $rec[$pista][$n] ?? null;
-                $estado = $hecho ? 'reclamado' : ($n > $nivel ? 'bloqueado' : ($pista === 'premium' && !$premium ? 'requiere_premium' : ($abierta ? 'disponible' : 'vencido')));
+                $porMini = $pista === 'premium' && !$premium && isset($mini[$n]) && self::miniPermite($n);
+                $estado = $hecho ? 'reclamado' : ($n > $nivel ? 'bloqueado' : ($pista === 'premium' && !$premium && !$porMini ? 'requiere_premium' : ($abierta ? 'disponible' : 'vencido')));
                 if ($estado === 'disponible') $por[$pista]++;
                 if ($estado === 'requiere_premium') $esperando++;
-                $o[$pista][] = ['nivel' => $n, 'recompensa' => $r, 'estado' => $estado] + ($hecho && (int) $hecho['revisar'] ? ['revisar' => true] : []);
+                $o[$pista][] = ['nivel' => $n, 'recompensa' => $r, 'estado' => $estado] + ($hecho && (int) $hecho['revisar'] ? ['revisar' => true] : [])
+                    + ($porMini && !$hecho ? ['mini' => true] : []) + ($pista === 'premium' && !self::miniPermite($n) ? ['solo_premium' => true] : []);
             }
         }
         return [$o, $por + ['total' => $por['gratis'] + $por['premium'], 'premium_esperando' => $esperando]];
@@ -490,12 +589,14 @@ final class Pase
         $nivel = self::nivel($xp);
         $premium = (bool) (int) $pj['premium'];
         [$pistas, $por] = self::pistas($j, $t, $nivel, $premium, self::reclamable($t));
+        $banco = self::banco($j, $t, $xp, $premium);
+        if (self::reclamable($t) && $banco['por_abrir'] > 0) { $por['banco'] = $banco['por_abrir']; $por['total'] += $banco['por_abrir']; }
         return [
             'temporada' => ['numero' => $t['numero'], 'tema' => $t['tema'], 'icono' => $t['icono'], 'nombre' => $t['nombre'], 'nombre_tema' => $t['nombre_tema'],
-                            'inicio' => Db::iso($t['inicio']), 'fin' => Db::iso($t['fin']), 'quedan_seg' => max(0, $t['fin'] - self::ahora())],
+                            'inicio' => Db::iso($t['inicio']), 'fin' => Db::iso($t['fin']), 'quedan_seg' => max(0, $t['fin'] - self::ahora()), 'visual' => $t['visual']],
             'nivel' => $nivel, 'niveles' => self::NIVELES, 'xp' => $xp, 'xp_nivel' => $nivel >= self::NIVELES ? self::XP_NIVEL : $xp - $nivel * self::XP_NIVEL,
             'xp_por_nivel' => self::XP_NIVEL, 'premium' => $premium, 'plus' => (bool) (int) $pj['plus'],
-            'pistas' => $pistas, 'por_reclamar' => $por, 'creditos_dados' => (int) $pj['creditos_dados'],
+            'pistas' => $pistas, 'por_reclamar' => $por, 'creditos_dados' => (int) $pj['creditos_dados'], 'banco' => $banco,
         ];
     }
 
@@ -509,6 +610,9 @@ final class Pase
             $p = class_exists(Catalogo::class) ? Catalogo::producto($id) : null;
             $prod[$id] = ['id' => $id, 'precio' => $p ? (float) $p['precio'] : $d['precio'], 'activo' => $p ? (bool) $p['activo'] : true, 'plus' => $d['plus'], 'niveles' => $d['plus'] ? self::PLUS_NIVELES : 0];
         }
+        $p = class_exists(Catalogo::class) ? Catalogo::producto(self::MINI) : null;
+        $prod[self::MINI] = ['id' => self::MINI, 'precio' => $p ? (float) $p['precio'] : self::MINI_PRECIO, 'activo' => $p ? (bool) $p['activo'] : true, 'plus' => false, 'niveles' => 0,
+                             'mini' => true, 'max_niveles' => self::MINI_NIVELES];
         $o = ['ok' => true, 'ahora' => Db::iso(self::ahora()), 'productos' => $prod, 'creditos_tope' => self::topeCreditos(), 'gracia_dias' => self::GRACIA_DIAS];
         if ($t === null) {
             $p = self::temporada(1);
@@ -520,20 +624,30 @@ final class Pase
                         'max_ahora' => max(0, min(self::SALTOS_MAX - (int) $pj['saltos'], self::NIVELES - $o['nivel']))];
         $hoy = self::dia();
         $o['xp_hoy'] = (int) Db::valor('SELECT COALESCE(SUM(xp), 0) FROM pase_xp WHERE jugador_id = ? AND temporada = ? AND dia = ? AND fuente IN (' . self::lista(array_keys(self::XP)) . ')', [$j, $t['numero'], $hoy]);
-        $o['xp_tope_dia'] = self::topeXpDia();
+        $o['xp_tope_dia'] = self::topeXpDia() * (self::alDia($j, $t)['estado'] === 'activo' ? self::AL_DIA_FACTOR : 1);   // ponerse al día: tope doble
         $o['xp_fuentes'] = self::XP;
         $act = self::misionesActivas($t);
         $o['misiones'] = [];
         foreach (['dia' => ['diarias', self::MISIONES_DIA], 'semana' => ['semanales', self::MISIONES_SEMANA]] as $per => [$nom, $defs]) {
             $a = $act[$per];
-            $o['misiones'][$nom] = array_map(function (string $id) use ($j, $t, $defs, $a): array {
+            $o['misiones'][$nom] = array_map(function (string $id) use ($j, $t, $defs, $a, $nom): array {
                 $d = $defs[$id];
                 $av = self::avanceMision($j, $t['numero'], $d, $a['desde'], $a['hasta']);
-                $hecha = (bool) Db::valor('SELECT 1 FROM pase_xp WHERE jugador_id = ? AND ref = ?', [$j, 'mision:' . $t['numero'] . ':' . $a['periodo'] . ':' . $id]);
-                return ['id' => $id, 'texto' => $d['texto'], 'n' => $d['n'], 'avance' => min($d['n'], $av), 'xp' => $d['xp'], 'hecha' => $hecha];
+                $ref = 'mision:' . $t['numero'] . ':' . $a['periodo'] . ':' . $id;
+                $hecha = (bool) Db::valor('SELECT 1 FROM pase_xp WHERE jugador_id = ? AND ref = ?', [$j, $ref]);
+                $hechaAlt = !$hecha && (bool) Db::valor('SELECT 1 FROM pase_xp WHERE jugador_id = ? AND ref = ?', [$j, $ref . ':alt']);
+                $per = $nom === 'diarias' ? 'dia' : 'semana';
+                $alt = ['n' => self::ALT[$per]['n'], 'avance' => min(self::ALT[$per]['n'], self::avanceAlt($j, $t['numero'], $a['desde'], $a['hasta'])), 'xp' => self::xpAlt($d, $per), 'hecha' => $hecha || $hechaAlt];
+                return ['id' => $id, 'texto' => $d['texto'], 'n' => $d['n'], 'avance' => min($d['n'], $av), 'xp' => $d['xp'], 'hecha' => $hecha || $hechaAlt,
+                        'via' => $hecha ? 'en_linea' : ($hechaAlt ? 'sin_conexion' : null), 'alt' => $alt, 'juntos' => !array_diff($d['fuentes'], self::JUNTOS)];
             }, $a['ids']);
             $o['misiones'][$nom . '_fin'] = Db::iso(min($a['fin'], $t['fin']));
         }
+        $o['misiones']['alt'] = self::ALT;
+        $ad = self::alDia($j, $t);
+        $o['al_dia'] = ['estado' => $ad['estado'], 'activo' => $ad['activo'], 'factor' => $ad['factor'], 'desde_dia' => $ad['desde_dia'], 'dias' => $ad['dias'],
+                        'hasta' => $ad['hasta'] ? Db::iso($ad['hasta']) : null];
+        $o['mini'] = self::estadoMini($j, $t, $o['premium'], $o['nivel']);
         // La temporada anterior, si está en los días de gracia y le quedan premios por reclamar
         $o['anterior'] = null;
         if ($t['numero'] > 1) {
@@ -571,13 +685,14 @@ final class Pase
             Fallo::si($t === null, 'El Pase de Temporada todavía no empieza.', 409, ['codigo' => 'sin_temporada']);
             $lista = [];
             $entregas = [];
+            $cofres = [];
             $temps = [$t];
             if ($t['numero'] > 1 && self::reclamable(self::temporada($t['numero'] - 1))) array_unshift($temps, self::temporada($t['numero'] - 1));
             foreach ($temps as $tt) {
                 $nivel = self::nivel(self::xpTotal($j, $tt['numero']));
                 $premium = self::esPremium($j, $tt['numero']);
                 foreach (['gratis', 'premium'] as $pista) {
-                    if ($pista === 'premium' && !$premium) continue;
+                    if ($pista === 'premium' && !$premium && !self::miniNiveles($j, $tt['numero'])) continue;
                     for ($n = 1; $n <= $nivel; $n++) {
                         $x = self::reclamarUno($j, $tt, $n, $pista, false);
                         if ($x === null) continue;
@@ -585,10 +700,13 @@ final class Pase
                         array_push($entregas, ...$x['entregas']);
                     }
                 }
+                $b = self::abrirBancoEn($j, $tt);
+                array_push($cofres, ...$b['cofres']);
+                array_push($entregas, ...$b['entregas']);
             }
-            return [$lista, $entregas];
+            return [$lista, $entregas, $cofres];
         });
-        return ['ok' => true, 'reclamados' => $r[0], 'entregas' => $r[1], 'creditos' => Monedero::saldo($j), 'pase' => self::estado($j)];
+        return ['ok' => true, 'reclamados' => $r[0], 'cofres' => $r[2], 'entregas' => $r[1], 'creditos' => Monedero::saldo($j), 'pase' => self::estado($j)];
     }
 
     private static function temporadaParaReclamar(?int $numero): array
@@ -613,10 +731,16 @@ final class Pase
         if ($r === null) return $no('Ese nivel no tiene premio en la pista gratis.', 404, 'sin_recompensa');
         if (self::nivel(self::xpTotal($j, $t['numero'])) < $nivel) return $no('Todavía no llegas al nivel ' . $nivel . '. ¡Sigue jugando en línea!', 409, 'nivel_bloqueado');
         $pj = self::asegurarJugador($t['numero'], $j);
-        if ($pista === 'premium' && !(int) $pj['premium']) return $no('Ese premio es del Pase Premium.', 403, 'premium_requerido');
+        $miniCompra = null;
+        if ($pista === 'premium' && !(int) $pj['premium']) {
+            $miniCompra = self::miniNiveles($j, $t['numero'])[$nivel] ?? null;
+            if ($miniCompra !== null && !self::miniPermite($nivel)) return $no('Ese premio es solo del Pase Premium completo (el Mini Pase no da créditos, cosméticos ni el personal estrella).', 403, 'premium_requerido');
+            if ($miniCompra === null) return $no('Ese premio es del Pase Premium.', 403, 'premium_requerido');
+        }
         $ins = Db::q('INSERT OR IGNORE INTO pase_reclamos (temporada, jugador_id, nivel, pista, tipo, item, cantidad, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [$t['numero'], $j, $nivel, $pista, $r['tipo'], $r['item'], (int) $r['cantidad'], self::ahora()])->rowCount();
         if (!$ins) return $no('Ya reclamaste ese premio.', 409, 'ya_reclamado');
+        if ($miniCompra !== null) Db::q('INSERT OR IGNORE INTO pase_mini_usos (temporada, jugador_id, nivel, compra_id, creado) VALUES (?, ?, ?, ?, ?)', [$t['numero'], $j, $nivel, $miniCompra, self::ahora()]);
         $origen = 'pase:' . $t['numero'] . ':' . $nivel . ':' . $pista;
         $entregas = [];
         $cred = 0;
@@ -636,6 +760,114 @@ final class Pase
         }
         Db::q('UPDATE pase_reclamos SET creditos = ?, entrega_id = ? WHERE temporada = ? AND jugador_id = ? AND nivel = ? AND pista = ?', [$cred, $entregaId, $t['numero'], $j, $nivel, $pista]);
         return ['reclamado' => ['temporada' => $t['numero'], 'nivel' => $nivel, 'pista' => $pista, 'recompensa' => $r, 'creditos' => $cred], 'entregas' => $entregas];
+    }
+
+    // ------------------------------------------------------------------ banco de premios (después del nivel 40)
+    /** Contenido fijo de un cofre del banco (con o sin premium), con nombre. */
+    public static function contenidoBanco(bool $premium, int $temporada): array
+    {
+        $o = [];
+        foreach ($premium ? array_merge(self::BANCO, self::BANCO_PREMIUM) : self::BANCO as $r) {
+            $x = ['tipo' => $r[0], 'item' => $r[1], 'cantidad' => $r[2]];
+            $o[] = $x + ['nombre' => self::nombreRecompensa($x, $temporada)];
+        }
+        return $o;
+    }
+
+    /** Cofres del banco que da esa XP (0 hasta el nivel 40; uno por cada BANCO_CADA XP de más; máximo BANCO_MAX). */
+    public static function cofresPorXp(int $xp): int { return max(0, min(self::BANCO_MAX, intdiv(max(0, $xp - self::NIVELES * self::XP_NIVEL), self::BANCO_CADA))); }
+
+    private static function banco(int $j, array $t, int $xp, bool $premium): array
+    {
+        $abiertos = (int) Db::valor('SELECT COUNT(*) FROM pase_banco WHERE temporada = ? AND jugador_id = ? AND revisar = 0', [$t['numero'], $j]);
+        $max = (int) (Db::valor('SELECT MAX(n) FROM pase_banco WHERE temporada = ? AND jugador_id = ?', [$t['numero'], $j]) ?? 0);
+        $ganados = self::cofresPorXp($xp);
+        $extra = max(0, $xp - self::NIVELES * self::XP_NIVEL);
+        return ['activo' => $xp >= self::NIVELES * self::XP_NIVEL, 'cada' => self::BANCO_CADA, 'max' => self::BANCO_MAX, 'abiertos' => $abiertos,
+                'ganados' => $ganados, 'por_abrir' => max(0, $ganados - $max), 'xp_extra' => $extra,
+                'xp_siguiente' => $ganados >= self::BANCO_MAX ? null : self::BANCO_CADA - ($extra % self::BANCO_CADA),
+                'contenido' => self::contenidoBanco(false, $t['numero']), 'contenido_premium' => self::contenidoBanco(true, $t['numero']), 'premium' => $premium];
+    }
+
+    /** Abre los cofres ganados y no abiertos de una temporada (dentro de una transacción). */
+    private static function abrirBancoEn(int $j, array $t): array
+    {
+        if (!self::reclamable($t)) return ['cofres' => [], 'entregas' => []];
+        $ganados = self::cofresPorXp(self::xpTotal($j, $t['numero']));
+        $max = (int) (Db::valor('SELECT MAX(n) FROM pase_banco WHERE temporada = ? AND jugador_id = ?', [$t['numero'], $j]) ?? 0);
+        $premium = self::esPremium($j, $t['numero']);
+        $cofres = []; $entregas = [];
+        for ($n = $max + 1; $n <= $ganados; $n++) {
+            if (!Db::q('INSERT OR IGNORE INTO pase_banco (temporada, jugador_id, n, premium, creado) VALUES (?, ?, ?, ?, ?)', [$t['numero'], $j, $n, (int) $premium, self::ahora()])->rowCount()) continue;
+            $cont = self::contenidoBanco($premium, $t['numero']);
+            foreach ($cont as $r) $entregas[] = Monedero::entregar($j, $r['tipo'], (string) $r['item'], (int) $r['cantidad'], 'pase:' . $t['numero'] . ':banco:' . $n);
+            $cofres[] = ['temporada' => $t['numero'], 'n' => $n, 'premium' => $premium, 'contenido' => $cont];
+        }
+        return ['cofres' => $cofres, 'entregas' => $entregas];
+    }
+
+    /** POST /api/pase/banco {temporada?}: abre los cofres del banco ganados (temporada actual o la anterior en gracia). */
+    public static function abrirBanco(int $j, ?int $temporada = null): array
+    {
+        self::preparar();
+        Cuentas::exigirActiva($j);
+        $r = Db::tx(function () use ($j, $temporada): array {
+            $t = self::temporadaParaReclamar($temporada);
+            $b = self::abrirBancoEn($j, $t);
+            Fallo::si(!$b['cofres'], self::xpTotal($j, $t['numero']) < self::NIVELES * self::XP_NIVEL ? 'El banco de premios se abre después del nivel ' . self::NIVELES . '.' : 'Todavía no ganas otro cofre: sigue jugando.', 409, ['codigo' => 'banco_vacio']);
+            return $b;
+        });
+        return ['ok' => true, 'cofres' => $r['cofres'], 'entregas' => $r['entregas'], 'creditos' => Monedero::saldo($j), 'pase' => self::estado($j)];
+    }
+
+    // ------------------------------------------------------------------ Mini Pase Semanal
+    /** Semana del pase (1 a 4) en $ahora: {n, desde, hasta} (lunes 00:00 a lunes 00:00, America/Guayaquil). */
+    public static function semana(array $t, ?int $ahora = null): array
+    {
+        $ahora ??= self::ahora();
+        $idx = max(0, min(intdiv(self::DIAS, 7) - 1, intdiv(max(0, $ahora - $t['inicio']), 7 * 86400)));
+        $ini = (new \DateTimeImmutable('@' . $t['inicio']))->setTimezone(self::zona())->modify('+' . (7 * $idx) . ' days');
+        return ['n' => $idx + 1, 'desde' => $ini->getTimestamp(), 'hasta' => min($t['fin'], $ini->modify('+7 days')->getTimestamp())];
+    }
+
+    /** ¿El Mini Pase da el premio premium de este nivel? (no: créditos, cosméticos ni el contrato estrella) */
+    public static function miniPermite(int $nivel): bool
+    {
+        $r = self::RECOMPENSAS[$nivel][1] ?? null;
+        return $r !== null && !in_array($r[0], self::MINI_EXCLUYE, true);
+    }
+
+    /** Nivel con la XP anotada ANTES de $hasta. */
+    private static function nivelEn(int $j, int $temporada, int $hasta): int
+    {
+        return self::nivel((int) Db::valor('SELECT COALESCE(SUM(xp), 0) FROM pase_xp WHERE jugador_id = ? AND temporada = ? AND creado < ?', [$j, $temporada, $hasta]));
+    }
+
+    /** Niveles que cubren los Mini Pases (aplicados) de esa temporada: [nivel => compra_id]. Solo niveles ya alcanzados en su semana. */
+    public static function miniNiveles(int $j, int $temporada): array
+    {
+        $o = [];
+        foreach (Db::todas("SELECT * FROM pase_mini WHERE jugador_id = ? AND temporada = ? AND estado = 'aplicada' ORDER BY desde", [$j, $temporada]) as $m) {
+            $hasta = min((int) $m['nivel_desde'] + self::MINI_NIVELES, self::nivelEn($j, $temporada, min((int) $m['hasta'], self::ahora() + 1)));
+            for ($n = (int) $m['nivel_desde'] + 1; $n <= $hasta; $n++) $o[$n] ??= (int) $m['compra_id'];
+        }
+        return $o;
+    }
+
+    private static function miniDeSemana(int $j, array $t, array $sem): ?array
+    {
+        return Db::fila("SELECT * FROM pase_mini WHERE jugador_id = ? AND temporada = ? AND semana = ? AND estado = 'aplicada'", [$j, $t['numero'], $sem['n']]);
+    }
+
+    private static function estadoMini(int $j, array $t, bool $premium, int $nivel): array
+    {
+        $sem = self::semana($t);
+        $m = self::miniDeSemana($j, $t, $sem);
+        $niv = $premium ? [] : self::miniNiveles($j, $t['numero']);
+        return ['producto' => self::MINI, 'max_niveles' => self::MINI_NIVELES, 'excluye' => self::MINI_EXCLUYE,
+                'semana' => $sem['n'], 'semana_fin' => Db::iso($sem['hasta']), 'quedan_seg' => max(0, $sem['hasta'] - self::ahora()),
+                'activo' => $m !== null && !$premium, 'nivel_desde' => $m ? (int) $m['nivel_desde'] : null, 'nivel_hasta' => $m ? min(self::NIVELES, (int) $m['nivel_desde'] + self::MINI_NIVELES) : null,
+                'puede_comprar' => !$premium && $m === null && $nivel < self::NIVELES, 'niveles' => array_values(array_filter(array_keys($niv), [self::class, 'miniPermite']))];
     }
 
     // ------------------------------------------------------------------ saltos
@@ -669,6 +901,14 @@ final class Pase
     /** Para Compras::exigirComprable: ya tiene premium esta temporada -> 409. */
     public static function exigirComprable(int $j, string $producto): void
     {
+        if ($producto === self::MINI) {
+            self::preparar();
+            $t = self::actual();
+            Fallo::si($t === null, 'El Pase de Temporada todavía no empieza.', 409, ['codigo' => 'sin_temporada']);
+            Fallo::si(self::esPremium($j, $t['numero']), 'Ya tienes el Pase Premium de la ' . $t['nombre'] . ': trae todo lo del Mini Pase y más.', 409, ['codigo' => 'pase_ya_premium']);
+            Fallo::si(self::miniDeSemana($j, $t, self::semana($t)) !== null, 'Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.', 409, ['codigo' => 'mini_ya_activo']);
+            return;
+        }
         if (!isset(self::PRODUCTOS[$producto])) return;
         self::preparar();
         $t = self::actual();
@@ -680,6 +920,7 @@ final class Pase
     public static function alAprobarCompra(array $d): void
     {
         $prod = (string) ($d['producto'] ?? '');
+        if ($prod === self::MINI) { self::aprobarMini($d); return; }
         if (!isset(self::PRODUCTOS[$prod])) return;
         $compra = (int) ($d['compra_id'] ?? 0);
         $j = (int) ($d['jugador_id'] ?? 0);
@@ -703,6 +944,44 @@ final class Pase
     }
 
     /**
+     * Mini Pase Semanal aprobado: vale la semana del pase en curso y cubre los niveles que subas desde ahora (hasta MINI_NIVELES).
+     * Idempotente por compra_id. Con el premium ya activo o con otro Mini Pase esa semana: no se entrega otra vez (aviso).
+     */
+    private static function aprobarMini(array $d): void
+    {
+        $compra = (int) ($d['compra_id'] ?? 0);
+        $j = (int) ($d['jugador_id'] ?? 0);
+        if ($compra <= 0 || $j <= 0) return;
+        self::preparar();
+        self::atomico(function () use ($compra, $j): void {
+            if (Db::valor('SELECT 1 FROM pase_mini WHERE compra_id = ?', [$compra])) return;
+            $t = self::actual() ?? self::temporada(1);   // pagado antes de la Temporada 1: vale para su primera semana
+            $sem = self::semana($t, max(self::ahora(), $t['inicio']));
+            $nivel = self::nivel(self::xpTotal($j, $t['numero']));
+            self::asegurarJugador($t['numero'], $j);
+            $dup = self::esPremium($j, $t['numero']) ? 'ya tenía el Pase Premium' : (self::miniDeSemana($j, $t, $sem) ? 'ya tenía el Mini Pase de la semana ' . $sem['n'] : null);
+            Db::q('INSERT INTO pase_mini (compra_id, jugador_id, temporada, semana, nivel_desde, desde, hasta, estado, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$compra, $j, $t['numero'], $sem['n'], $nivel, max(self::ahora(), $sem['desde']), $sem['hasta'], $dup ? 'duplicada' : 'aplicada', self::ahora()]);
+            if ($dup) Db::aviso('pase_duplicado', 'El jugador ' . $j . ' pagó "' . self::MINI . '" (compra N° ' . $compra . ') y ' . $dup . ' (temporada ' . $t['numero'] . '). No se entregó otra vez: devolver el dinero o dar créditos a mano.', $compra);
+        });
+    }
+
+    /** Reversión de un Mini Pase: deja de cubrir niveles; lo ya reclamado con él queda en revisión (no da créditos: nada que descontar). */
+    private static function revertirMini(array $m): void
+    {
+        $compra = (int) $m['compra_id'];
+        Db::q("UPDATE pase_mini SET estado = 'revertida', revertida_en = ? WHERE compra_id = ?", [self::ahora(), $compra]);
+        if ($m['estado'] !== 'aplicada') return;
+        $usos = Db::todas("SELECT u.nivel, r.tipo, r.item, r.cantidad FROM pase_mini_usos u JOIN pase_reclamos r ON r.temporada = u.temporada AND r.jugador_id = u.jugador_id AND r.nivel = u.nivel AND r.pista = 'premium'
+            WHERE u.compra_id = ? AND r.revisar = 0", [$compra]);
+        if (!$usos) return;
+        foreach ($usos as $u) Db::q("UPDATE pase_reclamos SET revisar = 1 WHERE temporada = ? AND jugador_id = ? AND nivel = ? AND pista = 'premium'", [$m['temporada'], $m['jugador_id'], $u['nivel']]);
+        Db::q('UPDATE pase_jugador SET revisar = 1, actualizado = ? WHERE temporada = ? AND jugador_id = ?', [self::ahora(), $m['temporada'], $m['jugador_id']]);
+        Db::aviso('pase_revertido', 'Compra N° ' . $compra . ' del Mini Pase (jugador ' . $m['jugador_id'] . ', temporada ' . $m['temporada'] . ', semana ' . $m['semana'] . ') revertida. Premios ya reclamados para revisar: '
+            . implode(', ', array_map(fn($u) => 'nivel ' . $u['nivel'] . ' premium (' . $u['tipo'] . ' ' . $u['item'] . ' x' . $u['cantidad'] . ')', $usos)) . '.', $compra);
+    }
+
+    /**
      * Gancho compra_revertida {compra_id, jugador_id, motivo}: quita el premium (si ninguna otra compra lo sostiene) y los
      * niveles del plus. Lo que todavía no reclamó ya no se puede reclamar. Lo YA reclamado que dependía de eso queda
      * marcado para revisión (y los créditos que dio se descuentan, aunque el saldo quede negativo, como en Compras::revertir).
@@ -713,6 +992,8 @@ final class Pase
         if ($compra <= 0) return;
         self::preparar();
         self::atomico(function () use ($compra): void {
+            $mini = Db::fila('SELECT * FROM pase_mini WHERE compra_id = ?', [$compra]);
+            if ($mini) { if ($mini['estado'] !== 'revertida') self::revertirMini($mini); return; }
             $c = Db::fila('SELECT * FROM pase_compras WHERE compra_id = ?', [$compra]);
             if (!$c || $c['estado'] === 'revertida') return;
             $j = (int) $c['jugador_id'];
@@ -726,10 +1007,17 @@ final class Pase
             $plus = (bool) array_filter($quedan, fn($x) => (int) $x['plus']);
             Db::q('UPDATE pase_jugador SET premium = ?, plus = ?' . ($premium ? '' : ', premium_desde = NULL') . ', actualizado = ? WHERE temporada = ? AND jugador_id = ?',
                 [(int) $premium, (int) $plus, self::ahora(), $tn, $j]);
-            $nivel = self::nivel(self::xpTotal($j, $tn));
-            // inválidos ahora: los de niveles que ya no tiene y, sin premium, todos los de la pista premium
-            $malos = Db::todas('SELECT * FROM pase_reclamos WHERE temporada = ? AND jugador_id = ? AND revisar = 0 AND (nivel > ?' . ($premium ? '' : " OR pista = 'premium'") . ')',
+            $xpAhora = self::xpTotal($j, $tn);
+            $nivel = self::nivel($xpAhora);
+            // Cofres del banco abiertos con XP que ya no tiene (la del plus): a revisión
+            $cofresMalos = Db::todas('SELECT n FROM pase_banco WHERE temporada = ? AND jugador_id = ? AND revisar = 0 AND n > ?', [$tn, $j, self::cofresPorXp($xpAhora)]);
+            if ($cofresMalos) Db::q('UPDATE pase_banco SET revisar = 1 WHERE temporada = ? AND jugador_id = ? AND n > ?', [$tn, $j, self::cofresPorXp($xpAhora)]);
+            // inválidos ahora: los de niveles que ya no tiene y, sin premium, todos los de la pista premium (menos los que
+            // sostiene un Mini Pase vigente)
+            $malos = Db::todas('SELECT * FROM pase_reclamos WHERE temporada = ? AND jugador_id = ? AND revisar = 0 AND (nivel > ?' . ($premium ? '' : " OR (pista = 'premium' AND NOT EXISTS (SELECT 1 FROM pase_mini_usos u
+                JOIN pase_mini m ON m.compra_id = u.compra_id AND m.estado = 'aplicada' WHERE u.temporada = pase_reclamos.temporada AND u.jugador_id = pase_reclamos.jugador_id AND u.nivel = pase_reclamos.nivel))") . ')',
                 [$tn, $j, $nivel]);
+            if ($cofresMalos && !$malos) Db::aviso('pase_revertido', 'Compra N° ' . $compra . ' del Pase (' . $c['producto'] . ', jugador ' . $j . ', temporada ' . $tn . ') revertida. Cofres del banco para revisar: ' . implode(', ', array_column($cofresMalos, 'n')) . '.', $compra);
             if (!$malos) return;
             $cred = 0;
             foreach ($malos as $m) {
@@ -742,7 +1030,7 @@ final class Pase
             Db::q('UPDATE pase_jugador SET revisar = 1, creditos_dados = MAX(0, creditos_dados - ?), actualizado = ? WHERE temporada = ? AND jugador_id = ?', [$cred, self::ahora(), $tn, $j]);
             $lista = implode(', ', array_map(fn($m) => 'nivel ' . $m['nivel'] . ' ' . $m['pista'] . ' (' . $m['tipo'] . ' ' . $m['item'] . ' x' . $m['cantidad'] . ')', $malos));
             Db::aviso('pase_revertido', 'Compra N° ' . $compra . ' del Pase (' . $c['producto'] . ', jugador ' . $j . ', temporada ' . $tn . ') revertida. Premios ya reclamados para revisar: '
-                . $lista . '. Créditos descontados: ' . $cred . '.', $compra);
+                . $lista . '. Créditos descontados: ' . $cred . '.' . ($cofresMalos ? ' Cofres del banco para revisar: ' . implode(', ', array_column($cofresMalos, 'n')) . '.' : ''), $compra);
         });
     }
 

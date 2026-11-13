@@ -1396,6 +1396,13 @@
     if (has('evs_trofeo_fem')) out.piso += `<g class="hq-cosm hq-evs-trofeo" transform="translate(300 128)"><path d="M-7-12h14v4q0 8-7 9-7-1-7-9z" fill="#ffd27a"/><path d="M-7-10q-5 0-4 4t4 3M7-10q5 0 4 4t-4 3" stroke="#ffd27a" stroke-width="1.4" fill="none"/><rect x="-2" y="1" width="4" height="5" fill="#ffd27a"/><rect x="-6" y="6" width="12" height="4" fill="#6b4a2a"/></g>`;
     if (has('evs_rosas')) out.piso += `<g class="hq-cosm hq-evs-rosas">${Array.from({ length: 6 }, (_, i) => `<path d="M${226 + i * 9} 140v-6" stroke="#2f8f5b" stroke-width="1.2"/><circle cx="${226 + i * 9}" cy="${133}" r="2.8" fill="${i % 2 ? '#ff5a8a' : '#ff2d55'}"/>`).join('')}</g>`;
     if (has('evs_palmas')) out.piso += `<g class="hq-cosm hq-evs-palmas">${[136, 222].map((x) => `<path d="M${x} 140q-2-14 4-22M${x} 140q4-12 -4-20" stroke="#3b7a2a" stroke-width="2" fill="none" stroke-linecap="round"/>`).join('')}</g>`;
+    // Ícono exclusivo de sede del nivel 40 premium del Pase de Temporada (js/pase.js aplicarCosmeticos): banderín con el tema
+    const paseSede = c.filter((k) => /^pase_sede_t\d+_[a-z_]+$/.test(String(k))).pop();
+    if (paseSede) {
+      const ICO = { halloween: '🎃', navidad: '🎄', pase_nino: '⭐', fin_anio: '🎆', san_valentin: '💘', pascua: '🕊️', carnaval: '🎭', copa_femenina: '⚽', estadios: '🏟️', festivales: '🎪', estrenos: '🎬', conciertos: '🎸' };
+      const ico = ICO[paseSede.replace(/^pase_sede_t\d+_/, '')] || '⭐';
+      out.cielo += `<g class="hq-cosm hq-pase-sede" transform="translate(${roofX - 30} ${roofY - 34})"><path d="M0 0v34" stroke="#c5ccd6" stroke-width="1.6"/><path d="M0 1h24l-6 7 6 7H0z" fill="#ffb020"/><text x="9" y="12" font-size="10" text-anchor="middle">${ico}</text></g>`;
+    }
     if (has('flores')) out.piso += `<g class="hq-cosm hq-flores">${Array.from({ length: 7 }, (_, i) => `<circle cx="${150 + i * 10}" cy="${136 - Math.sin(i / 6 * Math.PI) * 6}" r="3" fill="${['#ffffff', '#f4d0ff', '#ffd27a'][i % 3]}"/>`).join('')}</g>`;
     return out;
   }

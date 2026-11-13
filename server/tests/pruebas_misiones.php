@@ -127,7 +127,9 @@ check('Misión del día: +15 XP del pase', 15, $r['xp_pase']);
 check('Semanal: +40 XP del pase', 40, Misiones::reclamar($C, 's:2026-10-19', Misiones::elegir('s', '2026-10-19')[2])['xp_pase']);
 check('Los cofres no dan XP', 0, Misiones::reclamar($C, $hoyD, 'cofre20')['xp_pase']);
 check('Libro del pase: 55 XP con fuente misiones', 55, (int) Db::valor("SELECT COALESCE(SUM(xp), 0) FROM pase_xp WHERE jugador_id = ? AND fuente = 'misiones'", [$C]));
-check('No cuentan para la misión del pase "Juega 3 eventos en línea"', 0, (int) Db::valor("SELECT COUNT(*) FROM pase_xp WHERE jugador_id = ? AND fuente = 'mision'", [$C]));
+check('No cuentan como jugadas en línea para las misiones del pase', 0, (int) Db::valor("SELECT COUNT(*) FROM pase_xp WHERE jugador_id = ? AND fuente = 'mision' AND ref NOT LIKE '%:alt'", [$C]));
+// pase-mejoras (INTEGRAR_PASE.md "Mejoras"): 2 misiones del juego en el día cumplen las 3 diarias del pase por la alternativa sin conexión (mitad de XP)
+check('…pero sí cumplen las diarias del pase por la alternativa sin conexión', 3, (int) Db::valor("SELECT COUNT(*) FROM pase_xp WHERE jugador_id = ? AND fuente = 'mision' AND ref LIKE '%:alt'", [$C]));
 
 // =====================================================================
 titulo('Cuenta suspendida y estado()');

@@ -325,7 +325,9 @@ check('Ayudar: descuenta 1 % del tiempo y la socia recibe 1 material', [$segA, 1
 check('…la obra baja su fin y suma 1 ayuda', [$ob['fin'] - $segA, 1], (function () use ($ob) { $o = Db::fila('SELECT fin, ayudas FROM sede_obras WHERE id = ?', [$ob['id']]); return [(int) $o['fin'], (int) $o['ayudas']]; })());
 check('…y ya no le aparece en su lista', 0, count($r['lista']['obras']));
 if (class_exists(\EnVivo\Pase::class) && Migraciones::columnas('pase_xp') !== null) {
-    check('Pase de temporada: la ayuda suma XP obra_ayuda (ref obra:<id>)', [\EnVivo\Pase::XP['obra_ayuda']], array_map('intval', array_column(Db::todas("SELECT xp FROM pase_xp WHERE jugador_id = ? AND fuente = 'obra_ayuda' AND ref = ?", [$soc[1], 'obra_ayuda:obra:' . $ob['id']]), 'xp')));
+    // pase-mejoras: el reloj del pase es el real; si la socia "empieza tarde" la temporada, ponerse al día duplica la XP
+    $fx = (\EnVivo\Pase::actual() !== null && method_exists(\EnVivo\Pase::class, 'alDia') && \EnVivo\Pase::alDia($soc[1], \EnVivo\Pase::actual())['activo']) ? \EnVivo\Pase::AL_DIA_FACTOR : 1;
+    check('Pase de temporada: la ayuda suma XP obra_ayuda (ref obra:<id>)', [\EnVivo\Pase::XP['obra_ayuda'] * $fx], array_map('intval', array_column(Db::todas("SELECT xp FROM pase_xp WHERE jugador_id = ? AND fuente = 'obra_ayuda' AND ref = ?", [$soc[1], 'obra_ayuda:obra:' . $ob['id']]), 'xp')));
 } else echo "  AVISO: sin Pase.php: se salta el XP del pase\n";
 check('Ayudar dos veces la misma obra -> 409 ya_ayudaste', [409, 'ya_ayudaste'], falla(fn() => SO::ayudar($soc[1], $dueno, $ob['id'])));
 for ($k = 2; $k <= 10; $k++) SO::ayudar($soc[$k], $dueno, $ob['id']);

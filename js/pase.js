@@ -9,7 +9,11 @@
    - ctx (el de ui.js para Inicio) puede traer: onComprar(idProducto) → flujo de compra de la Tienda (lo conecta el
      integrador), alReclamar() → refresca /api/estado y aplica las entregas nuevas, toast(msg), render(), M(dinero).
    - Textos: español y 9 idiomas aquí mismo (TRAD[código]), en registro "tú". Sin I18N, español.
-   API pública: window.Pase = { tarjeta, clic, abrir, cerrar, fichaTienda, recargar, TRAD }.
+   API pública: window.Pase = { tarjeta, clic, abrir, cerrar, fichaTienda, recargar, aplicarCosmeticos, TRAD }.
+   Mejoras (rama pase-mejoras, server/INTEGRAR_PASE.md "Mejoras"): candado con el premio premium en la fila gratis, Mini Pase
+   Semanal (pase_semanal), alternativa sin conexión de las misiones, ponerse al día, banco de premios después del nivel 40,
+   tema visual por temporada e ícono de sede del nivel 40. Sus textos NUEVOS están solo en español en js/lang/es.js (claves
+   "pasem.*", vía I18N.T) hasta la pasada final de traducción; TRAD queda como estaba.
    ========================================================= */
 (function (root) {
   'use strict';
@@ -365,6 +369,16 @@
     const s = v === undefined ? k : String(v);
     return p ? s.replace(/\{(\w+)\}/g, (m, x) => (p[x] !== undefined && p[x] !== null ? String(p[x]) : m)) : s;
   }
+  /** Textos de las mejoras: js/lang/es.js ("pasem.*") por I18N.T; sin I18N, el diccionario español si está cargado. */
+  function tm(k, p) {
+    const key = 'pasem.' + k;
+    try { if (root.I18N && typeof root.I18N.T === 'function') { const v = root.I18N.T(key, p); if (v !== key) return v; } } catch (e) { /* abajo */ }
+    let v;
+    try { v = root.I18N_LANG && root.I18N_LANG.es ? root.I18N_LANG.es[key] : undefined; } catch (e) { v = undefined; }
+    const s = v === undefined ? key : String(v);
+    return p ? s.replace(/\{(\w+)\}/g, (m, x) => (p[x] !== undefined && p[x] !== null ? String(p[x]) : m)) : s;
+  }
+  const tieneM = (k) => tm(k) !== 'pasem.' + k;
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const locale = () => { try { const L = root.I18N && root.I18N.idiomas && root.I18N.idiomas.find((x) => x.code === idioma()); return (L && L.locale) || (idioma() === 'es' ? 'es-EC' : idioma()); } catch (e) { return 'es-EC'; } };
   const num = (n) => { try { return Number(n || 0).toLocaleString(locale()); } catch (e) { return String(n); } };
@@ -388,7 +402,7 @@
 
   /* ---------- Premios: ícono y nombre ---------- */
   const ICO_MAT = { cables: '🔌', placas: '🧩', paneles: '💡', credenciales: '🪪', planos: '📐', chips: '💾' };
-  const ICO_COS = { marco: '🖼️', deco: '🏮', titulo: '🏷️', insignia: '🎖️' };
+  const ICO_COS = { marco: '🖼️', deco: '🏮', titulo: '🏷️', insignia: '🎖️', sede: '🏢' };
   function icono(r) {
     switch (r.tipo) {
       case 'dinero': return '💵';
@@ -411,7 +425,7 @@
       case 'consumible': case 'materiales': return '×' + num(r.cantidad);
       case 'acelerador': return horas(r.cantidad);
       case 'estrella': return '×' + r.cantidad;
-      case 'cosmetico': return t('r.' + (r.clase || 'insignia'));
+      case 'cosmetico': return r.clase === 'sede' ? tm('r_sede') : t('r.' + (r.clase || 'insignia'));
       case 'reparar_todo': return '100 %';
       default: return '×' + num(r.cantidad);
     }
@@ -426,7 +440,7 @@
       case 'acelerador': return t('r.acel', { t: horas(r.cantidad) });
       case 'reparar_todo': return t('r.reparar_todo');
       case 'estrella': return t('r.estrella', { n: r.cantidad });
-      case 'cosmetico': return t('r.' + (r.clase || 'insignia')) + (tema ? ' «' + t('tema.' + tema) + '»' : '');
+      case 'cosmetico': return (r.clase === 'sede' ? tm('r_sede') : t('r.' + (r.clase || 'insignia'))) + (tema ? ' «' + (tiene('tema.' + tema) ? t('tema.' + tema) : tema) + '»' : '');
       default: return r.nombre || (r.cantidad + ' × ' + r.item);
     }
   }
@@ -445,7 +459,7 @@
     try { j = await r.json(); } catch (e) { j = null; }
     if (!r.ok || !j || j.ok === false) {
       const cod = (j && j.codigo) || 'error';
-      const x = new Error(tiene('err.' + cod) ? t('err.' + cod) : ((j && j.error) || t('error')));
+      const x = new Error(tiene('err.' + cod) ? t('err.' + cod) : tieneM('err_' + cod) ? tm('err_' + cod) : ((j && j.error) || t('error')));
       x.codigo = cod; x.status = r.status;
       throw x;
     }
@@ -530,6 +544,24 @@
 .pase-salto .btn{flex:1;margin:0;min-width:0}
 .pase-conf{display:flex;gap:8px;margin-top:8px}.pase-conf .btn{margin:0;min-width:0}
 .pase-ant{border-color:var(--amber)}
+.pase-hoja{--pc1:var(--amber);--pc2:#ffd36b}
+.pase-cab{background:linear-gradient(100deg,color-mix(in srgb,var(--pc1) 22%,transparent),color-mix(in srgb,var(--pc2) 14%,transparent))}
+.pase-cab .adornos{flex:none;font-size:18px;letter-spacing:2px;line-height:1}
+.pase-hoja .pase-badge{border-color:var(--pc1);color:var(--pc1)}
+.pase-hoja .pase-bar i{background:linear-gradient(90deg,var(--pc1),var(--pc2))}
+.pase-celda .lk{position:absolute;left:3px;top:3px;font-size:10px;line-height:1;padding:1px 3px;border-radius:6px;background:#00000066;color:var(--amber)}
+.pase-celda.tz{border-style:dashed;border-color:#ffb02066;background:linear-gradient(180deg,#2a211266,transparent)}
+.pase-celda.tz .i{filter:grayscale(.85);opacity:.6}
+.pase-celda.tz .e{color:var(--amber)}
+.pase-celda.tz::before{content:'🔒';position:absolute;top:3px;right:5px;font-size:12px}
+.pase-celda .mn{position:absolute;top:3px;left:4px;font-size:9px;font-weight:700;padding:1px 4px;border-radius:6px;background:var(--green);color:#06210f}
+.pase-mini{margin-top:10px;padding:10px;border-radius:12px;border:1px dashed var(--line);background:var(--panel2)}
+.pase-mini .btn{margin:8px 0 0;width:100%}
+.pase-aldia{border-color:var(--green)}
+.pase-mis .alt{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.pase-mis .jt{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:#5ad1ff22;color:#5ad1ff;margin-left:4px;vertical-align:middle}
+.pase-banco ul{margin:6px 0 0;padding-left:18px;font-size:13px}
+.pase-banco .btn{margin:10px 0 0}
 `;
     document.head.appendChild(s);
   }
@@ -623,14 +655,24 @@
   function aviso(msg) { try { if (st.ctx && typeof st.ctx.toast === 'function') { st.ctx.toast(msg); return; } } catch (e) { /* abajo */ } try { console.log('[pase] ' + msg); } catch (e) { /* nada */ } }
   function sonido(n) { try { if (st.ctx && st.ctx.snd && st.ctx.snd.play) st.ctx.snd.play(n); } catch (e) { /* sin sonido */ } }
 
-  function celda(c, pista, nivel, ctx, tema) {
-    if (!c) return `<div class="pase-celda vacia" aria-hidden="true"></div>`;
+  /* prem: el premio premium del mismo nivel, para el candado de la fila gratis (solo sin premium). Sin premio gratis, la
+     celda de la fila gratis muestra el premium entero con candado ("tz"); con premio gratis, un sello chico 🔒 + ícono. */
+  function celda(c, pista, nivel, ctx, tema, prem) {
+    if (!c) {
+      if (!prem) return `<div class="pase-celda vacia" aria-hidden="true"></div>`;
+      const r = prem.recompensa;
+      const sel = st.sel && st.sel.nivel === nivel && st.sel.pista === 'premium' ? ' sel' : '';
+      return `<button type="button" class="pase-celda tz${sel}" data-pase-celda data-teaser data-nivel="${nivel}" data-pista="premium" title="${esc(tm('con_premium') + ': ' + nombre(r, ctx, tema))}" aria-label="${esc(t('nivel_n', { n: nivel }) + ' · ' + tm('con_premium') + ': ' + nombre(r, ctx, tema))}">
+        <span class="i" aria-hidden="true">${icono(r)}</span><span class="c">${esc(corto(r, ctx))}</span><span class="e">${esc(tm('candado'))}</span></button>`;
+    }
     const r = c.recompensa;
     const est = c.estado;
     const e = est === 'disponible' ? t('reclamar') : est === 'reclamado' ? (c.revisar ? t('revisar') : t('reclamado')) : est === 'requiere_premium' ? '🔒 ' + t('requiere') : est === 'bloqueado' ? t('bloqueado', { n: nivel }) : '';
     const sel = st.sel && st.sel.nivel === nivel && st.sel.pista === pista ? ' sel' : '';
+    const lk = prem ? `<span class="lk" aria-hidden="true">🔒${icono(prem.recompensa)}</span>` : '';
+    const mn = c.mini ? `<span class="mn">${esc(tm('mini_tag'))}</span>` : '';
     return `<button type="button" class="pase-celda ${pista === 'premium' ? 'p' : 'g'} ${est}${sel}" data-pase-celda data-nivel="${nivel}" data-pista="${pista}" title="${esc(nombre(r, ctx, tema))}" aria-label="${esc(t('nivel_n', { n: nivel }) + ' · ' + nombre(r, ctx, tema) + ' · ' + e)}">
-      <span class="i" aria-hidden="true">${icono(r)}</span><span class="c">${esc(corto(r, ctx))}</span><span class="e">${esc(e)}</span></button>`;
+      ${mn}<span class="i" aria-hidden="true">${icono(r)}</span><span class="c">${esc(corto(r, ctx))}</span><span class="e">${esc(e)}</span>${lk}</button>`;
   }
 
   function pistasHtml(d, ctx) {
@@ -641,7 +683,8 @@
     for (let n = 1; n <= d.niveles; n++) {
       const cls = n <= d.nivel ? ' hecho' : '';
       const act = n === Math.min(d.niveles, d.nivel + 1) ? ' actual' : '';
-      cols += `<div class="pase-col${cls}${act}" data-col="${n}"><div class="n">${n}</div>${celda(porNivel.gratis[n], 'gratis', n, ctx, d.temporada.tema)}${celda(porNivel.premium[n], 'premium', n, ctx, d.temporada.tema)}</div>`;
+      const prem = d.premium ? null : porNivel.premium[n];
+      cols += `<div class="pase-col${cls}${act}" data-col="${n}"><div class="n">${n}</div>${celda(porNivel.gratis[n], 'gratis', n, ctx, d.temporada.tema, prem)}${celda(porNivel.premium[n], 'premium', n, ctx, d.temporada.tema)}</div>`;
     }
     const det = st.sel ? detalle(d, ctx) : `<span class="muted">${esc(t('toca'))}</span>`;
     return `<div class="pase-pistas"><div class="pase-scroll" data-pase="pistas"><div class="pase-grid">
@@ -652,7 +695,14 @@
     const s = st.sel;
     const c = (d.pistas[s.pista] || []).find((x) => x.nivel === s.nivel);
     if (!c) return '';
-    return `<b>${esc(t('nivel_n', { n: s.nivel }))} · ${esc(t(s.pista))}:</b> ${esc(icono(c.recompensa))} ${esc(nombre(c.recompensa, ctx, d.temporada.tema))}`;
+    let extra = '';
+    if (s.pista === 'premium' && !d.premium && c.estado !== 'reclamado') {
+      extra = `<div class="muted">🔒 ${esc(c.mini ? tm('det_mini_si') : c.solo_premium ? tm('det_mini_no') : tm('ver_premium'))}</div>`;
+    } else if (s.pista === 'gratis' && !d.premium) {
+      const p = (d.pistas.premium || []).find((x) => x.nivel === s.nivel);
+      if (p) extra = `<div class="muted">🔒 ${esc(tm('con_premium'))}: ${esc(icono(p.recompensa))} ${esc(nombre(p.recompensa, ctx, d.temporada.tema))}</div>`;
+    }
+    return `<b>${esc(t('nivel_n', { n: s.nivel }))} · ${esc(t(s.pista))}:</b> ${esc(icono(c.recompensa))} ${esc(nombre(c.recompensa, ctx, d.temporada.tema))}${extra}`;
   }
 
   function misionesHtml(d) {
@@ -660,13 +710,17 @@
     const fila = (x) => {
       const pct = Math.round(100 * Math.min(x.avance, x.n) / Math.max(1, x.n));
       const tx = tiene('mis.' + x.id) ? t('mis.' + x.id, { n: x.n }) : x.texto;
-      return `<div class="pase-mis${x.hecha ? ' hecha' : ''}" data-mision="${esc(x.id)}"><div class="tx">${x.hecha ? '✅ ' : ''}${esc(tx)}<div class="pase-bar" style="height:6px"><i style="width:${pct}%"></i></div></div>
+      const jt = x.juntos ? `<span class="jt">👥 ${esc(tm('juntos'))}</span>` : '';
+      const alt = !x.alt ? '' : x.via === 'sin_conexion' ? `<span class="alt" data-alt>📴 ${esc(tm('alt_hecha', { xp: num(x.alt.xp) }))}</span>`
+        : x.hecha ? '' : `<span class="alt" data-alt>📴 ${esc(tm('alt', { n: x.alt.n, a: x.alt.avance, xp: num(x.alt.xp) }))}</span>`;
+      return `<div class="pase-mis${x.hecha ? ' hecha' : ''}" data-mision="${esc(x.id)}"><div class="tx">${x.hecha ? '✅ ' : ''}${esc(tx)}${jt}<div class="pase-bar" style="height:6px"><i style="width:${pct}%"></i></div>${alt}</div>
         <div class="xp">${x.hecha ? esc(t('hecha')) : esc(x.avance + '/' + x.n)}<br><span class="muted">+${num(x.xp)} XP</span></div></div>`;
     };
     const ren = (iso) => (iso ? `<span class="small muted">${esc(t('renuevan', { t: tiempo((Date.parse(iso) - Date.parse(d.ahora)) / 1000 - (Date.now() - st.cargadoEn) / 1000) }))}</span>` : '');
     return `<div class="card" data-pase="misiones"><div class="row between"><b>${esc(t('diarias'))}</b>${ren(m.diarias_fin)}</div>${(m.diarias || []).map(fila).join('')}
       <div class="row between" style="margin-top:12px"><b>${esc(t('semanales'))}</b>${ren(m.semanales_fin)}</div>${(m.semanales || []).map(fila).join('')}
-      <p class="small muted" style="margin:10px 0 0">${esc(t('como_xp', { a: num(d.xp_hoy), b: num(d.xp_tope_dia) }))}</p></div>`;
+      <p class="small muted" style="margin:10px 0 0">${esc(t('como_xp', { a: num(d.xp_hoy), b: num(d.xp_tope_dia) }))}</p>
+      ${m.alt ? `<p class="small muted" style="margin:6px 0 0">📴 ${esc(tm('alt_info'))}</p>` : ''}</div>`;
   }
 
   function saltosHtml(d) {
@@ -694,7 +748,11 @@
     else if (!d.temporada) cuerpo = `<div class="card"><p>${esc(t('proxima', { t: tiempo(d.proxima ? (Date.parse(d.proxima.inicio) - Date.parse(d.ahora)) / 1000 : 0) }))}</p></div>`;
     else cuerpo = cuerpoHtml(d, ctx);
     const tp = d && d.temporada;
-    st.ov.innerHTML = `<div class="pase-hoja"><header class="pase-cab"><h2>${tp ? esc(tp.icono) + ' ' : ''}${esc(tp ? nombreTemp(tp) : t('titulo'))}</h2>
+    const vis = tp && tp.visual && Array.isArray(tp.visual.colores) ? tp.visual : null;
+    const color = (c) => (/^#[0-9a-f]{3,8}$/i.test(String(c || '')) ? c : null);
+    const vars = vis && color(vis.colores[0]) && color(vis.colores[1]) ? ` style="--pc1:${vis.colores[0]};--pc2:${vis.colores[1]}"` : '';
+    st.ov.innerHTML = `<div class="pase-hoja"${vars}${tp ? ` data-tema="${esc(tp.tema)}"` : ''}><header class="pase-cab"><h2>${tp ? esc(tp.icono) + ' ' : ''}${esc(tp ? nombreTemp(tp) : t('titulo'))}</h2>
+      ${vis && vis.adornos ? `<span class="adornos" aria-hidden="true">${esc(vis.adornos)}</span>` : ''}
       <button class="pase-x" data-pase-acc="cerrar" aria-label="${esc(t('cerrar'))}">✕</button></header><div class="pase-cuerpo" data-pase="cuerpo">${cuerpo}</div></div>`;
     const cu = st.ov.querySelector('.pase-cuerpo'); if (cu) cu.scrollTop = scrollY;
     const sc = st.ov.querySelector('.pase-scroll');
@@ -722,7 +780,7 @@
          <div class="pase-compra">
            ${pPrem ? `<button class="btn main" data-pase-comprar="pase_premium">⭐ ${esc(t('comprar_premium', { p: pPrem }))}</button>` : ''}
            ${pPlus ? `<button class="btn" data-pase-comprar="pase_premium_plus">🚀 ${esc(t('comprar_plus', { p: pPlus }))}<small>${esc(t('plus_det', { n: pp.pase_premium_plus.niveles || 10 }))}</small></button>` : ''}
-         </div><p class="small muted" style="margin:6px 0 0">${esc(t('contenido'))}</p>`;
+         </div><p class="small muted" style="margin:6px 0 0">${esc(t('contenido'))}</p>${miniHtml(d, ctx)}`;
     const antHtml = totalAnt ? `<div class="card pase-ant" data-pase="anterior"><p class="small" style="margin:0">⏳ ${esc(t('anterior', { nombre: nombreTemp(ant.temporada), t: tiempo((Date.parse(ant.gracia_hasta) - Date.parse(d.ahora)) / 1000 - (Date.now() - st.cargadoEn) / 1000), k: totalAnt }))}</p></div>` : '';
     return `<div class="card" data-pase="resumen">
         <div class="pase-res"><div class="pase-badge"><small>${esc(t('nivel_n', { n: '' }).trim())}</small><b>${d.nivel}</b></div>
@@ -733,11 +791,78 @@
         ${compra}
       </div>
       ${antHtml}
+      ${alDiaHtml(d)}
       ${total > 0 ? `<button class="btn main" data-pase-acc="todo" style="margin:0 0 12px">🎁 ${esc(t('reclamar_todo', { n: total }))}</button>` : ''}
-      <div class="card" data-pase="premios">${pistasHtml(d, ctx)}</div>
+      <div class="card" data-pase="premios">${pistasHtml(d, ctx)}${!d.premium && tieneM('tema_40') ? `<p class="small muted" style="margin:8px 0 0">🏢 ${esc(tm('tema_40'))}</p>` : ''}</div>
+      ${bancoHtml(d, ctx)}
       <div class="sectitle">${esc(t('misiones'))}</div>
       ${misionesHtml(d)}
       ${saltosHtml(d)}`;
+  }
+
+  /* ---------- Mejoras: Mini Pase Semanal, ponerse al día, banco de premios ---------- */
+  function miniHtml(d, ctx) {
+    const m = d.mini;
+    if (!m || d.premium) return '';
+    const pp = (d.productos || {})[m.producto || 'pase_semanal'];
+    const cubiertos = Array.isArray(m.niveles) ? m.niveles.length : 0;
+    const extra = cubiertos ? `<p class="small muted" style="margin:6px 0 0">${esc(tm('mini_cubre', { n: cubiertos }))}</p>` : '';
+    if (m.activo) {
+      return `<div class="pase-mini" data-pase="mini"><b>🎟️ ${esc(tm('mini_titulo'))}</b>
+        <p class="small" style="margin:4px 0 0">${esc(tm('mini_activo', { a: (m.nivel_desde || 0) + 1, b: m.nivel_hasta, t: tiempo(quedan(m.quedan_seg)) }))}</p>${extra}
+        <p class="small muted" style="margin:6px 0 0">${esc(tm('mini_premium'))}</p></div>`;
+    }
+    const precioMini = m.puede_comprar && pp && pp.activo !== false ? precioDe(ctx, pp.id || 'pase_semanal', pp.precio) : null;
+    if (!precioMini) return extra ? `<div class="pase-mini" data-pase="mini"><b>🎟️ ${esc(tm('mini_titulo'))}</b>${extra}</div>` : '';
+    return `<div class="pase-mini" data-pase="mini"><b>🎟️ ${esc(tm('mini_titulo'))}</b>
+      <p class="small muted" style="margin:4px 0 0">${esc(tm('mini_txt', { n: m.max_niveles || 8 }))}</p>${extra}
+      <button class="btn" data-pase-comprar="${esc(pp.id || 'pase_semanal')}">🎟️ ${esc(tm('mini_btn', { p: precioMini }))}</button></div>`;
+  }
+  function alDiaHtml(d) {
+    const a = d.al_dia;
+    if (!a) return '';
+    if (a.estado === 'activo' && a.hasta) {
+      return `<div class="card pase-aldia" data-pase="al_dia"><p class="small" style="margin:0">⚡ ${esc(tm('al_dia_activo', { t: tiempo((Date.parse(a.hasta) - Date.parse(d.ahora)) / 1000 - (Date.now() - st.cargadoEn) / 1000) }))}</p></div>`;
+    }
+    if (a.estado === 'disponible') return `<div class="card pase-aldia" data-pase="al_dia"><p class="small" style="margin:0">⚡ ${esc(tm('al_dia_disp', { d: a.dias || 3 }))}</p></div>`;
+    return '';
+  }
+  function bancoHtml(d, ctx) {
+    const b = d.banco;
+    if (!b || d.nivel < Math.min(d.niveles, 35)) return '';   // se muestra cerca del final (nivel 35+), para que se vea lo que viene
+    const tema = d.temporada.tema;
+    const li = (arr) => arr.map((r) => `<li>${esc(icono(r))} ${esc(nombre(r, ctx, tema))}</li>`).join('');
+    const extra = (b.contenido_premium || []).slice((b.contenido || []).length);
+    const prog = b.ganados >= b.max ? tm('banco_lleno', { a: b.ganados, max: b.max }) : tm('banco_prog', { a: b.ganados, max: b.max, xp: num(b.xp_siguiente) });
+    return `<div class="card pase-banco" data-pase="banco"><b>🏦 ${esc(tm('banco'))}</b>
+      <p class="small muted" style="margin:4px 0 0">${esc(tm('banco_txt', { niv: d.niveles, cada: num(b.cada), max: b.max }))}</p>
+      <ul>${li(b.contenido || [])}</ul>
+      ${extra.length ? `<p class="small ${d.premium ? '' : 'muted'}" style="margin:6px 0 0">${d.premium ? '' : '🔒 '}${esc(tm('banco_prem'))}</p><ul>${li(extra)}</ul>` : ''}
+      ${b.activo ? `<p class="small" style="margin:8px 0 0">${esc(prog)}</p>` : ''}
+      ${b.por_abrir > 0 ? `<button class="btn main" data-pase-acc="banco">🎁 ${esc(tm('banco_btn', { n: b.por_abrir }))}</button>` : ''}</div>`;
+  }
+  function abrirBancoUI() {
+    const d = st.datos;
+    const temp = d && d.temporada ? d.temporada.numero : undefined;
+    return accion(async () => {
+      const j = await pedir('POST', '/api/pase/banco', { temporada: temp });
+      sonido('buy');
+      aviso(tm('banco_ok', { n: (j.cofres || []).length }));
+      await despues(j);
+    });
+  }
+  /** El ícono exclusivo de sede (cosmético "pase_sede_t<N>_<tema>") se guarda en la partida para que se vea en la sede
+      (js/art.js lo dibuja desde s.temporada.cosmeticos). Lo llama ui.js al aplicar las entregas. Idempotente. */
+  function aplicarCosmeticos(s, entregas) {
+    if (!s || !Array.isArray(entregas)) return 0;
+    let n = 0;
+    entregas.forEach((e) => {
+      if (!e || e.tipo !== 'cosmetico' || !/^pase_sede_t\d+_[a-z_]+$/.test(String(e.item || ''))) return;
+      if (!s.temporada || typeof s.temporada !== 'object') s.temporada = {};
+      if (!Array.isArray(s.temporada.cosmeticos)) s.temporada.cosmeticos = [];
+      if (!s.temporada.cosmeticos.includes(e.item)) { s.temporada.cosmeticos.push(e.item); n++; }
+    });
+    return n;
   }
 
   async function alClic(e) {
@@ -765,6 +890,7 @@
     if (acc === 'cerrar') return cerrar();
     if (acc === 'reintentar') { st.error = ''; pintar(); cargar(ctx).then(() => pintar(true)).catch(() => pintar()); return; }
     if (acc === 'todo') return reclamarTodo();
+    if (acc === 'banco') return abrirBancoUI();
     if (acc === 'menos' || acc === 'mas') { st.saltarN += acc === 'mas' ? 1 : -1; sonido('tap'); return pintar(); }
     if (acc === 'saltar') { st.confirmar = true; sonido('tap'); return pintar(); }
     if (acc === 'saltar-no') { st.confirmar = false; return pintar(); }
@@ -795,7 +921,8 @@
     return accion(async () => {
       const j = await pedir('POST', '/api/pase/reclamar_todo', {});
       sonido('buy');
-      aviso(t('reclamados_ok', { n: (j.reclamados || []).length }));
+      const nc = (j.cofres || []).length;
+      aviso(t('reclamados_ok', { n: (j.reclamados || []).length }) + (nc ? ' ' + tm('banco_ok', { n: nc }) : ''));
       await despues(j);
     });
   }
@@ -816,7 +943,7 @@
     return cargar(ctx || st.ctx).then((j) => { pintar(); try { const c = ctx || st.ctx; if (c && typeof c.render === 'function') c.render(); } catch (e) { /* nada */ } return j; }).catch(() => { pintar(); return null; });
   }
 
-  const API = { tarjeta, clic, abrir, cerrar, fichaTienda, recargar, TRAD, t, _st: st };
+  const API = { tarjeta, clic, abrir, cerrar, fichaTienda, recargar, aplicarCosmeticos, TRAD, t, tm, _st: st };
   root.Pase = API;
   root.EnVivoInicio = root.EnVivoInicio || [];
   if (!root.EnVivoInicio.some((m) => m && m.id === 'pase')) root.EnVivoInicio.push({ id: 'pase', orden: 7, tarjeta, clic });

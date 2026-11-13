@@ -112,11 +112,12 @@ check('Las diarias rotan por fecha (sin azar)', true, array_column($m['diarias']
 Pase::sumarXp($C, 40, 'liga', 'm:1'); Pase::sumarXp($C, 30, 'festival', 'm:2');
 check('2 de 3 eventos: avance 2, sin XP de misión', [2, false, 70], [Pase::estado($C)['misiones']['diarias'][0]['avance'], Pase::estado($C)['misiones']['diarias'][0]['hecha'], Pase::xpTotal($C, 1)]);
 $r = Pase::sumarXp($C, 40, 'duelo', 'm:3');
-check('Tercer evento: misión cumplida (+150 XP) una sola vez', [['d_eventos'], 110 + 150, true], [$r['misiones'], Pase::xpTotal($C, 1), Pase::estado($C)['misiones']['diarias'][0]['hecha']]);
+// (con las misiones de jugar con otros de pase-mejoras, ese día también rota "Juega 1 duelo": +100)
+check('Tercer evento: misión cumplida (+150 XP) una sola vez (y la del duelo del día, +100)', [['d_eventos', 'd_duelo'], 110 + 150 + 100, true], [$r['misiones'], Pase::xpTotal($C, 1), Pase::estado($C)['misiones']['diarias'][0]['hecha']]);
 Pase::sumarXp($C, 40, 'duelo', 'm:4');
-check('Un cuarto evento no la paga otra vez', 110 + 150 + 40, Pase::xpTotal($C, 1));
+check('Un cuarto evento no la paga otra vez', 110 + 150 + 100 + 40, Pase::xpTotal($C, 1));
 $r = Pase::sumarXp($C, Pase::XP['copa_equipo'], 'copa_equipo', 'copa:7');
-check('Registrar el equipo de copa: misión semanal (+300) y su XP (+50)', [['s_copa_equipo'], 300 + 50 + 300], [$r['misiones'], Pase::xpTotal($C, 1)]);
+check('Registrar el equipo de copa: misión semanal (+300) y su XP (+50)', [['s_copa_equipo'], 400 + 50 + 300], [$r['misiones'], Pase::xpTotal($C, 1)]);
 check('Registrar otra vez en la misma copa no suma', null, Pase::sumarXp($C, 50, 'copa_equipo', 'copa:7'));
 check('La semanal de 15 eventos lleva 4', 4, Pase::estado($C)['misiones']['semanales'][0]['avance']);
 check('Obras de la asociación: fuente obra_ayuda acepta XP', 25, Pase::sumarXp($C, Pase::XP['obra_ayuda'], 'obra_ayuda', 'obra:1')['xp'] ?? null);
@@ -142,8 +143,8 @@ check('Pista inventada -> 400', [400, 'pista_invalida'], falla(fn() => Pase::rec
 check('Nivel 41 -> 400', [400, 'nivel_invalido'], falla(fn() => Pase::reclamar($D, 41, 'gratis')));
 $r = Pase::reclamar($D, 3, 'gratis');
 check('Gratis nivel 3: entrega de materiales de sede (tipo nuevo)', ['materiales', 'cables', 6], [$r['entregas'][0]['tipo'], $r['entregas'][0]['item'], $r['entregas'][0]['cantidad']]);
-check('Premios del nivel 40: insignia (gratis) y título de chat (premium) con la temporada', ['pase_insignia_t1', 'insignia', 'pase_titulo_t1', 'titulo'],
-    [Pase::recompensa(40, 'gratis', 1)['item'], Pase::recompensa(40, 'gratis', 1)['clase'], Pase::recompensa(40, 'premium', 1)['item'], Pase::recompensa(40, 'premium', 1)['clase']]);
+check('Premios del nivel 40: insignia (gratis) e ícono exclusivo de sede con el tema (premium); título de chat en el 30', ['pase_insignia_t1', 'insignia', 'pase_sede_t1_halloween', 'sede', 'pase_titulo_t1'],
+    [Pase::recompensa(40, 'gratis', 1)['item'], Pase::recompensa(40, 'gratis', 1)['clase'], Pase::recompensa(40, 'premium', 1)['item'], Pase::recompensa(40, 'premium', 1)['clase'], Pase::recompensa(30, 'premium', 1)['item']]);
 check('Cosméticos exclusivos premium: marco (10) y adorno de sede (20)', ['pase_marco_t2', 'pase_deco_t2'], [Pase::recompensa(10, 'premium', 2)['item'], Pase::recompensa(20, 'premium', 2)['item']]);
 check('Nivel 35 premium: contrato de personal estrella (5 partidos) si existe Estrellas; si no, materiales', Pase::hayEstrellas() ? ['estrella', 'comodin', 5] : ['materiales', 'chips', 8],
     [Pase::recompensa(35, 'premium', 1)['tipo'], Pase::recompensa(35, 'premium', 1)['item'], Pase::recompensa(35, 'premium', 1)['cantidad']]);

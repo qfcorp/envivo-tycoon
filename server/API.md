@@ -302,7 +302,7 @@ son el mismo saldo: libro `festival_pases` (idempotente por `ref`, tope 10; lo q
 150 créditos + camarógrafo senior por 3 eventos + 3 cables) · `inicio` $2,99 (una vez) · `tarjeta_mensual` $4,99 (30 días,
 20 créditos/día; otra compra suma días) · `vip30` $9,99 · `transferencia_cuenta` $9,99 (no sale en la tienda).
 Monetización (los mismos ids en Google Play; cada uno lleva `modulo` y queda apagado y oculto mientras su módulo no esté):
-`pase_premium` $4,99 y `pase_premium_plus` $9,99 (pase de temporada; pantalla propia, no salen en la lista general) ·
+`pase_premium` $4,99, `pase_premium_plus` $9,99 y `pase_semanal` $1,49 (pase de temporada y Mini Pase Semanal; pantalla propia, no salen en la lista general) ·
 `pack_obra_s` $1,99 / `pack_obra_m` $4,99 / `pack_obra_l` $9,99 (Sede oficial: aceleradores de obra + materiales, contenido
 fijo) · `pase_copa` $2,99 (+5 eventos de preparación por día en la copa de esa semana; también por 300 créditos en
 `/api/pase_copa/comprar`; pantalla propia) · ofertas escalonadas del VIP `oferta_vip_s` $1,99, `oferta_vip_m` $4,99,

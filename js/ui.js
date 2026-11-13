@@ -1853,12 +1853,12 @@
   };
   const MATS_OBRA = ['cables', 'placas', 'paneles', 'credenciales', 'planos', 'chips'];
   // Productos con pantalla propia que Google Play también vende (sus precios se piden aunque no salgan en /api/estado)
-  const PLAY_EXTRA = ['pase_premium', 'pase_premium_plus', 'pack_obra_s', 'pack_obra_m', 'pack_obra_l', 'pase_copa', 'oferta_novato'];
+  const PLAY_EXTRA = ['pase_premium', 'pase_premium_plus', 'pack_obra_s', 'pack_obra_m', 'pack_obra_l', 'pase_copa', 'oferta_novato', 'pase_semanal'];
   const playPedidos = new Set();
   const ICO_PASE = svgIco('<path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h13A1.5 1.5 0 0 1 20 7.5V10a2 2 0 0 0 0 4v2.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5V14a2 2 0 0 0 0-4z"/><path d="M14.5 6.5v11" stroke-dasharray="1.6 2.2"/><path d="M8.5 10.2l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z"/>');
   const ICO_OBRA = svgIco('<path d="M3.5 17a8.5 8.5 0 0 1 17 0"/><path d="M2.5 17h19v2.5h-19z"/><path d="M10 8.7V5.5h4v3.2"/><path d="M8 12v5M16 12v5"/>');
   const tipoProd = (p) => p.tipo || (/^creditos_/.test(p.id) ? 'creditos' : p.id === 'vip30' ? 'vip' : p.id === 'tarjeta_mensual' ? 'tarjeta'
-    : /^pack_obra_/.test(p.id) ? 'pack_obra' : /^pase_premium/.test(p.id) ? 'pase' : ['inicio', 'bienvenida', 'pase_copa'].includes(p.id) ? p.id : 'otro');
+    : /^pack_obra_/.test(p.id) ? 'pack_obra' : /^pase_(premium|semanal)/.test(p.id) ? 'pase' : ['inicio', 'bienvenida', 'pase_copa'].includes(p.id) ? p.id : 'otro');
   const prodPorId = (id) => { try { return ((Api.estado && Api.estado.tienda && Api.estado.tienda.productos) || []).find((p) => p.id === id) || null; } catch (e) { return null; } };
   // PayPal (server/src/PayPal.php, docs/PAYPAL.md): SOLO en la web, nunca en la app de Google Play (enApp) ni en la versión
   // de un solo archivo (dist/, sin servidor: no llega "paypal" en /api/estado). Desde paypal.minimo (la comisión se come las ventas chicas).
@@ -2346,6 +2346,7 @@
     syncVip();
     if (!Pm || !Api.estado || !Api.estado.logueado) return;
     const hechos = Pm.aplicarEntregas(S, Api.estado.entregas);
+    try { if (window.Pase && window.Pase.aplicarCosmeticos && window.Pase.aplicarCosmeticos(S, Api.estado.entregas)) save(); } catch (e) { /* ícono de sede del pase (INTEGRAR_PASE.md, Mejoras) */ }
     if (Array.isArray(Api.estado.inventario) && Pm.sincronizarInventario) {
       const inv = Pm.sincronizarInventario(S, Api.estado.inventario);
       inv.agregados.forEach((t) => hechos.push(T('tienda.llego', { item: TL(t) })));
