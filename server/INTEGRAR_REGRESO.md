@@ -25,6 +25,8 @@ Ideas 3 y 7 de las propuestas (13-nov-2026). Todo se apaga por tipo en el Centro
 Reglas: máximo 2 avisos al día (`Push::TOPE_REGRESO`, y nunca más que `PUSH_MAX_DIA`), nada de 22:00 a 08:00 en la zona del jugador
 (la manda el juego al abrir; sin zona, la del juego), 20 h entre dos avisos del módulo (Liga/Duelos no cuentan) y nunca un aviso
 nuevo si otro sigue esperando en la cola, nunca el mismo aviso dos veces, textos sobre la partida (nada de «compra ahora»).
+Textos (`Regreso::TEXTOS`) y correo (`CorreoPlantillas`, claves `g_*`) en los 10 idiomas: el del aparato suscrito que el jugador
+usó hace menos tiempo (`Push::idiomaJugador`); sin aparato, español.
 
 ## «¡Volviste!»
 - Ausencia = 7+ días sin señal de vida (la registra la tarea del cron; si el cron no corrió, `/api/regreso` la reconoce con la

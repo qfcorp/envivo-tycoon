@@ -16,7 +16,7 @@ putenv('ENVIVO_CONFIG=' . $TMP . '/config.env');
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Ajustes, Db, Fallo, GranProduccion as GP, Push, Social};
+use EnVivo\{Ajustes, Chat, Db, Fallo, GranProduccion as GP, Push, Social};
 
 $OK = 0; $FALLAS = 0;
 function titulo(string $t): void { echo "\n== $t\n"; }
@@ -109,6 +109,22 @@ check('Chica (1 miembro): metas 4/4/6', [1, 4, 4, 6], [(int) $gB['activos'], (in
 check('Foto del contador de eventos de cada miembro', [40, 10, null], [(int) Db::valor('SELECT ultimo_eventos FROM gp_miembros WHERE jugador_id = ?', [$A1]),
     (int) Db::valor('SELECT ultimo_eventos FROM gp_miembros WHERE jugador_id = ?', [$A2]), Db::valor('SELECT ultimo_eventos FROM gp_miembros WHERE jugador_id = ?', [$A3])]);
 check('Aviso en el chat de cada asociación', 3, (int) Db::valor("SELECT COUNT(*) FROM chat_mensajes WHERE canal LIKE 'asociacion:%' AND jugador_id IS NULL AND texto LIKE '%Empieza la Gran Producción%'"));
+$tj = json_decode((string) Db::valor("SELECT textos_json FROM chat_mensajes WHERE canal = ? AND jugador_id IS NULL ORDER BY id DESC LIMIT 1", ['asociacion:' . $AG]), true) ?: [];
+check('Aviso del chat en los 10 idiomas (textos_json), con el tema traducido', [Push::IDIOMAS, true, true],
+    [array_keys($tj), str_contains($tj['en'] ?? '', 'Stars of the Airwaves Gala'), str_contains($tj['es'] ?? '', 'Gala de las Estrellas del Aire')]);
+$_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'en-US,en;q=0.9';
+$ult = fn(array $r) => (string) (end($r['mensajes'])['texto'] ?? '');
+check('Chat::leer muestra el aviso en el idioma de quien lee (Accept-Language: en)', true, str_starts_with($ult(Chat::leer($A1, 'asociacion', 0)), '🎬 The Big Production begins!'));
+$_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'es-EC';
+check('… y en español con Accept-Language es', true, str_starts_with($ult(Chat::leer($A1, 'asociacion', 0)), '🎬 ¡Empieza la Gran Producción!'));
+unset($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+$faltan = [];
+foreach (GP::TEXTOS as $L => $x) foreach (GP::TEXTOS['es'] as $k => $v) {
+    preg_match_all('/\{\w+\}/', $v, $a); preg_match_all('/\{\w+\}/', $x[$k] ?? '', $b); sort($a[0]); sort($b[0]);
+    if (!isset($x[$k]) || $a[0] !== $b[0]) $faltan[] = "$L.$k";
+}
+foreach (array_diff(Push::IDIOMAS, ['es']) as $L) { if (array_keys(GP::TEMA_NOMBRES[$L] ?? []) !== array_keys(GP::TEMAS)) $faltan[] = "$L.temas"; if (array_keys(GP::NIVEL_NOMBRES[$L] ?? []) !== array_keys(GP::NOMBRE_NIVEL)) $faltan[] = "$L.niveles"; }
+check('Textos de la Gran Producción (push y chat), temas y niveles en los 10 idiomas con los mismos marcadores', [[], Push::IDIOMAS], [$faltan, array_keys(GP::TEXTOS)]);
 check('Otro tick no crea otra', 1, (int) Db::valor('SELECT COUNT(*) FROM gp_producciones'));
 check('Sin próxima mientras corre', null, GP::proxima());
 
@@ -192,7 +208,12 @@ check('premiosPara(participacion, 1): sin extra de puesto', false, (bool) array_
 titulo('Avisos push (inicio y faltan 2 h)');
 $reloj($ts('2026-11-13 18:30:00'));   // volver atrás no es posible en la vida real: se simula con la marca sin poner
 Db::q('UPDATE gp_producciones SET push_inicio = 0');
+Db::q("UPDATE push_suscripciones SET idioma = 'en' WHERE jugador_id = ?", [$A2]);   // Beto juega en inglés
 $k = GP::detectarPush();
+check('Inicio en el idioma del aparato: Beto en inglés, Ana en español', ['🎬 The Big Production begins!', true, '🎬 ¡Empieza la Gran Producción!'],
+    [Db::valor("SELECT titulo FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' AND jugador_id = ?", [$A2]),
+     str_contains((string) Db::valor("SELECT cuerpo FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' AND jugador_id = ?", [$A2]), 'Stars of the Airwaves Gala'),
+     Db::valor("SELECT titulo FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' AND jugador_id = ?", [$A1])]);
 check('Inicio: aviso a los 4 socios suscritos', 4, (int) Db::valor("SELECT COUNT(*) FROM push_cola WHERE clave = 'gp:2026-11-13:inicio'"));
 check('Categoría liga (obedece el interruptor de Duelos y Liga) y abre la pantalla', ['liga', '/?ir=gran'], array_values(Db::fila("SELECT categoria, url FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' LIMIT 1")));
 GP::detectarPush();

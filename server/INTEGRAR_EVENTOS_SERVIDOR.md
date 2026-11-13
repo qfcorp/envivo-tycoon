@@ -78,5 +78,5 @@ pruebas `EventosServidor::fijarReloj($t)` / `ENVIVO_PRUEBA_AHORA` con `server/te
 
 ## Falta
 
-- Traducir los textos `evs.*`, los de `js/datos.js` y `errores_nuevos/eventos_servidor.json` (pasada final).
+- Traducir los textos `evs.*` y los de `js/datos.js` (pasada final). `errores_nuevos/eventos_servidor.json` ya está en los 10 idiomas.
 - Crear en Play Console las tarjetas de `docs/play_store/contenido_promocional.md` con su imagen 1920×1080.

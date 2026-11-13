@@ -80,8 +80,17 @@ final class Chat
         $vip = $m['vip_hasta'] !== null && (int) $m['vip_hasta'] > time();
         return ['id' => (int) $m['id'], 'jugador_id' => $m['jugador_id'] === null ? null : (int) $m['jugador_id'],
                 'alias' => $m['jugador_id'] === null ? 'EN VIVO' : Social::nombrePublico($m['alias'], $m['nombre']),
-                'siglas' => $m['siglas'], 'color' => $m['color'], 'cargo' => $m['cargo'], 'vip' => $vip, 'vip_nivel' => (int) ($m['vip_nivel'] ?? 0), 'texto' => $m['texto'], 'rapido' => $m['rapido'],
+                'siglas' => $m['siglas'], 'color' => $m['color'], 'cargo' => $m['cargo'], 'vip' => $vip, 'vip_nivel' => (int) ($m['vip_nivel'] ?? 0), 'texto' => self::textoEnIdioma($m), 'rapido' => $m['rapido'],
                 'creado' => Db::iso((int) $m['creado']), 'mio' => $m['jugador_id'] !== null && (int) $m['jugador_id'] === $yo];
+    }
+
+    /** Avisos del juego con textos_json (GranProduccion): el del idioma de quien lee (Accept-Language); si no, "texto" (español). */
+    private static function textoEnIdioma(array $m): string
+    {
+        if ($m['jugador_id'] !== null || empty($m['textos_json'])) return (string) $m['texto'];
+        $t = json_decode((string) $m['textos_json'], true);
+        $L = CorreoPlantillas::idiomaDeCabecera((string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
+        return is_array($t) && isset($t[$L]) && is_string($t[$L]) && $t[$L] !== '' ? $t[$L] : (string) $m['texto'];
     }
 
     /** GET /api/chat?canal=&desde= -> mensajes más nuevos que "desde" (máx. 50; con desde=0, los últimos 50). */

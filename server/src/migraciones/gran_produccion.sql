@@ -79,3 +79,7 @@ CREATE TABLE IF NOT EXISTS gp_premios (
     creado INTEGER NOT NULL,
     PRIMARY KEY (produccion_id, jugador_id)
 );
+
+-- Avisos del juego en el chat con su texto en los 10 idiomas ({"es": "...", "en": "...", ...}): Chat::mensajeJson muestra el
+-- del idioma de quien lee (Accept-Language) y, si falta, la columna texto (español). Lo usa GranProduccion::chatAsoc.
+ALTER TABLE chat_mensajes ADD COLUMN textos_json TEXT;

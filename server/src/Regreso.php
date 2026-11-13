@@ -72,21 +72,162 @@ final class Regreso
      */
     public const OFERTAS = ['regreso_s' => 0, 'regreso_m' => 3, 'regreso_l' => 8];
 
-    /** Textos (solo español por ahora; se traducen en la pasada final). Marcadores: {puesto}, {dias}, {creditos}. */
+    /**
+     * Textos de los avisos en los 10 idiomas del juego (el del aparato del jugador: Push::idiomaJugador; si falta, español).
+     * Cada plantilla tiene la MISMA cantidad de variantes en todos los idiomas (se elige sin azar por jugador y clave).
+     * Marcadores: {puesto}, {dias}, {creditos}. MegaVisión es la rival del juego: no se traduce.
+     */
     public const TEXTOS = [
-        'dia1' => [['Tu equipo está listo', 'Llegaron contratos nuevos a tu productora. ¿Cubres el siguiente evento? 🎥'],
-                   ['Clientes nuevos', 'Hay ofertas nuevas esperando en tu productora. Elige la que más te convenga.']],
-        'dia2' => [['Tu premio diario está listo', 'Entra a reclamar el premio de hoy en tu productora.']],
-        'dia2_grande' => [['Tu premio del día 2 está listo', 'Hoy toca un premio grande: dinero, cables y créditos para tu productora.']],
-        'dia3' => [['MegaVisión anda cerca', 'La productora rival ya busca a tus clientes. Arma tu equipo para cuando te dispute un contrato.'],
-                   ['Se viene MegaVisión', 'Tu rival quiere quedarse con los mejores contratos. ¿Le haces frente?']],
-        'liga2h' => [['Faltan 2 h para cerrar la Liga', 'Tu asociación va en el puesto {puesto}. Todavía puedes sumar puntos.']],
-        'liga2h_sin' => [['Faltan 2 h para cerrar la Liga', 'Todavía puedes sumar puntos para tu asociación esta semana.']],
-        'duelo2h' => [['Faltan 2 h para cerrar los Duelos', 'Vas en el puesto {puesto} de tu servidor en la temporada de Duelos.']],
-        'regreso3' => [['Tu equipo te espera', 'Hay contratos nuevos en tu productora. Vuelve cuando quieras.'],
-                       ['El público pregunta por ti', 'Hace {dias} días que no sales en vivo. ¿Un evento rápido?']],
-        'regreso7' => [['Tu productora te extraña', 'Te guardamos un regalo de regreso: {creditos} créditos y más. Entra a recibirlo.']],
-        'regreso14' => [['Tu regalo de regreso creció', 'Ya son {creditos} créditos y más para tu productora. Te esperamos.']],
+        'es' => [
+            'dia1' => [['Tu equipo está listo', 'Llegaron contratos nuevos a tu productora. ¿Cubres el siguiente evento? 🎥'],
+                       ['Clientes nuevos', 'Hay ofertas nuevas esperando en tu productora. Elige la que más te convenga.']],
+            'dia2' => [['Tu premio diario está listo', 'Entra a reclamar el premio de hoy en tu productora.']],
+            'dia2_grande' => [['Tu premio del día 2 está listo', 'Hoy toca un premio grande: dinero, cables y créditos para tu productora.']],
+            'dia3' => [['MegaVisión anda cerca', 'La productora rival ya busca a tus clientes. Arma tu equipo para cuando te dispute un contrato.'],
+                       ['Se viene MegaVisión', 'Tu rival quiere quedarse con los mejores contratos. ¿Le haces frente?']],
+            'liga2h' => [['Faltan 2 h para cerrar la Liga', 'Tu asociación va en el puesto {puesto}. Todavía puedes sumar puntos.']],
+            'liga2h_sin' => [['Faltan 2 h para cerrar la Liga', 'Todavía puedes sumar puntos para tu asociación esta semana.']],
+            'duelo2h' => [['Faltan 2 h para cerrar los Duelos', 'Vas en el puesto {puesto} de tu servidor en la temporada de Duelos.']],
+            'regreso3' => [['Tu equipo te espera', 'Hay contratos nuevos en tu productora. Vuelve cuando quieras.'],
+                           ['El público pregunta por ti', 'Hace {dias} días que no sales en vivo. ¿Un evento rápido?']],
+            'regreso7' => [['Tu productora te extraña', 'Te guardamos un regalo de regreso: {creditos} créditos y más. Entra a recibirlo.']],
+            'regreso14' => [['Tu regalo de regreso creció', 'Ya son {creditos} créditos y más para tu productora. Te esperamos.']],
+        ],
+        'en' => [
+            'dia1' => [['Your crew is ready', 'New contracts just landed at your studio. Will you cover the next event? 🎥'],
+                       ['New clients', 'Fresh offers are waiting at your studio. Pick the one that suits you best.']],
+            'dia2' => [['Your daily reward is ready', 'Hop in and claim today\'s reward at your studio.']],
+            'dia2_grande' => [['Your day 2 reward is ready', 'Today it\'s a big one: money, cables and credits for your studio.']],
+            'dia3' => [['MegaVisión is close', 'The rival studio is already chasing your clients. Build your crew before they fight you for a contract.'],
+                       ['MegaVisión is coming', 'Your rival wants the best contracts. Will you stand up to them?']],
+            'liga2h' => [['2 h left in the League', 'Your alliance is in place {puesto}. You can still score points.']],
+            'liga2h_sin' => [['2 h left in the League', 'You can still score points for your alliance this week.']],
+            'duelo2h' => [['2 h left in the Duels', 'You\'re in place {puesto} on your server in the Duels season.']],
+            'regreso3' => [['Your crew is waiting', 'There are new contracts at your studio. Come back anytime.'],
+                           ['The audience is asking for you', 'You haven\'t gone live in {dias} days. A quick event?']],
+            'regreso7' => [['Your studio misses you', 'We saved you a welcome-back gift: {creditos} credits and more. Hop in to get it.']],
+            'regreso14' => [['Your welcome-back gift grew', 'Now it\'s {creditos} credits and more for your studio. See you soon.']],
+        ],
+        'pt-BR' => [
+            'dia1' => [['Sua equipe está pronta', 'Chegaram contratos novos na sua produtora. Vai cobrir o próximo evento? 🎥'],
+                       ['Clientes novos', 'Há ofertas novas esperando na sua produtora. Escolha a que mais combina com você.']],
+            'dia2' => [['Seu prêmio diário está pronto', 'Entre para resgatar o prêmio de hoje na sua produtora.']],
+            'dia2_grande' => [['Seu prêmio do dia 2 está pronto', 'Hoje o prêmio é grande: dinheiro, cabos e créditos para sua produtora.']],
+            'dia3' => [['A MegaVisión está por perto', 'A produtora rival já está atrás dos seus clientes. Monte sua equipe antes que ela dispute um contrato com você.'],
+                       ['Lá vem a MegaVisión', 'Sua rival quer ficar com os melhores contratos. Vai encarar?']],
+            'liga2h' => [['Faltam 2 h para fechar a Liga', 'Sua aliança está na posição {puesto}. Ainda dá para somar pontos.']],
+            'liga2h_sin' => [['Faltam 2 h para fechar a Liga', 'Ainda dá para somar pontos para sua aliança nesta semana.']],
+            'duelo2h' => [['Faltam 2 h para fechar os Duelos', 'Você está na posição {puesto} do seu servidor na temporada de Duelos.']],
+            'regreso3' => [['Sua equipe espera por você', 'Há contratos novos na sua produtora. Volte quando quiser.'],
+                           ['O público pergunta por você', 'Faz {dias} dias que você não entra ao vivo. Um evento rápido?']],
+            'regreso7' => [['Sua produtora sente sua falta', 'Guardamos um presente de volta para você: {creditos} créditos e mais. Entre para receber.']],
+            'regreso14' => [['Seu presente de volta cresceu', 'Agora são {creditos} créditos e mais para sua produtora. Esperamos você.']],
+        ],
+        'fr' => [
+            'dia1' => [['Ton équipe est prête', 'De nouveaux contrats sont arrivés dans ta boîte de prod. Tu couvres le prochain événement ? 🎥'],
+                       ['Nouveaux clients', 'De nouvelles offres t\'attendent dans ta boîte de prod. Choisis celle qui te convient le mieux.']],
+            'dia2' => [['Ta récompense du jour est prête', 'Viens récupérer la récompense du jour dans ta boîte de prod.']],
+            'dia2_grande' => [['Ta récompense du jour 2 est prête', 'Aujourd\'hui, c\'est une grosse récompense : argent, câbles et crédits pour ta boîte de prod.']],
+            'dia3' => [['MegaVisión rôde', 'La boîte rivale cherche déjà à te piquer tes clients. Monte ton équipe avant qu\'elle te dispute un contrat.'],
+                       ['MegaVisión arrive', 'Ta rivale veut rafler les meilleurs contrats. Tu lui tiens tête ?']],
+            'liga2h' => [['Plus que 2 h avant la fin de la Ligue', 'Ton alliance est à la place {puesto}. Tu peux encore marquer des points.']],
+            'liga2h_sin' => [['Plus que 2 h avant la fin de la Ligue', 'Tu peux encore marquer des points pour ton alliance cette semaine.']],
+            'duelo2h' => [['Plus que 2 h avant la fin des Duels', 'Tu es à la place {puesto} de ton serveur dans la saison des Duels.']],
+            'regreso3' => [['Ton équipe t\'attend', 'De nouveaux contrats t\'attendent dans ta boîte de prod. Reviens quand tu veux.'],
+                           ['Le public te réclame', 'Ça fait {dias} jours que tu n\'es pas passé en direct. Un événement rapide ?']],
+            'regreso7' => [['Ta boîte de prod te manque', 'On t\'a gardé un cadeau de retour : {creditos} crédits et plus encore. Viens le récupérer.']],
+            'regreso14' => [['Ton cadeau de retour a grandi', 'C\'est maintenant {creditos} crédits et plus pour ta boîte de prod. On t\'attend.']],
+        ],
+        'de' => [
+            'dia1' => [['Dein Team ist bereit', 'Neue Aufträge sind bei deiner Produktion eingetroffen. Übernimmst du das nächste Event? 🎥'],
+                       ['Neue Kunden', 'Neue Angebote warten bei deiner Produktion. Such dir das beste aus.']],
+            'dia2' => [['Deine Tagesbelohnung ist bereit', 'Schau rein und hol dir die Belohnung von heute.']],
+            'dia2_grande' => [['Deine Belohnung für Tag 2 ist bereit', 'Heute gibt\'s was Großes: Geld, Kabel und Credits für deine Produktion.']],
+            'dia3' => [['MegaVisión ist in der Nähe', 'Die rivalisierende Produktion jagt schon deine Kunden. Stell dein Team auf, bevor sie dir einen Auftrag streitig macht.'],
+                       ['MegaVisión kommt', 'Dein Rivale will die besten Aufträge. Stellst du dich ihm?']],
+            'liga2h' => [['Noch 2 h bis Liga-Schluss', 'Deine Allianz steht auf Platz {puesto}. Du kannst noch Punkte holen.']],
+            'liga2h_sin' => [['Noch 2 h bis Liga-Schluss', 'Du kannst diese Woche noch Punkte für deine Allianz holen.']],
+            'duelo2h' => [['Noch 2 h bis Duell-Schluss', 'Du stehst in der Duell-Saison auf Platz {puesto} deines Servers.']],
+            'regreso3' => [['Dein Team wartet', 'Neue Aufträge warten bei deiner Produktion. Komm zurück, wann du willst.'],
+                           ['Das Publikum fragt nach dir', 'Du warst seit {dias} Tagen nicht live. Ein schnelles Event?']],
+            'regreso7' => [['Deine Produktion vermisst dich', 'Wir haben dir ein Willkommen-zurück-Geschenk aufgehoben: {creditos} Credits und mehr. Hol es dir.']],
+            'regreso14' => [['Dein Geschenk ist gewachsen', 'Jetzt sind es {creditos} Credits und mehr für deine Produktion. Wir warten auf dich.']],
+        ],
+        'it' => [
+            'dia1' => [['La tua squadra è pronta', 'Sono arrivati nuovi contratti alla tua casa di produzione. Copri il prossimo evento? 🎥'],
+                       ['Nuovi clienti', 'Ci sono nuove offerte che ti aspettano. Scegli quella che ti conviene di più.']],
+            'dia2' => [['Il premio giornaliero è pronto', 'Entra a riscattare il premio di oggi nella tua casa di produzione.']],
+            'dia2_grande' => [['Il premio del giorno 2 è pronto', 'Oggi tocca un premio grande: denaro, cavi e crediti per la tua casa di produzione.']],
+            'dia3' => [['MegaVisión è vicina', 'La casa rivale sta già puntando i tuoi clienti. Prepara la squadra prima che ti contenda un contratto.'],
+                       ['Arriva MegaVisión', 'La tua rivale vuole i contratti migliori. Le tieni testa?']],
+            'liga2h' => [['Mancano 2 h alla chiusura della Lega', 'La tua alleanza è al posto {puesto}. Puoi ancora fare punti.']],
+            'liga2h_sin' => [['Mancano 2 h alla chiusura della Lega', 'Puoi ancora fare punti per la tua alleanza questa settimana.']],
+            'duelo2h' => [['Mancano 2 h alla chiusura dei Duelli', 'Sei al posto {puesto} del tuo server nella stagione dei Duelli.']],
+            'regreso3' => [['La tua squadra ti aspetta', 'Ci sono nuovi contratti nella tua casa di produzione. Torna quando vuoi.'],
+                           ['Il pubblico chiede di te', 'Sono {dias} giorni che non vai in onda. Un evento veloce?']],
+            'regreso7' => [['La tua casa di produzione ti aspetta', 'Ti abbiamo tenuto un regalo di ritorno: {creditos} crediti e altro. Entra a ritirarlo.']],
+            'regreso14' => [['Il tuo regalo di ritorno è cresciuto', 'Ora sono {creditos} crediti e altro per la tua casa di produzione. Ti aspettiamo.']],
+        ],
+        'ru' => [
+            'dia1' => [['Команда готова', 'В твою студию пришли новые контракты. Возьмёшься за следующее событие? 🎥'],
+                       ['Новые клиенты', 'В студии ждут новые предложения. Выбери самое выгодное.']],
+            'dia2' => [['Ежедневная награда готова', 'Заходи и забери сегодняшнюю награду в своей студии.']],
+            'dia2_grande' => [['Награда 2-го дня готова', 'Сегодня большая награда: деньги, кабели и кредиты для твоей студии.']],
+            'dia3' => [['MegaVisión рядом', 'Студия-соперник уже охотится за твоими клиентами. Собери команду, пока она не перехватила контракт.'],
+                       ['На подходе MegaVisión', 'Соперник хочет забрать лучшие контракты. Дашь отпор?']],
+            'liga2h' => [['До конца Лиги 2 ч', 'Твой альянс на {puesto}-м месте. Ещё можно набрать очки.']],
+            'liga2h_sin' => [['До конца Лиги 2 ч', 'На этой неделе ещё можно набрать очки для альянса.']],
+            'duelo2h' => [['До конца Дуэлей 2 ч', 'Ты на {puesto}-м месте своего сервера в сезоне Дуэлей.']],
+            'regreso3' => [['Команда ждёт тебя', 'В студии новые контракты. Возвращайся когда угодно.'],
+                           ['Зрители спрашивают о тебе', 'Дней без эфира: {dias}. Быстрое событие?']],
+            'regreso7' => [['Твоя студия скучает', 'Мы приберегли подарок за возвращение: {creditos} кредитов и не только. Заходи за ним.']],
+            'regreso14' => [['Подарок за возвращение вырос', 'Теперь это {creditos} кредитов и не только для твоей студии. Ждём тебя.']],
+        ],
+        'tr' => [
+            'dia1' => [['Ekibin hazır', 'Yapım şirketine yeni sözleşmeler geldi. Sıradaki etkinliği sen mi çekiyorsun? 🎥'],
+                       ['Yeni müşteriler', 'Yapım şirketinde yeni teklifler seni bekliyor. Sana en uygun olanı seç.']],
+            'dia2' => [['Günlük ödülün hazır', 'Gir ve bugünün ödülünü al.']],
+            'dia2_grande' => [['2. gün ödülün hazır', 'Bugün büyük ödül var: yapım şirketin için para, kablo ve kredi.']],
+            'dia3' => [['MegaVisión yakında', 'Rakip yapımcı şimdiden müşterilerinin peşinde. Sana bir sözleşme için rakip çıkmadan ekibini kur.'],
+                       ['MegaVisión geliyor', 'Rakibin en iyi sözleşmeleri kapmak istiyor. Karşısında duracak mısın?']],
+            'liga2h' => [['Ligin kapanmasına 2 saat', 'İttifakın {puesto}. sırada. Hâlâ puan toplayabilirsin.']],
+            'liga2h_sin' => [['Ligin kapanmasına 2 saat', 'Bu hafta ittifakın için hâlâ puan toplayabilirsin.']],
+            'duelo2h' => [['Düellolar 2 saat sonra kapanıyor', 'Düello sezonunda sunucunda {puesto}. sıradasın.']],
+            'regreso3' => [['Ekibin seni bekliyor', 'Yapım şirketinde yeni sözleşmeler var. İstediğin zaman dön.'],
+                           ['Seyirci seni soruyor', '{dias} gündür canlı yayına çıkmadın. Hızlı bir etkinlik?']],
+            'regreso7' => [['Yapım şirketin seni özledi', 'Sana bir geri dönüş hediyesi ayırdık: {creditos} kredi ve fazlası. Gir ve al.']],
+            'regreso14' => [['Geri dönüş hediyen büyüdü', 'Artık yapım şirketin için {creditos} kredi ve fazlası var. Seni bekliyoruz.']],
+        ],
+        'id' => [
+            'dia1' => [['Timmu sudah siap', 'Kontrak baru masuk ke rumah produksimu. Mau meliput acara berikutnya? 🎥'],
+                       ['Klien baru', 'Ada tawaran baru menunggu di rumah produksimu. Pilih yang paling cocok.']],
+            'dia2' => [['Hadiah harianmu siap', 'Masuk dan klaim hadiah hari ini di rumah produksimu.']],
+            'dia2_grande' => [['Hadiah hari ke-2 siap', 'Hari ini hadiahnya besar: uang, kabel, dan kredit untuk rumah produksimu.']],
+            'dia3' => [['MegaVisión mendekat', 'Rumah produksi rival sudah mengincar klienmu. Siapkan timmu sebelum mereka merebut kontrak.'],
+                       ['MegaVisión datang', 'Rivalmu ingin merebut kontrak terbaik. Berani melawan?']],
+            'liga2h' => [['Liga tutup 2 jam lagi', 'Aliansimu ada di peringkat {puesto}. Kamu masih bisa menambah poin.']],
+            'liga2h_sin' => [['Liga tutup 2 jam lagi', 'Kamu masih bisa menambah poin untuk aliansimu minggu ini.']],
+            'duelo2h' => [['Duel tutup 2 jam lagi', 'Kamu ada di peringkat {puesto} servermu di musim Duel.']],
+            'regreso3' => [['Timmu menunggu', 'Ada kontrak baru di rumah produksimu. Kembali kapan saja.'],
+                           ['Penonton menanyakanmu', 'Sudah {dias} hari kamu tidak siaran. Acara singkat?']],
+            'regreso7' => [['Rumah produksimu rindu', 'Kami menyimpan hadiah kembali untukmu: {creditos} kredit dan lainnya. Masuk untuk mengambilnya.']],
+            'regreso14' => [['Hadiah kembalimu bertambah', 'Sekarang {creditos} kredit dan lainnya untuk rumah produksimu. Kami menunggumu.']],
+        ],
+        'zh-CN' => [
+            'dia1' => [['团队已就绪', '你的公司来了新合同。要接下一场活动吗？🎥'],
+                       ['新客户上门', '你的公司有新的邀约在等你，挑个最合适的吧。']],
+            'dia2' => [['每日奖励已就绪', '快来领取今天的奖励。']],
+            'dia2_grande' => [['第 2 天奖励已就绪', '今天是大奖：给你的公司送上资金、线缆和点数。']],
+            'dia3' => [['MegaVisión 逼近了', '对手公司已经在抢你的客户。趁它还没来争合同，先把团队组好。'],
+                       ['MegaVisión 来了', '你的对手想拿下最好的合同。你要迎战吗？']],
+            'liga2h' => [['联赛还有 2 小时结束', '你的联盟目前排第 {puesto} 名，还能继续得分。']],
+            'liga2h_sin' => [['联赛还有 2 小时结束', '本周你还能为联盟继续得分。']],
+            'duelo2h' => [['对决还有 2 小时结束', '本赛季对决中，你在服务器排第 {puesto} 名。']],
+            'regreso3' => [['团队在等你', '你的公司有新合同，随时回来。'],
+                           ['观众在问你', '你已经 {dias} 天没直播了。来一场快速活动？']],
+            'regreso7' => [['你的公司想你了', '我们为你准备了回归礼物：{creditos} 点数等。快来领取。']],
+            'regreso14' => [['回归礼物升级了', '现在有 {creditos} 点数等着你的公司。等你回来。']],
+        ],
     ];
 
     private static ?int $reloj = null;
@@ -267,7 +408,8 @@ final class Regreso
     /** Texto elegido sin azar (por jugador y clave): siempre el mismo para el mismo aviso. */
     private static function texto(string $plantilla, int $j, string $clave, array $vars = []): array
     {
-        $l = self::TEXTOS[$plantilla];
+        $L = Push::idiomaJugador($j);
+        $l = self::TEXTOS[$L][$plantilla] ?? self::TEXTOS['es'][$plantilla];
         $x = $l[hexdec(substr(hash('crc32b', $j . '|' . $clave), 0, 6)) % count($l)];
         $f = fn(string $s) => preg_replace_callback('/\{(\w+)\}/', fn($m) => array_key_exists($m[1], $vars) ? (string) $vars[$m[1]] : $m[0], $s) ?? $s;
         return [$f($x[0]), $f($x[1])];
@@ -413,7 +555,7 @@ final class Regreso
         // Se marca ANTES de mandar (dos corridas a la vez no mandan dos correos)
         if (Db::q('UPDATE regreso_ausencias SET correo = ? WHERE id = ? AND correo IS NULL', [self::ahora(), $ab['id']])->rowCount() !== 1) return false;
         $nivel = self::nivel($dias);
-        $idioma = self::hayTabla('push_suscripciones') ? (string) (Db::valor('SELECT idioma FROM push_suscripciones WHERE jugador_id = ? ORDER BY visto DESC LIMIT 1', [$j]) ?: 'es') : 'es';
+        $idioma = Push::idiomaJugador($j);
         $m = CorreoPlantillas::armar('regreso', $idioma, ['nombre' => (string) $c['nombre'], 'creditos' => self::REGALOS[$nivel]['creditos'], 'dias' => $dias,
             'enlace' => rtrim(Config::get('ENVIVO_URL', 'https://juego.tukanec.com'), '/') . '/', 'baja' => self::enlaceBaja($j)]);
         $ok = Correo::enviar((string) $c['email'], $m['asunto'], $m['html'], $m['texto']);
