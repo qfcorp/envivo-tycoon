@@ -42,6 +42,7 @@ const SHELL = [
   './js/mercado.js',
   './js/chat.js',
   './js/ayuda_asoc.js', // ayudas de un toque, investigación y tienda de la asociación
+  './js/gran_produccion.js', // Gran Producción de Asociación (evento de equipo semanal)
   './js/intento.js',    // eventos en línea (copia de server/validador/intento.js)
   './js/liga.js',       // Liga Semanal
   './js/festival.js',   // Mega Festival

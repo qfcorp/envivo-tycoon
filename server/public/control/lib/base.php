@@ -24,6 +24,7 @@ const CC_PESTANAS = [
     'analitica' => 'Analítica',
     'push' => 'Notificaciones',   // server/INTEGRAR_PUSH.md (lib/push.php)
     'buzon' => 'Buzón y códigos',
+    'gran' => 'Gran Producción',   // server/INTEGRAR_GRAN_PRODUCCION.md (lib/gran_produccion.php)
 ];
 
 function e(mixed $t): string { return Http::e($t === null ? '' : (string) $t); }

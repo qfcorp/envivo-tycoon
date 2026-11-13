@@ -19,6 +19,7 @@ foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'so
 require __DIR__ . '/lib/analitica.php';   // pestaña Analítica (server/INTEGRAR_ANALITICA.md)
 require __DIR__ . '/lib/buzon.php';   // Buzón y códigos (server/INTEGRAR_BUZON.md)
 require __DIR__ . '/lib/promo.php';   // Black Friday: VIP 30 días gratis (src/BlackFriday.php), en la pestaña Buzón y códigos
+require __DIR__ . '/lib/gran_produccion.php';   // Gran Producción de Asociación (server/INTEGRAR_GRAN_PRODUCCION.md)
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 
@@ -68,6 +69,7 @@ try {
         'analitica' => cc_t_analitica(),
         'push' => cc_t_push(),
         'buzon' => cc_t_buzon(),
+        'gran' => cc_t_gran(),
     };
     cc_pagina(CC_PESTANAS[$t], $t, $cuerpo);
 } catch (\Throwable $e) {
@@ -157,6 +159,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'push_') => cc_a_push($accion, $q),
             str_starts_with($accion, 'buzon_') => cc_a_buzon($accion, $q),
             str_starts_with($accion, 'promo_') => cc_a_promo($accion, $q),
+            str_starts_with($accion, 'gp_') => cc_a_gran($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);

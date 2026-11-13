@@ -383,7 +383,14 @@
     "promo_ya_reclamada": "existe · BlackFriday.php · 409 · texto en español en todos los idiomas hasta la traducción final",
     "promo_dispositivo": "existe · BlackFriday.php · 409 (otra cuenta ya lo reclamó desde esta instalación del juego) · texto en español en todos los idiomas hasta la traducción final",
     "promo_conexion": "existe · BlackFriday.php · 409 (tope de cuentas por conexión, ajuste bf_ip_max) · texto en español en todos los idiomas hasta la traducción final",
-    "cupo_invalido": "existe · BlackFriday.php guardar (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final"
+    "cupo_invalido": "existe · BlackFriday.php guardar (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final",
+    "gp_no_hay": "existe · GranProduccion.php (POST /api/gran/aportar; pausar/reanudar/cancelar del panel) · 409 · texto en español en todos los idiomas hasta la traducción final",
+    "gp_pausada": "existe · GranProduccion.php · 409 · texto en español en todos los idiomas hasta la traducción final",
+    "gp_miembro_nuevo": "existe · GranProduccion.php · 409 · extra.espera (segundos) · texto en español en todos los idiomas hasta la traducción final",
+    "gp_otra_asociacion": "existe · GranProduccion.php · 409 (ya aportó con otra asociación en esta producción) · texto en español en todos los idiomas hasta la traducción final",
+    "gp_tope": "existe · GranProduccion.php · 409 · extra.max · texto en español en todos los idiomas hasta la traducción final",
+    "gp_espera": "existe · GranProduccion.php · 409 · extra.espera (segundos hasta el próximo turno) · texto en español en todos los idiomas hasta la traducción final",
+    "gp_config": "existe · GranProduccion.php guardarConfig (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -767,7 +774,14 @@
     "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
     "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
     "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
-    "cupo_invalido": "El cupo no es válido."
+    "cupo_invalido": "El cupo no es válido.",
+    "gp_no_hay": "No hay una Gran Producción en curso.",
+    "gp_pausada": "La Gran Producción está en pausa. Vuelve en un rato.",
+    "gp_miembro_nuevo": "Llevas menos de 24 horas en tu asociación: todavía no puedes aportar.",
+    "gp_otra_asociacion": "En esta Gran Producción ya aportaste con otra asociación.",
+    "gp_tope": "Ya aportaste todo lo que se puede en este frente.",
+    "gp_espera": "Tu próximo turno todavía no llega.",
+    "gp_config": "Revisa el horario de la Gran Producción."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
