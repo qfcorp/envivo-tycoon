@@ -23,6 +23,7 @@ require __DIR__ . '/lib/eventos_servidor.php';   // Eventos del servidor y advie
 require __DIR__ . '/lib/invitar.php';   // Invitar y aliados (src/Invitaciones.php, src/Aliados.php, INTEGRAR_INVITAR.md)
 require __DIR__ . '/lib/regreso.php';   // Avisos por etapa y regreso (src/Regreso.php), en la pestaña Notificaciones
 require __DIR__ . '/lib/novato.php';  // Tus primeros 7 días (src/RutaNovato.php): avance por día en la pestaña Analítica
+require __DIR__ . '/lib/gran_produccion.php';   // Gran Producción de Asociación (server/INTEGRAR_GRAN_PRODUCCION.md)
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 
@@ -74,6 +75,7 @@ try {
         'buzon' => cc_t_buzon(),
         'eventos' => cc_t_eventos(),
         'aliados' => cc_t_aliados(),
+        'gran' => cc_t_gran(),
     };
     cc_pagina(CC_PESTANAS[$t], $t, $cuerpo);
 } catch (\Throwable $e) {
@@ -166,6 +168,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'eventos_') => cc_a_eventos($accion, $q),
             str_starts_with($accion, 'aliados_') => cc_a_aliados($accion, $q),
             str_starts_with($accion, 'regreso_') => cc_a_regreso($accion, $q),
+            str_starts_with($accion, 'gp_') => cc_a_gran($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);

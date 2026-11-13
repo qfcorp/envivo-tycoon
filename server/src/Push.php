@@ -628,6 +628,10 @@ final class Push
                 error_log('EN VIVO push detector ' . $d . ': ' . mb_substr($e->getMessage(), 0, 300));
             }
         }
+        // Gran Producción de Asociación (server/INTEGRAR_GRAN_PRODUCCION.md): aviso de inicio y "faltan 2 h"
+        if (class_exists(GranProduccion::class)) {
+            try { $n += GranProduccion::detectarPush(); } catch (\Throwable $e) { error_log('EN VIVO push detector gran: ' . mb_substr($e->getMessage(), 0, 300)); }
+        }
         return $n;
     }
 

@@ -411,7 +411,14 @@
     "novato_bloqueado": "existe · RutaNovato.php · 409 · extra.dia · texto en español en todos los idiomas hasta la traducción final",
     "novato_incompleto": "existe · RutaNovato.php · 409 · extra.hechos · texto en español en todos los idiomas hasta la traducción final",
     "mini_ya_activo": "existe · Pase.php · 409",
-    "banco_vacio": "existe · Pase.php · 409"
+    "banco_vacio": "existe · Pase.php · 409",
+    "gp_no_hay": "existe · GranProduccion.php (POST /api/gran/aportar; pausar/reanudar/cancelar del panel) · 409 · texto en español en todos los idiomas hasta la traducción final",
+    "gp_pausada": "existe · GranProduccion.php · 409 · texto en español en todos los idiomas hasta la traducción final",
+    "gp_miembro_nuevo": "existe · GranProduccion.php · 409 · extra.espera (segundos) · texto en español en todos los idiomas hasta la traducción final",
+    "gp_otra_asociacion": "existe · GranProduccion.php · 409 (ya aportó con otra asociación en esta producción) · texto en español en todos los idiomas hasta la traducción final",
+    "gp_tope": "existe · GranProduccion.php · 409 · extra.max · texto en español en todos los idiomas hasta la traducción final",
+    "gp_espera": "existe · GranProduccion.php · 409 · extra.espera (segundos hasta el próximo turno) · texto en español en todos los idiomas hasta la traducción final",
+    "gp_config": "existe · GranProduccion.php guardarConfig (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -823,7 +830,14 @@
     "novato_bloqueado": "Ese día todavía no se abre.",
     "novato_incompleto": "Primero reclama los premios de los 7 días.",
     "mini_ya_activo": "Ya tienes el Mini Pase de esta semana. El próximo se puede comprar el lunes.",
-    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando."
+    "banco_vacio": "Todavía no ganas otro cofre: sigue jugando.",
+    "gp_no_hay": "No hay una Gran Producción en curso.",
+    "gp_pausada": "La Gran Producción está en pausa. Vuelve en un rato.",
+    "gp_miembro_nuevo": "Llevas menos de 24 horas en tu asociación: todavía no puedes aportar.",
+    "gp_otra_asociacion": "En esta Gran Producción ya aportaste con otra asociación.",
+    "gp_tope": "Ya aportaste todo lo que se puede en este frente.",
+    "gp_espera": "Tu próximo turno todavía no llega.",
+    "gp_config": "Revisa el horario de la Gran Producción."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
