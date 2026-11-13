@@ -66,6 +66,8 @@ final class Fusiones
         'copa_equipos' => ['servidor_id' => 'mover_copa_preparacion'],
         'copa_intentos' => ['servidor_id' => 'mover_copa_preparacion'],
         'copa_cruces' => ['servidor_a' => 'historial', 'servidor_b' => 'historial'],
+        'evs_fichas' => ['servidor_id' => 'historial'],                      // eventos del servidor (EventosServidor.php): lo ya aportado queda en el origen
+        'evs_metas' => ['servidor_id' => 'historial'],
     ];
     /** Columnas que se consideran "de servidor" al buscar tablas nuevas que no estén en REGLAS. */
     private const COLUMNAS_SERVIDOR = ['servidor_id', 'servidor', 'servidor_a', 'servidor_b'];

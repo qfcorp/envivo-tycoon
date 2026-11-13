@@ -95,6 +95,72 @@
       } },
   ];
 
+  /* ---------- eventos_servidor: temporadas nuevas (idea 11: fútbol 2027 y Día de la Madre, nombres inventados) ----------
+     Mismas fechas que los eventos del servidor (server/src/EventosServidor.php CALENDARIO; tests/test_eventos_servidor.js lo
+     revisa). anios = [primero, último o null]: la Copa Global Femenina solo en 2027. Textos en js/datos.js (bloque eventos_servidor). */
+    // n-ésimo domingo del mes (día absoluto). El 1-1-1970 (día 0) fue jueves.
+  function domingo(y, mes, n) {
+    const z1 = diaAbs(y, mes, 1);
+    const dow = ((z1 + 4) % 7 + 7) % 7;   // 0 = domingo
+    return z1 + ((7 - dow) % 7) + 7 * (n - 1);
+  }
+  const FUT = { principal: ['principal', 'tribuna'], cerrada: ['cerrada', 'cerrada'], cerrada2: ['cerrada2', 'cerrada'], ai: ['arco_izq_alto', 'tribuna'],
+    ad: ['arco_der_alto', 'tribuna'], cancha: ['cancha', 'hombro'], contra: ['contraplano', 'tribuna'], lenta: ['superlenta', 'lenta'],
+    lenta2: ['superlenta2', 'lenta'], bi: ['baja_izq', 'fija'], bd: ['baja_der', 'fija'], steadi: ['steadicam', 'hombro'], cable: ['cablecam', 'aerea'], dron: ['dron', 'aerea'] };
+  const CREW_FINAL = 'director 1/1, productor 1/1, camarografo 4/5, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 1/1, shader 0/1, tecnico_transmision 1/1';
+  const REAL_FINAL = 'director 1/1, productor 1/2, camarografo 6/12, operador_ptz 1/3, cablero 3/6, sonidista 1/2, microfonista 1/1, operador_repeticion 2/3, operador_graficos 1/2, shader 1/2, tecnico_transmision 1/2, piloto_dron 0/1, coordinador_piso 1/2, runner 1/3';
+
+  /* Calendario: mismas fechas que EventosServidor::CALENDARIO (anios = [primero, último o null]) */
+  const NUEVAS = [
+    { key: 'dia_madre', icon: '💐', anios: [2027, null], calcular: (y) => { const d = domingo(y, 5, 2); return { desde: mmdd(d - 6), hasta: mmdd(d) }; },
+      overlay: 'corazones', pago: 1.4, cada: 2, max: 4, meta: { n: 2 }, premios: { dinero: 2000, fama: 3, cosmetico: 'evs_rosas' },
+      eventos: {
+        evs_serenata_madre: { icon: '💐', escena: 'concierto', posDe: 'concierto', cams: [2, 3], audio: true, stream: 1, outdoor: 0.5, diff: 3, pay: [1400, 3000],
+          clients: ['Municipio de Ambato', 'Radio Mamá Linda FM', 'Plaza Las Rosas Centro Comercial'],
+          crew: 'director 1/1, camarografo 2/3, cablero 0/1, sonidista 1/1, microfonista 0/1, tecnico_transmision 1/1, coordinador_piso 0/1',
+          positions: [['foh', 'tribuna'], ['abierta', 'fija'], ['foso', 'hombro'], ['jib', 'grua']],
+          req: [{ t: 'cams', n: 2 }] },
+      } },
+    { key: 'semana_finales', icon: '🏆', anios: [2027, null], desde: '05-24', hasta: '06-06',
+      overlay: 'confeti', pago: 1.5, cada: 2, max: 6, meta: { n: 3 }, premios: { dinero: 3000, fama: 4, cosmetico: 'evs_pantalla' },
+      eventos: {
+        evs_fan_fest: { icon: '📺', escena: 'concierto', posDe: 'concierto', cams: [3, 4], audio: true, stream: 1, outdoor: 1, diff: 4, pay: [2200, 4600],
+          clients: ['Fan Fest Plaza Grande', 'Canal Gol Internacional', 'Bar Deportivo El Golazo'],
+          crew: 'director 1/1, productor 1/1, camarografo 3/4, cablero 1/1, sonidista 1/1, operador_graficos 0/1, piloto_dron 0/1, tecnico_transmision 1/1, coordinador_piso 1/1',
+          positions: [['foh', 'tribuna'], ['abierta', 'fija'], ['foso', 'hombro'], ['steadicam', 'hombro'], ['dron', 'aerea']],
+          req: [{ t: 'cams', n: 3 }, { t: 'dron' }] },
+      } },
+    { key: 'copa_femenina', icon: '⚽', anios: [2027, 2027], desde: '06-24', hasta: '07-25',
+      overlay: 'confeti', pago: 1.6, cada: 3, max: 8, meta: { n: 4 }, premios: { dinero: 5000, fama: 5, cosmetico: 'evs_trofeo_fem' },
+      eventos: {
+        evs_copa_fem: { icon: '⚽', escena: 'final', posDe: 'final', cams: [4, 5], audio: true, stream: 1, outdoor: 1, diff: 4, pay: [3000, 6000], deporte: true, entrevistas: true,
+          clients: ['Selección Tricolor Femenina', 'Canal Mundo Fútbol Femenino', 'Federación Andina de Fútbol Femenino'],
+          crew: 'director 1/1, productor 1/1, camarografo 3/4, cablero 1/1, sonidista 1/1, operador_repeticion 1/1, operador_graficos 0/1, shader 0/1, tecnico_transmision 1/1',
+          crewReal: REAL_FINAL,
+          positions: [FUT.principal, FUT.cerrada, FUT.ai, FUT.ad, FUT.cancha, FUT.contra, FUT.lenta, FUT.bi, FUT.bd, FUT.steadi],
+          req: [{ t: 'cams', n: 4 }] },
+      } },
+    { key: 'final_continental', icon: '🌎', anios: [2027, null], desde: '11-13', hasta: '11-22',
+      overlay: 'fuegos', pago: 1.8, cada: 2, max: 5, meta: { n: 2 }, premios: { dinero: 6000, fama: 6, cosmetico: 'evs_bufandas' },
+      eventos: {
+        evs_final_cont: { icon: '🌎', escena: 'final', posDe: 'final', cams: [5, 6], audio: true, stream: 1, outdoor: 1, diff: 5, pay: [4500, 8500], deporte: true, entrevistas: true,
+          clients: ['Confederación Continental de Clubes', 'Club Atlético del Valle', 'Deportivo Cumbayá FC'],
+          crew: CREW_FINAL, crewReal: REAL_FINAL,
+          positions: [FUT.principal, FUT.cerrada2, FUT.ai, FUT.ad, FUT.cancha, FUT.lenta, FUT.contra, FUT.dron, FUT.cable, FUT.lenta2, FUT.bi, FUT.bd],
+          req: [{ t: 'cams', n: 5 }, { t: 'dron' }] },
+      } },
+    { key: 'gran_final_nacional', icon: '🏟️', anios: [2026, null], desde: '12-04', hasta: '12-13',
+      overlay: 'fuegos', pago: 1.7, cada: 2, max: 5, meta: { n: 2 }, premios: { dinero: 5500, fama: 5, cosmetico: 'evs_balon' },
+      eventos: {
+        evs_gran_final: { icon: '🏟️', escena: 'final', posDe: 'final', cams: [5, 6], audio: true, stream: 1, outdoor: 1, diff: 5, pay: [4200, 8000], deporte: true, entrevistas: true,
+          clients: ['Liga Nacional de Fútbol', 'Sporting Pichincha', 'Club Atlético del Valle'],
+          crew: CREW_FINAL, crewReal: REAL_FINAL,
+          positions: [FUT.principal, FUT.cerrada2, FUT.ai, FUT.ad, FUT.cancha, FUT.lenta, FUT.contra, FUT.dron, FUT.lenta2, FUT.bi, FUT.bd],
+          req: [{ t: 'cams', n: 5 }] },
+      } },
+  ];
+  NUEVAS.forEach((t) => TEMPORADAS.push(t));
+
   /* ---------- Fechas sin reloj (solo aritmética, así la lógica sigue determinista) ---------- */
   // Día absoluto (días desde 1970-01-01) de una fecha civil (algoritmo de H. Hinnant)
   function diaAbs(y, m, d) {
@@ -130,8 +196,10 @@
     const mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
     return diaAbs(y, mes, dia);
   }
-  // Ventana de una temporada que EMPIEZA en el año y → { desde, hasta } (días absolutos)
+  // Ventana de una temporada que EMPIEZA en el año y → { desde, hasta } (días absolutos), o null si ese año no hay
+  // (def.anios = [primero, último o null], ej. la Copa Global Femenina solo en 2027)
   function ventana(def, y) {
+    if (Array.isArray(def.anios) && (y < def.anios[0] || (def.anios[1] != null && y > def.anios[1]))) return null;
     const w = typeof def.calcular === 'function' ? def.calcular(y) : { desde: def.desde, hasta: def.hasta };
     const [m1, d1] = w.desde.split('-').map(Number), [m2, d2] = w.hasta.split('-').map(Number);
     const desde = diaAbs(y, m1, d1);
@@ -149,7 +217,7 @@
     TEMPORADAS.forEach((def) => {
       [f.y - 1, f.y].forEach((y) => {
         const w = ventana(def, y);
-        if (f.z >= w.desde && f.z <= w.hasta) out.push({ def, id: def.key + '-' + y, anio: y, desde: w.desde, hasta: w.hasta, quedan: w.hasta - f.z });
+        if (w && f.z >= w.desde && f.z <= w.hasta) out.push({ def, id: def.key + '-' + y, anio: y, desde: w.desde, hasta: w.hasta, quedan: w.hasta - f.z });
       });
     });
     return out;
@@ -162,7 +230,7 @@
     TEMPORADAS.forEach((def) => {
       [f.y, f.y + 1].forEach((y) => {
         const w = ventana(def, y);
-        if (w.desde > f.z && (!best || w.desde < best.desde)) best = { def, dias: w.desde - f.z, desde: w.desde, hasta: w.hasta, id: def.key + '-' + y };
+        if (w && w.desde > f.z && (!best || w.desde < best.desde)) best = { def, dias: w.desde - f.z, desde: w.desde, hasta: w.hasta, id: def.key + '-' + y };
       });
     });
     return best;
@@ -299,6 +367,21 @@
   imprevisto('tmp_espuma', { when: deTemp('carnaval', 'halloween'), need: (s, ev) => (H.hasCat(ev, 'rain') ? null : H.NEED('need.rain')), peso: 4, q: [-1, -5, -9] });
   imprevisto('tmp_niebla', { when: deTemp('halloween'), rol: 'shader', peso: 6, q: [3, -5, -10] });
   imprevisto('tmp_anillo', { when: deTemp('san_valentin', 'pascua'), rol: 'productor', peso: 4, q: [4, -4, -6] });
+  // eventos_servidor: imprevistos propios de las temporadas nuevas (VAR que se cae, aguacero, bengalas, pantalla gigante, mariachi)
+  imprevisto('evs_var', { when: deTemp('copa_femenina', 'final_continental', 'gran_final_nacional'), rol: 'operador_repeticion', peso: 6, q: [3, -5, -10] });
+  imprevisto('evs_lluvia', { when: deTemp('copa_femenina', 'final_continental', 'gran_final_nacional', 'semana_finales'), need: (s, ev) => (H.hasCat(ev, 'rain') ? null : H.NEED('need.rain')), peso: 5, q: [1, -5, -10] });
+  imprevisto('evs_bengalas', { when: deTemp('final_continental', 'gran_final_nacional'), rol: 'shader', peso: 4, q: [2, -4, -8] });
+  imprevisto('evs_pantalla', { when: deTemp('semana_finales'), rol: 'tecnico_transmision', peso: 5, q: [2, -5, -9] });
+  imprevisto('evs_mariachi', { when: deTemp('dia_madre'), rol: 'sonidista', peso: 6, q: [3, -4, -8] });
+  // Geometría de las cámaras de los eventos nuevos (logic.js geoEvento): estadio para el fútbol, escenario para los demás
+  try {
+    const DT = root.Datos || (typeof require === 'function' ? require('./datos.js') : null);
+    const GEO = DT && DT.CAM_GEO;
+    if (GEO && GEO.eventos) {
+      ['evs_copa_fem', 'evs_final_cont', 'evs_gran_final'].forEach((k) => { if (!GEO.eventos[k]) GEO.eventos[k] = { lugar: 'estadio', pos: 'futbol' }; });
+      ['evs_serenata_madre', 'evs_fan_fest'].forEach((k) => { if (!GEO.eventos[k] && GEO.eventos.concierto) GEO.eventos[k] = GEO.eventos.concierto; });
+    }
+  } catch (e) { /* sin geometría: se usa la de siempre */ }
 
   G.registrarExtension(EXT);
 
@@ -385,9 +468,9 @@
         : `<p class="small muted">${T('temp.trofeos_vacio')}</p>`;
       const cal = f ? TEMPORADAS.map((d) => {
         let w = ventana(d, f.y);
-        if (w.hasta < f.z) w = ventana(d, f.y + 1);
+        if (!w || w.hasta < f.z) w = ventana(d, f.y + 1);
         return { d, w };
-      }).sort((x, y) => x.w.desde - y.w.desde).map(({ d, w }) => `<div class="row between small" style="margin:4px 0"><span>${esc(d.icon)} ${esc(gt('temp.' + d.key + '.nombre'))}</span><span class="muted num">${fechaCorta(w.desde)} – ${fechaCorta(w.hasta)}</span></div>`).join('') : '';
+      }).filter((x) => x.w).sort((x, y) => x.w.desde - y.w.desde).map(({ d, w }) => `<div class="row between small" style="margin:4px 0"><span>${esc(d.icon)} ${esc(gt('temp.' + d.key + '.nombre'))}</span><span class="muted num">${fechaCorta(w.desde)} – ${fechaCorta(w.hasta)}</span></div>`).join('') : '';
       ctx.openModal(`<div class="row between"><h2>${I('star')} ${T('temp.trofeos')}</h2><button class="btn sm" data-act="close" aria-label="${esc(T('comun.cerrar'))}">${I('close', 'sm')}</button></div>
         ${lista}${cal ? `<div class="sectitle">${T('temp.calendario')}</div>${cal}` : ''}`);
     }
@@ -395,7 +478,7 @@
   root.EnVivoInicio = root.EnVivoInicio || [];
   if (!root.EnVivoInicio.some((m) => m && m.id === 'temporadas')) root.EnVivoInicio.push({ id: 'temporadas', orden: 5, tarjeta, clic }); // antes que la sede (orden 10): la temporada dura pocos días
 
-  const API = { TEMPORADAS, EXT, setFecha, estado, activas, proxima, pascua, ventana, diaAbs, isoDe, leerIso, cumple, ofrecer,
+  const API = { TEMPORADAS, NUEVAS: NUEVAS.map((t) => t.key), domingo, EXT, setFecha, estado, activas, proxima, pascua, ventana, diaAbs, isoDe, leerIso, cumple, ofrecer,
     fecha: () => fechaActual, porKey };
   root.Temporadas = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
