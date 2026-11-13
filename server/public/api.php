@@ -57,6 +57,8 @@ try {
     if (class_exists(\EnVivo\BuzonApi::class) && \EnVivo\BuzonApi::esRuta($ruta)) \EnVivo\BuzonApi::responder($ruta, $metodo, requiere_sesion());
     // Black Friday: VIP 30 días gratis para las primeras 100 cuentas (src/BlackFriday.php, API.md): /api/promo/black_friday*
     if (class_exists(\EnVivo\BlackFridayApi::class) && \EnVivo\BlackFridayApi::esRuta($ruta)) \EnVivo\BlackFridayApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Tus primeros 7 días: ruta de novato y oferta de novato (src/RutaNovato.php, API.md): /api/novato*
+    if (class_exists(\EnVivo\RutaNovatoApi::class) && \EnVivo\RutaNovatoApi::esRuta($ruta)) \EnVivo\RutaNovatoApi::responder($ruta, $metodo, requiere_sesion());
     // Copa de Servidores (server/INTEGRAR_COPAS.md): /api/copa*
     if (\EnVivo\CopasApi::esRuta($ruta)) \EnVivo\CopasApi::responder($ruta, $metodo, requiere_sesion());
     // Personal estrella y Pase de Copa (server/INTEGRAR_ESTRELLAS.md): /api/estrellas* y /api/pase_copa/comprar

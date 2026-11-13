@@ -43,6 +43,7 @@ Todos son **productos únicos** (ninguno es suscripción). Después de crear cad
 |---|---|---|
 | `creditos_250`, `creditos_700`, `creditos_1500`, `creditos_3200` | Paquetes de créditos | Sí |
 | `bienvenida` | Oferta de bienvenida | No (una vez por cuenta) |
+| `oferta_novato` ($0.99) | Oferta de novato ("Tus primeros 7 días": solo las primeras 72 horas de una cuenta nueva) — src/RutaNovato.php | No (una vez por cuenta) |
 | `inicio` | Paquete de inicio | No (una vez por cuenta) |
 | `tarjeta_mensual` | Tarjeta mensual (30 días) | Sí |
 | `vip30` | Pase VIP 30 días | Sí |

@@ -19,6 +19,7 @@ foreach (['resumen', 'jugadores', 'compras', 'productos', 'mercado', 'chat', 'so
 require __DIR__ . '/lib/analitica.php';   // pestaña Analítica (server/INTEGRAR_ANALITICA.md)
 require __DIR__ . '/lib/buzon.php';   // Buzón y códigos (server/INTEGRAR_BUZON.md)
 require __DIR__ . '/lib/promo.php';   // Black Friday: VIP 30 días gratis (src/BlackFriday.php), en la pestaña Buzón y códigos
+require __DIR__ . '/lib/novato.php';  // Tus primeros 7 días (src/RutaNovato.php): avance por día en la pestaña Analítica
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 

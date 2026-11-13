@@ -167,6 +167,7 @@ en el servidor; créalos igual y **actívalos cuando yo te confirme** que su mó
 | `oferta_campeon` | Oferta del campeón | Por tu primera Copa: 1.000 créditos, dinero del juego y repuestos. Contenido fijo. | 4,99 | Con tope | VIP |
 | `oferta_sede_5` | Oferta Sede nivel 5 | Tu sede llegó a nivel 5: 800 créditos, dinero del juego y repuestos. Contenido fijo. | 4,99 | Con tope | VIP |
 | `oferta_sede_10` | Oferta Sede nivel 10 | Tu sede llegó a nivel 10: 1.800 créditos, dinero del juego y repuestos. Contenido fijo. | 9,99 | Con tope | VIP |
+| `oferta_novato` | Oferta de novato | Solo en tus primeras 72 horas, una vez: 200 créditos, $3.000 del juego, 5 cables y 3 baterías. | 0,99 | No (1 por cuenta) | Ruta de novato |
 | *(otros)* | *Los que agreguen los ayudantes de monetización (ofertas de temporada, packs de eventos especiales…)* | | | | ⏳ se agregan a esta tabla cuando lleguen a `Catalogo.php` |
 
 **No crear en Play:** `transferencia_cuenta` (solo se vende en la web) ni `estrella_copa` (se paga solo con créditos).
@@ -352,7 +353,7 @@ nivel —0,99 / 1,99 / 2,99 / 4,99 / 9,99 / 19,99— y asígnala a cada producto
 
 | Nivel (USD) | 🇪🇨 Ecuador (USD) | 🇨🇴 Colombia (COP) | 🇵🇪 Perú (PEN) | Productos de ese nivel |
 |---|---|---|---|---|
-| 0,99 | 0,99 | 3.500 | 3,49 | `bienvenida`, refuerzos |
+| 0,99 | 0,99 | 3.500 | 3,49 | `bienvenida`, `oferta_novato`, refuerzos |
 | 1,99 | 1,99 | 6.900 | 6,90 | `creditos_250`, `pack_obra_s`, `oferta_vip_s` |
 | 2,99 | 2,99 | 9.900 | 9,90 | `inicio`, `pase_copa` |
 | 4,99 | 4,99 | 16.900 | 16,90 | `creditos_700`, `tarjeta_mensual`, `pase_premium`, `pack_obra_m`, `oferta_vip_m`, `oferta_campeon`, `oferta_sede_5` |

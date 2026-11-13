@@ -226,6 +226,17 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 
 - 2026-11-13: **Traducción completa a los 9 idiomas** (en, pt-BR, fr, de, it, ru, tr, id, zh-CN): 975 claves por idioma (287 de Interfaz + 688 del Juego), los códigos de error del servidor (rama `trad-errores` + `tools/fusionar_errores.py`) y los 37 textos nuevos de v51. `node tools/pendientes_traduccion.js --resumen` → "Nada pendiente". Unido en `main` junto con `arreglos-cliente` (v51). Falta solo: Dimitry corre `actualizar.sh` en el VPS.
 
+- 2026-11-13 (rama `ruta-novato`): **"Tus primeros 7 días"** (idea 4 de las propuestas). Hoja aparte solo para partidas y cuentas
+  nuevas: 7 días con 5 o 6 tareas cada uno, un día nuevo por día real (los anteriores se completan después), premio fijo por día
+  y **premio grande visible desde el primer minuto**: un camarógrafo internacional de habilidad 4 (+ $5.000 y 50 créditos con cuenta).
+  Las tareas en línea (cuenta, asociación, evento en línea, Duelo) traen su alternativa sin red. **Oferta de novato** `oferta_novato`
+  $0,99 solo las primeras 72 h (no sale en la tienda general). Acceso en Inicio debajo de la productora (gancho `acceso(ctx)` y hoja
+  propia `hub: <id>` en `js/hub.js`), nunca durante la guía del primer evento; solo mira las misiones, no las cambia.
+  Servidor: `RutaNovato.php` + `RutaNovatoApi.php` (`/api/novato*`), valida días por su reloj, una vez por cuenta y el premio grande
+  solo con los 7 días reclamados en el servidor (entrega `personal_intl`). Analítica `novato_dia` (inicio/completo/reclamado/final) y
+  tabla en Centro de Control → Analítica. Pruebas: `server/tests/pruebas_novato.php`, `tests/test_novato.js`.
+  **Falta:** crear `oferta_novato` ($0,99) en Play Console; traducir las claves `nov.*` en la pasada final.
+
 ## ⏭️ Pendiente (después del demo)
 - [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
 - [ ] Dimitry: crear el correo de soporte y completar RUC/correo/dirección en las páginas legales; revisión de abogado (también nombres parodia)

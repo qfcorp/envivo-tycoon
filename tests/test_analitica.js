@@ -182,9 +182,10 @@ async function jugarPrimerEvento(page) {
     const { ctx, page, srv } = await abrir(browser, { modo: 'caido', tag: 'caido' });
     await page.evaluate(() => { for (let i = 0; i < 70; i++) window.Analitica.evento('m_prueba', { i, texto: 'x'.repeat(200), obj: { a: 1 } }); });
     await page.waitForTimeout(500);
-    const cola = await page.evaluate(() => window.Analitica._cola());
+    // novato_dia (js/novato.js, "Tus primeros 7 días" en una partida nueva) también entra a la cola: aquí se cuentan los demás
+    const cola = (await page.evaluate(() => window.Analitica._cola())).filter((e) => e.n !== 'novato_dia');
     bien(cola.length === 71 && cola[1].d.texto.length === 80 && cola[1].d.obj === undefined, 'Sin internet: todo queda en la cola (textos de 80, sin objetos)', cola.length);
-    bien(await page.evaluate(() => JSON.parse(localStorage.getItem('envivo_analitica_cola') || '[]').length) === 71, '…y guardado en localStorage');
+    bien(await page.evaluate(() => JSON.parse(localStorage.getItem('envivo_analitica_cola') || '[]').filter((e) => e.n !== 'novato_dia').length) === 71, '…y guardado en localStorage');
     bien(await page.evaluate(() => window.Analitica.evento('nombre raro!')) === false, 'Nombre no permitido: no entra a la cola');
     srv.modo = 'ok';
     await page.reload({ waitUntil: 'load' });

@@ -37,7 +37,7 @@
     verificarUrl: '/api/google/verificar',
     // Productos de una sola vez: NO se consumen (si se consumen, Google deja comprarlos otra vez).
     // Se completa con los "una_vez" que manda el servidor en Api.estado.tienda.productos.
-    unaVez: ['inicio', 'bienvenida'],
+    unaVez: ['inicio', 'bienvenida', 'oferta_novato'],
     // El servidor ya hace consume/acknowledge. Consumir también aquí (después de que el servidor confirmó)
     // es un respaldo por si el aviso del servidor a Google falló. Si falla aquí, no pasa nada.
     consumirEnCliente: true,
