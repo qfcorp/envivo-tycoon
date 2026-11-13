@@ -236,9 +236,20 @@ check('Paquete de inicio: acknowledge (no consume) con developerPayload EV-<comp
     array_map(fn($x) => [$x['ruta'], $x['payload']], array_values(array_filter($glogDesde($antes), fn($x) => str_starts_with($x['ruta'], 'aviso')))));
 check('…200 créditos y la cámara al inventario', [450, ['cam_pro']], [Monedero::saldo($G2), array_column(Inventario::deJugador($G2), 'item')]);
 $tki2 = $tok('ini2'); $oi2 = $orden(); $compraG($tki2, ['productId' => 'inicio', 'orderId' => $oi2, 'purchaseState' => 0]);
-$r = Google::verificar($G2, 'inicio', $tki2, $oi2);
-check('Segundo paquete de inicio cobrado por Google: pagado pero NO se entrega otra vez (aviso para devolver)', [true, 450, 1, 1],
-    [$r['nueva'], Monedero::saldo($G2), count(Inventario::deJugador($G2)), (int) Db::valor("SELECT COUNT(*) FROM avisos WHERE tipo = 'inicio_duplicado' AND compra_id = ?", [$r['compra']['id']])]);
+$antes = count($glog());
+$nCompras = (int) Db::valor('SELECT COUNT(*) FROM compras');
+// Auditoría L1: NO se reconoce en Google (sin acknowledge Google devuelve el dinero solo) y el jugador recibe un mensaje claro
+$f = fallo(fn() => Google::verificar($G2, 'inicio', $tki2, $oi2));
+check('Segundo paquete de inicio cobrado por Google: 409 google_ya_comprado, sin compra nueva, sin entregar', [[409, 'google_ya_comprado'], $nCompras, 450, 1],
+    [$f, (int) Db::valor('SELECT COUNT(*) FROM compras'), Monedero::saldo($G2), count(Inventario::deJugador($G2))]);
+check('…NO se hizo acknowledge ni consume en Google (Google lo reembolsa solo) y queda 1 aviso para el dueño', [0, 0, [], 1],
+    [(int) ($enGoogle($tki2)['acknowledgementState'] ?? 0), (int) ($enGoogle($tki2)['consumptionState'] ?? 0),
+     array_values(array_filter(array_column($glogDesde($antes), 'ruta'), fn($x) => str_starts_with($x, 'aviso'))),
+     (int) Db::valor("SELECT COUNT(*) FROM avisos WHERE tipo = 'google_una_vez_duplicado' AND detalle LIKE ?", ['%' . $oi2 . '%'])]);
+$msg = '';
+try { Google::verificar($G2, 'inicio', $tki2, $oi2); } catch (\EnVivo\Fallo $e) { $msg = $e->getMessage(); }
+check('…restaurar otra vez (al abrir la app): el mismo 409 con el mensaje de devolución, sin repetir el aviso', [true, true, 1],
+    [str_contains($msg, 'una sola vez'), str_contains($msg, 'devolverá el dinero'), (int) Db::valor("SELECT COUNT(*) FROM avisos WHERE tipo = 'google_una_vez_duplicado' AND detalle LIKE ?", ['%' . $oi2 . '%'])]);
 $tkr = $tok('ref'); $or = $orden(); $compraG($tkr, ['productId' => 'refuerzo_camarografo_senior', 'orderId' => $or, 'purchaseState' => 0]);
 Google::verificar($G2, 'refuerzo_camarografo_senior', $tkr, $or);
 check('Refuerzo vendido en Google: crea la entrega tipo refuerzo', [['refuerzo', 'refuerzo_camarografo_senior']],
@@ -288,8 +299,55 @@ $st = (int) (array_values(array_filter($glogDesde($antes), fn($x) => $x['ruta'] 
 si('…pidió desde la última vista (con hasta 1 hora de solape)', $st >= $ahoraMs - 3000 - 3600 * 1000 && $st <= $ahoraMs - 3000 + 1);
 check('Verificar otra vez una compra reembolsada -> 409 google_revertido', [409, 'google_revertido'], fallo(fn() => Google::verificar($G1, 'creditos_700', $tk1, $o1)));
 $tks = $tok('susp'); $os = $orden(); $compraG($tks, ['productId' => 'creditos_250', 'orderId' => $os, 'purchaseState' => 0]);
-check('Cuenta suspendida que compra en Google -> 403 cuenta_suspendida (no se avisa: Google devuelve el dinero a los 3 días)', [[403, 'cuenta_suspendida'], 0],
-    [fallo(fn() => Google::verificar($G1, 'creditos_250', $tks, $os)), (int) ($enGoogle($tks)['consumptionState'] ?? 0)]);
+// Auditoría M5: Google YA cobró. Antes se rechazaba (403) y a los 3 días Google lo reembolsaba: ahora se entrega y se avisa.
+$saldoS = Monedero::saldo($G1);
+$r = Google::verificar($G1, 'creditos_250', $tks, $os);
+check('Cuenta suspendida que compra en Google: se entrega igual, se consume en Google y queda un aviso para el dueño', [true, 'pagado', $saldoS + 250, 1, 1],
+    [$r['nueva'], $r['compra']['estado'], Monedero::saldo($G1), (int) ($enGoogle($tks)['consumptionState'] ?? 0),
+     (int) Db::valor("SELECT COUNT(*) FROM avisos WHERE tipo = 'google_entregada_con_tienda_cerrada' AND compra_id = ? AND detalle LIKE '%cuenta estaba suspendida%'", [$r['compra']['id']])]);
+Ajustes::set('mantenimiento', '1');
+$tkm = $tok('mant'); $om = $orden(); $compraG($tkm, ['productId' => 'creditos_250', 'orderId' => $om, 'purchaseState' => 0]);
+$G3 = $jugador('Mia');
+$r = Google::verificar($G3, 'creditos_250', $tkm, $om);
+Ajustes::set('mantenimiento', '0');
+check('Tienda en mantenimiento: la compra ya cobrada por Google se entrega, se consume y queda el aviso', [true, 250, 1, 1],
+    [$r['nueva'], Monedero::saldo($G3), (int) ($enGoogle($tkm)['consumptionState'] ?? 0),
+     (int) Db::valor("SELECT COUNT(*) FROM avisos WHERE tipo = 'google_entregada_con_tienda_cerrada' AND compra_id = ? AND detalle LIKE '%mantenimiento%'", [$r['compra']['id']])]);
+
+// Auditoría A1: compra de PRUEBA (cuenta de pruebas de licencias, purchaseType 0) -> sin factura del SRI, panel_ventas prueba=1
+$GP = $jugador('Probador');
+$tkp = $tok('prueba'); $op = $orden(); $compraG($tkp, ['productId' => 'creditos_700', 'orderId' => $op, 'purchaseState' => 0, 'purchaseType' => 0]);
+$tkn = $tok('normal'); $on = $orden(); $compraG($tkn, ['productId' => 'creditos_700', 'orderId' => $on, 'purchaseState' => 0]);
+si('Facturación local encendida (FACTURACION_ACTIVA por defecto) y la de Google también', \EnVivo\Facturacion::activa() && \EnVivo\Facturacion::facturaGoogle());
+$rp = Google::verificar($GP, 'creditos_700', $tkp, $op);
+$rn = Google::verificar($GP, 'creditos_700', $tkn, $on);
+$fact = fn(array $r) => (int) Db::valor("SELECT COUNT(*) FROM facturas WHERE tipo = 'factura' AND compra_id = ?", [$r['compra']['id']]);
+check('Compra de prueba: pagado_por "PRUEBA" desde que se aprueba, entregada (700) y consumida en Google', [Google::QUIEN_PRUEBA, 1400, 1],
+    [$rp['compra']['pagado_por'], Monedero::saldo($GP), (int) ($enGoogle($tkp)['consumptionState'] ?? 0)]);
+check('…NO crea factura del SRI; la compra normal sí', [0, 1], [$fact($rp), $fact($rn)]);
+check('…PanelVentas::esPrueba la reconoce y deja el aviso google_compra_prueba', [true, false, 1],
+    [\EnVivo\PanelVentas::esPrueba($rp['compra']), \EnVivo\PanelVentas::esPrueba($rn['compra']), (int) Db::valor("SELECT COUNT(*) FROM avisos WHERE tipo = 'google_compra_prueba' AND compra_id = ?", [$rp['compra']['id']])]);
+// Con el Panel Tukán (FACTURACION_POR_PANEL): la cola guarda prueba=1 para la de prueba (el Panel no la factura)
+\EnVivo\PanelVentas::$enviarAlTerminar = false;
+cfg('FACTURACION_POR_PANEL', '1'); cfg('TUKAN_CENTRAL_URL', 'http://127.0.0.1:9'); cfg('TUKAN_CENTRAL_ID', 'envivo'); cfg('TUKAN_CENTRAL_SECRET', str_repeat('s', 32));
+$tkp2 = $tok('prueba2'); $op2 = $orden(); $compraG($tkp2, ['productId' => 'creditos_250', 'orderId' => $op2, 'purchaseState' => 0, 'purchaseType' => 0]);
+$tkn2 = $tok('normal2'); $on2 = $orden(); $compraG($tkn2, ['productId' => 'creditos_250', 'orderId' => $on2, 'purchaseState' => 0]);
+$rp2 = Google::verificar($GP, 'creditos_250', $tkp2, $op2);
+$rn2 = Google::verificar($GP, 'creditos_250', $tkn2, $on2);
+$cola = fn(array $r) => Db::valor("SELECT prueba FROM panel_ventas WHERE compra_id = ? AND accion = 'registrar'", [$r['compra']['id']]);
+check('Panel Tukán: panel_ventas guarda prueba=1 para la compra de prueba y prueba=0 para la normal', [1, 0], [(int) $cola($rp2), (int) $cola($rn2)]);
+cfg('FACTURACION_POR_PANEL', '0');
+// bin/google_pruebas.php: lista lo que ya se facturó o se mandó al Panel por compras de prueba (las de antes del arreglo)
+$cv = Db::tx(fn() => Compras::insertar($GP, Catalogo::productoGoogle('creditos_250'), 'google_play', null, ['token' => $tok('vieja'), 'order_id' => $orden()]));
+Compras::aprobar((int) $cv['id'], 'Google Play');   // como antes: se aprobaba como venta normal (factura creada)…
+Db::q('UPDATE compras SET pagado_por = ? WHERE id = ?', [Google::QUIEN_PRUEBA, $cv['id']]);   // …y después se marcaba PRUEBA
+Db::q("INSERT OR IGNORE INTO panel_ventas (compra_id, accion, prueba, estado, creado) VALUES (?, 'registrar', 0, 'enviado', ?)", [$cv['id'], time()]);
+Db::q("UPDATE facturas SET estado = 'autorizada', numero_comprobante = '001-001-000000777' WHERE tipo = 'factura' AND compra_id = ?", [$cv['id']]);
+$out = (string) shell_exec('ENVIVO_CONFIG=' . escapeshellarg("$TMP/config.env") . ' php ' . escapeshellarg("$SRV/bin/google_pruebas.php") . ' 2>&1; echo "rc=$?"');
+check('bin/google_pruebas.php: muestra la factura autorizada y el envío al Panel de la compra de prueba vieja, no anula nada', [true, true, true, true, 'autorizada'],
+    [str_contains($out, 'N° ' . $cv['id']), str_contains($out, '001-001-000000777'), str_contains($out, 'Panel'), str_contains($out, 'rc=0'),
+     Db::valor("SELECT estado FROM facturas WHERE tipo = 'factura' AND compra_id = ?", [$cv['id']])]);
+check('…la compra de prueba nueva (sin factura) no sale como facturada', false, str_contains($out, 'N° ' . $rp['compra']['id'] . ' '));
 
 // =====================================================================================================================
 titulo('6. Por HTTP (api.php + router.php): rutas de soporte, /api/estado y /api/google/verificar');
@@ -378,7 +436,7 @@ check('Ningún pedido a la API de Google sin Bearer válido', 0, count(array_fil
 // =====================================================================================================================
 titulo('7. Pendiente según docs/INTEGRAR_SOPORTE_GOOGLE.md (se informa; no cuenta como falla)');
 pendiente('G1', 'bin/google_anulados.php existe (revisarAnuladas + avisosPendientes, cron diario)', is_file("$SRV/bin/google_anulados.php"));
-$tareas = (string) file_get_contents("$SRV/bin/tareas.php") . (string) @file_get_contents("$SRV/deploy/instalar.sh");
+$tareas = (string) file_get_contents("$SRV/bin/tareas.php") . (string) @file_get_contents("$SRV/deploy/instalar.sh") . (string) @file_get_contents("$SRV/deploy/comun.sh");
 pendiente('G2', 'el cron llama a la revisión de anuladas y a avisosPendientes()', str_contains($tareas, 'google_anulados') || str_contains($tareas, 'revisarAnuladas'));
 $fuente = (string) file_get_contents("$SRV/src/Google.php");
 pendiente('G3', 'acknowledge "already acknowledged" (400) también cuenta como avisada', !str_contains($fuente, "\$accion === ':consume' && in_array(\$c, [400, 409]"));

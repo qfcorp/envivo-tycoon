@@ -469,7 +469,7 @@ check('Fecha mala -> error · cron normal -> 0 · --resumen -> JSON', [1, 0, 0, 
 titulo('Configuración, despliegue y traducciones');
 $ej = (string) file_get_contents($SRV . '/config.env.ejemplo');
 check('config.env.ejemplo con las líneas (vacías: el repositorio es público)', [true, true, true], [str_contains($ej, "\nFACTURACION_CLAVE=\n"), str_contains($ej, "\nFACTURACION_WEBHOOK_URL=\n"), str_contains($ej, "\nFACTURACION_IPS=\n")]);
-check('Cron cada 5 minutos en deploy/instalar.sh', true, str_contains((string) file_get_contents($SRV . '/deploy/instalar.sh'), '*/5 * * * * ENVIVO_CONFIG=$CONF php $APP/server/bin/facturacion.php'));
+check('Cron cada 5 minutos en deploy/comun.sh (instalar.sh y actualizar.sh)', true, str_contains((string) file_get_contents($SRV . '/deploy/comun.sh'), '*/5 * * * * ENVIVO_CONFIG=$conf php $app/server/bin/facturacion.php'));
 $tr = json_decode((string) file_get_contents($RAIZ . '/docs/traducciones/errores_nuevos/facturacion.json'), true);
 $base = json_decode((string) file_get_contents($RAIZ . '/docs/traducciones/errores.json'), true);
 $idiomas = array_values(array_filter(array_keys($base), fn($k) => $k[0] !== '_'));

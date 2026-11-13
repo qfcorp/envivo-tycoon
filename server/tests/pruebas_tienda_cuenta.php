@@ -286,8 +286,13 @@ check('Refuerzo vendido directo en Google ($0,99) -> entrega refuerzo', [200, 0.
 $tokI = 'ok-' . bin2hex(random_bytes(12));
 $gp2->api('/api/google/verificar', ['producto' => 'inicio', 'purchaseToken' => $tokI]);
 check('Paquete de inicio por Google -> entregado y acknowledge (no consume)', [200, true], [$gp2->http, (bool) array_filter($glog(), fn($x) => ($x['ruta'] ?? '') === 'acknowledge' && ($x['prod'] ?? '') === 'inicio')]);
-$gp2->api('/api/google/verificar', ['producto' => 'inicio', 'purchaseToken' => 'ok-' . bin2hex(random_bytes(12))]);
-check('Un segundo paquete de inicio pagado en Google -> pagado pero NO se entrega otra vez y queda aviso', [200, 1, true], [$gp2->http, (int) $val("SELECT COUNT(*) FROM inventario WHERE jugador_id = ? AND item = 'cam_pro'", [$JGP2]), (bool) $val("SELECT 1 FROM avisos WHERE tipo = 'inicio_duplicado' AND detalle LIKE ?", ['%jugador ' . $JGP2 . ' %'])]);
+$tokI2 = 'ok-' . bin2hex(random_bytes(12));
+$r = $gp2->api('/api/google/verificar', ['producto' => 'inicio', 'purchaseToken' => $tokI2]);
+// Auditoría L1: sin acknowledge (Google lo reembolsa solo en 3 días) y con un mensaje claro para el jugador
+check('Un segundo paquete de inicio pagado en Google -> 409 google_ya_comprado con mensaje, NO se entrega ni se reconoce en Google, queda aviso', [409, 'google_ya_comprado', true, 1, false, true],
+    [$gp2->http, $r['codigo'] ?? null, str_contains((string) ($r['error'] ?? ''), 'devolverá el dinero'), (int) $val("SELECT COUNT(*) FROM inventario WHERE jugador_id = ? AND item = 'cam_pro'", [$JGP2]),
+     (bool) array_filter($glog(), fn($x) => in_array($x['ruta'] ?? '', ['acknowledge', 'consume'], true) && ($x['tok'] ?? '') === substr($tokI2, 0, 12)),
+     (bool) $val("SELECT 1 FROM avisos WHERE tipo = 'google_una_vez_duplicado' AND detalle LIKE ?", ['%jugador ' . $JGP2 . ' %'])]);
 // Anuladas (reembolso / contracargo en Google) -> bin/google_anulados.php las revierte
 $sG = $saldo($JGP);
 file_put_contents(getenv('FALSO_G_ANULADAS'), json_encode([['purchaseToken' => $tok, 'orderId' => $cg['google_order_id'], 'voidedTimeMillis' => (string) (time() * 1000), 'voidedReason' => 7, 'voidedSource' => 0]]));
@@ -360,8 +365,11 @@ $r = $pc->api('/api/orden', ['producto' => 'creditos_250']);
 check('…no se pueden crear órdenes (503 mantenimiento)', [503, 'mantenimiento'], [$pc->http, $r['codigo'] ?? null]);
 $r = $pagar($pc, $tokM, '4540639936908783');
 check('…ni pagar una orden ya creada (503) sin llamar a Plux', [503, 'mantenimiento', 'pendiente'], [$pc->http, $r['codigo'] ?? null, $compra($tokM)['estado']]);
+$sM = $saldo($JGP2);
 $r = $gp2->api('/api/google/verificar', ['producto' => 'creditos_250', 'purchaseToken' => 'ok-' . bin2hex(random_bytes(10))]);
-check('…ni verificar compras nuevas de Google (503)', [503, 'mantenimiento'], [$gp2->http, $r['codigo'] ?? null]);
+// Auditoría M5: una compra de Google ya está cobrada: se entrega aunque la tienda esté cerrada (si no, Google la reembolsa)
+check('…pero una compra de Google YA cobrada se entrega igual (200, +250) y queda el aviso', [200, $sM + 250, true],
+    [$gp2->http, $saldo($JGP2), (bool) $val("SELECT 1 FROM avisos WHERE tipo = 'google_entregada_con_tienda_cerrada' AND compra_id = ?", [$r['compra']['id'] ?? 0])]);
 check('…pago.php muestra el mensaje de mantenimiento', [503, true], [$pc->get('/pago.php?o=' . $tokM), $pc->tiene('Volvemos a las 18:00')]);
 $accion('ajustes', ['accion' => 'mantenimiento', 'valores' => ['mantenimiento' => '0', 'mantenimiento_mensaje' => '']]);
 check('Quitar el mantenimiento -> se puede ordenar otra vez', 200, ($pc->api('/api/orden', ['producto' => 'creditos_250']) && true) ? $pc->http : 0);

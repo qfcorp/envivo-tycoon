@@ -2259,8 +2259,18 @@
     await restaurarPlay();
     if (tab === 'tienda') render();
   }
+  // Al volver a la app (estaba en segundo plano: un pago pendiente que Google aprobó después, o la compra se cortó) se
+  // revisan otra vez las compras sin confirmar: Google las devuelve solas si el servidor no las confirma en 3 días.
+  // Como mucho una vez cada PLAY_REVISAR_MS (el servidor limita los intentos por cuenta).
+  const PLAY_REVISAR_MS = 10000;
+  let playRevisado = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !playOk || Date.now() - playRevisado < PLAY_REVISAR_MS) return;
+    restaurarPlay();
+  });
   async function restaurarPlay() {
     if (!GP || !Api.disponible || !Api.logueado()) return;
+    playRevisado = Date.now();
     try {
       const r = await GP.restaurar();
       if (r && r.entregadas && r.entregadas.length) {

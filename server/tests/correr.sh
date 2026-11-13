@@ -169,6 +169,11 @@ if [ -f "$SRV/tests/pruebas_correo.php" ]; then
   echo "  ($(grep -v '^[[:space:]]*$' "$TMP/modulo_correo.log" | grep -vE '^-+$|^=+$' | tail -1 | sed 's/^ *//'))"
   check "pruebas_correo.php sin fallas" 0 "$RM"
 fi
+echo "== 3f. Despliegue (server/deploy/comun.sh): cron de www-data de instalar.sh y actualizar.sh, respaldo nocturno y su aviso"
+bash "$SRV/tests/pruebas_deploy.sh" > "$TMP/modulo_deploy.log" 2>&1; RM=$?
+grep -E "FALLA" "$TMP/modulo_deploy.log" | sed 's/^/  /'
+echo "  ($(tail -1 "$TMP/modulo_deploy.log"))"
+check "pruebas_deploy.sh sin fallas" 0 "$RM"
 
 echo
 echo "== 4. Navegador de verdad (Playwright + Chromium, celular 390x844)"
