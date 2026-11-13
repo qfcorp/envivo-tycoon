@@ -9,7 +9,7 @@
    Al cambiar archivos del juego, sube el número de VERSION (y el de js/api.js, X-EnVivo-Version) para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v51';
+const VERSION = 'envivo-v52';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 

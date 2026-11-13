@@ -50,7 +50,7 @@
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v51', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v52', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
