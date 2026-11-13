@@ -213,7 +213,7 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   - Servidor: gzip para JS, CSS, JSON, manifiesto y SVG en `nginx-sitio.sh`; `actualizar.sh` (paso 6) vuelve a escribir el sitio de nginx solo si la plantilla cambió, con `nginx -t` y vuelta atrás si falla (ya no hace falta `instalar.sh` para esto).
   - Service worker: precarga solo español (+ el idioma elegido, que la página anota en la caché `envivo-idioma`); los otros idiomas se guardan al elegirlos. Actualización en segundo plano con `cache: 'no-cache'`; aviso "Hay una versión nueva — Actualizar".
   - Varios: el VIP guarda por `save()`; aviso único si no se puede guardar + `navigator.storage.persist()`; la nube ilegible ya no se trata como vacía (no se sube la de aquí encima); "?" y casillas con zona de toque ≥ 44 px; el resultado muestra UNA ganancia (detalle plegado); en la tienda lo de solo VIP va después para quien no es VIP; "Cerrar el día" chico y con confirmación el día 1 sin eventos; el buzón no revisa con la app en segundo plano. Pruebas `test_nube_proteger`, `test_pase` y `test_plan_evento` con esperas de verdad (no fallan con carga). Prueba nueva `tests/test_arreglos_cliente.js`.
-  - Pendiente: **traducciones** (los textos nuevos están solo en `js/lang/es.js`; se traducen todos juntos en la pasada final, junto con las ~274 claves que ya faltaban).
+  - ✅ Traducciones hechas el mismo día (ver la entrada "Traducción completa a los 9 idiomas").
 
 - 2026-11-13: **Arreglos del servidor por la auditoría** (rama `arreglos-servidor`; hallazgos C1, A1, A2, A3, M1, M5 y L1).
   - **C1 respaldo nocturno**: `actualizar.sh` e `instalar.sh` ahora corren `deploy/ops/instalar_ops.sh` si falta algo (scripts de respaldo y salud, cron de root, logrotate) o si cambió un script en el repo; no duplica nada y hace un respaldo enseguida. Al final imprimen un **AVISO GRANDE** si el respaldo no está instalado o el último falló / es de hace más de 26 h (`comun.sh`: `asegurar_ops`, `aviso_respaldo`).
@@ -223,6 +223,8 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   - **L1**: un producto de una sola vez que ya tenía (p. ej. el paquete de inicio por la web y otra vez en la app) ya no se confirma a Google → Google devuelve el dinero solo; el jugador ve «Ya tienes … Google Play te devolverá el dinero automáticamente» (409 `google_ya_comprado`) y queda el aviso `google_una_vez_duplicado`.
   - **A3 (parte)**: la app ya revisaba las compras sin confirmar al abrir; ahora también al volver a la app desde segundo plano (como mucho cada 10 s). Prueba `tests/test_play_restaurar.js`. Versión del juego `envivo-v50`.
   - Pruebas: `server/tests/pruebas_deploy.sh` (nuevo, en `correr.sh`), casos nuevos en `pruebas_soporte_google.php` y `pruebas_tienda_cuenta.php`.
+
+- 2026-11-13: **Traducción completa a los 9 idiomas** (en, pt-BR, fr, de, it, ru, tr, id, zh-CN): 975 claves por idioma (287 de Interfaz + 688 del Juego), los códigos de error del servidor (rama `trad-errores` + `tools/fusionar_errores.py`) y los 37 textos nuevos de v51. `node tools/pendientes_traduccion.js --resumen` → "Nada pendiente". Unido en `main` junto con `arreglos-cliente` (v51). Falta solo: Dimitry corre `actualizar.sh` en el VPS.
 
 ## ⏭️ Pendiente (después del demo)
 - [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
