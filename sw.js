@@ -61,6 +61,7 @@ const SHELL = [
   './js/escena.js',     // franja animada del evento en vivo (opcional)
   './js/visitas.js',    // visitar productoras de otros jugadores
   './js/compartir.js',  // compartir por WhatsApp, calificar y novedades (opcional)
+  './js/clip_video.js',  // jugada del día en video vertical (opcional)
   './js/push.js',       // notificaciones push: aviso previo y ajustes (opcional)
   './js/buzon.js',      // buzón y códigos de regalo
   './js/black_friday.js', // Black Friday: VIP 30 días gratis (franja de Inicio)

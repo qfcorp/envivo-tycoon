@@ -3534,6 +3534,7 @@
       </details>
       <p class="small muted">${T(dd ? 'res.desgaste_ev' : 'res.desgaste')}</p>
       ${window.Compartir ? window.Compartir.resultado(r, fresh, ctxInicio()) : ''}
+      ${window.ClipVideo ? window.ClipVideo.resultado(r, fresh, ctxInicio()) : ''}
       <button class="btn main" data-act="after-result">${T('comun.continuar')}</button>`);
     if (!fresh) return;
     countUp($('resNet'), neto, 1000);
