@@ -86,6 +86,8 @@ $jugar = function (int $j, int $t): void { Db::q('INSERT INTO partidas (jugador_
 titulo('A1) Día 1, 2 y 3 (horas desde que se creó la cuenta)');
 $T0 = $ts('2026-11-02 12:00:00');   // lunes
 $A = $nuevo($T0);
+$AEN = $nuevo($T0);
+Db::q("UPDATE push_suscripciones SET idioma = 'en' WHERE jugador_id = ?", [$AEN]);   // juega en inglés
 $reloj($T0 + 19 * 3600);
 Regreso::tarea(true);
 check('A las 19 h todavía nada', [], $avisos($A));
@@ -94,6 +96,9 @@ Regreso::tarea(true);
 $c = $cola($A);
 check('A las 21 h: aviso del día 1 en la cola (categoría etapa, obedece al interruptor "premio")', [1, 'etapa', 'rg:etapa:dia1', 'premio'], [count($c), $c[0]['categoria'] ?? null, $c[0]['clave'] ?? null, Push::interruptor('etapa')]);
 check('El texto habla de su productora (nada de comprar)', [true, false], [str_contains(($c[0]['titulo'] ?? '') . ($c[0]['cuerpo'] ?? ''), 'productora') || str_contains(($c[0]['titulo'] ?? '') . ($c[0]['cuerpo'] ?? ''), 'equipo'), (bool) preg_match('/compr|oferta|\$/iu', $c[0]['cuerpo'] ?? '')]);
+$cen = $cola($AEN);
+check('Aviso del día 1 en el idioma de su aparato (inglés)', [true, true],
+    [in_array([$cen[0]['titulo'] ?? '', $cen[0]['cuerpo'] ?? ''], Regreso::TEXTOS['en']['dia1'], true), !in_array([$cen[0]['titulo'] ?? '', $cen[0]['cuerpo'] ?? ''], Regreso::TEXTOS['es']['dia1'], true)]);
 Regreso::tarea(true);
 check('Otra corrida no lo repite', 1, count($cola($A)));
 $r = Push::procesar();
@@ -283,8 +288,17 @@ $tok = substr(Regreso::enlaceBaja($F), -32);
 check('Enlace de baja con código de 32 hex; porToken lo encuentra', [true, $F], [(bool) preg_match('/^[a-f0-9]{32}$/', $tok), (int) (Regreso::porToken($tok)['jugador_id'] ?? 0)]);
 check('darBaja: válido (y auditado); código falso no', [true, false, true], [Regreso::darBaja($tok), Regreso::darBaja(str_repeat('0', 32)), Db::valor('SELECT baja_correo FROM regreso_jugador WHERE jugador_id = ?', [$F]) !== null]);
 $pl = CorreoPlantillas::armar('regreso', 'en', ['nombre' => 'Ana', 'creditos' => 100, 'dias' => 8, 'enlace' => 'https://x.test/', 'baja' => 'https://x.test/api/regreso/baja?t=' . $tok]);
-check('Plantilla (otro idioma: español hasta la traducción): asunto, créditos, días y enlace de baja', ['Tu productora te extraña: regalo de créditos', true, true, true],
-    [$pl['asunto'], str_contains($pl['texto'], '100 créditos'), str_contains($pl['texto'], '8 días'), str_contains($pl['html'], 'api/regreso/baja?t=')]);
+check('Plantilla en inglés: asunto, créditos, días y enlace de baja', ['Your studio misses you: a credits gift', true, true, true],
+    [$pl['asunto'], str_contains($pl['texto'], '100 credits'), str_contains($pl['texto'], '8 days'), str_contains($pl['html'], 'api/regreso/baja?t=')]);
+$pl = CorreoPlantillas::armar('regreso', 'es', ['nombre' => 'Ana', 'creditos' => 100, 'dias' => 8, 'enlace' => 'https://x.test/', 'baja' => 'https://x.test/b']);
+check('Plantilla en español', ['Tu productora te extraña: regalo de créditos', true], [$pl['asunto'], str_contains($pl['texto'], '100 créditos')]);
+$faltan = [];
+foreach (CorreoPlantillas::IDIOMAS as $L) { $x = CorreoPlantillas::armar('regreso', $L, ['nombre' => 'Ana', 'creditos' => 123, 'dias' => 9, 'enlace' => 'https://x.test/', 'baja' => 'https://x.test/b']);
+    if ($L !== 'es' && $x['asunto'] === 'Tu productora te extraña: regalo de créditos') $faltan[] = $L; if (!str_contains($x['texto'], '123') || !str_contains($x['texto'], '9')) $faltan[] = $L . '{}'; }
+check('Correo de regreso en los 10 idiomas (con {creditos} y {dias})', [], $faltan);
+$faltan = [];
+foreach (Regreso::TEXTOS as $L => $x) foreach (Regreso::TEXTOS['es'] as $k => $v) if (count($x[$k] ?? []) !== count($v)) $faltan[] = "$L.$k";
+check('Avisos push de regreso: las mismas plantillas y variantes en los 10 idiomas', [[], CorreoPlantillas::IDIOMAS], [$faltan, array_keys(Regreso::TEXTOS)]);
 $s = Regreso::estadisticas(60);
 check('Estadísticas: avisos por tipo, correos y ausencias', [true, true, true, true],
     [$s['tipos']['dia1']['enviados'] >= 1, $s['tipos']['dia1']['volvieron'] >= 1, $s['tipos']['correo7']['enviados'] >= 1, $s['ausencias']['reclamaron'] >= 1]);

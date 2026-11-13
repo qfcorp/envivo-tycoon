@@ -341,6 +341,16 @@ final class Push
     }
 
     // =================================================================== suscripciones (API del juego)
+    /**
+     * Idioma del jugador para los textos que se arman al encolar (Regreso, GranProduccion...): el del aparato suscrito
+     * que usó hace menos tiempo; sin aparatos, español. Nunca lanza.
+     */
+    public static function idiomaJugador(int $j): string
+    {
+        try { return self::normalizarIdioma(Db::valor('SELECT idioma FROM push_suscripciones WHERE jugador_id = ? ORDER BY visto DESC, id DESC LIMIT 1', [$j])); }
+        catch (\Throwable) { return 'es'; }
+    }
+
     public static function normalizarIdioma(mixed $i): string
     {
         $i = is_string($i) ? trim($i) : '';

@@ -56,7 +56,9 @@ asociaciones de cada servidor. Todo gratis, nada al azar y nada que se cambie po
 - **Avisos push** con `Push::encolar` (categoría `liga`, obedece el interruptor "Duelos y Liga" del jugador; respeta el tope
   diario, las horas de silencio y el "no repetir"): **inicio** a todos los miembros suscritos (solo en las primeras 6 h;
   vence a las 8 h) y **"faltan 2 h"** solo a quien todavía tiene aportes listos (vence al terminar). Abren `/?ir=gran`.
-  Textos en español (pendiente de traducir con la pasada final).
+  Textos en los 10 idiomas (`GranProduccion::TEXTOS`, `TEMA_NOMBRES`, `NIVEL_NOMBRES`), en el idioma del aparato del jugador
+  (`Push::idiomaJugador`). Los avisos del chat guardan los 10 textos en `chat_mensajes.textos_json` y `Chat` muestra el del
+  idioma de quien lee (`Accept-Language`); la columna `texto` queda en español.
 - **Auditoría**: `gp_aportes` (cada aporte) y `auditoria` (inicio, cierre, pausa, reanudar, cancelar, horario).
 
 ## API (todas con sesión; POST con `X-Envivo: 1`, 60 aportes cada 10 min)
@@ -70,7 +72,7 @@ asociaciones de cada servidor. Todo gratis, nada al azar y nada que se cambie po
 - `GET /api/gran/resumen` → `{ fase, produccion, en_asociacion, progreso, disponibles, espera }`
 - `POST /api/gran/aportar` `{ frente: 'personal' | 'equipos' }` → `{ aporte{frente, cantidad}, …vista }`
 
-Errores nuevos (en `docs/traducciones/errores.json`, español; los otros idiomas en la pasada final): `gp_no_hay`, `gp_pausada`,
+Errores nuevos (en `docs/traducciones/errores.json`, los 10 idiomas): `gp_no_hay`, `gp_pausada`,
 `gp_miembro_nuevo` (`espera`), `gp_otra_asociacion`, `gp_tope` (`max`), `gp_espera` (`espera`), `gp_config`. Usa también
 `sin_asociacion` y `datos_invalidos`.
 

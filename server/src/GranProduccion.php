@@ -69,6 +69,108 @@ final class GranProduccion
     ];
     public const NOMBRE_NIVEL = ['participacion' => 'Participación', 'bronce' => 'Bronce', 'plata' => 'Plata', 'oro' => 'Oro', 'leyenda' => 'Leyenda'];
 
+    /**
+     * Avisos push y del chat de asociación en los 10 idiomas del juego. El push va en el idioma del aparato del jugador
+     * (Push::idiomaJugador); el chat guarda los 10 textos (chat_mensajes.textos_json) y Chat los muestra en el idioma de
+     * quien lee (Accept-Language). Marcadores: {tema} y {nivel} (se ponen con TEMA_NOMBRES / NIVEL_NOMBRES del idioma),
+     * {horas}, {libres}, {pct}, {puesto}.
+     */
+    public const TEXTOS = [
+        'es' => ['push_inicio_t' => '🎬 ¡Empieza la Gran Producción!', 'push_inicio_c' => 'Tu asociación cubre «{tema}». Entra y envía tu cuadrilla: cada aporte cuenta.',
+            'push_2h_t' => '⏰ Faltan 2 h para el cierre', 'push_2h_c' => 'La Gran Producción «{tema}» termina pronto y tienes {libres} aportes listos.',
+            'chat_inicio' => '🎬 ¡Empieza la Gran Producción! Tu asociación cubre «{tema}» durante {horas} h. Abre «Gran Producción» y aporta tu cuadrilla.',
+            'chat_fin' => '🎬 Terminó «{tema}»: {pct} % · nivel {nivel} · puesto {puesto} del servidor. Los premios llegaron al buzón de quienes aportaron.',
+            'chat_cancelada' => '🎬 La Gran Producción de esta semana se canceló. Perdón por las molestias: la próxima llega en la fecha de siempre.',
+            'tema_otro' => 'el mega evento'],
+        'en' => ['push_inicio_t' => '🎬 The Big Production begins!', 'push_inicio_c' => 'Your alliance is covering “{tema}”. Jump in and send your crew: every contribution counts.',
+            'push_2h_t' => '⏰ 2 h left before it closes', 'push_2h_c' => 'The Big Production “{tema}” ends soon and you have {libres} contributions ready.',
+            'chat_inicio' => '🎬 The Big Production begins! Your alliance is covering “{tema}” for {horas} h. Open “Big Production” and send your crew.',
+            'chat_fin' => '🎬 “{tema}” is over: {pct} % · {nivel} level · place {puesto} on the server. Rewards went to the mailbox of everyone who contributed.',
+            'chat_cancelada' => '🎬 This week\'s Big Production was canceled. Sorry for the trouble: the next one arrives on the usual date.',
+            'tema_otro' => 'the mega event'],
+        'pt-BR' => ['push_inicio_t' => '🎬 Começa a Grande Produção!', 'push_inicio_c' => 'Sua aliança vai cobrir "{tema}". Entre e envie sua equipe: cada contribuição conta.',
+            'push_2h_t' => '⏰ Faltam 2 h para o fim', 'push_2h_c' => 'A Grande Produção "{tema}" termina logo e você tem {libres} contribuições prontas.',
+            'chat_inicio' => '🎬 Começa a Grande Produção! Sua aliança cobre "{tema}" durante {horas} h. Abra "Grande Produção" e envie sua equipe.',
+            'chat_fin' => '🎬 Terminou "{tema}": {pct} % · nível {nivel} · posição {puesto} do servidor. Os prêmios chegaram ao correio de quem contribuiu.',
+            'chat_cancelada' => '🎬 A Grande Produção desta semana foi cancelada. Desculpe o transtorno: a próxima chega na data de sempre.',
+            'tema_otro' => 'o mega evento'],
+        'fr' => ['push_inicio_t' => '🎬 La Grande Production commence !', 'push_inicio_c' => 'Ton alliance couvre « {tema} ». Viens envoyer ton équipe : chaque contribution compte.',
+            'push_2h_t' => '⏰ Plus que 2 h avant la fin', 'push_2h_c' => 'La Grande Production « {tema} » se termine bientôt et tu as {libres} contributions prêtes.',
+            'chat_inicio' => '🎬 La Grande Production commence ! Votre alliance couvre « {tema} » pendant {horas} h. Ouvrez « Grande Production » et envoyez votre équipe.',
+            'chat_fin' => '🎬 « {tema} » est terminé : {pct} % · niveau {nivel} · place {puesto} du serveur. Les récompenses sont arrivées dans le courrier de ceux qui ont contribué.',
+            'chat_cancelada' => '🎬 La Grande Production de cette semaine a été annulée. Désolés pour le dérangement : la prochaine arrive à la date habituelle.',
+            'tema_otro' => 'le méga événement'],
+        'de' => ['push_inicio_t' => '🎬 Die Große Produktion beginnt!', 'push_inicio_c' => 'Deine Allianz übernimmt „{tema}“. Schick dein Team los: Jeder Beitrag zählt.',
+            'push_2h_t' => '⏰ Noch 2 h bis zum Schluss', 'push_2h_c' => 'Die Große Produktion „{tema}“ endet bald und du hast {libres} Beiträge bereit.',
+            'chat_inicio' => '🎬 Die Große Produktion beginnt! Eure Allianz übernimmt {horas} h lang „{tema}“. Öffnet „Große Produktion“ und schickt euer Team.',
+            'chat_fin' => '🎬 „{tema}“ ist vorbei: {pct} % · Stufe {nivel} · Platz {puesto} auf dem Server. Die Belohnungen liegen im Postfach aller, die beigetragen haben.',
+            'chat_cancelada' => '🎬 Die Große Produktion dieser Woche wurde abgesagt. Sorry für die Umstände: Die nächste kommt zum gewohnten Termin.',
+            'tema_otro' => 'das Mega-Event'],
+        'it' => ['push_inicio_t' => '🎬 Inizia la Grande Produzione!', 'push_inicio_c' => 'La tua alleanza copre "{tema}". Entra e manda la tua squadra: ogni contributo conta.',
+            'push_2h_t' => '⏰ Mancano 2 h alla chiusura', 'push_2h_c' => 'La Grande Produzione "{tema}" sta per finire e hai {libres} contributi pronti.',
+            'chat_inicio' => '🎬 Inizia la Grande Produzione! La vostra alleanza copre "{tema}" per {horas} h. Aprite "Grande Produzione" e mandate la vostra squadra.',
+            'chat_fin' => '🎬 "{tema}" è finita: {pct} % · livello {nivel} · posto {puesto} del server. I premi sono arrivati nella posta di chi ha contribuito.',
+            'chat_cancelada' => '🎬 La Grande Produzione di questa settimana è stata annullata. Scusate il disagio: la prossima arriva alla solita data.',
+            'tema_otro' => 'il mega evento'],
+        'ru' => ['push_inicio_t' => '🎬 Большой продакшн начинается!', 'push_inicio_c' => 'Твой альянс снимает «{tema}». Заходи и отправь свою команду: важен каждый вклад.',
+            'push_2h_t' => '⏰ До финала 2 ч', 'push_2h_c' => 'Большой продакшн «{tema}» скоро закончится, а у тебя готово вкладов: {libres}.',
+            'chat_inicio' => '🎬 Большой продакшн начинается! Альянс снимает «{tema}» в течение {horas} ч. Откройте «Большой продакшн» и отправьте команду.',
+            'chat_fin' => '🎬 «{tema}» завершён: {pct} % · уровень «{nivel}» · {puesto}-е место на сервере. Награды пришли на почту всем, кто внёс вклад.',
+            'chat_cancelada' => '🎬 Большой продакшн этой недели отменён. Извините за неудобства: следующий будет в обычный день.',
+            'tema_otro' => 'мега-событие'],
+        'tr' => ['push_inicio_t' => '🎬 Büyük Prodüksiyon başlıyor!', 'push_inicio_c' => 'İttifakın "{tema}" yayınını üstleniyor. Gir ve ekibini gönder: her katkı önemli.',
+            'push_2h_t' => '⏰ Kapanışa 2 saat kaldı', 'push_2h_c' => '"{tema}" Büyük Prodüksiyonu yakında bitiyor ve {libres} katkın hazır.',
+            'chat_inicio' => '🎬 Büyük Prodüksiyon başlıyor! İttifakımız {horas} saat boyunca "{tema}" yayınını üstleniyor. "Büyük Prodüksiyon"u açın ve ekibinizi gönderin.',
+            'chat_fin' => '🎬 "{tema}" bitti: %{pct} · {nivel} seviyesi · sunucuda {puesto}. sıra. Ödüller katkı yapan herkesin posta kutusuna geldi.',
+            'chat_cancelada' => '🎬 Bu haftanın Büyük Prodüksiyonu iptal edildi. Kusura bakmayın: bir sonraki her zamanki tarihte geliyor.',
+            'tema_otro' => 'mega etkinlik'],
+        'id' => ['push_inicio_t' => '🎬 Produksi Akbar dimulai!', 'push_inicio_c' => 'Aliansimu meliput "{tema}". Masuk dan kirim timmu: setiap kontribusi berarti.',
+            'push_2h_t' => '⏰ 2 jam lagi ditutup', 'push_2h_c' => 'Produksi Akbar "{tema}" segera berakhir dan kamu punya {libres} kontribusi siap kirim.',
+            'chat_inicio' => '🎬 Produksi Akbar dimulai! Aliansi kita meliput "{tema}" selama {horas} jam. Buka "Produksi Akbar" dan kirim timmu.',
+            'chat_fin' => '🎬 "{tema}" selesai: {pct} % · level {nivel} · peringkat {puesto} di server. Hadiah sudah masuk ke kotak surat semua yang berkontribusi.',
+            'chat_cancelada' => '🎬 Produksi Akbar minggu ini dibatalkan. Maaf atas ketidaknyamanannya: yang berikutnya datang di tanggal biasa.',
+            'tema_otro' => 'mega acara'],
+        'zh-CN' => ['push_inicio_t' => '🎬 大制作开始了！', 'push_inicio_c' => '你的联盟负责转播“{tema}”。快来派出你的团队：每一份贡献都算数。',
+            'push_2h_t' => '⏰ 距离结束还有 2 小时', 'push_2h_c' => '大制作“{tema}”即将结束，你还有 {libres} 次贡献可用。',
+            'chat_inicio' => '🎬 大制作开始了！本联盟将在 {horas} 小时内转播“{tema}”。打开“大制作”，派出你的团队吧。',
+            'chat_fin' => '🎬 “{tema}”已结束：{pct}% · {nivel}级 · 服务器第 {puesto} 名。奖励已发到所有贡献者的信箱。',
+            'chat_cancelada' => '🎬 本周的大制作已取消，抱歉给大家添麻烦了。下一次会在平常的日期到来。',
+            'tema_otro' => '超级活动'],
+    ];
+    /** Nombre de cada tema en los otros idiomas (el español está en TEMAS). */
+    public const TEMA_NOMBRES = [
+        'en' => ['concierto_estadio' => '3-Night Concert at Sun Stadium', 'final_nacional' => 'Lightning National Tournament Grand Final', 'festival_playa' => 'Waves & Lights Beach Festival',
+            'gala_estrellas' => 'Stars of the Airwaves Gala', 'maraton_nubes' => 'City of Clouds Marathon', 'feria_innovacion' => 'Pacific Innovation Fair'],
+        'pt-BR' => ['concierto_estadio' => 'Show de 3 noites no Estádio do Sol', 'final_nacional' => 'Grande Final do Torneio Nacional Relâmpago', 'festival_playa' => 'Festival Ondas e Luzes na praia',
+            'gala_estrellas' => 'Gala das Estrelas do Ar', 'maraton_nubes' => 'Maratona Cidade das Nuvens', 'feria_innovacion' => 'Feira de Inovação do Pacífico'],
+        'fr' => ['concierto_estadio' => 'Concert de 3 soirs au Stade du Soleil', 'final_nacional' => 'Grande finale du Tournoi national Éclair', 'festival_playa' => 'Festival Vagues et Lumières sur la plage',
+            'gala_estrellas' => 'Gala des Étoiles des Ondes', 'maraton_nubes' => 'Marathon de la Cité des Nuages', 'feria_innovacion' => 'Salon de l\'innovation du Pacifique'],
+        'de' => ['concierto_estadio' => '3-Nächte-Konzert im Sonnenstadion', 'final_nacional' => 'Großes Finale des Nationalen Blitzturniers', 'festival_playa' => 'Strandfestival Wellen & Lichter',
+            'gala_estrellas' => 'Gala der Stars auf Sendung', 'maraton_nubes' => 'Marathon Wolkenstadt', 'feria_innovacion' => 'Innovationsmesse Pazifik'],
+        'it' => ['concierto_estadio' => 'Concerto di 3 serate allo Stadio del Sole', 'final_nacional' => 'Gran Finale del Torneo Nazionale Lampo', 'festival_playa' => 'Festival Onde e Luci in spiaggia',
+            'gala_estrellas' => 'Gala delle Stelle dell\'Etere', 'maraton_nubes' => 'Maratona Città delle Nuvole', 'feria_innovacion' => 'Fiera dell\'Innovazione del Pacifico'],
+        'ru' => ['concierto_estadio' => 'Три вечера концертов на стадионе «Солнце»', 'final_nacional' => 'Гранд-финал Национального турнира «Молния»', 'festival_playa' => 'Пляжный фестиваль «Волны и огни»',
+            'gala_estrellas' => 'Гала «Звёзды эфира»', 'maraton_nubes' => 'Марафон «Город облаков»', 'feria_innovacion' => 'Тихоокеанская ярмарка инноваций'],
+        'tr' => ['concierto_estadio' => 'Güneş Stadyumu\'nda 3 gecelik konser', 'final_nacional' => 'Ulusal Şimşek Turnuvası Büyük Finali', 'festival_playa' => 'Plajda Dalgalar ve Işıklar Festivali',
+            'gala_estrellas' => 'Yayın Yıldızları Galası', 'maraton_nubes' => 'Bulutlar Şehri Maratonu', 'feria_innovacion' => 'Pasifik İnovasyon Fuarı'],
+        'id' => ['concierto_estadio' => 'Konser 3 malam di Stadion Matahari', 'final_nacional' => 'Grand Final Turnamen Nasional Kilat', 'festival_playa' => 'Festival Ombak dan Cahaya di pantai',
+            'gala_estrellas' => 'Gala Bintang Udara', 'maraton_nubes' => 'Maraton Kota Awan', 'feria_innovacion' => 'Pameran Inovasi Pasifik'],
+        'zh-CN' => ['concierto_estadio' => '太阳体育场三晚演唱会', 'final_nacional' => '全国闪电杯总决赛', 'festival_playa' => '海滩浪花灯光节',
+            'gala_estrellas' => '电波之星盛典', 'maraton_nubes' => '云之城马拉松', 'feria_innovacion' => '太平洋创新博览会'],
+    ];
+    /** Nombre de cada nivel en los otros idiomas (el español está en NOMBRE_NIVEL). */
+    public const NIVEL_NOMBRES = [
+        'en' => ['participacion' => 'Participation', 'bronce' => 'Bronze', 'plata' => 'Silver', 'oro' => 'Gold', 'leyenda' => 'Legend'],
+        'pt-BR' => ['participacion' => 'Participação', 'bronce' => 'Bronze', 'plata' => 'Prata', 'oro' => 'Ouro', 'leyenda' => 'Lenda'],
+        'fr' => ['participacion' => 'Participation', 'bronce' => 'Bronze', 'plata' => 'Argent', 'oro' => 'Or', 'leyenda' => 'Légende'],
+        'de' => ['participacion' => 'Teilnahme', 'bronce' => 'Bronze', 'plata' => 'Silber', 'oro' => 'Gold', 'leyenda' => 'Legende'],
+        'it' => ['participacion' => 'Partecipazione', 'bronce' => 'Bronzo', 'plata' => 'Argento', 'oro' => 'Oro', 'leyenda' => 'Leggenda'],
+        'ru' => ['participacion' => 'Участие', 'bronce' => 'Бронза', 'plata' => 'Серебро', 'oro' => 'Золото', 'leyenda' => 'Легенда'],
+        'tr' => ['participacion' => 'Katılım', 'bronce' => 'Bronz', 'plata' => 'Gümüş', 'oro' => 'Altın', 'leyenda' => 'Efsane'],
+        'id' => ['participacion' => 'Partisipasi', 'bronce' => 'Perunggu', 'plata' => 'Perak', 'oro' => 'Emas', 'leyenda' => 'Legenda'],
+        'zh-CN' => ['participacion' => '参与', 'bronce' => '铜', 'plata' => '银', 'oro' => '金', 'leyenda' => '传奇'],
+    ];
+
     /** Extra por puesto en la tabla del servidor (solo con nivel Bronce o más). */
     public const PUESTOS = [1 => [['tipo' => 'creditos', 'cantidad' => 20]], 2 => [['tipo' => 'creditos', 'cantidad' => 15]], 3 => [['tipo' => 'creditos', 'cantidad' => 10]]];
 
@@ -210,7 +312,7 @@ final class GranProduccion
                    SELECT ?, am.jugador_id, am.asociacion_id, CASE WHEN json_valid(p.datos) THEN json_extract(p.datos, '$.stats.events') END, ?
                    FROM asociacion_miembros am LEFT JOIN partidas p ON p.jugador_id = am.jugador_id", [$id, $t]);
             $nom = self::TEMAS[$tema]['nombre'];
-            foreach ($asocs as $a) self::chatAsoc((int) $a['asociacion_id'], '🎬 ¡Empieza la Gran Producción! Tu asociación cubre «' . $nom . '» durante ' . $c['horas'] . ' h. Abre «Gran Producción» y aporta tu cuadrilla.');
+            foreach ($asocs as $a) self::chatAsoc((int) $a['asociacion_id'], 'chat_inicio', ['tema' => $tema, 'horas' => $c['horas']]);
             self::auditar('juego', 'gran_produccion_inicio', 'Producción ' . $id . ' «' . $nom . '» (' . $c['horas'] . ' h): ' . count($asocs) . ' asociaciones');
         });
     }
@@ -414,8 +516,7 @@ final class GranProduccion
                 }
             }
             foreach (Db::todas('SELECT * FROM gp_asociaciones WHERE produccion_id = ? AND progreso > 0', [$id]) as $a) {
-                self::chatAsoc((int) $a['asociacion_id'], '🎬 Terminó «' . $tema . '»: ' . $a['progreso'] . ' % · nivel ' . self::NOMBRE_NIVEL[$a['nivel']] . ' · puesto ' . $a['puesto']
-                    . ' del servidor. Los premios llegaron al buzón de quienes aportaron.');
+                self::chatAsoc((int) $a['asociacion_id'], 'chat_fin', ['tema' => $prod['tema'], 'pct' => $a['progreso'], 'nivel' => $a['nivel'], 'puesto' => $a['puesto']]);
             }
             Db::q("UPDATE gp_producciones SET estado = 'cerrada', cerrado = ? WHERE id = ?", [$t, $id]);
             self::auditar('juego', 'gran_produccion_cierre', 'Producción ' . $id . ' cerrada: ' . $entregados . ' premios al buzón');
@@ -468,7 +569,7 @@ final class GranProduccion
             $motivo = mb_substr(trim($motivo), 0, 200);
             Db::q("UPDATE gp_producciones SET estado = 'cancelada', cerrado = ?, nota = ? WHERE id = ?", [self::ahora(), $motivo !== '' ? $motivo : null, $p['id']]);
             foreach (Db::todas('SELECT asociacion_id FROM gp_asociaciones WHERE produccion_id = ?', [$p['id']]) as $a)
-                self::chatAsoc((int) $a['asociacion_id'], '🎬 La Gran Producción de esta semana se canceló. Perdón por las molestias: la próxima llega en la fecha de siempre.');
+                self::chatAsoc((int) $a['asociacion_id'], 'chat_cancelada');
             self::auditar($quien, 'gran_produccion_cancelar', 'Producción ' . $p['id'] . ' cancelada' . ($motivo !== '' ? ': ' . $motivo : ''));
             return self::produccion($p['id']);
         });
@@ -611,13 +712,13 @@ final class GranProduccion
         if (!$p || $p['estado'] !== 'en_curso') return 0;
         $t = self::ahora();
         $n = 0;
-        $nom = self::TEMAS[$p['tema']]['nombre'] ?? 'el mega evento';
         $suscritos = 'SELECT DISTINCT am.jugador_id, am.asociacion_id, am.desde FROM asociacion_miembros am JOIN push_suscripciones ps ON ps.jugador_id = am.jugador_id';
         if (!(int) $p['push_inicio']) {
             Db::q('UPDATE gp_producciones SET push_inicio = 1 WHERE id = ?', [$p['id']]);
             if ($t < (int) $p['inicio'] + 6 * 3600) {
                 foreach (Db::todas($suscritos) as $x) {
-                    if (Push::encolar((int) $x['jugador_id'], 'liga', '🎬 ¡Empieza la Gran Producción!', 'Tu asociación cubre «' . $nom . '». Entra y envía tu cuadrilla: cada aporte cuenta.',
+                    $L = Push::idiomaJugador((int) $x['jugador_id']);
+                    if (Push::encolar((int) $x['jugador_id'], 'liga', self::texto('push_inicio_t', $L), self::texto('push_inicio_c', $L, ['tema' => $p['tema']]),
                         '/?ir=gran', ['clave' => 'gp:' . $p['id'] . ':inicio', 'vence' => (int) $p['inicio'] + 8 * 3600]) !== null) $n++;
                 }
             }
@@ -631,7 +732,8 @@ final class GranProduccion
                 $libres = 0;
                 foreach (self::FRENTES as $k => $F) if ($F['cada'] !== null) $libres += max(0, self::turnos($p, $k) - ($f ? (int) $f[$k] : 0));
                 if ($libres <= 0) continue;   // ya aportó todo lo que podía: no se le molesta
-                if (Push::encolar((int) $x['jugador_id'], 'liga', '⏰ Faltan 2 h para el cierre', 'La Gran Producción «' . $nom . '» termina pronto y tienes ' . $libres . ' aportes listos.',
+                $L = Push::idiomaJugador((int) $x['jugador_id']);
+                if (Push::encolar((int) $x['jugador_id'], 'liga', self::texto('push_2h_t', $L), self::texto('push_2h_c', $L, ['tema' => $p['tema'], 'libres' => $libres]),
                     '/?ir=gran', ['clave' => 'gp:' . $p['id'] . ':2h', 'vence' => (int) $p['fin']]) !== null) $n++;
             }
         }
@@ -660,10 +762,39 @@ final class GranProduccion
     }
 
     // ------------------------------------------------------------------------------------------ utilidades
-    private static function chatAsoc(int $a, string $texto): void
+    /**
+     * Texto de TEXTOS en un idioma (si falta, español) con los marcadores puestos. {tema} y {nivel} llegan como clave
+     * (concierto_estadio, plata...) y se cambian por su nombre en ese idioma.
+     */
+    public static function texto(string $clave, string $idioma, array $v = []): string
     {
-        try { Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['asociacion:' . $a, mb_substr($texto, 0, 300), self::ahora()]); }
-        catch (\Throwable $e) { error_log('EN VIVO gran_produccion chat: ' . $e->getMessage()); }
+        $L = isset(self::TEXTOS[$idioma]) ? $idioma : 'es';
+        if (array_key_exists('tema', $v)) {
+            $k = (string) $v['tema'];
+            $v['tema'] = isset(self::TEMAS[$k]) ? ($L === 'es' ? self::TEMAS[$k]['nombre'] : (self::TEMA_NOMBRES[$L][$k] ?? self::TEMAS[$k]['nombre'])) : self::TEXTOS[$L]['tema_otro'];
+        }
+        if (array_key_exists('nivel', $v)) {
+            $k = (string) $v['nivel'];
+            $v['nivel'] = $L === 'es' ? (self::NOMBRE_NIVEL[$k] ?? $k) : (self::NIVEL_NOMBRES[$L][$k] ?? self::NOMBRE_NIVEL[$k] ?? $k);
+        }
+        $t = self::TEXTOS[$L][$clave] ?? self::TEXTOS['es'][$clave] ?? $clave;
+        return preg_replace_callback('/\{(\w+)\}/', fn($m) => array_key_exists($m[1], $v) ? (string) $v[$m[1]] : $m[0], $t) ?? $t;
+    }
+
+    /** Aviso en el chat de una asociación: texto en español y los 10 idiomas en textos_json (Chat elige el de quien lee). */
+    private static function chatAsoc(int $a, string $clave, array $v = []): void
+    {
+        $txt = [];
+        foreach (array_keys(self::TEXTOS) as $L) $txt[$L] = mb_substr(self::texto($clave, $L, $v), 0, 300);
+        try {
+            try {
+                Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, textos_json, creado) VALUES (?, NULL, ?, ?, ?)',
+                    ['asociacion:' . $a, $txt['es'], json_encode($txt, JSON_UNESCAPED_UNICODE), self::ahora()]);
+            } catch (\PDOException $e) {
+                if (!str_contains($e->getMessage(), 'textos_json')) throw $e;
+                Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['asociacion:' . $a, $txt['es'], self::ahora()]);   // base sin la columna todavía
+            }
+        } catch (\Throwable $e) { error_log('EN VIVO gran_produccion chat: ' . $e->getMessage()); }
     }
 
     private static function auditar(string $quien, string $accion, string $detalle): void
