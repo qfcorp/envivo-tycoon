@@ -648,9 +648,14 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target && e.target.id === 'bz-codigo') { e.preventDefault(); const b = document.getElementById('bz-canjear-btn'); if (b) b.click(); }
       });
-      setInterval(revisarCuenta, 2000);
+      // Con la app en segundo plano no se revisa nada (ahorra batería); al volver se revisa enseguida
+      setInterval(() => { if (document.visibilityState !== 'hidden') revisarCuenta(); }, 2000);
       setInterval(() => { if (logueado() && document.visibilityState !== 'hidden' && Date.now() - st.cargadoEn > 240000) cargar().catch(() => {}); }, 30000);
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && logueado() && Date.now() - st.cargadoEn > 60000) cargar().catch(() => {}); });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        revisarCuenta();
+        if (logueado() && Date.now() - st.cargadoEn > 60000) cargar().catch(() => {});
+      });
       try { if (root.I18N && root.I18N.onChange) root.I18N.onChange(() => pintarBoton()); } catch (e) { /* nada */ }
       revisarCuenta();
     };

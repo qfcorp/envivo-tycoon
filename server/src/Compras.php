@@ -44,6 +44,8 @@ final class Compras
         // Reglas propias de los módulos de monetización (server/MONETIZACION.md), solo si el módulo está instalado
         if (($p['tipo'] ?? '') === 'pase' && class_exists(Pase::class) && method_exists(Pase::class, 'exigirComprable')) Pase::exigirComprable($jugador, $p['id']);   // 409 pase_ya_premium / sin_temporada
         if (!empty($p['oferta_vip']) && class_exists(Vip::class) && method_exists(Vip::class, 'exigirOferta')) Vip::exigirOferta($jugador, $p);   // 409 oferta_no_disponible
+        if (!empty($p['oferta_regreso'])) { Fallo::si(!class_exists(Regreso::class), 'Esa oferta no está disponible para ti (venció o ya la compraste).', 409, ['codigo' => 'oferta_no_disponible']); Regreso::exigirOferta($jugador, $p); }   // oferta de regreso: solo la abierta para este jugador
+        if (!empty($p['oferta_novato']) && class_exists(RutaNovato::class)) RutaNovato::exigirOferta($jugador, $p);   // 409 oferta_no_disponible (72 horas)
     }
 
     /**

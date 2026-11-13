@@ -44,6 +44,9 @@ try {
     if (class_exists(\EnVivo\ErroresApi::class) && \EnVivo\ErroresApi::esRuta($ruta)) \EnVivo\ErroresApi::responder($ruta, $metodo);
     // Analítica propia (server/INTEGRAR_ANALITICA.md): /api/eventos va ANTES de X-Envivo (sendBeacon no pone cabeceras; revisa el mismo sitio)
     if (class_exists(\EnVivo\AnaliticaApi::class) && \EnVivo\AnaliticaApi::esRuta($ruta)) \EnVivo\AnaliticaApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Avisos por etapa y regreso del jugador (src/Regreso.php, INTEGRAR_REGRESO.md): /api/regreso*. Va ANTES de X-Envivo porque
+    // la baja del correo es un formulario sin cabecera; las demás rutas exigen la cabecera y la sesión ellas mismas.
+    if (class_exists(\EnVivo\RegresoApi::class) && \EnVivo\RegresoApi::esRuta($ruta)) \EnVivo\RegresoApi::responder($ruta, $metodo, Sesiones::jugadorId());
     // Monitor externo (docs/MONITOREO.md): sin sesión ni cabecera, GET o HEAD; prueba que PHP y la base respondan.
     if ($ruta === '/salud') api_salud($metodo);
 
@@ -70,6 +73,12 @@ try {
     if (class_exists(\EnVivo\BuzonApi::class) && \EnVivo\BuzonApi::esRuta($ruta)) \EnVivo\BuzonApi::responder($ruta, $metodo, requiere_sesion());
     // Black Friday: VIP 30 días gratis para las primeras 100 cuentas (src/BlackFriday.php, API.md): /api/promo/black_friday*
     if (class_exists(\EnVivo\BlackFridayApi::class) && \EnVivo\BlackFridayApi::esRuta($ruta)) \EnVivo\BlackFridayApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Eventos de todo el servidor y calendario de adviento (server/INTEGRAR_EVENTOS_SERVIDOR.md): /api/eventos_servidor*
+    if (class_exists(\EnVivo\EventosServidorApi::class) && \EnVivo\EventosServidorApi::esRuta($ruta)) \EnVivo\EventosServidorApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Invita a tu equipo y Productores Aliados (server/INTEGRAR_INVITAR.md): /api/invitar*, /api/aliados/*
+    if (class_exists(\EnVivo\InvitarApi::class) && \EnVivo\InvitarApi::esRuta($ruta)) \EnVivo\InvitarApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Tus primeros 7 días: ruta de novato y oferta de novato (src/RutaNovato.php, API.md): /api/novato*
+    if (class_exists(\EnVivo\RutaNovatoApi::class) && \EnVivo\RutaNovatoApi::esRuta($ruta)) \EnVivo\RutaNovatoApi::responder($ruta, $metodo, requiere_sesion());
     // Copa de Servidores (server/INTEGRAR_COPAS.md): /api/copa*
     if (\EnVivo\CopasApi::esRuta($ruta)) \EnVivo\CopasApi::responder($ruta, $metodo, requiere_sesion());
     // Personal estrella y Pase de Copa (server/INTEGRAR_ESTRELLAS.md): /api/estrellas* y /api/pase_copa/comprar
@@ -82,6 +91,8 @@ try {
     if (\EnVivo\VisitasApi::esRuta($ruta)) \EnVivo\VisitasApi::responder($ruta, $metodo, requiere_sesion());
     // Ayudas de la asociación, Investigación y Tienda de fichas (server/INTEGRAR_AYUDA_ASOC.md): /api/asoc/*
     if (class_exists(\EnVivo\AyudaAsocApi::class) && \EnVivo\AyudaAsocApi::esRuta($ruta)) \EnVivo\AyudaAsocApi::responder($ruta, $metodo, requiere_sesion());
+    // Gran Producción de Asociación, evento de equipo semanal (server/INTEGRAR_GRAN_PRODUCCION.md): /api/gran*
+    if (class_exists(\EnVivo\GranProduccionApi::class) && \EnVivo\GranProduccionApi::esRuta($ruta)) \EnVivo\GranProduccionApi::responder($ruta, $metodo, requiere_sesion());
     // Liga Semanal de Productoras (server/INTEGRAR_LIGA.md): responde y termina
     if (\EnVivo\LigaApi::esRuta($ruta)) \EnVivo\LigaApi::responder($ruta, $metodo, requiere_sesion());
     // Duelo de Productoras y Desafío Técnico del Día (server/INTEGRAR_DUELOS_DESAFIO.md): /api/duelos* y /api/desafio*
@@ -194,6 +205,7 @@ function api_registro(): never
     \EnVivo\Terminos::revisar($in);   // acepta_terminos y edad_16 (server/INTEGRAR_CUENTA.md)
     $id = Cuentas::registrar(texto_de($in, 'email'), texto_de($in, 'nombre'), texto_de($in, 'clave'));
     \EnVivo\Terminos::aceptar($id, 'registro');
+    if (class_exists(\EnVivo\Invitaciones::class)) \EnVivo\Invitaciones::alRegistrar($id, $in);   // ?ref= y código de creador (INTEGRAR_INVITAR.md); nunca falla
     Sesiones::abrir($id);
     Http::json(200, \EnVivo\Universos::estado($id) + \EnVivo\Fusiones::estado($id) + Cuentas::estado($id) + \EnVivo\Discord::estado($id));
 }

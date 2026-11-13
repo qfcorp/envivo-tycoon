@@ -146,7 +146,7 @@ check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo r
 
 echo
 echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo, Partida en la nube (versión y dispositivo activo)"
-for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta cuenta_clave facturacion visitas errores misiones push buzon edad_servidor paypal tukanpagos panel_ventas conector_central black_friday; do
+for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta cuenta_clave facturacion visitas errores misiones push buzon edad_servidor paypal tukanpagos panel_ventas conector_central black_friday eventos_servidor invitar regreso novato; do
   # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
   env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
   grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'
@@ -158,7 +158,7 @@ done
 echo
 echo "== 3d. Monetización (server/MONETIZACION.md): VIP y regalos, Sede oficial, Pase de temporada, Personal estrella, Ayudas de asociación"
 echo "   (cada suite corre solo si su módulo ya está en server/: si falta el archivo de pruebas o la clase, se salta con aviso)"
-for par in vip:Vip sede_oficial:SedeOficial pase:Pase estrellas:Estrellas impulsos:Impulsos diario:Diario ayuda_asoc:AyudaAsoc; do
+for par in vip:Vip sede_oficial:SedeOficial pase:Pase pase_mejoras:Pase estrellas:Estrellas impulsos:Impulsos diario:Diario ayuda_asoc:AyudaAsoc gran_produccion:GranProduccion; do
   suite=${par%%:*}; clase=${par##*:}
   if [ ! -f "$SRV/tests/pruebas_$suite.php" ] || [ ! -f "$SRV/src/$clase.php" ]; then
     echo "  AVISO pruebas_$suite.php: se salta (todavía no está el módulo: falta tests/pruebas_$suite.php o src/$clase.php)"
@@ -281,6 +281,13 @@ NGC
   CAB=$(curl -s -D - -o /dev/null "$B/recuperar.html" | tr -d '\r')
   check "nginx: /recuperar.html (200, CSP con script-src 'self', no-store) y /pago-assets/recuperar.js (200)" "200 1 1 200" "$(echo "$CAB" | head -1 | cut -d' ' -f2) $(echo "$CAB" | grep -ciE "^content-security-policy: .*script-src 'self'") $(echo "$CAB" | grep -ciE '^cache-control: no-store') $(curl -s -o /dev/null -w '%{http_code}' "$B/pago-assets/recuperar.js")"
   CAB=$(curl -s -D - -o /dev/null "$B/" | tr -d '\r')
+  # Compresion (auditoria 13-nov): el JavaScript, el CSS, el manifiesto y el JSON salen con gzip si el navegador lo pide
+  GZ=""
+  for r in /js/ui.js /js/logic.js /js/lang/es.js /manifest.webmanifest /api/estado /sw.js; do
+    e=$(curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip, br' "$B$r" | tr -d '\r' | grep -ciE '^content-encoding: gzip'); [ "$e" = "1" ] || GZ="$GZ $r"
+  done
+  check "nginx: gzip en .js, manifiesto, JSON de la API y sw.js (ninguno sin comprimir)" "" "$GZ"
+  check "nginx: sin Accept-Encoding no se comprime (clientes viejos)" "0" "$(curl -s -o /dev/null -D - "$B/js/ui.js" | tr -d '\r' | grep -ciE '^content-encoding:')"
   check "nginx: CSP del juego con las fuentes de Google en connect-src (el service worker las baja)" "1" "$(echo "$CAB" | grep -ciE "^content-security-policy: .*connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;")"
   check "nginx: Permissions-Policy en el juego, la API y las legales" "1 1 1" "$(for r in / /api/estado /terminos.html; do curl -s -D - -o /dev/null "$B$r" | grep -ciE '^permissions-policy: camera=\(\)'; done | tr '\n' ' ' | sed 's/ $//')"
   head -c 100000 /dev/zero | tr '\0' a > "$TMP/grande.txt"

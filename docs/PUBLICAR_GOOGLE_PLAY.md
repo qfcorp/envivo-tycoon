@@ -157,6 +157,7 @@ en el servidor; créalos igual y **actívalos cuando yo te confirme** que su mó
 |---|---|---|---|---|---|
 | `pase_premium` | Pase de Temporada Premium | Premios premium en los 40 niveles de esta temporada. Dura la temporada (28 días). | 4,99 | 1 por temporada | Pase |
 | `pase_premium_plus` | Pase de Temporada Premium Plus | Todo el Pase Premium de esta temporada y 10 niveles ya desbloqueados. | 9,99 | 1 por temporada | Pase |
+| `pase_semanal` | Mini Pase Semanal | Solo esta semana del pase: premio premium de hasta 8 niveles que subas desde que lo compras. Sin créditos, cosméticos ni personal estrella. | 1,49 | 1 por semana | Pase |
 | `pack_obra_s` | Pack de obra S | Sede oficial: 10 h de aceleradores de obra y materiales. Contenido fijo. | 1,99 | Sí | Sede oficial |
 | `pack_obra_m` | Pack de obra M | Sede oficial: 30 h de aceleradores de obra y materiales. Contenido fijo. | 4,99 | Sí | Sede oficial |
 | `pack_obra_l` | Pack de obra L | Sede oficial: 80 h de aceleradores de obra y materiales. Contenido fijo. | 9,99 | Sí | Sede oficial |
@@ -167,6 +168,10 @@ en el servidor; créalos igual y **actívalos cuando yo te confirme** que su mó
 | `oferta_campeon` | Oferta del campeón | Por tu primera Copa: 1.000 créditos, dinero del juego y repuestos. Contenido fijo. | 4,99 | Con tope | VIP |
 | `oferta_sede_5` | Oferta Sede nivel 5 | Tu sede llegó a nivel 5: 800 créditos, dinero del juego y repuestos. Contenido fijo. | 4,99 | Con tope | VIP |
 | `oferta_sede_10` | Oferta Sede nivel 10 | Tu sede llegó a nivel 10: 1.800 créditos, dinero del juego y repuestos. Contenido fijo. | 9,99 | Con tope | VIP |
+| `regreso_s` | Oferta de regreso | Una sola vez, por tu regreso: 150 créditos, $3.000 del juego, 3 cables y 3 baterías. Contenido fijo. | 0,99 | 1 por ausencia | Regreso |
+| `regreso_m` | Oferta de regreso Plus | Una sola vez, por tu regreso: 900 créditos, $8.000 del juego, 5 cables, 5 baterías y todo tu equipo al 100 %. Contenido fijo. | 4,99 | 1 por ausencia | Regreso |
+| `regreso_l` | Gran oferta de regreso | Una sola vez, por tu regreso: 2.000 créditos, $15.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %. Contenido fijo. | 9,99 | 1 por ausencia | Regreso |
+| `oferta_novato` | Oferta de novato | Solo en tus primeras 72 horas, una vez: 200 créditos, $3.000 del juego, 5 cables y 3 baterías. | 0,99 | No (1 por cuenta) | Ruta de novato |
 | *(otros)* | *Los que agreguen los ayudantes de monetización (ofertas de temporada, packs de eventos especiales…)* | | | | ⏳ se agregan a esta tabla cuando lleguen a `Catalogo.php` |
 
 **No crear en Play:** `transferencia_cuenta` (solo se vende en la web) ni `estrella_copa` (se paga solo con créditos).
@@ -352,7 +357,9 @@ nivel —0,99 / 1,99 / 2,99 / 4,99 / 9,99 / 19,99— y asígnala a cada producto
 
 | Nivel (USD) | 🇪🇨 Ecuador (USD) | 🇨🇴 Colombia (COP) | 🇵🇪 Perú (PEN) | Productos de ese nivel |
 |---|---|---|---|---|
+| 0,99 | 0,99 | 3.500 | 3,49 | `bienvenida`, `oferta_novato`, refuerzos |
 | 0,99 | 0,99 | 3.500 | 3,49 | `bienvenida`, refuerzos |
+| 1,49 | 1,49 | 4.900 | 4,90 | `pase_semanal` |
 | 1,99 | 1,99 | 6.900 | 6,90 | `creditos_250`, `pack_obra_s`, `oferta_vip_s` |
 | 2,99 | 2,99 | 9.900 | 9,90 | `inicio`, `pase_copa` |
 | 4,99 | 4,99 | 16.900 | 16,90 | `creditos_700`, `tarjeta_mensual`, `pase_premium`, `pack_obra_m`, `oferta_vip_m`, `oferta_campeon`, `oferta_sede_5` |

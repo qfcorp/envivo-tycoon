@@ -314,6 +314,7 @@ final class AyudaAsoc
             Db::q('INSERT INTO ayuda_asoc_donaciones (asociacion_id, jugador_id, tech, tipo, material, cantidad, puntos, fichas, dia, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [$a, $j, $tech, $tipo, $mat, $cant, $puntos, $fichas, $dia, $t]);
             $donId = Db::ultimoId();
+            if (class_exists(Pase::class) && isset(Pase::XP['asoc_donar'])) Pase::sumarXp($j, Pase::XP['asoc_donar'], 'asoc_donar', 'donacion:' . $donId);   // INTEGRAR_PASE.md §5 (misiones de asociación)
             // Progreso y niveles de la tecnología (lo que sobra pasa al nivel siguiente)
             $nivel = $inv['nivel']; $prog = $inv['progreso'] + $puntos; $subio = 0;
             while ($nivel < $T['max'] && $prog >= $T['costos'][$nivel]) { $prog -= $T['costos'][$nivel]; $nivel++; $subio++; }

@@ -69,7 +69,8 @@
   LUGARES.forEach((L) => (L.mods || []).forEach((m) => { MAPA[m] = L.k; }));
   ['pase', 'vip', 'impulsos'].forEach((m) => { MAPA[m] = 'mas'; });
   const rectDe = (L) => (L.rect ? L.rect : [COLS[L.c].x, ROWS[L.r].y, COLS[L.c].w, ROWS[L.r].h]);
-  const lugarDeModulo = (m) => (m && m.hub && (POR_K[m.hub] || m.hub === 'mas') ? m.hub : MAPA[m && m.id] || 'mas');
+  // { hub: <su propio id> } (ej. js/novato.js): el módulo tiene su propia hoja, que se abre con un botón data-hub="<id>"
+  const lugarDeModulo = (m) => (m && m.hub && (POR_K[m.hub] || m.hub === 'mas') ? m.hub : m && m.hub && m.hub === m.id ? m.id : MAPA[m && m.id] || 'mas');
 
   /* =========================================================
      Dibujo
@@ -475,6 +476,13 @@
       ${st.nuevo ? '<span class="hs-b nuevo" style="position:static;flex:none"></span>' : ''}</button>`;
   }
 
+  // Accesos grandes de los módulos con acceso(ctx) (ej. js/novato.js "Tus primeros 7 días"): vacío = no se ve
+  function accesos() {
+    return (root.EnVivoInicio || []).filter((m) => m && typeof m.acceso === 'function').map((m) => {
+      try { return m.acceso(D.ctx) || ''; } catch (e) { return ''; }
+    }).join('');
+  }
+
   function masEstado() {
     let claim = 0;
     (D.modulos || []).forEach((m) => { if (m.html && lugarDeModulo(m) === 'mas') claim += analizar(m.html).claim; });
@@ -502,7 +510,7 @@
       ${LUGARES.map((L) => boton(L, estados[L.k])).join('')}
       <button type="button" class="hub-mas" data-hub="mas" aria-label="${esc(t('mas'))}"><span aria-hidden="true">&#8943;</span>${mc ? '<span class="hs-b amb">!</span>' : ''}</button>
       </div></div>
-      ${ahora()}${capitulo()}${abierta ? hojaHtml(abierta) : ''}`;
+      ${ahora()}${accesos()}${capitulo()}${abierta ? hojaHtml(abierta) : ''}`;
     // La hoja abierta se pinta otra vez con lo nuevo: se queda donde estaba
     if (abierta && doc) {
       const v = doc.querySelector('#hubSheet .hub-sh');
@@ -530,6 +538,7 @@
   // Título de la hoja: el del módulo si el lugar tiene uno solo y el módulo lo da (ya traducido); si no, el del hub
   function tituloHoja(k) {
     const L = POR_K[k];
+    if (!L && k !== 'mas') { const m = (D.modulos || []).find((x) => x.id === k); if (m && m.titulo) return m.titulo; }
     if (L && L.mods && L.mods.length === 1 && !L.extras) {
       const m = (D.modulos || []).find((x) => x.id === L.mods[0]);
       if (m && m.titulo) return m.titulo;
@@ -546,7 +555,7 @@
   /** Lugar de la sede donde está lo que busca `sel` (para las pruebas y las guías), o null. */
   function buscar(sel) {
     if (!D || !doc) return null;
-    const ks = LUGARES.filter((L) => !L.tab).map((L) => L.k).concat('mas');
+    const ks = LUGARES.filter((L) => !L.tab).map((L) => L.k).concat('mas', (D.modulos || []).filter((m) => m.hub && m.hub === m.id && !POR_K[m.id]).map((m) => m.id));
     for (const k of ks) {
       try { const tp = doc.createElement('template'); tp.innerHTML = htmlHoja(k); if (tp.content.querySelector(sel)) return k; } catch (e) { /* sigue */ }
     }

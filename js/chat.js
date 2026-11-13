@@ -125,6 +125,10 @@
     // Ayudas / Investigación / Tienda de la asociación (js/ayuda_asoc.js, server/INTEGRAR_AYUDA_ASOC.md)
     const barra = p.querySelector('#chat-asoc-barra');
     if (barra) { barra.hidden = !(root.AyudaAsoc && st.canal === 'asociacion' && (st.ctx.Api.estado || {}).asociacion); if (!barra.hidden) root.AyudaAsoc.barra(barra); }
+    // Botón "Invitar" de la asociación (js/invitar.js, server/INTEGRAR_INVITAR.md)
+    if (root.Invitar) root.Invitar.enAsociacion(p, st.canal === 'asociacion' && !!(st.ctx.Api.estado || {}).asociacion);
+    // Gran Producción de Asociación (js/gran_produccion.js, server/INTEGRAR_GRAN_PRODUCCION.md): franja debajo de la barra
+    if (root.GranProduccion) root.GranProduccion.franja(p, st.canal === 'asociacion' && !!(st.ctx.Api.estado || {}).asociacion);
     pintarLista(); pintarBoton(); ciclo();
   }
   function cerrar() { st.abierto = false; document.getElementById('chat-panel').hidden = true; pintarBoton(); ciclo(); }
@@ -217,6 +221,7 @@
   root.Chat = {
     iniciar(ctx) {
       if (root.AyudaAsoc) root.AyudaAsoc.iniciar(ctx); else root.AyudaAsocCtx = ctx;   // js/ayuda_asoc.js usa el mismo ctx
+      if (root.GranProduccion) root.GranProduccion.iniciar(ctx); else root.GranProduccionCtx = ctx;   // js/gran_produccion.js también
       if (st.ctx) { st.ctx = ctx; pintarBoton(); return; }
       st.ctx = ctx;
       construir();
@@ -232,6 +237,7 @@
       if (b) b.setAttribute('aria-label', T('chat.abrir'));
       pintarBoton(); if (st.abierto) abrir();
       if (root.AyudaAsoc) root.AyudaAsoc.refrescar();
+      if (root.GranProduccion) root.GranProduccion.refrescar();
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

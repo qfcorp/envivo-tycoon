@@ -13,7 +13,8 @@
      Analitica.instalacion()          → el número al azar de esta instalación
    Eventos estándar: app_abierta, tutorial_paso (lo toma solo de js/guia.js), evento_iniciado, evento_terminado,
    capitulo_completado, cuenta_creada, tienda_abierta, compra_iniciada, compra_aprobada, modo_online_abierto y
-   sesion_fin (duración visible acumulada; lo manda solo). Los módulos pueden usar nombres "m_<algo>".
+   sesion_fin (duración visible acumulada; lo manda solo) y novato_dia (js/novato.js: avance por día de "Tus primeros 7 días",
+   para medir la retención). Los módulos pueden usar nombres "m_<algo>".
    Apagada: con la opción del jugador, fuera de http(s) (archivo, Claude) y en pruebas automáticas
    (navigator.webdriver) salvo que la prueba ponga window.__ENVIVO_ANALITICA = true.
    ========================================================= */
@@ -27,7 +28,8 @@
   const K_COMPRA = 'envivo_analitica_compra'; // último producto que se empezó a comprar (para compra_aprobada al volver del pago)
   const MAX_COLA = 200, LOTE = 50, CADA_MS = 30000, UMBRAL = 20, NUEVA_SESION_MS = 30 * 60000;
   const NOMBRES = ['app_abierta', 'tutorial_paso', 'evento_iniciado', 'evento_terminado', 'capitulo_completado', 'cuenta_creada',
-    'tienda_abierta', 'compra_iniciada', 'compra_aprobada', 'modo_online_abierto', 'sesion_fin'];
+    'tienda_abierta', 'compra_iniciada', 'compra_aprobada', 'modo_online_abierto', 'sesion_fin',
+    'novato_dia'];   // novato_dia: avance de "Tus primeros 7 días" (js/novato.js) { dia, accion: inicio|completo|reclamado|final, dia_real, cuenta }
   const PASOS_GUIA = ['intro', 'clientes', 'evento', 'auto', 'aire', 'elegir', 'terminar', 'resultado', 'fin'];
 
   /* ---------- almacenamiento (nunca rompe: modo privado o sin espacio) ---------- */

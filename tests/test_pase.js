@@ -17,6 +17,15 @@ const html = leer('index.html');
 const estilos = html.slice(html.indexOf('<style>'), html.indexOf('</style>') + 8);
 
 let fallas = 0;
+// Captura de pantalla con reintentos: con la máquina cargada (pruebas en paralelo) Chromium a veces responde
+// "Unable to capture screenshot"; la captura es solo para mirar, no es lo que se prueba
+async function captura(page, opts) {
+  for (let i = 0; i < 4; i++) {
+    try { await page.screenshot(opts); return true; } catch (e) { await new Promise((r) => setTimeout(r, 400 * (i + 1))); }
+  }
+  console.log('  (captura omitida: ' + (opts && opts.path) + ')');
+  return false;
+}
 const ok = (c, m) => { console.log((c ? '  ✔ ' : '  ✘ ') + m); if (!c) fallas++; };
 
 /* ---------- Textos: los 10 idiomas con todas las claves ---------- */
@@ -205,7 +214,7 @@ async function sinDesborde(page, tag) {
   const w = await page.evaluate(() => document.querySelector('[data-pase="tarjeta"] .pase-bar i').style.width);
   ok(w === '63%', 'Barra de XP al 63 % (' + w + ')');
   await sinDesborde(page, 'Inicio');
-  await page.screenshot({ path: cap('inicio') });
+  await captura(page, { path: cap('inicio') });
   const renders = await page.evaluate(() => window.__renders);
   await page.waitForTimeout(400);
   ok(await page.evaluate(() => window.__renders) === renders, 'La tarjeta no se vuelve a pedir en bucle');
@@ -227,7 +236,7 @@ async function sinDesborde(page, tag) {
   ok(/hasta 420 créditos/.test(txt) && /sin cajas sorpresa/.test(txt), 'Contenido fijo y visible, tope de créditos');
   ok(/Reclamar todo \(3\)/.test(txt), 'Botón "Reclamar todo (3)"');
   await sinDesborde(page, 'pantalla del pase');
-  await page.screenshot({ path: cap('modal') });
+  await captura(page, { path: cap('modal') });
 
   console.log('Deslizar las pistas');
   await page.evaluate(() => { document.querySelector('.pase-scroll').scrollLeft = 99999; });
@@ -236,7 +245,7 @@ async function sinDesborde(page, tag) {
   ok(fin.sl === fin.max && fin.x === 0, 'Al final de las pistas (nivel 40) sin mover la página');
   ok(await page.evaluate(() => { const l = document.querySelector('.pase-lbl').getBoundingClientRect(); const s = document.querySelector('.pase-scroll').getBoundingClientRect(); return Math.abs(l.left - s.left) < 2; }), 'Las etiquetas Gratis / Premium quedan fijas a la izquierda');
   await sinDesborde(page, 'pistas al final');
-  await page.screenshot({ path: cap('nivel40') });
+  await captura(page, { path: cap('nivel40') });
   await page.click('.pase-celda.p[data-nivel="40"]');
   ok(/Nv 40 · Premium:/.test(await page.locator('[data-pase="detalle"]').textContent()) && /Título de chat|Cosmético/.test(await page.locator('[data-pase="detalle"]').textContent()), 'Tocar un premio bloqueado muestra qué es (sin pedir nada)');
   ok(!srv.pedidos.some((p) => p.ruta === '/api/pase/reclamar'), '…y no llama al servidor');
@@ -272,7 +281,7 @@ async function sinDesborde(page, tag) {
   ok(await page.locator('[data-pase-comprar]').count() === 0 && /Premium activo/.test(await page.locator('[data-pase="resumen"]').textContent()), 'Sin botones de compra y con "Premium activo"');
   ok(/Créditos de vuelta: 0\/420/.test(await page.locator('[data-pase="resumen"]').textContent()), 'Créditos de vuelta 0/420');
   await sinDesborde(page, 'premium');
-  await page.screenshot({ path: cap('premium') });
+  await captura(page, { path: cap('premium') });
   ok(/7 premios por reclamar/.test(await page.locator('[data-pase="tarjeta"]').textContent()), 'La tarjeta de Inicio también se actualiza');
 
   console.log('Misiones');
@@ -284,7 +293,7 @@ async function sinDesborde(page, tag) {
   ok(/Hoy llevas 230 de 700 XP/.test(await mis.textContent()), 'Cómo se gana XP y el tope del día');
   ok(/Nuevas en 1[34] h/.test(await mis.textContent()), 'Cuándo se renuevan las diarias');
   await sinDesborde(page, 'misiones');
-  await page.screenshot({ path: cap('misiones') });
+  await captura(page, { path: cap('misiones') });
 
   console.log('Saltar niveles');
   await page.locator('[data-pase="saltar"]').scrollIntoViewIfNeeded();
@@ -293,7 +302,7 @@ async function sinDesborde(page, tag) {
   ok(/Saltar 3 · 450 créditos/.test(await page.locator('[data-pase-acc="saltar"]').textContent()), 'Con + y −: "Saltar 3 · 450 créditos"');
   await page.click('[data-pase-acc="saltar"]');
   ok(/¿Saltar 3 nivel\(es\) por 450 créditos\?/.test(await page.locator('[data-pase="saltar"]').textContent()) && !srv.pedidos.some((p) => p.ruta === '/api/pase/saltar'), 'Pide confirmación antes de gastar');
-  await page.screenshot({ path: cap('saltar') });
+  await captura(page, { path: cap('saltar') });
   await page.click('[data-pase-acc="saltar-si"]');
   await page.waitForFunction(() => window.__toasts.some((x) => /nivel 10/.test(x)));
   const ps = srv.pedidos.find((p) => p.ruta === '/api/pase/saltar');
@@ -306,12 +315,16 @@ async function sinDesborde(page, tag) {
 
   console.log('Temporada anterior en los días de gracia');
   srv.s.anterior = true;
-  await page.evaluate(() => window.Pase.recargar());
-  await page.waitForSelector('[data-pase="anterior"]');
+  // Puede haber una recarga en curso de antes (con la temporada anterior apagada): se pide otra vez hasta que llegue
+  for (let i = 0; i < 6 && !(await page.$('[data-pase="anterior"]')); i++) {
+    await page.evaluate(() => window.Pase.recargar());
+    await page.waitForSelector('[data-pase="anterior"]', { timeout: 5000 }).catch(() => {});
+  }
+  await page.waitForSelector('[data-pase="anterior"]', { timeout: 30000 });
   ok(/Temporada 0 · Gira de conciertos: te quedan 2 d 5 h para reclamar 2 premio\(s\)/.test(await page.locator('[data-pase="anterior"]').textContent()), 'Aviso de la anterior con el tiempo de gracia (' + (await page.locator('[data-pase="anterior"]').textContent()).trim() + ')');
   ok(/Reclamar todo \(\d+\)/.test(await page.locator('[data-pase-acc="todo"]').textContent()), 'Reclamar todo incluye la anterior');
   await page.locator('#pase-ov .pase-cuerpo').evaluate((e) => { e.scrollTop = 0; });
-  await page.screenshot({ path: cap('anterior') });
+  await captura(page, { path: cap('anterior') });
   await page.click('[data-pase-acc="todo"]');
   await page.waitForFunction(() => !document.querySelector('[data-pase="anterior"]'));
   ok(true, 'Después de reclamar, el aviso de la anterior se va');
@@ -356,7 +369,7 @@ async function sinDesborde(page, tag) {
   await page.waitForSelector('#pase-ov [data-pase="premios"]');
   ok(/第 1 赛季 · 骷髅之夜/.test(await page.locator('#pase-ov').textContent()), 'Chino: nombre de la temporada');
   await sinDesborde(page, 'chino');
-  await page.screenshot({ path: cap('zh') });
+  await captura(page, { path: cap('zh') });
   await page.keyboard.press('Escape');
   await page.evaluate(() => { window.I18N = undefined; });
   ok(!errores.length, 'Sin errores de JS (390x844)' + (errores.length ? ': ' + errores.slice(0, 3).join(' | ') : ''));
@@ -367,15 +380,15 @@ async function sinDesborde(page, tag) {
   await p2.page.waitForSelector('[data-pase="tarjeta"] h2');
   ok(/Premium Plus activo/.test(await p2.page.locator('[data-pase="tarjeta"]').textContent()), 'Tarjeta con "Premium Plus activo"');
   await sinDesborde(p2.page, 'Inicio 360');
-  await p2.page.screenshot({ path: cap('360_inicio') });
+  await captura(p2.page, { path: cap('360_inicio') });
   await p2.page.click('[data-pase="tarjeta"] [data-acc="abrir"]');
   await p2.page.waitForSelector('#pase-ov [data-pase="premios"]');
   await sinDesborde(p2.page, 'pantalla 360');
   ok(await p2.page.evaluate(() => { const c = document.querySelector('.pase-col.actual').getBoundingClientRect(); const s = document.querySelector('.pase-scroll').getBoundingClientRect(); return c.left >= s.left && c.right <= s.right; }), 'El nivel actual (24) se ve al abrir');
-  await p2.page.screenshot({ path: cap('360') });
+  await captura(p2.page, { path: cap('360') });
   await p2.page.locator('[data-pase="saltar"]').scrollIntoViewIfNeeded();
   await sinDesborde(p2.page, 'saltos 360');
-  await p2.page.screenshot({ path: cap('360_abajo') });
+  await captura(p2.page, { path: cap('360_abajo') });
   ok(!p2.errores.length, 'Sin errores de JS (360x780)' + (p2.errores.length ? ': ' + p2.errores.slice(0, 3).join(' | ') : ''));
 
   await browser.close();

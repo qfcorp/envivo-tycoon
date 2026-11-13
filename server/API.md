@@ -246,6 +246,42 @@ bloque «Black Friday» (ajustes `bf_activa`, `bf_desde`, `bf_hasta`, `bf_cupo`,
   de lo ya reclamado.
 - **Juego:** `js/black_friday.js` pone una franja arriba de Inicio solo con fase `activa` o `agotada` (contador cada minuto).
 
+## Regreso del jugador y avisos por etapa (`src/Regreso.php`, `src/RegresoApi.php`, `server/INTEGRAR_REGRESO.md`)
+| ruta | cuerpo | respuesta |
+|---|---|---|
+| GET\|POST `/api/regreso` | `{zona?: 'America/Guayaquil'}` (sesión; POST con `X-Envivo: 1`) | `{ok, ausencia: null \| {id, dias, nivel: 7\|14\|30, regalo: {nivel, creditos, entregas: [{tipo, item, cantidad, nombre}]}, ventaja: {dias: 3, pago_pct: 25, xp_mult: 2}, oferta: bool, reclamable: true}, ventaja: null \| {id, hasta, hasta_ms, pago_pct, xp_mult}, oferta: null \| {producto, nombre, detalle, precio, creditos, entregas, vence}}`. Guarda la zona (para no avisar de noche en la hora del jugador) y la señal de vida. 401 `sesion_requerida`, 403 `cabecera_requerida` |
+| POST `/api/regreso/reclamar` | `{id}` (sesión y `X-Envivo: 1`) | lo mismo + `{entregas, creditos_recibidos, regalo, creditos}`. Créditos al Monedero (motivo `regreso`, ref `regreso:<id>`); dinero / repuestos / reparar como entregas (origen `regreso:<id>`, las aplica el juego con `/api/estado`). Una vez por ausencia. 404 `regreso_no_disponible`, 409 `regreso_ya_reclamado` / `regreso_apagado`, 400 `datos_invalidos`, 403 `cuenta_*` |
+| GET `/api/regreso/baja?t=<32 hex>` | — (enlace del correo, sin sesión) | página HTML con un botón (no da de baja sola: los revisores de enlaces no la activan). 404 si el código no existe |
+| POST `/api/regreso/baja` | `t=<32 hex>` (formulario, sin `X-Envivo`) | página «Listo»: no más correos de regreso para esa cuenta (auditoría `regreso_baja_correo`) |
+
+- **Ofertas** `regreso_s` ($0.99, nunca pagó o compraba < $3), `regreso_m` ($4.99, < $8), `regreso_l` ($9.99): tipo `oferta`,
+  `oferta_regreso: true` (no salen en la tienda general). `Compras::exigirComprable` → `Regreso::exigirOferta` (409 `oferta_no_disponible`
+  si no es la suya, venció a las 72 h o ya la compró); el gancho `compra_aprobada` la marca usada.
+- **Push** (categorías `etapa` y `regreso` → interruptor `premio`; `cierre` → `duelo`): máximo `Push::TOPE_REGRESO` (2) al día y silencio
+  de 22:00 a 08:00 en la zona del jugador. El recordatorio viejo de `Push` a los 3/7/14 días no sale si Regreso lo cubre.
+## Tus primeros 7 días: ruta de novato y oferta de novato (`src/RutaNovato.php`, `src/RutaNovatoApi.php`)
+Solo cuentas **nuevas**: la ruta dura **14 días** desde su inicio (`jugadores.creado`, o hasta 3 días antes si la partida empezó
+sin cuenta: `POST /api/novato/empezar`). Se abre **un día por día real** (calendario de America/Guayaquil, 1 día de tolerancia por
+la zona del celular); los días anteriores se reclaman cuando quieras. Se apaga con el ajuste `novato_activa = 0`.
+Tablas `novato_jugadores` y `novato_reclamos` (`migraciones/ruta_novato.sql`, `UNIQUE (jugador_id, clave)`).
+
+| ruta | cuerpo | respuesta |
+|---|---|---|
+| GET `/api/novato` | — (sesión) | `{ok, activa, elegible, inicio, inicio_t, ahora_t, dia, dias: 7, ventana: 14, reclamados: ['d1',…,'final'], final, premios, premio_final, oferta: {producto: 'oferta_novato', disponible, hasta, hasta_t, comprada, precio, creditos, entregas}}` |
+| `/api/novato/empezar` | `{inicio: segundos Unix}` | lo mismo que el GET. Solo la primera vez y sin premios reclamados; nunca más de 3 días antes de crear la cuenta |
+| `/api/novato/reclamar` | `{clave: 'd1'…'d7' \| 'final', ya_local?: bool}` | `{ok, clave, premio, ya_local, creditos_dados, entregas, creditos, estado}`. 400 `falta_clave` / `novato_clave`; 409 `novato_bloqueado` (`dia`) / `novato_incompleto` (`hechos`) / `novato_terminado` / `ya_reclamado`; 429 `limite_intentos`; 403 `cuenta_*` |
+
+- **Premios fijos** (`RutaNovato::PREMIOS`, la misma tabla que `js/novato.js`): por día dinero del juego y repuestos (los suma el
+  juego) y créditos los días 3, 5 y 7 (10, 15 y 25). **Premio grande** (`final`, solo con los 7 días reclamados en el servidor):
+  50 créditos, $5.000 del juego y un **camarógrafo internacional** de habilidad 4 (entrega `personal_intl`, nivel `semi_senior`,
+  sin ventaja en Duelos), aviso en el buzón (`ref novato:final`) y auditoría `novato_final`. Con `ya_local` (el juego ya lo dio
+  sin cuenta) solo van los créditos. Créditos con motivo `novato` y ref `novato:<clave>`.
+- **Oferta de novato** `oferta_novato` ($0,99, una sola vez, tipo `oferta` con entregas fijas: 200 créditos, $3.000, 5 cables y
+  3 baterías): solo las primeras **72 horas** desde el inicio (`RutaNovato::exigirOferta` desde `Compras::exigirComprable`: 409
+  `oferta_no_disponible`). No sale en la lista general de la tienda (`Catalogo::tienda`), solo en la hoja de la ruta.
+- **Analítica**: el juego manda `novato_dia {dia, accion: inicio|completo|reclamado|final, dia_real, cuenta}`; el Centro de
+  Control → Analítica muestra la tabla «Tus primeros 7 días» (`RutaNovato::resumen`).
+
 ## Monetización (server/MONETIZACION.md)
 - **Ganchos** (`src/Ganchos.php`): `Compras::aprobar` emite `compra_aprobada {compra_id, jugador_id, producto, monto_usd,
   canal: 'plux'|'paypal'|'google'}` (dentro de su transacción, cada oyente en un SAVEPOINT; no se emite si no se entregó nada: producto
@@ -270,7 +306,7 @@ son el mismo saldo: libro `festival_pases` (idempotente por `ref`, tope 10; lo q
 150 créditos + camarógrafo senior por 3 eventos + 3 cables) · `inicio` $2,99 (una vez) · `tarjeta_mensual` $4,99 (30 días,
 20 créditos/día; otra compra suma días) · `vip30` $9,99 · `transferencia_cuenta` $9,99 (no sale en la tienda).
 Monetización (los mismos ids en Google Play; cada uno lleva `modulo` y queda apagado y oculto mientras su módulo no esté):
-`pase_premium` $4,99 y `pase_premium_plus` $9,99 (pase de temporada; pantalla propia, no salen en la lista general) ·
+`pase_premium` $4,99, `pase_premium_plus` $9,99 y `pase_semanal` $1,49 (pase de temporada y Mini Pase Semanal; pantalla propia, no salen en la lista general) ·
 `pack_obra_s` $1,99 / `pack_obra_m` $4,99 / `pack_obra_l` $9,99 (Sede oficial: aceleradores de obra + materiales, contenido
 fijo) · `pase_copa` $2,99 (+5 eventos de preparación por día en la copa de esa semana; también por 300 créditos en
 `/api/pase_copa/comprar`; pantalla propia) · ofertas escalonadas del VIP `oferta_vip_s` $1,99, `oferta_vip_m` $4,99,

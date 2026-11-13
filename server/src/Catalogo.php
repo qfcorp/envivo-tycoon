@@ -38,6 +38,8 @@ final class Catalogo
         //      Google Play usa los MISMOS ids. El contenido es fijo y a la vista (sin cajas sorpresa).
         // Pase de Temporada (server/INTEGRAR_PASE.md §1): no sale en la lista general de la tienda (tiene su pantalla)
         'pase_premium'      => ['tipo' => 'pase', 'modulo' => 'Pase', 'nombre' => 'Pase de Temporada Premium', 'detalle' => 'Esta temporada: premio premium en los 40 niveles (materiales, aceleradores de obra, marco de productora, adorno de sede, título de chat, hasta 420 créditos y un contrato de personal estrella). Si ya avanzaste, reclamas los premios de los niveles que ya tienes. No se renueva solo', 'precio' => 4.99, 'creditos' => 0, 'una_vez' => false],
+        // Mini Pase Semanal (rama pase-mejoras): para quien no compra el premium. No da créditos, cosméticos ni personal estrella
+        'pase_semanal'      => ['tipo' => 'pase', 'modulo' => 'Pase', 'nombre' => 'Mini Pase Semanal', 'detalle' => 'Solo esta semana del pase (hasta el lunes): desbloquea el premio premium de hasta 8 niveles que subas desde que lo compras (materiales, aceleradores de obra, dinero y repuestos). No da créditos, cosméticos ni personal estrella (eso es del Pase Premium). Uno por semana. No se renueva solo', 'precio' => 1.49, 'creditos' => 0, 'una_vez' => false],
         'pase_premium_plus' => ['tipo' => 'pase', 'modulo' => 'Pase', 'nombre' => 'Pase de Temporada Premium Plus', 'detalle' => 'Todo el Pase Premium de esta temporada y 10 niveles ya desbloqueados. No se renueva solo', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false],
         // Sede oficial (server/INTEGRAR_SEDE_OFICIAL.md): contenido FIJO, lo entrega SedeOficial (gancho compra_aprobada). Igual a SedeOficial::PACKS.
         'pack_obra_s' => ['tipo' => 'pack_obra', 'modulo' => 'SedeOficial', 'nombre' => 'Pack de obra S', 'detalle' => 'Sede oficial: 10 h de aceleradores de obra + 12 cables, 12 placas, 12 paneles LED, 12 credenciales, 12 planos y 1 chip 4K. Contenido fijo.', 'precio' => 1.99, 'creditos' => 0, 'una_vez' => false],
@@ -63,6 +65,18 @@ final class Catalogo
                 'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 10000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5]]],
             'oferta_sede_10' => ['tipo' => 'oferta', 'oferta_vip' => true, 'modulo' => 'Vip', 'nombre' => 'Oferta Sede nivel 10', 'detalle' => 'Tu sede llegó a nivel 10: 1.800 créditos, $25.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %', 'precio' => 9.99, 'creditos' => 1800, 'una_vez' => false,
                 'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 25000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 10], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 10], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+        // Oferta de regreso (src/Regreso.php): una sola vez por ausencia, solo en la pantalla «¡Volviste!» de quien volvió tras
+        // 7+ días (oferta_regreso: no sale en la tienda general). Contenido fijo. regreso_s si nunca pagó (o compraba poco).
+        'regreso_s' => ['tipo' => 'oferta', 'oferta_regreso' => true, 'modulo' => 'Regreso', 'nombre' => 'Oferta de regreso', 'detalle' => 'Una sola vez, por tu regreso: 150 créditos, $3.000 del juego, 3 cables y 3 baterías', 'precio' => 0.99, 'creditos' => 150, 'una_vez' => false,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 3000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 3], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 3]]],
+        'regreso_m' => ['tipo' => 'oferta', 'oferta_regreso' => true, 'modulo' => 'Regreso', 'nombre' => 'Oferta de regreso Plus', 'detalle' => 'Una sola vez, por tu regreso: 900 créditos, $8.000 del juego, 5 cables, 5 baterías y todo tu equipo al 100 %', 'precio' => 4.99, 'creditos' => 900, 'una_vez' => false,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 8000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 5], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+        'regreso_l' => ['tipo' => 'oferta', 'oferta_regreso' => true, 'modulo' => 'Regreso', 'nombre' => 'Gran oferta de regreso', 'detalle' => 'Una sola vez, por tu regreso: 2.000 créditos, $15.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %', 'precio' => 9.99, 'creditos' => 2000, 'una_vez' => false,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 15000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 10], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 10], ['tipo' => 'reparar_todo', 'item' => '-', 'cantidad' => 1]]],
+        // Oferta de novato (src/RutaNovato.php, "Tus primeros 7 días"): solo las primeras 72 horas de una cuenta nueva, una vez.
+        // No sale en la lista general de la tienda: solo en la hoja de la ruta de novato (RutaNovato::exigirOferta la valida).
+        'oferta_novato' => ['tipo' => 'oferta', 'oferta_novato' => true, 'modulo' => 'RutaNovato', 'nombre' => 'Oferta de novato', 'detalle' => 'Solo en tus primeras 72 horas, una vez: 200 créditos, $3.000 del juego, 5 cables y 3 baterías', 'precio' => 0.99, 'creditos' => 200, 'una_vez' => true,
+            'entregas' => [['tipo' => 'dinero', 'item' => '-', 'cantidad' => 3000], ['tipo' => 'consumible', 'item' => 'cable', 'cantidad' => 5], ['tipo' => 'consumible', 'item' => 'battery', 'cantidad' => 3]]],
         // No sale en la tienda: lo crea POST /api/cuenta/transferir/iniciar (lo paga el dueño actual de la cuenta)
         'transferencia_cuenta' => ['tipo' => 'transferencia', 'nombre' => 'Transferencia oficial de cuenta', 'detalle' => 'Pasa esta cuenta (con todo lo comprado) a otro correo', 'precio' => 9.99, 'creditos' => 0, 'una_vez' => false, 'oculto' => true],
     ];
@@ -354,7 +368,7 @@ final class Catalogo
         $p = [];
         foreach (array_keys(self::PRODUCTOS) as $id) {
             $x = self::producto($id);
-            if (!$x['activo'] || !empty($x['oculto']) || !empty($x['oferta_vip']) || in_array($x['tipo'], self::TIPOS_CON_PANTALLA, true)) continue;
+            if (!$x['activo'] || !empty($x['oculto']) || !empty($x['oferta_vip']) || !empty($x['oferta_regreso']) || !empty($x['oferta_novato']) || in_array($x['tipo'], self::TIPOS_CON_PANTALLA, true)) continue;
             $p[] = ['id' => $id, 'nombre' => $x['nombre'], 'detalle' => $x['detalle'], 'precio' => $x['precio'], 'creditos' => $x['creditos'], 'una_vez' => $x['una_vez'], 'tipo' => $x['tipo'],
                     'precio_base' => $x['precio_base'], 'creditos_base' => $x['creditos_base'], 'oferta' => $x['oferta']]
                  + (isset($x['dias']) ? ['dias' => $x['dias']] : []) + (isset($x['creditos_dia']) ? ['creditos_dia' => $x['creditos_dia']] : []);

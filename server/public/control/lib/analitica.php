@@ -129,6 +129,9 @@ function cc_t_analitica(): string
     }
     $h .= '</section>';
 
+    // "Tus primeros 7 días": avance por día de la ruta de novato (lib/novato.php)
+    if (function_exists('cc_novato_panel')) $h .= cc_novato_panel($desde, $hoy);
+
     // Gráficos diarios
     $et = array_map(fn($d) => date('d/m', strtotime($d)), array_keys($dias));
     $col = fn(string $c) => array_map(fn($d) => $d[$c], array_values($dias));

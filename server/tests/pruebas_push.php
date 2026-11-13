@@ -499,6 +499,13 @@ Db::q("DELETE FROM push_marcas WHERE clave = 'recordatorios:ultimo'");
 $det();
 check('2 días sin jugar: sin recordatorio', [], $enCola($ola, 'recordatorio:'));
 P::fijarReloj($base + 3 * 86400 + 60);
+// Con los avisos de regreso encendidos (src/Regreso.php, por defecto) el recordatorio viejo de 3/7/14 días NO sale: lo manda Regreso
+if (class_exists(\EnVivo\Regreso::class)) {
+    $det();
+    check('3 días con los avisos de regreso de src/Regreso.php encendidos: el recordatorio viejo no se encola', [], $enCola($ola, 'recordatorio:'));
+    foreach (['regreso3', 'regreso7', 'regreso14'] as $k) \EnVivo\Ajustes::set('regreso_' . $k, '0');   // apagados: vuelve el de siempre
+    Db::q("DELETE FROM push_marcas WHERE clave = 'recordatorios:ultimo'");
+}
 $det();
 check('3 días: recordatorio (escalón 3)', ['recordatorio:2026-11-20:3'], $enCola($ola, 'recordatorio:'));
 P::fijarReloj($base + 3 * 86400 + 900);

@@ -43,17 +43,20 @@ Todos son **productos únicos** (ninguno es suscripción). Después de crear cad
 |---|---|---|
 | `creditos_250`, `creditos_700`, `creditos_1500`, `creditos_3200` | Paquetes de créditos | Sí |
 | `bienvenida` | Oferta de bienvenida | No (una vez por cuenta) |
+| `oferta_novato` ($0.99) | Oferta de novato ("Tus primeros 7 días": solo las primeras 72 horas de una cuenta nueva) — src/RutaNovato.php | No (una vez por cuenta) |
 | `inicio` | Paquete de inicio | No (una vez por cuenta) |
 | `tarjeta_mensual` | Tarjeta mensual (30 días) | Sí |
 | `vip30` | Pase VIP 30 días | Sí |
 | `refuerzo_camarografo_senior`, `refuerzo_tecnico_internacional`, `alquiler_lente_box`, `seguro_evento`, `equipo_descansado` | Refuerzos | Sí |
 | `pase_premium` ($4.99), `pase_premium_plus` ($9.99) | Pase de Temporada (dura la temporada de 28 días; no es suscripción) | Sí (uno por temporada) |
+| `pase_semanal` ($1.49) | Mini Pase Semanal: premios premium de hasta 8 niveles que subas esa semana (sin créditos, cosméticos ni personal estrella) — server/INTEGRAR_PASE.md "Mejoras" | Sí (uno por semana del pase) |
 | `pack_obra_s` ($1.99), `pack_obra_m` ($4.99), `pack_obra_l` ($9.99) | Packs de obra de la sede oficial (contenido fijo) | Sí |
 | `pase_copa` ($2.99) | Pase de Copa: +5 intentos por día esa semana | Sí |
 | `equipo_obra_2` ($2.99) | Equipo de obra extra (permanente) de la sede oficial — server/INTEGRAR_MONETIZACION2.md | No (una vez por cuenta) |
 | `fondo_crecimiento` ($19.99) | Fondo de crecimiento: premios fijos por nivel de la sede oficial | No (una vez por cuenta) |
 | `tarjeta_semanal` ($1.99) | Tarjeta semanal (7 días: 15 créditos + materiales cada día) | Sí |
 | `oferta_vip_s` ($1.99), `oferta_vip_m` ($4.99), `oferta_vip_l` ($9.99), `oferta_campeon` ($4.99), `oferta_sede_5` ($4.99), `oferta_sede_10` ($9.99) | Ofertas por logros (aparecen al subir de nivel VIP, ganar una copa o subir la sede) | Con tope por oferta (lo controla el servidor) |
+| `regreso_s` ($0.99), `regreso_m` ($4.99), `regreso_l` ($9.99) | Oferta de regreso (pantalla «¡Volviste!» tras 7+ días sin entrar; según lo que compraba antes) — server/INTEGRAR_REGRESO.md | Una vez por ausencia (lo controla el servidor). Mientras no existan en Play, dentro de la app la oferta simplemente no sale |
 
 `estrella_copa` (personal estrella) **no** se crea en Play: se paga solo con créditos dentro del juego.
 
