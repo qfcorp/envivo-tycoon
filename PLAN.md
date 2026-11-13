@@ -226,6 +226,12 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
 
 - 2026-11-13: **Traducción completa a los 9 idiomas** (en, pt-BR, fr, de, it, ru, tr, id, zh-CN): 975 claves por idioma (287 de Interfaz + 688 del Juego), los códigos de error del servidor (rama `trad-errores` + `tools/fusionar_errores.py`) y los 37 textos nuevos de v51. `node tools/pendientes_traduccion.js --resumen` → "Nada pendiente". Unido en `main` junto con `arreglos-cliente` (v51). Falta solo: Dimitry corre `actualizar.sh` en el VPS.
 
+- 2026-11-13 (10:30): Dimitry pidió **hacer todas las ideas de la guía menos la 2** (precios por país). En marcha, una rama por grupo:
+  `eventos-servidor` (ideas 1 + 11: calendario de eventos del servidor, adviento, fútbol 2027 con nombres inventados, textos de Contenido promocional),
+  `regreso-avisos` (3 + 7: avisos por etapa, correo a los 7 días, "¡Volviste!"), `ruta-novato` (4: primeros 7 días + oferta de novato),
+  `invitar-creadores` (5 + 8: premios por invitar + Productores Aliados), `pase-mejoras` (6), `clip-vertical` (9: video para compartir),
+  `gran-produccion` (10: evento semanal de asociación). Después: unir, traducir los textos nuevos a 9 idiomas, crear en Play Console los productos nuevos y un solo `actualizar.sh`.
+
 ## ⏭️ Pendiente (después del demo)
 - [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
 - [ ] Dimitry: crear el correo de soporte y completar RUC/correo/dirección en las páginas legales; revisión de abogado (también nombres parodia)
