@@ -1,0 +1,43 @@
+{
+  "_info": "Códigos nuevos de los eventos del servidor y del calendario de adviento (server/src/EventosServidor.php, EventosServidorApi.php) para unir a docs/traducciones/errores.json. Solo en español: se traducen en la pasada final.",
+  "_codigos": {
+    "evento_desconocido": "existe · EventosServidor.php · 404 (juego) / 400 (Centro de Control)",
+    "evento_pronto": "existe · EventosServidor.php · 409",
+    "evento_terminado": "existe · EventosServidor.php · 410",
+    "evento_apagado": "existe · EventosServidor.php · 409",
+    "evento_diario_hecho": "existe · EventosServidor.php · 409",
+    "evento_lista": "existe · EventosServidor.php · 400",
+    "evento_articulo": "existe · EventosServidor.php · 404",
+    "evento_agotado": "existe · EventosServidor.php · 409",
+    "evento_sin_fichas": "existe · EventosServidor.php · 409 · extra.faltan",
+    "evento_hito": "existe · EventosServidor.php · 404",
+    "evento_meta_falta": "existe · EventosServidor.php · 409",
+    "evento_meta_hecha": "existe · EventosServidor.php · 409",
+    "adviento_cerrado": "existe · EventosServidor.php · 409",
+    "adviento_dia": "existe · EventosServidor.php · 404",
+    "adviento_pronto": "existe · EventosServidor.php · 409",
+    "adviento_perdido": "existe · EventosServidor.php · 410",
+    "adviento_hecho": "existe · EventosServidor.php · 409",
+    "meta_invalida": "existe · EventosServidor.php · 400 · solo Centro de Control"
+  },
+  "es": {
+    "evento_desconocido": "Ese evento no existe.",
+    "evento_pronto": "Este evento todavía no empieza.",
+    "evento_terminado": "Este evento ya terminó.",
+    "evento_apagado": "Este evento no está disponible.",
+    "evento_diario_hecho": "Ya recibiste tus fichas de hoy. Vuelve mañana.",
+    "evento_lista": "Lista de eventos no válida.",
+    "evento_articulo": "Ese artículo no está en la tienda de este evento.",
+    "evento_agotado": "Ya compraste este artículo en este evento.",
+    "evento_sin_fichas": "Te faltan {faltan} fichas. Gánalas jugando eventos.",
+    "evento_hito": "Ese premio no existe.",
+    "evento_meta_falta": "Tu servidor todavía no llega a esta meta.",
+    "evento_meta_hecha": "Ya reclamaste este premio.",
+    "adviento_cerrado": "El calendario de adviento es del 1 al 25 de diciembre.",
+    "adviento_dia": "Ese día no está en el calendario.",
+    "adviento_pronto": "Ese regalo todavía no se abre.",
+    "adviento_perdido": "Ese regalo ya pasó: solo se recupera el de ayer.",
+    "adviento_hecho": "Ya abriste el regalo de ese día.",
+    "meta_invalida": "La meta del evento no es válida."
+  }
+}
