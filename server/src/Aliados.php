@@ -98,9 +98,8 @@ final class Aliados
             $regalo = $motivo === null;
             Db::q('INSERT INTO aliados_usos (jugador_id, aliado_id, canal, instalacion, ip, regalo, motivo, creado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 [$jugador, (int) $a['id'], $canal, $inst, $ip !== '' ? $ip : null, $regalo ? 1 : 0, $motivo, $t]);
-            $mid = Buzon::enviar($jugador, $regalo ? '🎬 Regalo de ' . $a['nombre'] : '🎬 Código de ' . $a['nombre'],
-                $regalo ? 'Usaste el código ' . $a['codigo_ver'] . ' de ' . $a['nombre'] . ", Productor Aliado de EN VIVO Tycoon. Aquí tienes tu regalo.\n¡Gracias por apoyar a tu creador!"
-                        : 'Usaste el código ' . $a['codigo_ver'] . ' de ' . $a['nombre'] . ". Ya estás apoyando a tu creador.\nEl regalo del código es uno por aparato: en este ya se entregó.",
+            $clave = $regalo ? 'aliado_regalo' : 'aliado_sin_regalo';
+            $mid = Buzon::enviarPlantilla($jugador, $clave . '_t', $clave . '_c', ['nombre' => (string) $a['nombre'], 'codigo' => (string) $a['codigo_ver']],
                 $regalo ? self::REGALO : [], ['tipo' => 'codigo', 'ref' => 'aliado:uso']);
             Auditoria::anotar('juego', 'aliado_codigo_uso', 'Código de creador ' . $a['codigo_ver'] . ' (' . self::CANALES[$canal] . ')' . ($regalo ? ' con regalo' : ' sin regalo: ' . $motivo), $jugador);
             return ['ok' => true, 'aliado' => ['nombre' => (string) $a['nombre'], 'codigo' => (string) $a['codigo_ver']], 'regalo' => $regalo, 'motivo' => $motivo, 'mensaje_id' => $mid];
@@ -137,7 +136,7 @@ final class Aliados
         $mes = date('Y-m', self::ahora());
         return Db::tx(function () use ($a, $jugador, $cr, $mes): int {
             if (Db::q('INSERT OR IGNORE INTO aliados_creditos (aliado_id, mes, jugador_id, creditos, creado) VALUES (?, ?, ?, ?, ?)', [(int) $a['id'], $mes, $jugador, $cr, self::ahora()])->rowCount() !== 1) return 0;
-            Buzon::enviar($jugador, '🎬 Productor Aliado: créditos de ' . $mes, 'Gracias por crear contenido de EN VIVO Tycoon. Estos créditos son para jugar en tu cuenta este mes.',
+            Buzon::enviarPlantilla($jugador, 'aliado_creditos_t', 'aliado_creditos_c', ['mes' => $mes],
                 [['tipo' => 'creditos', 'item' => '-', 'cantidad' => $cr]], ['tipo' => 'regalo', 'ref' => 'aliado:creditos:' . $mes, 'dias' => 60]);
             Auditoria::anotar('juego', 'aliado_creditos_mes', 'Productor Aliado ' . $a['codigo_ver'] . ': ' . $cr . ' créditos de ' . $mes . ' (para jugar, no se cambian por dinero)', $jugador);
             return $cr;

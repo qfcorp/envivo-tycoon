@@ -364,7 +364,7 @@ final class Desafio
                     self::sumarPases($r['jugador_id'], $pas, 'desafio_top', $ref);
                     Db::q("INSERT OR IGNORE INTO desafio_premios (dia, jugador_id, tipo, servidor_id, puesto, detalle_json, creado) VALUES (?, ?, 'ranking', ?, ?, ?, ?)",
                         [$dia, $r['jugador_id'], $sid, $r['puesto'], Duelos::json(['dinero' => $din, 'pases' => $pas, 'baterias' => $bat, 'calidad' => $r['calidad']]), time()]);
-                    try { Chat::sistema($r['jugador_id'], '🎯 Desafío Técnico del ' . $dia . ': puesto ' . $r['puesto'] . ' en tu servidor. Premio: $' . number_format($din, 0, ',', '.') . ', ' . $pas . ' Pases de Prensa y ' . $bat . ' batería(s).'); } catch (\Throwable) {}
+                    try { Chat::sistemaPlantilla((int) $r['jugador_id'], 'desafio_top', ['dia' => $dia, 'puesto' => $r['puesto'], 'pases' => $pas, 'bat' => $bat, 'dinero' => fn(string $L) => TextosSistema::numero($din, $L)]); } catch (\Throwable) {}
                     $n++;
                 }
             }

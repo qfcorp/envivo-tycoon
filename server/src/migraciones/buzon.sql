@@ -44,6 +44,11 @@ CREATE INDEX IF NOT EXISTS buzon_jugador ON buzon (jugador_id, borrado, estado);
 CREATE UNIQUE INDEX IF NOT EXISTS buzon_ref ON buzon (jugador_id, ref) WHERE ref IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS buzon_envio_jugador ON buzon (envio_id, jugador_id) WHERE envio_id IS NOT NULL;
 
+-- Mensajes automáticos del juego en los 10 idiomas ({"en": {"titulo": "...", "cuerpo": "..."}, ...}; ver TextosSistema):
+-- Buzon::json muestra el del idioma de quien lee (Accept-Language) y, si falta, titulo/cuerpo (español). Las difusiones y
+-- los códigos que el dueño escribe a mano no lo llevan.
+ALTER TABLE buzon ADD COLUMN textos_json TEXT;
+
 -- Códigos de regalo. codigo en mayúsculas sin espacios ni guiones. usos_max 0 = sin límite. Siempre UNO por cuenta;
 -- con lote (generador de códigos únicos para influencers) también UNO por cuenta en todo el lote. etiqueta = el
 -- influencer o la campaña (para las estadísticas).

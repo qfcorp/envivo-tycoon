@@ -83,8 +83,7 @@ final class Regalos
                 $creados++;
             }
             if ($creados > 0) {
-                Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['asociacion:' . $asoc,
-                    '🎁 ' . ($nombre === null ? 'Una productora anónima' : $nombre) . ' apoyó al juego: ¡hay un cofre de regalo para la asociación! Reclámalo en Inicio (vence en ' . self::dias() . ' días).', $t]);
+                Chat::avisoPlantilla('asociacion:' . $asoc, $nombre === null ? 'regalos_cofre_anonimo' : 'regalos_cofre', ['nombre' => (string) $nombre, 'dias' => self::dias()], $t);
             }
         });
         return [$creados, $saltados];
