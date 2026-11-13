@@ -1879,6 +1879,20 @@
     'nav2.posiciones': 'Posiciones cubiertas: {n} de {t}',
     'nav2.calidad': 'Cómo se calcula la calidad',
     'nav2.cats_eq': 'Categorías de equipos',
+    // Black Friday: VIP 30 días gratis para las primeras cuentas (js/black_friday.js)
+    'bf.tag': 'Por tiempo limitado',
+    'bf.titulo': 'Black Friday: *VIP {dias} días GRATIS*',
+    'bf.quedan': { one: 'Queda {n} de {total}', other: 'Quedan {n} de {total}' },
+    'bf.sin_cupo': 'Quedan 0 de {n}',
+    'bf.reclamar': 'Reclamar',
+    'bf.reclamando': 'Reclamando…',
+    'bf.crear_cuenta': 'Crea tu cuenta gratis para reclamar',
+    'bf.ya_tengo': 'Ya tengo cuenta: entrar',
+    'bf.reclamado': 'Ya tienes tu VIP gratis de Black Friday',
+    'bf.activo_hasta': 'Tu Pase VIP está activo hasta el {fecha}.',
+    'bf.agotada': 'Se agotaron los {n} VIP gratis — gracias',
+    'bf.detalle': 'Gratis para las primeras cuentas, uno por persona. Durante {dias} días: más eventos al día, reparaciones más baratas, obras más rápidas y bono diario.',
+    'bf.listo': '¡Listo! Tu Pase VIP de {dias} días ya está activo.',
     // Textos de la lógica y del servidor: en español no hace falta traducirlos
     logica: {},
   };

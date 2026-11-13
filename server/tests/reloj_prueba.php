@@ -2,7 +2,7 @@
 // SOLO PRUEBAS (nunca en el servidor del juego). Reloj congelado para los procesos hijos de una prueba
 // ("php -S" con el enrutador de la prueba y los scripts de server/bin/), que no comparten la memoria del proceso de la prueba:
 //   ENVIVO_PRUEBA_AHORA=<segundos Unix> php -d auto_prepend_file=server/tests/reloj_prueba.php ...
-// congela Liga, Copas y Universos en ese instante (en "php -S" auto_prepend_file no corre para el enrutador: el enrutador de la prueba lo incluye con require). Sin la variable no hace nada.
+// congela Liga, Copas, Universos y la promo de Black Friday en ese instante (en "php -S" auto_prepend_file no corre para el enrutador: el enrutador de la prueba lo incluye con require). Sin la variable no hace nada.
 // También da envReloj(): las variables de faketime (LD_PRELOAD, FAKETIME...) para pasarlas a los procesos hijos que se
 // arrancan con un entorno propio, así "faketime 'AAAA-MM-DD HH:MM' php server/tests/pruebas_X.php" mueve el reloj de todos.
 if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'cli-server') { http_response_code(404); exit; }
@@ -30,4 +30,5 @@ if (!function_exists('envReloj')) {
     if (class_exists(\EnVivo\Liga::class)) \EnVivo\Liga::fijarReloj($t);
     if (class_exists(\EnVivo\Copas::class)) \EnVivo\Copas::$reloj = $t;
     if (class_exists(\EnVivo\Universos::class)) \EnVivo\Universos::fijarReloj($t);
+    if (class_exists(\EnVivo\BlackFriday::class)) \EnVivo\BlackFriday::fijarReloj($t);
 })();

@@ -47,7 +47,7 @@ final class BuzonApi
                 $in = $post();
                 $c = is_string($in['codigo'] ?? null) ? $in['codigo'] : '';
                 if (trim($c) === '') throw new Fallo('Escribe el código.', 400, ['codigo' => 'falta_codigo']);
-                Http::json(200, Buzon::canjear($jugador, $c, ($in['canal'] ?? '') === 'web' ? 'web' : 'juego'));
+                Http::json(200, Buzon::canjear($jugador, $c, ($in['canal'] ?? '') === 'web' ? 'web' : 'juego', $in['instalacion'] ?? null));
         }
         Http::error(404, 'No encontrado.');
     }

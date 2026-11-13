@@ -613,7 +613,7 @@ final class Buzon
      * Canjear un código (en el juego o en /canjear.html): el premio llega al buzón. Límite de intentos fallidos por cuenta
      * y por conexión. Devuelve {ok, mensaje, codigo, sin_leer, por_reclamar}.
      */
-    public static function canjear(int $jugador, string $texto, string $canal = 'juego'): array
+    public static function canjear(int $jugador, string $texto, string $canal = 'juego', mixed $instalacion = null): array
     {
         self::preparar();
         $kj = 'canje:j:' . $jugador; $ki = 'canje:ip:' . Http::ip();
@@ -624,6 +624,8 @@ final class Buzon
         $cod = self::normalizarCodigo(mb_substr($texto, 0, 60));
         if (!preg_match('/^[A-Z0-9]{4,32}$/', $cod)) $fallar('Ese código no existe o ya no está activo. Revisa que esté bien escrito.', 404, 'codigo_invalido');
         $canal = $canal === 'web' ? 'web' : 'juego';
+        // Palabra de la promo de Black Friday (BlackFriday.php): VIP 30 días gratis del mismo cupo que el botón de Inicio
+        if (class_exists(BlackFriday::class) && BlackFriday::esCodigo($cod)) return BlackFriday::canjearCodigo($jugador, $canal, $instalacion);
         // Fuera de la transacción: el intento fallido tiene que quedar anotado (dentro se desharía con el error)
         $c0 = Db::fila('SELECT id, activo FROM buzon_codigos WHERE codigo = ?', [$cod]);
         if (!$c0 || !(int) $c0['activo']) $fallar('Ese código no existe o ya no está activo. Revisa que esté bien escrito.', 404, 'codigo_invalido');

@@ -374,7 +374,15 @@
     "tukanpagos_no_disponible": "existe · TukanPagosApi.php · 503",
     "firma_invalida": "existe · TukanPagosApi.php · 401",
     "usar_tukanpagos": "existe · api.php · 409 (pago directo con Plux cerrado cuando Tukán Pagos está encendido)",
-    "invalido": "existe · ConectorCentral.php (token del conector central no válido)"
+    "invalido": "existe · ConectorCentral.php (token del conector central no válido)",
+    "promo_apagada": "existe · BlackFriday.php (POST /api/promo/black_friday/reclamar y la palabra en /api/buzon/canjear) · 409 · texto en español en todos los idiomas hasta la traducción final",
+    "promo_pronto": "existe · BlackFriday.php · 409 · extra.fecha (dd/mm/aaaa hh:mm) · texto en español en todos los idiomas hasta la traducción final",
+    "promo_terminada": "existe · BlackFriday.php · 410 · texto en español en todos los idiomas hasta la traducción final",
+    "promo_agotada": "existe · BlackFriday.php · 410 · extra.cupo · texto en español en todos los idiomas hasta la traducción final",
+    "promo_ya_reclamada": "existe · BlackFriday.php · 409 · texto en español en todos los idiomas hasta la traducción final",
+    "promo_dispositivo": "existe · BlackFriday.php · 409 (otra cuenta ya lo reclamó desde esta instalación del juego) · texto en español en todos los idiomas hasta la traducción final",
+    "promo_conexion": "existe · BlackFriday.php · 409 (tope de cuentas por conexión, ajuste bf_ip_max) · texto en español en todos los idiomas hasta la traducción final",
+    "cupo_invalido": "existe · BlackFriday.php guardar (Centro de Control) · 400 · texto en español en todos los idiomas hasta la traducción final"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -749,7 +757,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1124,7 +1140,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1499,7 +1523,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -1874,7 +1906,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2249,7 +2289,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -2624,7 +2672,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -2999,7 +3055,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3374,7 +3438,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -3749,7 +3821,15 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -4124,6 +4204,14 @@
     "tukanpagos_no_disponible": "El pago con tarjeta todavía no está disponible.",
     "firma_invalida": "Firma no válida.",
     "usar_tukanpagos": "Vuelve a abrir la página de pago: ahora se paga con la página segura de Tukán.",
-    "invalido": "Datos no válidos."
+    "invalido": "Datos no válidos.",
+    "promo_apagada": "La promoción de Black Friday no está disponible.",
+    "promo_pronto": "La promoción de Black Friday empieza el {fecha}.",
+    "promo_terminada": "La promoción de Black Friday ya terminó.",
+    "promo_agotada": "Se agotaron los {cupo} VIP gratis. ¡Gracias por jugar!",
+    "promo_ya_reclamada": "Ya reclamaste tu VIP gratis de Black Friday en esta cuenta.",
+    "promo_dispositivo": "El VIP gratis ya se reclamó desde este aparato con otra cuenta. Es uno por persona.",
+    "promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
+    "cupo_invalido": "El cupo no es válido."
   }
 }

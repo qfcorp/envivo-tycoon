@@ -586,9 +586,15 @@
         if (st.ocupado) return;
         st.ocupado = true; if (el) el.disabled = true; if (er) er.textContent = '';
         try {
-          const r = await pedir('POST', '/api/buzon/canjear', { codigo: cod });
+          const inst = root.BlackFriday && root.BlackFriday.instalacion ? root.BlackFriday.instalacion() : null;
+          const r = await pedir('POST', '/api/buzon/canjear', inst ? { codigo: cod, instalacion: inst } : { codigo: cod });
           sonido(ctx, 'chapter');
           aviso(ctx, t('canjear_ok'));
+          // Palabra de Black Friday (VIP 30 días gratis): el VIP ya está activo; se trae /api/estado y el contador otra vez
+          if (r.promo) {
+            try { if (root.BlackFriday) root.BlackFriday.invalidar(); } catch (x) { /* nada */ }
+            try { if (ctx && typeof ctx.sincronizar === 'function') ctx.sincronizar(); else if (ctx && typeof ctx.alReclamar === 'function') ctx.alReclamar(); } catch (x) { /* nada */ }
+          }
           if (r.mensaje) { if (!st.datos) st.datos = { mensajes: [] }; reemplazar(r.mensaje); st.vista = 'mensaje'; st.abierto = r.mensaje.id; }
           pintarBoton();
           cargar().catch(() => {});
