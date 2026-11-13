@@ -120,6 +120,7 @@
 
   /* ---------- Módulos de Inicio (temporadas, sede...) ----------
      Un módulo hace window.EnVivoInicio.push({ id, orden, tarjeta(ctx) → html, clic(ctx, accion, el) }).
+     Con banner(ctx) → html, además sale como franja arriba de Inicio (bannersInicio), fuera de la productora.
      Sus botones llevan data-ext="<id>" data-acc="<acción>". */
   window.EnVivoInicio = window.EnVivoInicio || [];
   function ctxInicio() {
@@ -156,6 +157,14 @@
     return modulosInicio().map((m) => {
       if (typeof m.tarjeta !== 'function') return '';
       try { return m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); return ''; }
+    }).join('');
+  }
+  // Franjas grandes arriba de Inicio (ej. js/black_friday.js): un módulo con banner(ctx) → html; vacío = no se ve
+  function bannersInicio() {
+    const ctx = ctxInicio();
+    return modulosInicio().map((m) => {
+      if (typeof m.banner !== 'function') return '';
+      try { return m.banner(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); return ''; }
     }).join('');
   }
   // Fecha del celular (o ?fecha=AAAA-MM-DD para demos): la usan las temporadas. Se guarda en la partida (s.temporada.fecha)
@@ -924,7 +933,7 @@
     // La productora por dentro (js/hub.js): cada cuarto es un botón; debajo, qué hacer ahora, el capítulo, el turno de hoy y cerrar el día
     const turnoTxt = tHoy ? `${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}` : '';
     const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox, turnoTxt)) : `<div class="card hqcard">${A.hq(S)}</div>`;
-    $('tab-inicio').innerHTML = `${rojo}${hubHtml}
+    $('tab-inicio').innerHTML = `${rojo}${bannersInicio()}${hubHtml}
       ${tHoy ? `<div class="small turno-hoy hub-turno">${I('calendar', 'sm')} ${turnoTxt}${AY('dia')}</div>` : ''}
       <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
   }

@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v48';
+const VERSION = 'envivo-v49';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -58,6 +58,7 @@ const SHELL = [
   './js/compartir.js',  // compartir por WhatsApp, calificar y novedades (opcional)
   './js/push.js',       // notificaciones push: aviso previo y ajustes (opcional)
   './js/buzon.js',      // buzón y códigos de regalo
+  './js/black_friday.js', // Black Friday: VIP 30 días gratis (franja de Inicio)
   './js/i18n.js',
   './js/lang/es.js',
   './js/lang/en.js',

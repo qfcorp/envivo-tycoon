@@ -27134,6 +27134,20 @@
     'nav2.posiciones': 'Posiciones cubiertas: {n} de {t}',
     'nav2.calidad': 'Cómo se calcula la calidad',
     'nav2.cats_eq': 'Categorías de equipos',
+    // Black Friday: VIP 30 días gratis para las primeras cuentas (js/black_friday.js)
+    'bf.tag': 'Por tiempo limitado',
+    'bf.titulo': 'Black Friday: *VIP {dias} días GRATIS*',
+    'bf.quedan': { one: 'Queda {n} de {total}', other: 'Quedan {n} de {total}' },
+    'bf.sin_cupo': 'Quedan 0 de {n}',
+    'bf.reclamar': 'Reclamar',
+    'bf.reclamando': 'Reclamando…',
+    'bf.crear_cuenta': 'Crea tu cuenta gratis para reclamar',
+    'bf.ya_tengo': 'Ya tengo cuenta: entrar',
+    'bf.reclamado': 'Ya tienes tu VIP gratis de Black Friday',
+    'bf.activo_hasta': 'Tu Pase VIP está activo hasta el {fecha}.',
+    'bf.agotada': 'Se agotaron los {n} VIP gratis — gracias',
+    'bf.detalle': 'Gratis para las primeras cuentas, uno por persona. Durante {dias} días: más eventos al día, reparaciones más baratas, obras más rápidas y bono diario.',
+    'bf.listo': '¡Listo! Tu Pase VIP de {dias} días ya está activo.',
     // Textos de la lógica y del servidor: en español no hace falta traducirlos
     logica: {},
   };
@@ -38869,7 +38883,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v48', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v49', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -39957,6 +39971,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
 
   /* ---------- Módulos de Inicio (temporadas, sede...) ----------
      Un módulo hace window.EnVivoInicio.push({ id, orden, tarjeta(ctx) → html, clic(ctx, accion, el) }).
+     Con banner(ctx) → html, además sale como franja arriba de Inicio (bannersInicio), fuera de la productora.
      Sus botones llevan data-ext="<id>" data-acc="<acción>". */
   window.EnVivoInicio = window.EnVivoInicio || [];
   function ctxInicio() {
@@ -39993,6 +40008,14 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     return modulosInicio().map((m) => {
       if (typeof m.tarjeta !== 'function') return '';
       try { return m.tarjeta(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); return ''; }
+    }).join('');
+  }
+  // Franjas grandes arriba de Inicio (ej. js/black_friday.js): un módulo con banner(ctx) → html; vacío = no se ve
+  function bannersInicio() {
+    const ctx = ctxInicio();
+    return modulosInicio().map((m) => {
+      if (typeof m.banner !== 'function') return '';
+      try { return m.banner(ctx) || ''; } catch (e) { console.error('[inicio ' + m.id + ']', e); return ''; }
     }).join('');
   }
   // Fecha del celular (o ?fecha=AAAA-MM-DD para demos): la usan las temporadas. Se guarda en la partida (s.temporada.fecha)
@@ -40761,7 +40784,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     // La productora por dentro (js/hub.js): cada cuarto es un botón; debajo, qué hacer ahora, el capítulo, el turno de hoy y cerrar el día
     const turnoTxt = tHoy ? `${T('dia.hoy', { turno: turnoNom(tHoy.turno), n: tHoy.n, max: tHoy.max })}${tHoy.n ? ` · ${T('dia.parte_cada', { m: M(tHoy.parte) })}` : ''}` : '';
     const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox, turnoTxt)) : `<div class="card hqcard">${A.hq(S)}</div>`;
-    $('tab-inicio').innerHTML = `${rojo}${hubHtml}
+    $('tab-inicio').innerHTML = `${rojo}${bannersInicio()}${hubHtml}
       ${tHoy ? `<div class="small turno-hoy hub-turno">${I('calendar', 'sm')} ${turnoTxt}${AY('dia')}</div>` : ''}
       <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
   }
@@ -62204,9 +62227,15 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         if (st.ocupado) return;
         st.ocupado = true; if (el) el.disabled = true; if (er) er.textContent = '';
         try {
-          const r = await pedir('POST', '/api/buzon/canjear', { codigo: cod });
+          const inst = root.BlackFriday && root.BlackFriday.instalacion ? root.BlackFriday.instalacion() : null;
+          const r = await pedir('POST', '/api/buzon/canjear', inst ? { codigo: cod, instalacion: inst } : { codigo: cod });
           sonido(ctx, 'chapter');
           aviso(ctx, t('canjear_ok'));
+          // Palabra de Black Friday (VIP 30 días gratis): el VIP ya está activo; se trae /api/estado y el contador otra vez
+          if (r.promo) {
+            try { if (root.BlackFriday) root.BlackFriday.invalidar(); } catch (x) { /* nada */ }
+            try { if (ctx && typeof ctx.sincronizar === 'function') ctx.sincronizar(); else if (ctx && typeof ctx.alReclamar === 'function') ctx.alReclamar(); } catch (x) { /* nada */ }
+          }
           if (r.mensaje) { if (!st.datos) st.datos = { mensajes: [] }; reemplazar(r.mensaje); st.vista = 'mensaje'; st.abierto = r.mensaje.id; }
           pintarBoton();
           cargar().catch(() => {});
@@ -62271,6 +62300,179 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
 
   root.Buzon = { TEXTOS, t, idioma, error: textoError, cargar, abrir: (ctx, v) => abrir(ctx || st.ctx, v), botonCanjear, nombreAdjunto, estado: () => st.datos, nuevos, porReclamar, pedir };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.Buzon;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* =========================================================
+   EN VIVO Tycoon — Black Friday: VIP 30 días GRATIS para las primeras 100 cuentas (server/src/BlackFriday.php, API.md)
+     GET  /api/promo/black_friday           { fase: apagada|pronto|activa|agotada|terminada, cupo, reclamados, quedan, dias,
+                                              desde, hasta, reclamado (null sin sesión), vip_hasta? }
+     POST /api/promo/black_friday/reclamar  { instalacion } → lo mismo + { nuevo: true }   (errores con "codigo")
+   Qué hace:
+     - Franja grande arriba de Inicio (window.EnVivoInicio con banner(ctx), ui.js la pinta antes de la productora) SOLO
+       mientras la promo está en curso o agotada: "🎁 Black Friday: VIP 30 días GRATIS — quedan N de 100" con barra,
+       botón "Reclamar" (con cuenta) o "Crea tu cuenta gratis para reclamar" (sin cuenta); "Ya tienes tu VIP gratis" si
+       ya lo reclamó; "Se agotaron los 100 VIP gratis — gracias" cuando se acaba. Fuera de la ventana no se ve nada.
+     - El contador se pide al abrir el juego y cada minuto mientras se ve la franja (el servidor deja guardarlo 15 s).
+     - Al reclamar: el servidor activa el Pase VIP (lo mismo que comprarlo) y el juego trae /api/estado otra vez.
+     - La misma promo se puede canjear con la palabra del dueño en "Canjear código" (js/buzon.js).
+   Textos: claves bf.* en js/lang/es.js (los demás idiomas usan el español hasta la traducción final).
+   API para pruebas: window.BlackFriday = { datos, cargar, invalidar, instalacion, visible }.
+   ========================================================= */
+(function (root) {
+  'use strict';
+  const ID = 'black_friday';
+  const RUTA = '/api/promo/black_friday';
+  const CADA_MS = 60000;
+  const K_INST = 'envivo_instalacion';   // el mismo número al azar de la instalación que usa js/analitica.js
+
+  const st = { datos: null, cargando: false, cargadoEn: 0, errorEn: 0, ocupado: false, cuenta: undefined, noDisponible: false };
+
+  const T = (ctx, k, p) => { try { if (ctx && typeof ctx.T === 'function') return ctx.T(k, p); if (root.I18N) return root.I18N.T(k, p); } catch (e) { /* abajo */ } return k; };
+  const escH = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ApiDe = (ctx) => (ctx && ctx.Api) || root.Api || {};
+  const conServidor = (ctx) => { const A = ApiDe(ctx); return A.disponible === true; };
+  const logueado = (ctx) => { try { const A = ApiDe(ctx); return !!(A.logueado && A.logueado()); } catch (e) { return false; } };
+  const cuentaId = (ctx) => { try { const e = ApiDe(ctx).estado; return e && e.jugador ? e.jugador.id : null; } catch (e) { return null; } };
+
+  function instalacion() {
+    try {
+      let v = root.localStorage.getItem(K_INST);
+      if (!/^[a-f0-9]{32}$/.test(v || '')) {
+        const b = new Uint8Array(16);
+        root.crypto.getRandomValues(b);
+        v = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+        root.localStorage.setItem(K_INST, v);
+      }
+      return v;
+    } catch (e) { return null; }
+  }
+
+  async function pedir(ctx, metodo, ruta, cuerpo) {
+    if (ctx && typeof ctx.pedir === 'function') return ctx.pedir(metodo, ruta, cuerpo);
+    const r = await fetch(ruta, { method: metodo, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' },
+      body: metodo === 'GET' ? undefined : JSON.stringify(cuerpo || {}) });
+    let j = null;
+    try { j = await r.json(); } catch (e) { j = null; }
+    if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.error) || 'Error'); e.status = r.status; e.codigo = j && j.codigo; throw e; }
+    return j;
+  }
+
+  async function cargar(ctx) {
+    if (st.cargando) return st.datos;
+    st.cargando = true;
+    try {
+      const r = await pedir(ctx, 'GET', RUTA);
+      st.datos = r && typeof r.fase === 'string' ? r : null;
+      st.cargadoEn = Date.now();
+    } catch (e) {
+      if (e && e.status === 404) st.noDisponible = true;   // servidor sin la promo
+      st.errorEn = Date.now();
+    } finally { st.cargando = false; }
+    return st.datos;
+  }
+  function invalidar() { st.cargadoEn = 0; st.errorEn = 0; }
+
+  // Pide el contador si hace falta y vuelve a pintar Inicio cuando llega (sin bloquear el dibujo)
+  function alDia(ctx) {
+    const c = logueado(ctx) ? cuentaId(ctx) : null;
+    if (c !== st.cuenta) { st.cuenta = c; st.cargadoEn = 0; }
+    if (!conServidor(ctx) || st.noDisponible || st.cargando) return;
+    const ahora = Date.now();
+    if (ahora - st.cargadoEn < CADA_MS || ahora - st.errorEn < CADA_MS) return;
+    const antes = JSON.stringify(st.datos);
+    cargar(ctx).then(() => { if (JSON.stringify(st.datos) !== antes) { try { if (typeof ctx.render === 'function') ctx.render(); } catch (e) { /* nada */ } } }).catch(() => {});
+  }
+
+  const visible = (d) => !!d && (d.fase === 'activa' || d.fase === 'agotada');
+
+  function ponerCss() {
+    const doc = root.document;
+    if (!doc || doc.getElementById('bf-css')) return;
+    const s = doc.createElement('style');
+    s.id = 'bf-css';
+    s.textContent = `.bf-card{position:relative;margin:0 0 12px;padding:14px 14px 12px;border-radius:14px;border:1px solid #ffd27a88;
+      background:linear-gradient(135deg,#1b1406 0%,#0d0f14 55%,#21160a 100%);box-shadow:0 0 0 1px #00000040 inset,0 6px 18px #0006;overflow:hidden}
+      .bf-card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--amber),#ffd27a,var(--amber))}
+      .bf-tag{display:inline-block;font-family:var(--f-head);font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#1a1205;background:var(--amber);border-radius:6px;padding:1px 7px}
+      .bf-t{margin:6px 0 2px;font-size:19px;line-height:1.2;overflow-wrap:anywhere}
+      .bf-t b{color:var(--amber)}
+      .bf-sub{margin:0 0 8px;color:var(--muted);font-size:13px}
+      .bf-bar{height:8px;border-radius:5px;background:#ffffff14;overflow:hidden;margin:4px 0 10px}
+      .bf-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),#ffd27a)}
+      .bf-ok{color:var(--green);font-weight:700;margin:4px 0 0}
+      .bf-fin{color:var(--muted);margin:4px 0 0}
+      .bf-card .btn{margin-top:0}
+      .bf-link{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:13px;padding:8px 0 0;cursor:pointer;width:100%}`;
+    (doc.head || doc.documentElement).appendChild(s);
+  }
+
+  function fecha(iso) {
+    try {
+      const d = new Date(iso);
+      const L = root.I18N && root.I18N.idiomas && root.I18N.idiomas.find((x) => x.code === root.I18N.idioma);
+      return d.toLocaleDateString((L && L.locale) || 'es-EC', { day: 'numeric', month: 'long' });
+    } catch (e) { return String(iso || '').slice(0, 10); }
+  }
+
+  /** Franja de Inicio (ui.js la pone arriba de la productora). */
+  function banner(ctx) {
+    alDia(ctx);
+    const d = st.datos;
+    if (!visible(d) || !conServidor(ctx)) return '';
+    ponerCss();
+    const esc = ctx.esc || escH;
+    const cupo = Math.max(0, Number(d.cupo) || 0), quedan = Math.max(0, Number(d.quedan) || 0), dias = Number(d.dias) || 30;
+    const pct = cupo ? Math.round(((cupo - quedan) / cupo) * 100) : 100;
+    let cuerpo;
+    if (d.reclamado) {
+      cuerpo = `<p class="bf-ok" data-bf="reclamado">✓ ${esc(T(ctx, 'bf.reclamado'))}</p>
+        ${d.vip_hasta ? `<p class="bf-sub" style="margin:2px 0 0">${esc(T(ctx, 'bf.activo_hasta', { fecha: fecha(d.vip_hasta) }))}</p>` : ''}`;
+    } else if (d.fase === 'agotada' || quedan <= 0) {
+      cuerpo = `<p class="bf-fin" data-bf="agotada">${esc(T(ctx, 'bf.agotada', { n: cupo }))}</p>`;
+    } else if (logueado(ctx)) {
+      cuerpo = `<button class="btn main" data-ext="${ID}" data-acc="reclamar" data-bf="reclamar"${st.ocupado ? ' disabled' : ''}>🎁 ${esc(T(ctx, st.ocupado ? 'bf.reclamando' : 'bf.reclamar'))}</button>`;
+    } else {
+      cuerpo = `<button class="btn main" data-act="cuenta" data-modo="registro" data-bf="crear">${esc(T(ctx, 'bf.crear_cuenta'))}</button>
+        <button class="bf-link" data-act="cuenta" data-modo="entrar">${esc(T(ctx, 'bf.ya_tengo'))}</button>`;
+    }
+    const titulo = esc(T(ctx, 'bf.titulo', { dias })).replace(/\*([^*]+)\*/g, '<b>$1</b>');
+    return `<div class="bf-card" data-bf="card" aria-live="polite"><span class="bf-tag">${esc(T(ctx, 'bf.tag'))}</span>
+      <h2 class="bf-t">🎁 ${titulo}</h2>
+      <p class="bf-sub" data-bf="quedan">${esc(d.fase === 'agotada' || quedan <= 0 ? T(ctx, 'bf.sin_cupo', { n: cupo }) : T(ctx, 'bf.quedan', { n: quedan, total: cupo }))}</p>
+      <div class="bf-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${cupo}" aria-valuenow="${cupo - quedan}" aria-label="${esc(T(ctx, 'bf.quedan', { n: quedan, total: cupo }))}"><i style="width:${pct}%"></i></div>
+      ${cuerpo}
+      ${!d.reclamado && d.fase === 'activa' ? `<p class="bf-sub" style="margin:8px 0 0;font-size:12px">${esc(T(ctx, 'bf.detalle', { dias }))}</p>` : ''}</div>`;
+  }
+
+  async function reclamar(ctx) {
+    if (st.ocupado) return;
+    st.ocupado = true;
+    try { ctx.render(); } catch (e) { /* nada */ }
+    try {
+      const r = await pedir(ctx, 'POST', RUTA + '/reclamar', { instalacion: instalacion() });
+      st.datos = r; st.cargadoEn = Date.now();
+      try { if (ctx.snd) ctx.snd.play('chapter'); } catch (e) { /* nada */ }
+      try { ctx.toast(T(ctx, 'bf.listo', { dias: r.dias || 30 })); } catch (e) { /* nada */ }
+      st.ocupado = false;
+      try { if (typeof ctx.sincronizar === 'function') await ctx.sincronizar(); else ctx.render(); } catch (e) { /* se ve la próxima vez */ }
+    } catch (e) {
+      st.ocupado = false;
+      // Agotada, terminada o ya reclamada: se trae el contador otra vez para mostrar el estado real
+      if (e && /^promo_/.test(e.codigo || '')) { invalidar(); await cargar(ctx).catch(() => {}); }
+      try { ctx.toast(e && e.message ? e.message : T(ctx, 'err.no_completo')); } catch (x) { /* nada */ }
+    }
+    try { ctx.render(); } catch (e) { /* nada */ }
+  }
+
+  function clic(ctx, acc) {
+    if (acc === 'reclamar') reclamar(ctx);
+  }
+
+  root.BlackFriday = { get datos() { return st.datos; }, cargar: (ctx) => cargar(ctx), invalidar, instalacion, visible: () => visible(st.datos) };
+  root.EnVivoInicio = root.EnVivoInicio || [];
+  if (!root.EnVivoInicio.some((m) => m && m.id === ID)) root.EnVivoInicio.push({ id: ID, orden: -10, banner, clic });
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>

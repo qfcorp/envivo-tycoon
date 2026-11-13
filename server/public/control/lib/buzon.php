@@ -71,6 +71,7 @@ function cc_t_buzon(): string
     $h .= '<div class="kpis">' . cc_tarjeta('Envíos', cc_num($tot['envios']), '', 'kpi-envios') . cc_tarjeta('Regalos sin reclamar', cc_num($tot['por_reclamar']), 'en buzones', 'kpi-por-reclamar')
         . cc_tarjeta('Códigos activos', cc_num($tot['codigos_activos']), '', 'kpi-codigos') . cc_tarjeta('Canjes (7 días)', cc_num($tot['canjes_7d']), '', 'kpi-canjes')
         . cc_tarjeta('Créditos reclamados (7 días)', cc_num($tot['creditos_7d']), 'motivo buzon', 'kpi-creditos') . '</div>';
+    $h .= cc_promo_panel();   // Black Friday: VIP 30 días gratis (lib/promo.php)
     $h .= cc_buzon_datalist();
 
     // ---------------------------------------------------------------- vista previa de un borrador

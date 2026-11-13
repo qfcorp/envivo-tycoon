@@ -221,6 +221,27 @@ Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos`
 
 Las rutas de monetización solo responden si su módulo está instalado (si no, 404 como cualquier ruta que no existe).
 
+## Black Friday: VIP 30 días gratis para las primeras 100 cuentas (`src/BlackFriday.php`, `src/BlackFridayApi.php`)
+Promo `black_friday_2026`. Por defecto del **27/11/2026 00:00 al 30/11/2026 23:59:59** (America/Guayaquil), cupo **100**,
+palabra **`BLACKFRIDAY`**, máximo **3** cuentas por conexión. Todo se cambia en el Centro de Control → **Buzón y códigos** →
+bloque «Black Friday» (ajustes `bf_activa`, `bf_desde`, `bf_hasta`, `bf_cupo`, `bf_codigo`, `bf_ip_max`; auditoría `promo_black_friday`).
+
+| ruta | cuerpo | respuesta |
+|---|---|---|
+| GET `/api/promo/black_friday` | — (sin sesión también) | `{ok, promo, fase: 'apagada'\|'pronto'\|'activa'\|'agotada'\|'terminada', activa, desde, hasta, ahora, cupo, reclamados, quedan, dias: 30, reclamado}`; `reclamado` es `null` sin sesión; con sesión `true/false` (+ `reclamado_en`, `vip_hasta` si ya lo tiene). Nunca dice la palabra ni quién reclamó. `Cache-Control: public, max-age=15` sin sesión, `private, max-age=15` con sesión |
+| `/api/promo/black_friday/reclamar` | `{instalacion?: 32 hex}` (sesión y `X-Envivo: 1`) | lo mismo que el GET + `{nuevo: true, vip_antes}`. 401 `sesion_requerida`; 409 `promo_apagada` / `promo_pronto` (`fecha`) / `promo_ya_reclamada` / `promo_dispositivo` / `promo_conexion`; 410 `promo_terminada` / `promo_agotada` (`cupo`); 429 `limite_intentos` (10 por cuenta y 40 por conexión en 10 min); 403 `cuenta_*` |
+| `/api/buzon/canjear` con la palabra | `{codigo: "BLACKFRIDAY", instalacion?, canal?}` | mismo cupo y mismas reglas (canal `codigo`, o `web` desde `/canjear.html`): `{ok, codigo, mensaje (aviso del buzón), promo: {…como reclamar}, sin_leer, por_reclamar}`; no cuenta como código equivocado |
+
+- **Entrega:** `Monedero::sumarVip($jugador, 30)`, lo mismo que comprar `vip30` (todas las ventajas del Pase VIP); si ya tenía VIP se suman
+  30 días a su vencimiento. No es una compra: no crea fila en `compras`, no sube el nivel VIP, no cuenta como ingreso, nada al azar y
+  nada que se cambie por dinero. Deja un aviso sin premios en el buzón (`ref` `promo:black_friday_2026`) y una línea de auditoría
+  `promo_black_friday_reclamo`.
+- **Una vez por cuenta, por instalación y tope por conexión:** tabla `promo_reclamos` (`migraciones/promo.sql`) con
+  `UNIQUE (promo, jugador_id)` y `UNIQUE (promo, instalacion)`; el cupo se cuenta dentro de `Db::tx` (BEGIN IMMEDIATE), así nunca
+  pasa de `bf_cupo` aunque lleguen muchas peticiones a la vez. Subir el cupo después de agotarse la vuelve a abrir; no se puede bajar
+  de lo ya reclamado.
+- **Juego:** `js/black_friday.js` pone una franja arriba de Inicio solo con fase `activa` o `agotada` (contador cada minuto).
+
 ## Monetización (server/MONETIZACION.md)
 - **Ganchos** (`src/Ganchos.php`): `Compras::aprobar` emite `compra_aprobada {compra_id, jugador_id, producto, monto_usd,
   canal: 'plux'|'paypal'|'google'}` (dentro de su transacción, cada oyente en un SAVEPOINT; no se emite si no se entregó nada: producto
