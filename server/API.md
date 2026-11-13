@@ -255,6 +255,28 @@ bloque «Black Friday» (ajustes `bf_activa`, `bf_desde`, `bf_hasta`, `bf_cupo`,
   si no es la suya, venció a las 72 h o ya la compró); el gancho `compra_aprobada` la marca usada.
 - **Push** (categorías `etapa` y `regreso` → interruptor `premio`; `cierre` → `duelo`): máximo `Push::TOPE_REGRESO` (2) al día y silencio
   de 22:00 a 08:00 en la zona del jugador. El recordatorio viejo de `Push` a los 3/7/14 días no sale si Regreso lo cubre.
+## Tus primeros 7 días: ruta de novato y oferta de novato (`src/RutaNovato.php`, `src/RutaNovatoApi.php`)
+Solo cuentas **nuevas**: la ruta dura **14 días** desde su inicio (`jugadores.creado`, o hasta 3 días antes si la partida empezó
+sin cuenta: `POST /api/novato/empezar`). Se abre **un día por día real** (calendario de America/Guayaquil, 1 día de tolerancia por
+la zona del celular); los días anteriores se reclaman cuando quieras. Se apaga con el ajuste `novato_activa = 0`.
+Tablas `novato_jugadores` y `novato_reclamos` (`migraciones/ruta_novato.sql`, `UNIQUE (jugador_id, clave)`).
+
+| ruta | cuerpo | respuesta |
+|---|---|---|
+| GET `/api/novato` | — (sesión) | `{ok, activa, elegible, inicio, inicio_t, ahora_t, dia, dias: 7, ventana: 14, reclamados: ['d1',…,'final'], final, premios, premio_final, oferta: {producto: 'oferta_novato', disponible, hasta, hasta_t, comprada, precio, creditos, entregas}}` |
+| `/api/novato/empezar` | `{inicio: segundos Unix}` | lo mismo que el GET. Solo la primera vez y sin premios reclamados; nunca más de 3 días antes de crear la cuenta |
+| `/api/novato/reclamar` | `{clave: 'd1'…'d7' \| 'final', ya_local?: bool}` | `{ok, clave, premio, ya_local, creditos_dados, entregas, creditos, estado}`. 400 `falta_clave` / `novato_clave`; 409 `novato_bloqueado` (`dia`) / `novato_incompleto` (`hechos`) / `novato_terminado` / `ya_reclamado`; 429 `limite_intentos`; 403 `cuenta_*` |
+
+- **Premios fijos** (`RutaNovato::PREMIOS`, la misma tabla que `js/novato.js`): por día dinero del juego y repuestos (los suma el
+  juego) y créditos los días 3, 5 y 7 (10, 15 y 25). **Premio grande** (`final`, solo con los 7 días reclamados en el servidor):
+  50 créditos, $5.000 del juego y un **camarógrafo internacional** de habilidad 4 (entrega `personal_intl`, nivel `semi_senior`,
+  sin ventaja en Duelos), aviso en el buzón (`ref novato:final`) y auditoría `novato_final`. Con `ya_local` (el juego ya lo dio
+  sin cuenta) solo van los créditos. Créditos con motivo `novato` y ref `novato:<clave>`.
+- **Oferta de novato** `oferta_novato` ($0,99, una sola vez, tipo `oferta` con entregas fijas: 200 créditos, $3.000, 5 cables y
+  3 baterías): solo las primeras **72 horas** desde el inicio (`RutaNovato::exigirOferta` desde `Compras::exigirComprable`: 409
+  `oferta_no_disponible`). No sale en la lista general de la tienda (`Catalogo::tienda`), solo en la hoja de la ruta.
+- **Analítica**: el juego manda `novato_dia {dia, accion: inicio|completo|reclamado|final, dia_real, cuenta}`; el Centro de
+  Control → Analítica muestra la tabla «Tus primeros 7 días» (`RutaNovato::resumen`).
 
 ## Monetización (server/MONETIZACION.md)
 - **Ganchos** (`src/Ganchos.php`): `Compras::aprobar` emite `compra_aprobada {compra_id, jugador_id, producto, monto_usd,

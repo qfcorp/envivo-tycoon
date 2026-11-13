@@ -22,6 +22,7 @@ require __DIR__ . '/lib/promo.php';   // Black Friday: VIP 30 días gratis (src/
 require __DIR__ . '/lib/eventos_servidor.php';   // Eventos del servidor y adviento (server/INTEGRAR_EVENTOS_SERVIDOR.md)
 require __DIR__ . '/lib/invitar.php';   // Invitar y aliados (src/Invitaciones.php, src/Aliados.php, INTEGRAR_INVITAR.md)
 require __DIR__ . '/lib/regreso.php';   // Avisos por etapa y regreso (src/Regreso.php), en la pestaña Notificaciones
+require __DIR__ . '/lib/novato.php';  // Tus primeros 7 días (src/RutaNovato.php): avance por día en la pestaña Analítica
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 

@@ -26,7 +26,8 @@ final class Analitica
     public const LIMITE_IP = 600;           // lotes por conexión cada 10 minutos (muchos celulares comparten la IP de la operadora)
     public const DIAS_RECALCULO = 35;       // el cron rehace los últimos 35 días (las cohortes de hace 30 días ganan su D30)
     public const NOMBRES = ['app_abierta', 'tutorial_paso', 'evento_iniciado', 'evento_terminado', 'capitulo_completado', 'cuenta_creada',
-        'tienda_abierta', 'compra_iniciada', 'compra_aprobada', 'modo_online_abierto', 'sesion_fin'];
+        'tienda_abierta', 'compra_iniciada', 'compra_aprobada', 'modo_online_abierto', 'sesion_fin',
+        'novato_dia'];   // "Tus primeros 7 días" (js/novato.js, RutaNovato::resumen): {dia, accion: inicio|completo|reclamado|final, dia_real, cuenta}
     public const PLATAFORMAS = ['web', 'android'];
     /** Pasos de la guía del primer evento (js/guia.js, Guia.estado().paso) en orden. "seguir" se repite y no cuenta. */
     public const PASOS = ['intro', 'clientes', 'evento', 'auto', 'aire', 'elegir', 'terminar', 'resultado', 'fin'];

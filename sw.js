@@ -68,6 +68,7 @@ const SHELL = [
   './js/eventos_servidor.js', // eventos de todo el servidor y calendario de adviento
   './js/invitar.js',   // Invita a tu equipo y Productores Aliados (INTEGRAR_INVITAR.md)
   './js/regreso.js',    // regreso del jugador: «¡Volviste!» y 3 días de ventaja
+  './js/novato.js',     // Tus primeros 7 días: ruta de novato (acceso en Inicio)
   './js/i18n.js',
   './js/lang/es.js',     // solo el español: los demás idiomas se guardan al elegirlos (ver arriba)
   './manifest.webmanifest',

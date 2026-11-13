@@ -32,4 +32,5 @@ if (!function_exists('envReloj')) {
     if (class_exists(\EnVivo\Universos::class)) \EnVivo\Universos::fijarReloj($t);
     if (class_exists(\EnVivo\BlackFriday::class)) \EnVivo\BlackFriday::fijarReloj($t);
     if (class_exists(\EnVivo\EventosServidor::class)) \EnVivo\EventosServidor::fijarReloj($t);
+    if (class_exists(\EnVivo\RutaNovato::class)) \EnVivo\RutaNovato::fijarReloj($t);
 })();

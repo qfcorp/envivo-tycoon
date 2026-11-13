@@ -234,6 +234,17 @@ Plan: `docs/REALISMO.md`. Investigación: `docs/EQUIPOS_REALES.md`. Datos y text
   `gran-produccion` (10: evento semanal de asociación). Después: unir, traducir los textos nuevos a 9 idiomas, crear en Play Console los productos nuevos y un solo `actualizar.sh`.
 - 2026-11-13 (rama `clip-vertical`): **Jugada del día en video vertical** (idea 9). Nuevo `js/clip_video.js` (`window.ClipVideo`): tras un evento de 5⭐ o un imprevisto salvado (calidad −2 o mejor, con ≥3⭐) el resultado ofrece «Compartir video». Arma en un canvas 1080x1920 (720x1280 y 24 fps si el aparato tiene ≤3 GB o ≤4 núcleos) un clip de 10 s: la escena de `js/escena.js` como imagen con paneo y cortes CAM 1/CAM 2, el efecto del imprevisto (lluvia, apagón «SIN SEÑAL», señal con ruido, golazo con destello, público que salta), «¡Salvado!», productora, evento, estrellas, calidad y el enlace con `?ref=` de `Compartir.enlace()`. Graba con MediaRecorder (mp4 si se puede, si no webm) en segundo plano: pastilla arriba con avance y «Cancelar», se puede seguir jugando. Listo → «Compartir video» (Web Share con archivo) o «Descargar video»; sin MediaRecorder/captureStream o si falla → la imagen PNG de siempre (`Compartir.clic('img-res')`). Textos en `es.js` (bloque `// clip_video`, claves `clip.*`, falta traducir). Ganchos: 1 línea en `ui.js` (resultado), `index.html`, `sw.js`. Prueba `tests/test_clip_video.js` (Blob mp4 1080x1920 de 10,0 s, Web Share, cancelar, modo lento, descarga, respaldo sin MediaRecorder). Falta: traducir `clip.*`; probarlo en un celular Android real dentro de la TWA (compartir a estados).
 
+- 2026-11-13 (rama `ruta-novato`): **"Tus primeros 7 días"** (idea 4 de las propuestas). Hoja aparte solo para partidas y cuentas
+  nuevas: 7 días con 5 o 6 tareas cada uno, un día nuevo por día real (los anteriores se completan después), premio fijo por día
+  y **premio grande visible desde el primer minuto**: un camarógrafo internacional de habilidad 4 (+ $5.000 y 50 créditos con cuenta).
+  Las tareas en línea (cuenta, asociación, evento en línea, Duelo) traen su alternativa sin red. **Oferta de novato** `oferta_novato`
+  $0,99 solo las primeras 72 h (no sale en la tienda general). Acceso en Inicio debajo de la productora (gancho `acceso(ctx)` y hoja
+  propia `hub: <id>` en `js/hub.js`), nunca durante la guía del primer evento; solo mira las misiones, no las cambia.
+  Servidor: `RutaNovato.php` + `RutaNovatoApi.php` (`/api/novato*`), valida días por su reloj, una vez por cuenta y el premio grande
+  solo con los 7 días reclamados en el servidor (entrega `personal_intl`). Analítica `novato_dia` (inicio/completo/reclamado/final) y
+  tabla en Centro de Control → Analítica. Pruebas: `server/tests/pruebas_novato.php`, `tests/test_novato.js`.
+  **Falta:** crear `oferta_novato` ($0,99) en Play Console; traducir las claves `nov.*` en la pasada final.
+
 ## ⏭️ Pendiente (después del demo)
 - [ ] Dimitry: subir al VPS (`docs/DESPLIEGUE.md`), instalar respaldos y alertas (`docs/OPERACION.md`), proteger `/control/` con 2FA y lista de IPs
 - [ ] Dimitry: crear el correo de soporte y completar RUC/correo/dirección en las páginas legales; revisión de abogado (también nombres parodia)

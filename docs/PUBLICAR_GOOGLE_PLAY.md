@@ -170,6 +170,7 @@ en el servidor; créalos igual y **actívalos cuando yo te confirme** que su mó
 | `regreso_s` | Oferta de regreso | Una sola vez, por tu regreso: 150 créditos, $3.000 del juego, 3 cables y 3 baterías. Contenido fijo. | 0,99 | 1 por ausencia | Regreso |
 | `regreso_m` | Oferta de regreso Plus | Una sola vez, por tu regreso: 900 créditos, $8.000 del juego, 5 cables, 5 baterías y todo tu equipo al 100 %. Contenido fijo. | 4,99 | 1 por ausencia | Regreso |
 | `regreso_l` | Gran oferta de regreso | Una sola vez, por tu regreso: 2.000 créditos, $15.000 del juego, 10 cables, 10 baterías y todo tu equipo al 100 %. Contenido fijo. | 9,99 | 1 por ausencia | Regreso |
+| `oferta_novato` | Oferta de novato | Solo en tus primeras 72 horas, una vez: 200 créditos, $3.000 del juego, 5 cables y 3 baterías. | 0,99 | No (1 por cuenta) | Ruta de novato |
 | *(otros)* | *Los que agreguen los ayudantes de monetización (ofertas de temporada, packs de eventos especiales…)* | | | | ⏳ se agregan a esta tabla cuando lleguen a `Catalogo.php` |
 
 **No crear en Play:** `transferencia_cuenta` (solo se vende en la web) ni `estrella_copa` (se paga solo con créditos).
@@ -355,7 +356,7 @@ nivel —0,99 / 1,99 / 2,99 / 4,99 / 9,99 / 19,99— y asígnala a cada producto
 
 | Nivel (USD) | 🇪🇨 Ecuador (USD) | 🇨🇴 Colombia (COP) | 🇵🇪 Perú (PEN) | Productos de ese nivel |
 |---|---|---|---|---|
-| 0,99 | 0,99 | 3.500 | 3,49 | `bienvenida`, refuerzos |
+| 0,99 | 0,99 | 3.500 | 3,49 | `bienvenida`, `oferta_novato`, refuerzos |
 | 1,99 | 1,99 | 6.900 | 6,90 | `creditos_250`, `pack_obra_s`, `oferta_vip_s` |
 | 2,99 | 2,99 | 9.900 | 9,90 | `inicio`, `pase_copa` |
 | 4,99 | 4,99 | 16.900 | 16,90 | `creditos_700`, `tarjeta_mensual`, `pase_premium`, `pack_obra_m`, `oferta_vip_m`, `oferta_campeon`, `oferta_sede_5` |

@@ -1853,7 +1853,7 @@
   };
   const MATS_OBRA = ['cables', 'placas', 'paneles', 'credenciales', 'planos', 'chips'];
   // Productos con pantalla propia que Google Play también vende (sus precios se piden aunque no salgan en /api/estado)
-  const PLAY_EXTRA = ['pase_premium', 'pase_premium_plus', 'pack_obra_s', 'pack_obra_m', 'pack_obra_l', 'pase_copa'];
+  const PLAY_EXTRA = ['pase_premium', 'pase_premium_plus', 'pack_obra_s', 'pack_obra_m', 'pack_obra_l', 'pase_copa', 'oferta_novato'];
   const playPedidos = new Set();
   const ICO_PASE = svgIco('<path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h13A1.5 1.5 0 0 1 20 7.5V10a2 2 0 0 0 0 4v2.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5V14a2 2 0 0 0 0-4z"/><path d="M14.5 6.5v11" stroke-dasharray="1.6 2.2"/><path d="M8.5 10.2l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z"/>');
   const ICO_OBRA = svgIco('<path d="M3.5 17a8.5 8.5 0 0 1 17 0"/><path d="M2.5 17h19v2.5h-19z"/><path d="M10 8.7V5.5h4v3.2"/><path d="M8 12v5M16 12v5"/>');
