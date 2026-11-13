@@ -112,12 +112,52 @@ if [ -n "$PEDIDA" ]; then POOL_LIB_USAR="$POOL_LIB"; else POOL_LIB_USAR="$APP/se
 if [ -s "$POOL_LIB_USAR" ]; then . "$POOL_LIB_USAR"; revisar_pool_fpm "/etc/nginx/sites-available/$DOMINIO"; fi
 [ -n "$PEDIDA" ] && rm -f "$POOL_LIB"
 systemctl reload "php$PHPV-fpm" && echo "   listo"
+
+echo "== 6. nginx: configuracion del sitio $DOMINIO (solo si cambio la plantilla server/deploy/nginx-sitio.sh)"
+# La misma plantilla que usa instalar.sh, con el socket de PHP que ya usa el sitio (el del grupo propio si lo tiene). Si el
+# resultado es igual al que esta, no se toca nada. Si cambio: se prueba con "nginx -t" y SOLO si sale bien se recarga
+# nginx; si sale mal se deja todo como estaba (sitio y zonas de limite). Asi un cambio de la plantilla (p. ej. gzip,
+# auditoria 13-nov) llega con este script, sin tener que correr instalar.sh.
+SITIO_NG="/etc/nginx/sites-available/$DOMINIO"
+LIMITES_NG=/etc/nginx/conf.d/envivo-limites.conf
+if [ ! -f "$SITIO_NG" ] || ! command -v nginx > /dev/null; then
+  echo "   no esta el sitio de nginx ($SITIO_NG): corre instalar.sh"
+else
+  SOCK_NG="$(grep -oE 'fastcgi_pass unix:[^;]+' "$SITIO_NG" | head -n 1 | sed 's/^fastcgi_pass unix://')"
+  NUEVO_NG="$(mktemp)"
+  if [ -z "$SOCK_NG" ]; then
+    echo "   no se encontro el socket de PHP en $SITIO_NG: no se toca (corre instalar.sh)"
+  elif ! DOMINIO="$DOMINIO" APP="$APP" SOCK="$SOCK_NG" bash "$APP/server/deploy/nginx-sitio.sh" > "$NUEVO_NG" || [ ! -s "$NUEVO_NG" ]; then
+    echo "   ERROR: no se pudo armar la configuracion nueva: no se toca nada"
+  else
+    CAMBIA_LIM=0
+    [ -f "$APP/server/deploy/ops/nginx-envivo-limites.conf" ] && ! cmp -s "$APP/server/deploy/ops/nginx-envivo-limites.conf" "$LIMITES_NG" && CAMBIA_LIM=1
+    if cmp -s "$NUEVO_NG" "$SITIO_NG" && [ "$CAMBIA_LIM" = "0" ]; then
+      echo "   sin cambios"
+    else
+      ANT_NG="$(mktemp)"; cp -p "$SITIO_NG" "$ANT_NG"
+      ANT_LIM=""; [ -f "$LIMITES_NG" ] && ANT_LIM="$(mktemp)" && cp -p "$LIMITES_NG" "$ANT_LIM"
+      install -m 644 "$NUEVO_NG" "$SITIO_NG"
+      [ "$CAMBIA_LIM" = "1" ] && install -o root -g root -m 644 "$APP/server/deploy/ops/nginx-envivo-limites.conf" "$LIMITES_NG"
+      if nginx -t > /tmp/envivo-nginx-t.log 2>&1; then
+        systemctl reload nginx && echo "   configuracion nueva puesta (nginx -t correcto y nginx recargado)"
+      else
+        echo "   ERROR: nginx -t fallo con la configuracion nueva. Se deja la de antes y NO se recarga nginx. Detalle:"
+        sed 's/^/     /' /tmp/envivo-nginx-t.log
+        cp -p "$ANT_NG" "$SITIO_NG"
+        if [ -n "$ANT_LIM" ]; then cp -p "$ANT_LIM" "$LIMITES_NG"; elif [ "$CAMBIA_LIM" = "1" ]; then rm -f "$LIMITES_NG"; fi
+      fi
+      rm -f "$ANT_NG"; [ -n "$ANT_LIM" ] && rm -f "$ANT_LIM"
+    fi
+  fi
+  rm -f "$NUEVO_NG"
+fi
 echo
 if [ -n "$PEDIDA" ]; then
   echo "Listo: el juego quedo en la version ${DESPUES:0:7} (fuera de la rama $RAMA). La base de datos NO volvio atras."
   echo "Para volver a lo ultimo de GitHub:   sudo bash $APP/server/deploy/actualizar.sh"
 else
-  echo "Listo. Si cambio la configuracion de nginx del juego, corre tambien:  sudo bash $APP/server/deploy/instalar.sh"
+  echo "Listo. (La configuracion de nginx del sitio ya se puso al dia en el paso 6; el certificado y lo demas: instalar.sh)"
 fi
 # Al final, para que se vea: si el respaldo nocturno no esta o el ultimo no fue bueno, un AVISO GRANDE
 aviso_respaldo "$APP" || true

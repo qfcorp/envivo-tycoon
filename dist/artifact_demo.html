@@ -362,6 +362,7 @@
   .gear .row.between .ay-q,.gear .exq-top .ay-q{margin-inline-start:6px}
   .pkuso{font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .pick .ay-q{width:18px;height:18px;min-width:18px;font-size:11px;margin-inline-start:4px}
+  .pick .ay-q::after{inset:-10px}   /* en la fila del personal la zona de toque es la fila entera; no tapar el nombre */
   .gear .grow2{flex:1}
   .gear .btn{width:100%;margin-top:8px;padding:9px 6px;font-size:13px}
   .gear .btn.sm{display:block}
@@ -851,6 +852,31 @@
   .nubecarga .nc-btns .btn{width:100%;margin:6px 0 0}
   @keyframes ncgiro{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.nubecarga .nc-giro{animation-duration:2.5s}}
+  .nubecarga .nc-nota{color:var(--amber);margin:0 0 8px}
+  /* Arreglos del cliente (auditoría 13-nov): estrellas esperadas y "Recomendado" en las ofertas, protección de principiante,
+     aviso de reparar, "Hay una versión nueva", cuentas del resultado plegadas, "Cerrar el día" chico el día 1 */
+  .of-est{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:6px}
+  .of-stars{color:var(--amber);letter-spacing:1px;white-space:nowrap}
+  .of-stars i{font-style:normal;color:var(--muted)}
+  .tag.green{background:rgba(46,204,113,.14);border-color:rgba(46,204,113,.5);color:var(--green);margin:0}
+  .tag.green .ico{margin-inline-end:3px}
+  .ofc.of-recom{border-color:rgba(46,204,113,.55)}
+  .ofc.of-no{opacity:.72}
+  .of-no-t{color:var(--amber)}
+  .of-falta{display:flex;align-items:center;gap:4px;width:100%;color:var(--muted)}
+  .tip-prot{display:flex;gap:6px;align-items:flex-start;margin:0 0 8px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
+  #resProt{margin-top:8px}
+  .rep-lista{margin:0 0 10px}
+  .rep-fila{padding:4px 0;border-bottom:1px solid var(--line)}
+  .res-cuentas{margin-top:10px}
+  .res-cuentas summary{cursor:pointer;color:var(--muted);font-size:13px;padding:10px 0;min-height:44px;box-sizing:border-box}
+  .btn.dia-chico{display:block;width:auto;margin:10px auto 0;background:transparent;opacity:.85}
+  .swnueva{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:9500;display:flex;gap:8px;align-items:center;padding:6px 6px 6px 14px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:calc(100vw - 32px);font-size:14px}
+  .swnueva .btn{width:auto;margin:0;min-height:40px;white-space:nowrap}
+  .swnueva .swx{background:none;border:0;color:var(--muted);font-size:20px;min-width:40px;min-height:40px;cursor:pointer}
+  /* Casillas del personal: toda la fila es la zona de toque (≥44 px) */
+  .pick{min-height:48px;cursor:pointer}
+  .pick input{flex:none;margin:0}
 </style>
 <header class="gut">
   <div class="brand"><span class="tally"></span> En Vivo Tycoon<span class="vipbadge" id="vipBadge" hidden>VIP</span><button class="iconbtn" id="muteBtn" data-act="mute" aria-label="Sonido" data-i18n-aria="head.sonido"></button><button class="iconbtn" id="musicBtn" data-act="music" aria-label="Música" data-i18n-aria="head.musica" hidden></button><button class="iconbtn langbtn" id="langBtn" data-act="idioma" aria-label="Idioma" data-i18n-aria="idioma.boton" hidden></button></div>
@@ -36100,6 +36126,44 @@
     'bf.agotada': 'Se agotaron los {n} VIP gratis — gracias',
     'bf.detalle': 'Gratis para las primeras cuentas, uno por persona. Durante {dias} días: más eventos al día, reparaciones más baratas, obras más rápidas y bono diario.',
     'bf.listo': '¡Listo! Tu Pase VIP de {dias} días ya está activo.',
+    // Arreglos del cliente (auditoría 13-nov). Solo en español: se traducen todos juntos al final (ver PLAN.md)
+    'roto.titulo': 'No pudimos abrir tu partida',
+    'roto.texto': 'La partida guardada en este aparato no se pudo leer. La guardamos aparte para que no se pierda: no se borra nada.',
+    'roto.reintentar': 'Reintentar',
+    'roto.nube': 'Recuperar desde la nube',
+    'roto.nueva': 'Empezar partida nueva',
+    'roto.buscando': 'Buscando tu partida en la nube…',
+    'roto.sin_red': 'No hay conexión con el servidor. Revisa tu internet y vuelve a intentar.',
+    'roto.sin_sesion': 'No hay una sesión abierta en este aparato. Empieza una partida nueva y entra a tu cuenta: tu partida de la nube se carga sola.',
+    'roto.nube_vacia': 'Tu cuenta no tiene una partida en la nube.',
+    'roto.nube_ilegible': 'Tampoco pudimos leer la partida de la nube. Prueba con «Reintentar» más tarde (puede faltar una actualización del juego).',
+    'guardar.fallo': 'Tu avance no se puede guardar en este aparato (sin espacio o modo privado). Libera espacio o entra a tu cuenta para guardarlo en la nube.',
+    'nube.ilegible': 'No pudimos leer tu partida de la nube en este aparato. No la tocamos: sigues con la de aquí.',
+    'fama.protegida': {"one": 'Protección de principiante: te queda {n} evento en el que la fama no baja.', "other": 'Protección de principiante: en tus próximos {n} eventos la fama no baja.'},
+    'fama.protegida_res': {"one": 'Tu fama no bajó: protección de principiante (te queda {n} evento).', "other": 'Tu fama no bajó: protección de principiante (te quedan {n} eventos).'},
+    'of.esperado': 'Con lo que tienes:',
+    'of.recomendado': 'Recomendado',
+    'of.no_puedes': 'Todavía no puedes hacerlo bien',
+    'of.falta': 'Te falta: {lista}',
+    'of.falta.camaras': 'cámaras',
+    'of.falta.switcher': 'switcher',
+    'of.falta.consola': 'consola de audio',
+    'of.falta.transmision': 'equipo de transmisión',
+    'of.falta.repeticiones': 'repeticiones',
+    'of.falta.graficos': 'gráficos',
+    'of.falta.personal': 'personal',
+    'danos.reparar_parte': 'Reparar {n} de {total} ({m})',
+    'danos.aviso_t': 'Equipo casi roto',
+    'danos.aviso_txt': '{equipo} quedó al {n}%. Así puede fallar en vivo y bajar la calidad (y el pago).',
+    'danos.aviso_varios': '{n} equipos que usaste quedaron por debajo del 25%. Así pueden fallar en vivo y bajar la calidad (y el pago).',
+    'danos.aviso_si': 'Reparar ({m})',
+    'danos.aviso_no': 'Después',
+    'danos.ver_bodega': 'Ver en la Bodega',
+    'dia.cerrar_conf': 'Hoy todavía no hiciste ningún evento. Si cierras el día se cobran los gastos fijos ({m}) y pasas al día siguiente.',
+    'dia.cerrar_si': 'Cerrar el día',
+    'res.ver_cuentas': 'De dónde sale la ganancia',
+    'sw.nueva': 'Hay una versión nueva',
+    'sw.actualizar': 'Actualizar',
     // Textos de la lógica y del servidor: en español no hace falta traducirlos
     logica: {},
   };
@@ -37933,8 +37997,13 @@
     starsPay: [0, 0.1, 0.7, 1.0, 1.15, 1.3],
     starsPayBig: [0, 0.15, 0.5, 1.0, 1.15, 1.35], // dificultad 3 o más: un evento grande mal hecho casi no se cobra
     bigFrom: 3,
-    learn: { events: 10, pay1: 0.4 },   // los primeros 10 eventos: 1 estrella en un evento chico paga como antes (40%)
-    starsRep: [0, -5, -0.5, 2, 4, 6],
+    // Los primeros 10 eventos: 1 estrella en un evento chico paga como antes (40%) y la fama NUNCA baja (protección de
+    // principiante, auditoría 13-nov: el jugador nuevo veía caer su fama a 0 en la primera sesión)
+    learn: { events: 10, pay1: 0.4 },
+    // Fama por estrellas (× (0,5 + 0,15 × dificultad)): 1★ resta poco (antes -5: con la cámara de inicio se caía a 0),
+    // 2★ casi nada, 3★ o más suma. Regla del dueño: el juego debe ser fácil y nunca frustrante.
+    starsRep: [0, -1.5, -0.5, 2, 4, 6],
+    famaPiso: 5,                 // las estrellas y el olvido nunca bajan la fama de aquí (la de inicio); duelos e internacionales sí
     diffPenalty: [0, 4, 8, 32, 42, 44], // puntos que resta la dificultad 1..5 del evento
     quality: {
       base: 25, cover: 25,       // plan de cámaras: hasta 25 puntos si cada posición tiene la cámara ideal y operador
@@ -38948,7 +39017,7 @@
     }
     // Fama: si pasas días sin trabajar, la gente se olvida de ti
     const idle = s.day - (s.lastWorkDay || s.day);
-    if (idle > 0 && idle % BALANCE.fameDecay.every === 0 && s.rep > 0 && !inTutorial(s)) {
+    if (idle > 0 && idle % BALANCE.fameDecay.every === 0 && s.rep > 0 && s.stats.events >= BALANCE.learn.events && s.rep > BALANCE.famaPiso) {   // (protección de principiante: no en los primeros 10 eventos; nunca bajo el piso)
       s.rep = clamp(s.rep - 1, 0, 100);
       aviso(s, 'fama', 'log.olvido', { n: idle });
     }
@@ -41418,6 +41487,11 @@
     // Imprevistos v2: lo que hicieron tus decisiones con la fama (una disculpa, un cliente molesto, una entrevista...)
     const famaImprevistos = ev.incidents.reduce((a, i) => a + ((i.result && i.result.fama) || 0), 0);
     repDelta += famaImprevistos;
+    // Protección de principiante: en los primeros 10 eventos la fama no baja (salvo un internacional o un duelo, que no llegan tan pronto)
+    const protegido = s.stats.events < BALANCE.learn.events && repDelta < 0 && !c.internacional && !c.rival;
+    if (protegido) repDelta = 0;
+    // Piso: un evento flojo no te baja de la fama de inicio (sin duelo ni internacional)
+    if (repDelta < 0 && !c.internacional && !c.rival) repDelta = Math.max(repDelta, Math.min(0, Math.ceil(BALANCE.famaPiso - s.rep)));
     // Contrato internacional que sale mal: la caída de fama es grande
     let intlFail = false;
     if (c.internacional && stars <= 2) { repDelta -= (c.repRisk || 10); intlFail = true; }
@@ -41499,6 +41573,8 @@
     const result = {
       title, type: c.type,
       quality, stars, pay, wages: ev.wages, net: pay - ev.wages - (ev.travelCost || 0) - transporte, repDelta, ups,
+      protegido, // la fama habría bajado, pero la protección de principiante la dejó igual (el resultado lo explica)
+      protegidoQuedan: Math.max(0, BALANCE.learn.events - s.stats.events), // eventos que quedan con la protección
       // Movilización: { total, app, combustible, eleccion ('economico' | 'xl' | 'carga' | null), km, personas, bultos,
       //   vehiculos: [{ id, type, nombre }], autos, fletes, incluido ('viaje' en un internacional), soloFlota } o null
       transporte: tp ? resumenTransporte(tp, transporte, cubreCliente) : null,
@@ -41611,63 +41687,148 @@
     if (typeof p.eventos_internacionales !== 'number') p.eventos_internacionales = 0;
   }
   function serialize(s) { return JSON.stringify(s); }
+  /* Cargar una partida guardada. Cada paso de la migración va por separado (auditoría 13-nov): si un campo viejo o raro
+     hace fallar un paso, ese paso se salta y la partida igual se abre (antes cualquier error devolvía null y el juego
+     empezaba una partida nueva encima). null solo si no es JSON, no es una partida (sin staff) o la guardó un juego más
+     nuevo (v mayor que SAVE_VERSION): ahí la pantalla "No pudimos abrir tu partida" la guarda aparte y pregunta. */
   function deserialize(str) {
-    try {
-      const s = JSON.parse(str);
-      if (!s || !(s.v === 1 || s.v === 2 || s.v === 3 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
-      // Rellenar campos nuevos en partidas guardadas antes
-      s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
-      s.stats.best = s.stats.best || {};
+    let s;
+    try { s = JSON.parse(str); } catch (e) { return null; }
+    if (!s || typeof s !== 'object' || !(s.v === 1 || s.v === 2 || s.v === 3 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
+    const fallos = [];
+    const paso = (k, fn) => { try { fn(); } catch (e) { fallos.push(k); } };
+    // Rellenar campos nuevos en partidas guardadas antes
+    paso('stats', () => {
+      if (!s.stats || typeof s.stats !== 'object') s.stats = { events: 0, fiveStars: 0, earned: 0, best: {} };
+      if (typeof s.stats.events !== 'number') s.stats.events = Number(s.stats.events) || 0;
+      s.stats.best = s.stats.best && typeof s.stats.best === 'object' ? s.stats.best : {};
       if (!s.stats.good) {
         s.stats.good = {};
         Object.keys(s.stats.best).forEach((k) => { if (s.stats.best[k] >= 4) s.stats.good[k] = 1; });
       }
       s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
       if (typeof s.stats.intl !== 'number') s.stats.intl = 0;
+    });
+    paso('chapterStats', () => {
       if (!s.chapterStats) {
         // Partida vieja: lo mejor que se sabe es el mejor resultado de cada tipo
         s.chapterStats = { good: {}, duels: 0 };
         const ch = CHAPTERS[s.chapter];
         if (ch && ch.target && (s.stats.best[ch.target] || 0) >= 4) s.chapterStats.good[ch.target] = 1;
       }
+    });
+    paso('storyNext', () => {
       if (typeof s.storyNext !== 'number') {
         const ch = CHAPTERS[s.chapter];
         s.storyNext = ch && ch.offer ? s.day + 1 : 0;
       }
-      (s.contracts || []).forEach((c) => {
+    });
+    paso('contracts', () => {
+      s.contracts = (Array.isArray(s.contracts) ? s.contracts : []).filter((c) => c && typeof c === 'object');
+      s.contracts.forEach((c) => {
         c.rival = !!c.rival; c.story = !!c.story;
         if (c.rival && typeof c.rivalQuality !== 'number') c.rivalQuality = rivalQualityFor(s, c);
       });
+    });
+    paso('rivalActual', () => {
       if (s.currentEvent && s.currentEvent.contract && s.currentEvent.contract.rival && typeof s.currentEvent.contract.rivalQuality !== 'number') {
         s.currentEvent.contract.rivalQuality = rivalQualityFor(s, s.currentEvent.contract);
       }
+    });
+    paso('varios', () => {
       if (!Array.isArray(s.pending)) s.pending = [];
       if (typeof s.lastWorkDay !== 'number') s.lastWorkDay = s.day;
-      // v3: roles nuevos, niveles de experiencia, equipos que ya no existen
-      s.staff.forEach(migrateStaff);
-      (s.candidates || []).forEach(migrateStaff);
-      s.equip = (s.equip || []).filter((e) => e && typeof e.type === 'string');
+    });
+    // v3: roles nuevos, niveles de experiencia, equipos que ya no existen
+    paso('staff', () => {
+      s.staff = s.staff.filter((p) => p && typeof p === 'object');
+      s.staff.forEach((p) => paso('staff1', () => migrateStaff(p)));
+    });
+    paso('candidates', () => {
+      s.candidates = (Array.isArray(s.candidates) ? s.candidates : []).filter((p) => p && typeof p === 'object');
+      s.candidates.forEach(migrateStaff);
+    });
+    paso('equip', () => {
+      s.equip = (Array.isArray(s.equip) ? s.equip : []).filter((e) => e && typeof e.type === 'string');
       s.equip.forEach((e) => { if (D.ITEM_ALIAS[e.type]) e.type = D.ITEM_ALIAS[e.type]; });
       // La cámara de Don Ramiro (partidas de antes de la marca starter): el nombre se arma con su clave al mostrarla
       s.equip.forEach((e) => { if (e.nick && !e.starter && (e.nick === TEXTOS['equipo.camara_ramiro'] || (e.id === 2 && e.type === 'cam_basic'))) e.starter = true; });
+    });
+    paso('listas', () => {
       if (typeof s.redDays !== 'number') s.redDays = 0;
       if (!Array.isArray(s.recentStars)) s.recentStars = [];
       if (typeof s.intlNext !== 'number') s.intlNext = 0;
       if (!Array.isArray(s.avisos)) s.avisos = [];
       if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
-      // v4: turnos del día (una partida vieja empieza el día de hoy sin eventos hechos)
-      hoyDe(s);
-      if (s.resumenDia && typeof s.resumenDia !== 'object') s.resumenDia = null;
+    });
+    // v4: turnos del día (una partida vieja empieza el día de hoy sin eventos hechos)
+    paso('hoy', () => { hoyDe(s); });
+    paso('resumenDia', () => { if (s.resumenDia && typeof s.resumenDia !== 'object') s.resumenDia = null; });
+    paso('eventoActual', () => {
       if (s.currentEvent && !s.currentEvent.crewPlan) {
         s.currentEvent.crewPlan = crewPlan(s, s.currentEvent.contract, s.currentEvent.staffIds, s.currentEvent.equipIds);
         s.currentEvent.cameraPlan = cameraPlan(s, s.currentEvent.contract, s.currentEvent.equipIds, s.currentEvent.staffIds, s.currentEvent.colocacion || null);
       }
       if (s.currentEvent) s.currentEvent.incidents = s.currentEvent.incidents.filter((i) => INCIDENTS[i.key]);
-      s.log = (s.log || []).filter((l) => l && typeof l.text === 'string');
-      s.v = SAVE_VERSION;
-      migrarExt(s);
-      return s;
-    } catch (e) { return null; }
+    });
+    // Un evento en curso que no se pudo arreglar se descarta (mejor que no poder abrir la partida)
+    if (fallos.includes('eventoActual') || fallos.includes('rivalActual')) {
+      paso('sinEvento', () => { if (s.currentEvent && !(s.currentEvent.contract && Array.isArray(s.currentEvent.incidents))) s.currentEvent = null; });
+    }
+    paso('log', () => { s.log = (Array.isArray(s.log) ? s.log : []).filter((l) => l && typeof l.text === 'string'); });
+    s.v = SAVE_VERSION;
+    paso('extensiones', () => migrarExt(s));
+    // Lo mínimo para jugar: si esto no está, la partida no sirve (null: se guarda aparte y se pregunta)
+    if (!s.stats || typeof s.stats.events !== 'number' || !Array.isArray(s.equip) || !Array.isArray(s.contracts) || !s.staff.some((p) => p && p.owner)) return null;
+    if (fallos.length) {
+      try { Object.defineProperty(s, '__migracion', { value: fallos, enumerable: false }); } catch (e) { /* nada */ }
+      if (typeof console !== 'undefined' && console.warn) console.warn('[partida] pasos de la migración que fallaron:', fallos.join(', '));
+    }
+    return s;
+  }
+
+  /* ---------- Cuánto rinde una oferta (tarjetas de Clientes, bot de la demo y de las pruebas) ----------
+     Con lo que propone "Elegir lo mejor" (suggestLoadout): estrellas esperadas (rango.esperado de computeQuality), lo
+     que se espera ganar y si se puede hacer de verdad. `falta`: lo que falta para hacerlo bien (claves de texto
+     of.falta.*): cámaras, switcher, consola, transmisión, repeticiones, gráficos o personal.
+     { stars, esperado, net, staffIds, equipIds, falta: [...], puede } — puede = false si con lo que tienes no se puede
+     armar (faltan cámaras, switcher, equipo de transmisión o personal mínimo) y sale 1★. */
+  const FALTA_GRAVE = ['camaras', 'switcher', 'transmision', 'personal'];
+  const FALTA_PARTE = { 'parte.sin_switcher': 'switcher', 'parte.sin_consola': 'consola', 'parte.sin_equipo_transmision': 'transmision',
+    'parte.sin_repeticiones': 'repeticiones', 'parte.sin_graficos': 'graficos', 'parte.falta_rol': 'personal', 'parte.sin_shader': 'personal' };
+  function estrellasDe(q) { const B = BALANCE.stars; return q >= B[0] ? 5 : q >= B[1] ? 4 : q >= B[2] ? 3 : q >= B[3] ? 2 : 1; }
+  function estimarOferta(s, c) {
+    if (!c) return null;
+    const lo = suggestLoadout(s, c.id);
+    const staff = s.staff.filter((p) => lo.staffIds.includes(p.id));
+    const equip = s.equip.filter((e) => lo.equipIds.includes(e.id));
+    const falta = [];
+    if (!equip.some((e) => isCamLike(itemOf(e)))) {
+      return { stars: 1, esperado: 0, net: -1, staffIds: lo.staffIds, equipIds: lo.equipIds, falta: ['camaras'], puede: false };
+    }
+    const cq = computeQuality(s, c, staff, equip);
+    const esperado = cq.rango.esperado, stars = estrellasDe(esperado);
+    const req = cq.cameraPlan.positions.filter((p) => !p.opcional);
+    if (req.some((p) => !p.asignado)) falta.push('camaras');
+    cq.parts.forEach((x) => { const f = FALTA_PARTE[x[2]]; if (f && x[1] < 0 && !falta.includes(f)) falta.push(f); });
+    if (c.internacional && requisitosInternacional(s, c, lo.staffIds, lo.equipIds).some((r) => r.obligatorio && !r.ok) && !falta.includes('personal')) falta.push('personal');
+    const net = Math.round(c.pay * payMult(c, stars, s) - staff.reduce((a, p) => a + eventWage(p, c.diff), 0) - (c.travelCost || 0));
+    return { stars, esperado, net, staffIds: lo.staffIds, equipIds: lo.equipIds, falta, puede: !(stars <= 1 && falta.some((k) => FALTA_GRAVE.includes(k))) };
+  }
+  // La oferta recomendada: la que más rinde entre las que se pueden hacer con 2★ o más (la historia y los duelos que se
+  // pueden ganar pesan más). null si ninguna conviene. `est`: { id: estimarOferta } ya calculadas (opcional).
+  function ofertaRecomendada(s, est) {
+    let best = null;
+    (s.contracts || []).forEach((c) => {
+      const e = (est && est[c.id]) || estimarOferta(s, c);
+      if (!e || !e.puede || e.stars < 2) return;
+      if (c.internacional && e.falta.length) return;
+      if (e.net <= 0 && !c.story) return;
+      if (c.rival && e.esperado < (c.rivalQuality || 0) + 5) return;
+      const score = Math.max(1, e.net) * (c.story ? 2 : 1) * (e.stars >= 3 ? 1 : 0.5);
+      if (!best || score > best.score) best = { id: c.id, score };
+    });
+    return best ? best.id : null;
   }
 
   /* ---------- Partida de demostración (?demo=cap4) ----------
@@ -41703,13 +41864,9 @@
     s.contracts.forEach((c) => {
       if (c.internacional) return;
       const lo = suggestLoadout(s, c.id);
-      const staff = s.staff.filter((p) => lo.staffIds.includes(p.id));
       const equip = s.equip.filter((e) => lo.equipIds.includes(e.id));
       if (!equip.some((e) => itemOf(e).cat === 'cam')) return;
-      const cq = computeQuality(s, c, staff, equip);
-      const q = cq.rango.esperado, B = BALANCE.stars;
-      const st = q >= B[0] ? 5 : q >= B[1] ? 4 : q >= B[2] ? 3 : q >= B[3] ? 2 : 1;
-      const net = c.pay * payMult(c, st, s) - staff.reduce((a, p) => a + eventWage(p, c.diff), 0);
+      const est = estimarOferta(s, c), q = est.esperado, st = est.stars, net = est.net;
       if (net <= 0 && !c.story) return;
       if (c.rival && q < c.rivalQuality + 8) return;
       const score = net * (c.story ? 2 : 1) * (st >= 3 ? 1 : 0.4);
@@ -41791,7 +41948,7 @@
     // Personal internacional
     cursoIntl, cursoIntlCosto, puedeCursoIntl, darCursoIntl, searchStaffIntl, ayudaIntl, intlPersonalDisponible, isIntlExp, nuevoNombre: staffName, INTL_CREDITOS: D.INTL_CREDITOS,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, camGeo, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, camGeo, suggestLoadout, estimarOferta, ofertaRecomendada, estrellasDe, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     elegirOpcion, // imprevistos v2: la opción razonable (bot de pruebas y fantasma de los duelos)
     crewPlan, cameraPlan, validarColocacion, CAMARAS_REGLAS: CAMR, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)
@@ -47835,7 +47992,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v50', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v51', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -48983,15 +49140,34 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
 
   /* ---------- Guardado ---------- */
+  let rotaPend = false;        // la partida guardada no se pudo abrir: no se guarda NADA hasta que el jugador elija
+  let guardarFallo = false;    // ya se avisó (una vez por sesión) que en este aparato no se puede guardar
+  let persistPedido = false;
   function save() {
+    if (!S || rotaPend) return;
     // Se está abriendo otra vez con la partida de la nube, u otro dispositivo tomó la partida: aquí no se guarda nada
     if (nubeRecargando) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
-    try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
+    try { localStorage.setItem(SAVE_KEY, G.serialize(S)); }
+    catch (e) {
+      // Sin espacio o modo privado: se avisa UNA vez (antes se perdía el avance sin ningún aviso; auditoría 13-nov)
+      if (!guardarFallo) { guardarFallo = true; setTimeout(() => { try { toast(T('guardar.fallo')); } catch (err) { /* nada */ } }, 0); }
+    }
+    pedirPersistente();
     marcarGuardado();                          // "Última vez" de la partida de aquí (al elegir entre esta y la de la nube)
     if (nubeInfo) lsSet(NUBE_KEY, nubeInfo);   // la versión de la nube va siempre junto a la partida guardada aquí
     nubePendiente = true;
     nubeLuego();
+  }
+  // Pide al navegador que no borre los datos del juego cuando falta espacio (Chrome puede borrar las partidas sin cuenta).
+  // Una vez por sesión y recién con avance (en Firefox puede salir una pregunta: no al abrir el juego por primera vez).
+  function pedirPersistente() {
+    if (persistPedido || !(S && S.stats && S.stats.events > 0)) return;
+    persistPedido = true;
+    try {
+      const st = navigator.storage;
+      if (st && st.persist && st.persisted) st.persisted().then((ya) => (ya ? true : st.persist())).catch(() => {});
+    } catch (e) { /* sin permiso */ }
   }
   /* ---------- Partida en la nube ----------
      Una partida por cuenta, con versión (server/src/Partidas.php). Esta pestaña recuerda de qué versión de la nube partió
@@ -49065,6 +49241,16 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     lsSet(NUBE_KEY, nubeInfo);
   }
   const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
+  /* La nube SÍ tiene una partida, pero este juego no la puede leer (p. ej. la guardó un juego más nuevo): eso NO es "no hay
+     partida en la nube". No se sube la de aquí encima (la regla de siempre: nunca perder avance); se sigue jugando aquí,
+     se espera un rato antes de volver a revisar y se busca una versión nueva del juego (auditoría 13-nov). */
+  let nubeEspera = 0, nubeIlegibleAviso = false;
+  function nubeIlegible() {
+    nubeEstado = 'error'; nubeEspera = Date.now() + 60000; clearTimeout(nubeT);
+    if (!nubeIlegibleAviso) { nubeIlegibleAviso = true; toast(T('nube.ilegible')); }
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then((reg) => (reg ? reg.update() : null)).catch(() => {}); } catch (e) { /* nada */ }
+    pintarNube();
+  }
   const esClienteViejo = (e) => !!(e && (e.status === 426 || e.codigo === 'cliente_viejo'));
   const esRetroceso = (e) => !!(e && e.codigo === 'partida_retroceso');
   const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo' || e.codigo === 'partida_retroceso'));
@@ -49078,7 +49264,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     nubeT = setTimeout(subirNube, 4000);
   }
   async function subirNube(tomar, reintento) {
-    if (!nubeActiva() || nubeBloqueo || nubeRecargando) return;
+    if (!nubeActiva() || nubeBloqueo || nubeRecargando || rotaPend || !S) return;
+    if (Date.now() < nubeEspera) return;   // la nube tiene una partida que aquí no se puede leer: no se sube nada por ahora
     const base = nubeBase();
     if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
     if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar, reintento); }    // un guardado a la vez
@@ -49111,7 +49298,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
   // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
   function revisarNube(motivo) {
-    if (!nubeActiva() || nubeRecargando) return Promise.resolve();
+    if (!nubeActiva() || nubeRecargando || rotaPend || !S) return Promise.resolve();
+    if (Date.now() < nubeEspera) return Promise.resolve();
     if (nubeBloqueo) { if (motivo !== 'reloj') nubeAvisoOtro(); return Promise.resolve(); }
     if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
     return nubeRevisando;
@@ -49161,6 +49349,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const nube = nubeLeer(r);
     nubeVio(r);
     const hayAqui = S.stats.events > 0 || S.day > 1;
+    if (!nube && r && r.datos) { nubeIlegible(); return; }   // hay partida en la nube pero no se puede leer: no se pisa
     if (!nube) {   // no hay en la nube: sube la de aquí (no se pisa nada) y se avisa
       nubeMarcar(r.rev || 0, '', null); nubeLista = nubeCuenta();
       if (hayAqui) toast(T('nube.subida', { aparato: aparato() }));
@@ -49247,6 +49436,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   // Para soporte (consola) y las pruebas: lista de copias y recuperar una (queda como la partida de aquí)
   window.__respaldos = {
     lista: () => respaldos().map((x, i) => ({ i, cuando: new Date(x.t).toISOString(), eventos: x.p.e, dia: x.p.d, fama: x.p.f, dinero: x.dinero })),
+    // Partidas que no se pudieron abrir (pantalla "No pudimos abrir tu partida"), tal cual: para soporte
+    rotas: () => rotos().map((x, i) => ({ i, cuando: new Date(x.t).toISOString(), largo: x.datos.length })),
     recuperar(i) {
       const x = respaldos()[i];
       if (!x) return false;
@@ -49362,6 +49553,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
      Devuelve true si está intentando (entonces no hace falta revisar la nube aparte). */
   let reconectando = false;
   function reconectar() {
+    if (!S || rotaPend) return false;   // pantalla "No pudimos abrir tu partida": nada de red hasta que el jugador elija
     if (Api.disponible !== false || !Api.iniciar || !conServidorWeb()) return false;
     if (reconectando) return true;
     reconectando = true;
@@ -49445,6 +49637,69 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
   function load() {
     try { const raw = localStorage.getItem(SAVE_KEY); return raw ? G.deserialize(raw) : null; } catch (e) { return null; }
+  }
+  // La partida guardada tal cual (texto), o null si no hay ninguna ("null" o vacío tampoco cuentan como partida)
+  function saveCrudo() {
+    try { const raw = localStorage.getItem(SAVE_KEY); return raw && raw.trim() && raw.trim() !== 'null' ? raw : null; } catch (e) { return null; }
+  }
+
+  /* ---------- "No pudimos abrir tu partida" (auditoría 13-nov, CRÍTICO) ----------
+     Antes: si la partida guardada no se podía leer (error en una migración, la guardó un juego más nuevo...), el juego
+     empezaba una partida nueva y la guardaba encima: un jugador sin cuenta lo perdía todo. Ahora:
+       - la partida tal cual se copia aparte (envivo_tycoon_save_roto, las 3 últimas; soporte la ve en el diagnóstico),
+       - sale esta pantalla: Reintentar / Recuperar desde la nube (si hubo cuenta) / Empezar partida nueva,
+       - y NO se guarda nada hasta que el jugador elige. */
+  const ROTO_KEY = 'envivo_tycoon_save_roto';
+  function rotos() { const r = lsGet(ROTO_KEY); return Array.isArray(r) ? r.filter((x) => x && typeof x.datos === 'string') : []; }
+  function guardarRoto(raw) {
+    try {
+      const xs = rotos().filter((x) => x.datos !== raw);
+      xs.unshift({ t: Date.now(), datos: raw });
+      let n = Math.min(3, xs.length);
+      while (n > 0) { try { localStorage.setItem(ROTO_KEY, JSON.stringify(xs.slice(0, n))); return true; } catch (e) { n--; } }
+    } catch (e) { /* nada */ }
+    return false;
+  }
+  function rotaPantalla(raw, nota) {
+    rotaPend = true;
+    if (raw) guardarRoto(raw);
+    const el = cargaEl();
+    clearTimeout(cargaT);
+    const conCuenta = cuentaPrevia() && conServidorWeb();   // esta partida estuvo en una cuenta: se puede traer la de la nube
+    el.innerHTML = `<div class="nc-caja" data-rota><p class="nc-titulo">${T('roto.titulo')}</p>
+        <p class="small muted nc-texto">${T('roto.texto')}</p>
+        ${nota ? `<p class="small nc-nota" role="alert">${T(nota)}</p>` : ''}
+        <div class="nc-btns">
+          <button class="btn main" data-act="roto-reintentar">${T('roto.reintentar')}</button>
+          ${conCuenta ? `<button class="btn" data-act="roto-nube">${T('roto.nube')}</button>` : ''}
+          <button class="btn" data-act="roto-nueva">${T('roto.nueva')}</button>
+        </div></div>`;
+    el.hidden = false;
+  }
+  async function rotaNube() {
+    rotaPantalla(null, 'roto.buscando');
+    try {
+      if (window.Api && window.Api.iniciar && Api.disponible !== true) await window.Api.iniciar();
+      if (!Api.disponible) { rotaPantalla(null, 'roto.sin_red'); return; }
+      if (!Api.logueado()) { rotaPantalla(null, 'roto.sin_sesion'); return; }
+      const r = await Api.partida();
+      const nube = nubeLeer(r);
+      if (!nube) { rotaPantalla(null, r && r.datos ? 'roto.nube_ilegible' : 'roto.nube_vacia'); return; }
+      // La de la nube queda como la de aquí y el juego se abre otra vez (la rota ya quedó guardada aparte)
+      localStorage.setItem(SAVE_KEY, r.datos);
+      nubeMarcar(r.rev, nubeClave(nube), nube);
+      try { sessionStorage.setItem(NUBE_AVISO, 'nube.cargada'); } catch (e) { /* sin aviso */ }
+      nubeRecargando = true;
+      location.reload();
+    } catch (e) { rotaPantalla(null, 'roto.sin_red'); }
+  }
+  function rotaNueva() {
+    // La rota ya está guardada aparte (envivo_tycoon_save_roto): se empieza de cero y recién ahí se guarda
+    rotaPend = false;
+    const el = document.getElementById('nubeCarga');
+    if (el) { el.hidden = true; el.innerHTML = ''; }
+    S = G.newGame();
+    arrancarCon();
   }
 
   /* ---------- Mensajes cortos ---------- */
@@ -49659,7 +49914,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === (tab === 'registro' ? 'inicio' : tab)));
     // Las pestañas que no se ven quedan vacías (menos nodos en la página); se vuelven a pintar al abrirlas
     document.querySelectorAll('main section').forEach((s) => { const on = s.id === 'tab-' + tab; s.classList.toggle('on', on); if (!on && s.firstChild) s.textContent = ''; });
-    if (Pm && Pm.tickVip(S)) { try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* nada */ } }
+    if (Pm && Pm.tickVip(S)) save();   // por save(): respeta "se está cargando la de la nube" y "otro aparato" (auditoría 13-nov)
     $('vipBadge').hidden = !(Pm && Pm.vip);
     const bo = $('badgeO');
     if (bo) bo.textContent = avisosOnline() || '';
@@ -49738,8 +49993,11 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox, turnoTxt)) : `<div class="card hqcard">${A.hq(S)}</div>`;
     $('tab-inicio').innerHTML = `${rojo}${bannersInicio()}${hubHtml}
       ${tHoy ? `<div class="small turno-hoy hub-turno">${I('calendar', 'sm')} ${turnoTxt}${AY('dia')}</div>` : ''}
-      <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
+      <button class="btn ${primerDiaSinEventos() ? 'sm dia-chico' : ''}" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
   }
+
+  // Día 1 y todavía ningún evento (el "Cerrar el día" se ve más chico y pide confirmación)
+  const primerDiaSinEventos = () => !!(S && S.day === 1 && !(S.stats && S.stats.events > 0) && !S.gameOver);
 
   /* ---------- Datos para el hub de Inicio (js/hub.js) ----------
      Los módulos (window.EnVivoInicio) se pintan igual que antes; el hub los pone en su lugar de la sede
@@ -49921,20 +50179,44 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (!c || !c.internacional || !G.requisitosInternacional) return c;
     try { return Object.assign({}, c, { requisitos: G.requisitosInternacional(S, c, S.staff.map((p) => p.id), S.equip.map((e) => e.id)).map((r) => Object.assign({}, r, { texto: TL(r.texto) })) }); } catch (e) { return c; }
   }
+  /* Estrellas esperadas de cada oferta con lo que tienes (lo que propone "Elegir lo mejor"), la recomendada y lo que falta
+     para hacerla bien (auditoría 13-nov: el jugador nuevo tomaba ofertas imposibles y veía caer su fama). Mismo cálculo que
+     el bot de las pruebas (G.estimarOferta / G.ofertaRecomendada). */
+  function estimacionesOfertas() {
+    const est = {};
+    if (!G.estimarOferta) return { est, rec: null };
+    S.contracts.forEach((c) => { try { est[c.id] = G.estimarOferta(S, c); } catch (e) { est[c.id] = null; } });
+    let rec = null;
+    try { rec = G.ofertaRecomendada ? G.ofertaRecomendada(S, est) : null; } catch (e) { rec = null; }
+    return { est, rec };
+  }
+  const estrellasHtml = (n) => `<span class="of-stars" role="img" aria-label="${esc(T('estrellas.aria', { n }))}">${'★'.repeat(n)}<i>${'☆'.repeat(5 - n)}</i></span>`;
+  function ofertaEstHtml(c, e, rec) {
+    if (!e) return '';
+    const falta = e.falta.length ? `<span class="of-falta small">${I('bolt', 'sm')}${T('of.falta', { lista: e.falta.map((k) => T('of.falta.' + k)).join(', ') })}</span>` : '';
+    return `<div class="of-est small" data-of-est="${e.stars}">${rec ? `<span class="tag green of-rec">${I('check', 'sm')}${T('of.recomendado')}</span>` : ''}
+      <span class="of-esp">${T('of.esperado')} ${estrellasHtml(e.stars)}</span>${!e.puede ? `<span class="of-no-t">${T('of.no_puedes')}</span>` : ''}${falta}</div>`;
+  }
   function renderClientes() {
     const tHoy = turnoHoy();
-    // Orden de las ofertas (chips): mejor pago, la que vence antes o la más fácil
+    const { est, rec } = estimacionesOfertas();
+    // Orden de las ofertas (chips): mejor pago, la que vence antes o la más fácil. Por llegada: la recomendada primero y
+    // las que todavía no puedes hacer bien, al final.
     const ord = sub.clientesOrden;
+    const peso = (c) => (c.id === rec ? 0 : est[c.id] && !est[c.id].puede ? 2 : 1);
     const lista = S.contracts.slice().sort(ord === 'vence' ? (a, b) => a.daysLeft - b.daysLeft || b.pay - a.pay
-      : ord === 'facil' ? (a, b) => a.diff - b.diff || b.pay - a.pay : ord === 'pago' ? (a, b) => b.pay - a.pay : () => 0);
+      : ord === 'facil' ? (a, b) => a.diff - b.diff || b.pay - a.pay : ord === 'pago' ? (a, b) => b.pay - a.pay : (a, b) => peso(a) - peso(b));
+    const quedanProt = G.BALANCE && G.BALANCE.learn ? Math.max(0, G.BALANCE.learn.events - ((S.stats && S.stats.events) || 0)) : 0;
     const cards = lista.map((c) => {
+      const e = est[c.id] || null;
       const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
       const todoDia = tHoy && esJornada(c) ? `<span class="tag amber todo-dia">${I('calendar', 'sm')}${T('clientes.todo_dia')}</span>` : '';
-      return `<div class="card ofc ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
+      return `<div class="card ofc ${c.temporada ? 'temp-card' : ''} ${e && !e.puede ? 'of-no' : ''} ${c.id === rec ? 'of-recom' : ''}" data-of="${c.id}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
+        ${ofertaEstHtml(c, e, c.id === rec)}
         ${PE ? PE.internacional(intlVista(c)) : ''}${c.internacional ? ayudaIntlHtml(c) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="of-pie">
@@ -49955,6 +50237,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
         ${mkt('visitar', 'walk', T('nav2.visitar'), esc(T('nav2.visitar_det')), T('clientes.visitar'), false)}
       </div></div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
+      ${quedanProt > 0 && S.contracts.length ? `<div class="tip-prot small" id="tipProt">${I('tip', 'sm')} ${T('fama.protegida', { n: quedanProt })}</div>` : ''}
       ${tHoy ? `<div class="turnos-hoy tn-strip small"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}${tHoy.max > 3 ? ` <span class="muted">${T('dia.vip_turnos', { n: tHoy.max })}</span>` : ''}</div>` : ''}
       ${orden}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
@@ -50333,11 +50616,30 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
           <div class="dn-cond"><span class="num">${rep ? `<span class="muted">${d.despues}%</span> → <b class="up">${ahora}%</b>` : `${d.antes !== null ? `<span class="muted">${d.antes}%</span> → ` : ''}<b class="${d.despues < WORN() ? 'neg' : ''}">${d.despues}%</b>`}</span></div>${bar}${d.despues < WORN() && rc > 0 ? `<span class="dn-riesgo">${I('bolt', 'sm')}${T('danos.riesgo')}</span>` : ''}</div>
         <div class="dn-acc">${btn}</div></div>`;
     }).join('');
-    const todo = pend.length > 1 ? `<button class="btn dn-todo" data-act="repair-all-res" ${S.money < total ? 'disabled' : ''}>${I('wrench', 'sm')}${T('danos.reparar_todo', { m: M(total) })}</button>${S.money < total ? `<div class="dn-falta" style="text-align:center">${T('danos.falta', { m: M(total - S.money) })}</div>` : ''}` : '';
+    const todo = pend.length > 1 ? `${repTodoBtn(pend.map((x) => x.e), 'repair-all-res', 'btn dn-todo')}${S.money < total ? `<div class="dn-falta" style="text-align:center">${T('danos.falta', { m: M(total - S.money) })}</div>` : ''}` : '';
     return `<div class="danos" id="resDanos" role="status"><div class="dn-hd">${I('wrench', 'sm')}<b>${T('danos.titulo')}</b></div>
       <div class="small muted" style="margin:2px 0 6px">${T('danos.sub')}</div>${filas}${todo}</div>`;
   }
   const pintarDanosRes = () => { const n = $('resDanos'); if (n) n.outerHTML = danosResHtml(); };
+  /* Qué se puede reparar con la plata de hoy: lo más en riesgo primero (menor condición), saltando lo que no alcanza
+     (auditoría 13-nov: "Reparar todo" se desactivaba si no alcanzaba para TODO, y el jugador seguía con equipos al 1%) */
+  function planReparar(xs) {
+    let dinero = Math.max(0, S.money);
+    const ok = [];
+    (xs || []).filter((e) => e && reparable(e) && costoRep(e) > 0).sort((a, b) => a.condition - b.condition).forEach((e) => {
+      const c = costoRep(e);
+      if (c <= dinero) { ok.push(e); dinero -= c; }
+    });
+    return { ok, costo: ok.reduce((a, e) => a + costoRep(e), 0) };
+  }
+  // Botón "Reparar todo" / "Reparar 3 de 5 ($X)": nunca desactivado si alcanza para algo
+  function repTodoBtn(xs, act, cls) {
+    const tot = xs.reduce((a, e) => a + costoRep(e), 0), plan = planReparar(xs);
+    const parte = plan.ok.length && plan.ok.length < xs.length;
+    const txt = parte ? T('danos.reparar_parte', { n: plan.ok.length, total: xs.length, m: M(plan.costo) }) : T('danos.reparar_todo', { m: M(tot) });
+    return `<button class="${cls}" data-act="${act}" data-n="${plan.ok.length}" ${plan.ok.length ? '' : 'disabled'}>${I('wrench', 'sm')}${txt}</button>`;
+  }
+  const equiposRes = () => (resDanos || []).map((d) => S.equip.find((x) => x.id === d.id)).filter((e) => e && costoRep(e) > 0);
   function repararVarios(ids) {
     let n = 0;
     ids.forEach((id) => { const e = S.equip.find((x) => x.id === id); if (e && costoRep(e) > 0 && S.money >= costoRep(e) && G.repair(S, id).ok) n++; });
@@ -50361,7 +50663,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     return `<div class="card rep-todo" id="repTodo"><div class="row between" style="gap:8px;align-items:center">
       <div class="grow" style="min-width:0"><b>${I('wrench', 'sm')} ${T('bodega.rep_todo_t', { n: xs.length })}</b>
         <div class="small muted">${T('bodega.rep_todo_det', { m: M(tot) })}</div>${falta > 0 ? `<div class="small neg">${T('danos.falta', { m: M(falta) })}</div>` : ''}</div>
-      <button class="btn sm green" data-act="repair-all-bodega" ${falta > 0 ? 'disabled' : ''} style="width:auto">${T('danos.reparar_todo', { m: M(tot) })}</button></div></div>`;
+      ${repTodoBtn(xs, 'repair-all-bodega', 'btn sm green').replace('<button ', '<button style="width:auto" ')}</div></div>`;
   }
   // Preparación: aviso en el equipo elegido que puede fallar (se ve solo si está marcado)
   function prepDano(e) {
@@ -50402,8 +50704,11 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   // Tienda de equipos: lo que se ve con la categoría, la búsqueda y el orden elegidos
   function shopHtml(cats, llena, maxEq) {
     const q = shopBusca.trim().toLowerCase();
+    // "Recomendado": primero lo que puedes comprar ahora (sin candado y con la plata que tienes), en el orden de siempre
+    const alcanza = (it) => (!it.locked && it.price <= S.money ? 0 : 1);
     const ordenar = (xs) => (sub.shopOrden === 'precio' ? xs.slice().sort((a, b) => (a.locked - b.locked) || a.price - b.price)
-      : sub.shopOrden === 'calidad' ? xs.slice().sort((a, b) => (a.locked - b.locked) || (b.q || 0) - (a.q || 0) || a.price - b.price) : xs);
+      : sub.shopOrden === 'calidad' ? xs.slice().sort((a, b) => (a.locked - b.locked) || (b.q || 0) - (a.q || 0) || a.price - b.price)
+      : xs.slice().sort((a, b) => alcanza(a) - alcanza(b)));
     if (q) {
       const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       const qq = norm(q);
@@ -50419,7 +50724,14 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (!cur) return '';
     const nota = cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
     return `<div class="cathead"><b>${esc(TL(cur.nombre || cur.name || ''))}</b><span class="small muted">${T('bodega.n_equipos', { n: cur.items.length })}</span></div>${nota}
-      <div class="ggrid">${exclusivosDe(cur.key, cur.items).map((x) => exCard(x, llena, maxEq)).join('')}${ordenar(cur.items.filter((it) => !it.exclusivo)).map((it) => shopCard(it, llena, maxEq)).join('')}</div>`;
+      <div class="ggrid">${(() => {
+        // Sin VIP activo, lo que se canjea solo con VIP va después de lo que sí puedes comprar (no primero en "Recomendado")
+        const ex = exclusivosDe(cur.key, cur.items), sinVip = !(Pm && Pm.vip);
+        const vipAl = sinVip && sub.shopOrden === 'rec' ? ex.filter((x) => x.vip) : [];
+        return ex.filter((x) => !vipAl.includes(x)).map((x) => exCard(x, llena, maxEq)).join('')
+          + ordenar(cur.items.filter((it) => !it.exclusivo)).map((it) => shopCard(it, llena, maxEq)).join('')
+          + vipAl.map((x) => exCard(x, llena, maxEq)).join('');
+      })()}</div>`;
   }
   function renderBodega() {
     const maxEq = maxEquip();
@@ -51976,6 +52288,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const caja0 = dia0 && dia0.day === dia && typeof dia0.money === 'number' ? dia0.money : null;
     const ty = S.currentEvent && S.currentEvent.contract ? S.currentEvent.contract.type : '';
     const evEq = S.currentEvent ? { ids: S.currentEvent.equipIds.slice(), cid: S.currentEvent.contract.id } : null;
+    repAvisoIds = evEq ? evEq.ids.slice() : null;   // al cerrar el resultado: ¿quedó algo de esto bajo el 25%?
     const f = G.finishEvent(S);
     save();
     snd.amb(null);
@@ -52052,6 +52365,27 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
   // Qué ventana toca después: el evento en curso, el resumen del día, los capítulos completados y la intro del capítulo
   const capPend = () => (S && Array.isArray(S.capCompletados) ? S.capCompletados : []);
+  /* Después de un evento: si algo de lo que llevaste quedó bajo el 25%, un aviso con un botón para repararlo (lo más en
+     riesgo primero, con la plata que tengas). Sale cuando no hay otra ventana pendiente (auditoría 13-nov: un jugador
+     jugó 30 eventos con la cámara al 1% ganando casi nada). */
+  const REP_AVISO = 25;
+  let repAvisoIds = null;
+  function avisoReparar() {
+    if (!repAvisoIds || !S || S.gameOver) return false;
+    const xs = S.equip.filter((e) => repAvisoIds.includes(e.id) && reparable(e) && e.condition < REP_AVISO && costoRep(e) > 0).sort((a, b) => a.condition - b.condition);
+    if (!xs.length) { repAvisoIds = null; return false; }
+    repAvisoIds = xs.map((e) => e.id);
+    const plan = planReparar(xs), tot = xs.reduce((a, e) => a + costoRep(e), 0);
+    const filas = xs.slice(0, 4).map((e) => `<div class="row between small rep-fila"><span>${esc(nmE(e))}</span><b class="num neg">${Math.round(e.condition)}%</b></div>`).join('');
+    snd.play('bad');
+    openModal(`<div data-rep-aviso><h2>${I('wrench')} ${T('danos.aviso_t')}</h2>
+      <p>${xs.length === 1 ? T('danos.aviso_txt', { equipo: `<b>${esc(nmE(xs[0]))}</b>`, n: Math.round(xs[0].condition) }) : T('danos.aviso_varios', { n: xs.length })}</p>
+      ${xs.length > 1 ? `<div class="rep-lista">${filas}</div>` : ''}
+      ${plan.ok.length ? `<button class="btn main green" data-act="rep-aviso-si">${I('wrench', 'sm')}${plan.ok.length < xs.length ? T('danos.reparar_parte', { n: plan.ok.length, total: xs.length, m: M(plan.costo) }) : T('danos.aviso_si', { m: M(plan.costo) })}</button>`
+        : `<p class="small neg">${T('danos.falta', { m: M(tot - Math.max(0, S.money)) })}</p><button class="btn" data-act="rep-aviso-bodega">${T('danos.ver_bodega')}</button>`}
+      <button class="btn" data-act="rep-aviso-no">${T('danos.aviso_no')}</button></div>`);
+    return true;
+  }
   function continuar() {
     if (VI || !S) return;
     if ($('overlay').classList.contains('on')) return;
@@ -52061,7 +52395,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (avisosPend().length || resDiaPend()) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
-    if (S.gameOver) showGameOver();
+    if (S.gameOver) { showGameOver(); return; }
+    avisoReparar();
   }
 
   // Líneas que agregan las extensiones al resultado (result.extras = [{ icon, k, p }])
@@ -52134,16 +52469,21 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       ${danosResHtml()}
       ${riesgo}
       <table style="margin-top:12px">
+        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
+      </table>
+      ${r.protegido ? `<div class="tip-prot small" id="resProt">${I('tip', 'sm')} ${T('fama.protegida_res', { n: r.protegidoQuedan || 0 })}</div>` : ''}
+      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
+      <details class="res-cuentas" id="resCuentas"><summary>${T('res.ver_cuentas')}</summary>
+      <table>
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
         ${window.Movilizacion ? window.Movilizacion.filaResultado(r, M) : ''}
         ${gastoDia !== null && !dd ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
+        ${dd ? `<tr id="resConParte"><td>${T('res.con_parte')}</td><td class="${neto - dd.parte >= 0 ? 'up' : 'down'}">${sgn(neto - dd.parte)}</td></tr>` : ''}
         ${filaCaja}
-        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
-      </table>
-      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
+      </table></details>
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
@@ -52176,8 +52516,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   /* Gastos fijos del día en el resultado (varios eventos por día): cuánto son, cuándo se cobran y la parte de este evento.
      Antes del cierre: "se cobran al cerrar el día; repartidos entre los N eventos de hoy, a este le tocan $Y" y cuánto
      bajaría con un evento más. Si el evento cerró el día: lo que se cobró (con los días de viaje de un internacional). */
-  function fijosRes(r, d, desg, sgn) {
-    const resto = r.net - d.parte;
+  function fijosRes(r, d, desg) {
     const dias = d.dias || 1;
     const linea = !d.cerrado ? T('res.fijos_luego', { n: d.n, m: M(d.parte) })
       : dias > 1 ? T('res.fijos_cobrados_viaje', { d: dias, m: M(d.gastos) }) : T('res.fijos_cobrados', { n: d.n, m: M(d.parte) });
@@ -52186,7 +52525,6 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       ${desg ? `<div class="small muted" style="font-size:11.5px">${desg}</div>` : ''}
       <div class="small" style="margin-top:3px">${linea}</div>
       ${!d.cerrado && typeof d.conOtro === 'number' && d.conOtro < d.parte ? `<div class="small up" id="resFijosOtro">${T('res.fijos_otro', { m: M(d.conOtro) })}</div>` : ''}
-      <div class="row between small" style="margin-top:4px"><span class="muted">${T('res.con_parte')}</span><b class="num ${resto >= 0 ? 'up' : 'down'}">${sgn(resto)}</b></div>
     </div></div>`;
   }
 
@@ -52460,6 +52798,15 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
 
   /* ---------- Clics ---------- */
   document.addEventListener('click', (e) => {
+    // "No pudimos abrir tu partida": funciona sin partida cargada (S todavía es null)
+    const ro = e.target.closest('#nubeCarga [data-act^="roto-"]');
+    if (ro) {
+      const a = ro.dataset.act;
+      if (a === 'roto-reintentar') { try { location.reload(); } catch (err) { /* nada */ } }
+      else if (a === 'roto-nube') rotaNube();
+      else if (a === 'roto-nueva') rotaNueva();
+      return;
+    }
     if (!S) return;   // todavía cargando el idioma guardado
     snd.unlock();
     mus.init();
@@ -52467,6 +52814,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     if (nav) {
       if (VI) return;   // jugando un turno en línea: primero se termina o se deja para después
       if (nav.dataset.tab === 'online' && tab === 'online' && vistaOnline !== 'hub') { vistaOnline = 'hub'; desmontarOnline(); }
+      // Bodega: si hay equipos en riesgo, abre en "Mis equipos" (ahí se reparan); si no, en la última sección elegida
+      if (nav.dataset.tab === 'bodega' && tab !== 'bodega' && equiposEnRiesgo().length) setSub('bodega', 'equipos');
       tab = nav.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); return;
     }
     const bm = e.target.closest('#overlay [data-merc]');
@@ -52549,7 +52898,17 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
       case 'demo-no': confirmCb = null; closeModal(); render(); continuar(); break;
-      case 'next-day': diaAntes = { money: S.money }; diaCerrado = true; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); if (!resDiaPend()) toast(T('comun.dia_n', { n: S.day })); continuar(); break;
+      case 'next-day':
+        // Primer día sin ningún evento: pregunta antes (un jugador nuevo podía saltarse el día sin querer; auditoría 13-nov)
+        if (primerDiaSinEventos() && !el.dataset.ok) {
+          const cbD = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
+          ask(T('dia.cerrar_conf', { m: M(cbD ? cbD.total : (G.dailyCost ? G.dailyCost(S) : 0)) }), T('dia.cerrar_si'), () => {
+            const b = document.createElement('button'); b.dataset.act = 'next-day'; b.dataset.ok = '1'; b.style.display = 'none';
+            document.body.appendChild(b); b.click(); b.remove();
+          });
+          break;
+        }
+        diaAntes = { money: S.money }; diaCerrado = true; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); if (!resDiaPend()) toast(T('comun.dia_n', { n: S.day })); continuar(); break;
       case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
       case 'mkt': {
         const visita = el.dataset.k === 'visitar';
@@ -52624,8 +52983,11 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       case 'repair': act(G.repair(S, id), 'buy'); break;
       // Equipos dañados (resultado del evento, Inicio y preparación)
       case 'repair-res': act(G.repair(S, id), 'buy'); pintarDanosRes(); break;
-      case 'repair-all-bodega': repararVarios(porReparar().map((x) => x.id)); break;
-      case 'repair-all-res': repararVarios((resDanos || []).map((d) => d.id)); pintarDanosRes(); break;
+      case 'repair-all-bodega': repararVarios(planReparar(porReparar()).ok.map((x) => x.id)); break;
+      case 'repair-all-res': repararVarios(planReparar(equiposRes()).ok.map((x) => x.id)); pintarDanosRes(); break;
+      case 'rep-aviso-si': { const ids = (repAvisoIds || []).slice(); repAvisoIds = null; closeModal(); repararVarios(planReparar(S.equip.filter((x) => ids.includes(x.id))).ok.map((x) => x.id)); continuar(); break; }
+      case 'rep-aviso-no': repAvisoIds = null; closeModal(); render(); continuar(); break;
+      case 'rep-aviso-bodega': repAvisoIds = null; closeModal(); if (porReparar().length) setSub('eqFiltro', 'reparar'); snd.play('tap'); irA('bodega', 'equipos'); break;
       case 'repair-prep': e.preventDefault(); act(G.repair(S, id), 'buy'); if (prep) renderPrep(); break;
       case 'ir-danos': {
         // A Mis equipos, con el filtro "Por reparar" (lo más gastado arriba)
@@ -52725,6 +53087,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       if (S) render();
       if (window.Chat && window.Chat.refrescar) { try { window.Chat.refrescar(); } catch (e) { /* nada */ } }
       if (idiomaPedido && S) toast(T('idioma.cambiado'));
+      try { if (window.PWA && window.PWA.idioma) window.PWA.idioma(I18.idioma); } catch (e) { /* nada */ }
       idiomaPedido = false;
     });
   }
@@ -52761,7 +53124,15 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   function arrancar() {
     enlazarTraductor();
     if (I18) I18.aplicar();
-    S = load() || G.newGame();
+    const raw = saveCrudo();
+    S = raw ? load() : null;
+    // Hay una partida guardada pero no se pudo abrir: se guarda aparte y se pregunta (no se guarda nada todavía)
+    if (raw && !S) { rotaPantalla(raw); return; }
+    if (!S) S = G.newGame();
+    arrancarCon();
+  }
+  function arrancarCon() {
+    try { if (window.PWA && window.PWA.idioma && I18) window.PWA.idioma(I18.idioma); } catch (e) { /* nada */ }
     aplicarFecha();
     save();
     render();
@@ -62273,6 +62644,12 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   function contratoFacil(s) {
     const cs = Array.isArray(s.contracts) ? s.contracts.slice() : [];
     if (!cs.length) return null;
+    // La "Recomendado" de Clientes (va primera en la lista; auditoría 13-nov), si hay
+    try {
+      const G = root.Game, id = G && G.ofertaRecomendada ? G.ofertaRecomendada(s) : null;
+      const r = id !== null ? cs.find((c) => c.id === id) : null;
+      if (r) return r;
+    } catch (e) { /* nada */ }
     // El primero entre los más fáciles (las 3 primeras ofertas de una partida nueva ya son fáciles)
     let mejor = cs[0];
     cs.forEach((c) => { if ((c.diff || 1) < (mejor.diff || 1) && !c.internacional) mejor = c; });
@@ -63785,7 +64162,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const st = document.createElement('style');
     st.textContent = `
 .ay-q{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;min-width:20px;padding:0;margin:0 0 0 6px;border-radius:50%;border:1px solid var(--line,#2a3242);background:var(--panel2,#1e2430);color:var(--amber,#ffb020);font:700 12px/1 inherit;cursor:pointer;vertical-align:middle;position:relative}
-.ay-q::after{content:"";position:absolute;inset:-10px}
+.ay-q::after{content:"";position:absolute;inset:-12px}   /* zona de toque de 44 px (el botón se ve de 20) */
 .ay-q:focus-visible{outline:2px solid var(--amber,#ffb020);outline-offset:2px}
 .ay-velo{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .ay-hoja{width:100%;max-width:520px;margin:0 8px 10px;background:var(--panel,#161b24);border:1px solid #5a4214;border-radius:16px;padding:14px 16px 12px;color:var(--text,#e9edf5);box-shadow:0 -6px 30px rgba(0,0,0,.5);animation:ay-sube .18s ease-out}
@@ -68267,6 +68644,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       pantalla: `${innerWidth}x${innerHeight}`, navegador: String(navigator.userAgent).slice(0, 180),
       // Copias de la partida que se reemplazó en este aparato (js/ui.js respaldar): soporte sabe si hay de dónde recuperar
       copias: (() => { try { return root.__respaldos ? root.__respaldos.lista() : []; } catch (e) { return []; } })(),
+      // Partidas que no se pudieron abrir y quedaron guardadas aparte (js/ui.js "No pudimos abrir tu partida")
+      rotas: (() => { try { return root.__respaldos && root.__respaldos.rotas ? root.__respaldos.rotas() : []; } catch (e) { return []; } })(),
     };
   }
   const fecha = (iso) => { try { return new Date(iso).toLocaleString((root.I18N && root.I18N.idioma) || 'es-EC', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
@@ -71251,9 +71630,14 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target && e.target.id === 'bz-codigo') { e.preventDefault(); const b = document.getElementById('bz-canjear-btn'); if (b) b.click(); }
       });
-      setInterval(revisarCuenta, 2000);
+      // Con la app en segundo plano no se revisa nada (ahorra batería); al volver se revisa enseguida
+      setInterval(() => { if (document.visibilityState !== 'hidden') revisarCuenta(); }, 2000);
       setInterval(() => { if (logueado() && document.visibilityState !== 'hidden' && Date.now() - st.cargadoEn > 240000) cargar().catch(() => {}); }, 30000);
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && logueado() && Date.now() - st.cargadoEn > 60000) cargar().catch(() => {}); });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        revisarCuenta();
+        if (logueado() && Date.now() - st.cargadoEn > 60000) cargar().catch(() => {});
+      });
       try { if (root.I18N && root.I18N.onChange) root.I18N.onChange(() => pintarBoton()); } catch (e) { /* nada */ }
       revisarCuenta();
     };

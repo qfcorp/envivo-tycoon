@@ -130,8 +130,13 @@
     starsPay: [0, 0.1, 0.7, 1.0, 1.15, 1.3],
     starsPayBig: [0, 0.15, 0.5, 1.0, 1.15, 1.35], // dificultad 3 o más: un evento grande mal hecho casi no se cobra
     bigFrom: 3,
-    learn: { events: 10, pay1: 0.4 },   // los primeros 10 eventos: 1 estrella en un evento chico paga como antes (40%)
-    starsRep: [0, -5, -0.5, 2, 4, 6],
+    // Los primeros 10 eventos: 1 estrella en un evento chico paga como antes (40%) y la fama NUNCA baja (protección de
+    // principiante, auditoría 13-nov: el jugador nuevo veía caer su fama a 0 en la primera sesión)
+    learn: { events: 10, pay1: 0.4 },
+    // Fama por estrellas (× (0,5 + 0,15 × dificultad)): 1★ resta poco (antes -5: con la cámara de inicio se caía a 0),
+    // 2★ casi nada, 3★ o más suma. Regla del dueño: el juego debe ser fácil y nunca frustrante.
+    starsRep: [0, -1.5, -0.5, 2, 4, 6],
+    famaPiso: 5,                 // las estrellas y el olvido nunca bajan la fama de aquí (la de inicio); duelos e internacionales sí
     diffPenalty: [0, 4, 8, 32, 42, 44], // puntos que resta la dificultad 1..5 del evento
     quality: {
       base: 25, cover: 25,       // plan de cámaras: hasta 25 puntos si cada posición tiene la cámara ideal y operador
@@ -1145,7 +1150,7 @@
     }
     // Fama: si pasas días sin trabajar, la gente se olvida de ti
     const idle = s.day - (s.lastWorkDay || s.day);
-    if (idle > 0 && idle % BALANCE.fameDecay.every === 0 && s.rep > 0 && !inTutorial(s)) {
+    if (idle > 0 && idle % BALANCE.fameDecay.every === 0 && s.rep > 0 && s.stats.events >= BALANCE.learn.events && s.rep > BALANCE.famaPiso) {   // (protección de principiante: no en los primeros 10 eventos; nunca bajo el piso)
       s.rep = clamp(s.rep - 1, 0, 100);
       aviso(s, 'fama', 'log.olvido', { n: idle });
     }
@@ -3615,6 +3620,11 @@
     // Imprevistos v2: lo que hicieron tus decisiones con la fama (una disculpa, un cliente molesto, una entrevista...)
     const famaImprevistos = ev.incidents.reduce((a, i) => a + ((i.result && i.result.fama) || 0), 0);
     repDelta += famaImprevistos;
+    // Protección de principiante: en los primeros 10 eventos la fama no baja (salvo un internacional o un duelo, que no llegan tan pronto)
+    const protegido = s.stats.events < BALANCE.learn.events && repDelta < 0 && !c.internacional && !c.rival;
+    if (protegido) repDelta = 0;
+    // Piso: un evento flojo no te baja de la fama de inicio (sin duelo ni internacional)
+    if (repDelta < 0 && !c.internacional && !c.rival) repDelta = Math.max(repDelta, Math.min(0, Math.ceil(BALANCE.famaPiso - s.rep)));
     // Contrato internacional que sale mal: la caída de fama es grande
     let intlFail = false;
     if (c.internacional && stars <= 2) { repDelta -= (c.repRisk || 10); intlFail = true; }
@@ -3696,6 +3706,8 @@
     const result = {
       title, type: c.type,
       quality, stars, pay, wages: ev.wages, net: pay - ev.wages - (ev.travelCost || 0) - transporte, repDelta, ups,
+      protegido, // la fama habría bajado, pero la protección de principiante la dejó igual (el resultado lo explica)
+      protegidoQuedan: Math.max(0, BALANCE.learn.events - s.stats.events), // eventos que quedan con la protección
       // Movilización: { total, app, combustible, eleccion ('economico' | 'xl' | 'carga' | null), km, personas, bultos,
       //   vehiculos: [{ id, type, nombre }], autos, fletes, incluido ('viaje' en un internacional), soloFlota } o null
       transporte: tp ? resumenTransporte(tp, transporte, cubreCliente) : null,
@@ -3808,63 +3820,148 @@
     if (typeof p.eventos_internacionales !== 'number') p.eventos_internacionales = 0;
   }
   function serialize(s) { return JSON.stringify(s); }
+  /* Cargar una partida guardada. Cada paso de la migración va por separado (auditoría 13-nov): si un campo viejo o raro
+     hace fallar un paso, ese paso se salta y la partida igual se abre (antes cualquier error devolvía null y el juego
+     empezaba una partida nueva encima). null solo si no es JSON, no es una partida (sin staff) o la guardó un juego más
+     nuevo (v mayor que SAVE_VERSION): ahí la pantalla "No pudimos abrir tu partida" la guarda aparte y pregunta. */
   function deserialize(str) {
-    try {
-      const s = JSON.parse(str);
-      if (!s || !(s.v === 1 || s.v === 2 || s.v === 3 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
-      // Rellenar campos nuevos en partidas guardadas antes
-      s.stats = s.stats || { events: 0, fiveStars: 0, earned: 0, best: {} };
-      s.stats.best = s.stats.best || {};
+    let s;
+    try { s = JSON.parse(str); } catch (e) { return null; }
+    if (!s || typeof s !== 'object' || !(s.v === 1 || s.v === 2 || s.v === 3 || s.v === SAVE_VERSION) || !Array.isArray(s.staff)) return null;
+    const fallos = [];
+    const paso = (k, fn) => { try { fn(); } catch (e) { fallos.push(k); } };
+    // Rellenar campos nuevos en partidas guardadas antes
+    paso('stats', () => {
+      if (!s.stats || typeof s.stats !== 'object') s.stats = { events: 0, fiveStars: 0, earned: 0, best: {} };
+      if (typeof s.stats.events !== 'number') s.stats.events = Number(s.stats.events) || 0;
+      s.stats.best = s.stats.best && typeof s.stats.best === 'object' ? s.stats.best : {};
       if (!s.stats.good) {
         s.stats.good = {};
         Object.keys(s.stats.best).forEach((k) => { if (s.stats.best[k] >= 4) s.stats.good[k] = 1; });
       }
       s.stats.duels = s.stats.duels || { won: 0, lost: 0 };
       if (typeof s.stats.intl !== 'number') s.stats.intl = 0;
+    });
+    paso('chapterStats', () => {
       if (!s.chapterStats) {
         // Partida vieja: lo mejor que se sabe es el mejor resultado de cada tipo
         s.chapterStats = { good: {}, duels: 0 };
         const ch = CHAPTERS[s.chapter];
         if (ch && ch.target && (s.stats.best[ch.target] || 0) >= 4) s.chapterStats.good[ch.target] = 1;
       }
+    });
+    paso('storyNext', () => {
       if (typeof s.storyNext !== 'number') {
         const ch = CHAPTERS[s.chapter];
         s.storyNext = ch && ch.offer ? s.day + 1 : 0;
       }
-      (s.contracts || []).forEach((c) => {
+    });
+    paso('contracts', () => {
+      s.contracts = (Array.isArray(s.contracts) ? s.contracts : []).filter((c) => c && typeof c === 'object');
+      s.contracts.forEach((c) => {
         c.rival = !!c.rival; c.story = !!c.story;
         if (c.rival && typeof c.rivalQuality !== 'number') c.rivalQuality = rivalQualityFor(s, c);
       });
+    });
+    paso('rivalActual', () => {
       if (s.currentEvent && s.currentEvent.contract && s.currentEvent.contract.rival && typeof s.currentEvent.contract.rivalQuality !== 'number') {
         s.currentEvent.contract.rivalQuality = rivalQualityFor(s, s.currentEvent.contract);
       }
+    });
+    paso('varios', () => {
       if (!Array.isArray(s.pending)) s.pending = [];
       if (typeof s.lastWorkDay !== 'number') s.lastWorkDay = s.day;
-      // v3: roles nuevos, niveles de experiencia, equipos que ya no existen
-      s.staff.forEach(migrateStaff);
-      (s.candidates || []).forEach(migrateStaff);
-      s.equip = (s.equip || []).filter((e) => e && typeof e.type === 'string');
+    });
+    // v3: roles nuevos, niveles de experiencia, equipos que ya no existen
+    paso('staff', () => {
+      s.staff = s.staff.filter((p) => p && typeof p === 'object');
+      s.staff.forEach((p) => paso('staff1', () => migrateStaff(p)));
+    });
+    paso('candidates', () => {
+      s.candidates = (Array.isArray(s.candidates) ? s.candidates : []).filter((p) => p && typeof p === 'object');
+      s.candidates.forEach(migrateStaff);
+    });
+    paso('equip', () => {
+      s.equip = (Array.isArray(s.equip) ? s.equip : []).filter((e) => e && typeof e.type === 'string');
       s.equip.forEach((e) => { if (D.ITEM_ALIAS[e.type]) e.type = D.ITEM_ALIAS[e.type]; });
       // La cámara de Don Ramiro (partidas de antes de la marca starter): el nombre se arma con su clave al mostrarla
       s.equip.forEach((e) => { if (e.nick && !e.starter && (e.nick === TEXTOS['equipo.camara_ramiro'] || (e.id === 2 && e.type === 'cam_basic'))) e.starter = true; });
+    });
+    paso('listas', () => {
       if (typeof s.redDays !== 'number') s.redDays = 0;
       if (!Array.isArray(s.recentStars)) s.recentStars = [];
       if (typeof s.intlNext !== 'number') s.intlNext = 0;
       if (!Array.isArray(s.avisos)) s.avisos = [];
       if (!Array.isArray(s.capCompletados)) s.capCompletados = [];
-      // v4: turnos del día (una partida vieja empieza el día de hoy sin eventos hechos)
-      hoyDe(s);
-      if (s.resumenDia && typeof s.resumenDia !== 'object') s.resumenDia = null;
+    });
+    // v4: turnos del día (una partida vieja empieza el día de hoy sin eventos hechos)
+    paso('hoy', () => { hoyDe(s); });
+    paso('resumenDia', () => { if (s.resumenDia && typeof s.resumenDia !== 'object') s.resumenDia = null; });
+    paso('eventoActual', () => {
       if (s.currentEvent && !s.currentEvent.crewPlan) {
         s.currentEvent.crewPlan = crewPlan(s, s.currentEvent.contract, s.currentEvent.staffIds, s.currentEvent.equipIds);
         s.currentEvent.cameraPlan = cameraPlan(s, s.currentEvent.contract, s.currentEvent.equipIds, s.currentEvent.staffIds, s.currentEvent.colocacion || null);
       }
       if (s.currentEvent) s.currentEvent.incidents = s.currentEvent.incidents.filter((i) => INCIDENTS[i.key]);
-      s.log = (s.log || []).filter((l) => l && typeof l.text === 'string');
-      s.v = SAVE_VERSION;
-      migrarExt(s);
-      return s;
-    } catch (e) { return null; }
+    });
+    // Un evento en curso que no se pudo arreglar se descarta (mejor que no poder abrir la partida)
+    if (fallos.includes('eventoActual') || fallos.includes('rivalActual')) {
+      paso('sinEvento', () => { if (s.currentEvent && !(s.currentEvent.contract && Array.isArray(s.currentEvent.incidents))) s.currentEvent = null; });
+    }
+    paso('log', () => { s.log = (Array.isArray(s.log) ? s.log : []).filter((l) => l && typeof l.text === 'string'); });
+    s.v = SAVE_VERSION;
+    paso('extensiones', () => migrarExt(s));
+    // Lo mínimo para jugar: si esto no está, la partida no sirve (null: se guarda aparte y se pregunta)
+    if (!s.stats || typeof s.stats.events !== 'number' || !Array.isArray(s.equip) || !Array.isArray(s.contracts) || !s.staff.some((p) => p && p.owner)) return null;
+    if (fallos.length) {
+      try { Object.defineProperty(s, '__migracion', { value: fallos, enumerable: false }); } catch (e) { /* nada */ }
+      if (typeof console !== 'undefined' && console.warn) console.warn('[partida] pasos de la migración que fallaron:', fallos.join(', '));
+    }
+    return s;
+  }
+
+  /* ---------- Cuánto rinde una oferta (tarjetas de Clientes, bot de la demo y de las pruebas) ----------
+     Con lo que propone "Elegir lo mejor" (suggestLoadout): estrellas esperadas (rango.esperado de computeQuality), lo
+     que se espera ganar y si se puede hacer de verdad. `falta`: lo que falta para hacerlo bien (claves de texto
+     of.falta.*): cámaras, switcher, consola, transmisión, repeticiones, gráficos o personal.
+     { stars, esperado, net, staffIds, equipIds, falta: [...], puede } — puede = false si con lo que tienes no se puede
+     armar (faltan cámaras, switcher, equipo de transmisión o personal mínimo) y sale 1★. */
+  const FALTA_GRAVE = ['camaras', 'switcher', 'transmision', 'personal'];
+  const FALTA_PARTE = { 'parte.sin_switcher': 'switcher', 'parte.sin_consola': 'consola', 'parte.sin_equipo_transmision': 'transmision',
+    'parte.sin_repeticiones': 'repeticiones', 'parte.sin_graficos': 'graficos', 'parte.falta_rol': 'personal', 'parte.sin_shader': 'personal' };
+  function estrellasDe(q) { const B = BALANCE.stars; return q >= B[0] ? 5 : q >= B[1] ? 4 : q >= B[2] ? 3 : q >= B[3] ? 2 : 1; }
+  function estimarOferta(s, c) {
+    if (!c) return null;
+    const lo = suggestLoadout(s, c.id);
+    const staff = s.staff.filter((p) => lo.staffIds.includes(p.id));
+    const equip = s.equip.filter((e) => lo.equipIds.includes(e.id));
+    const falta = [];
+    if (!equip.some((e) => isCamLike(itemOf(e)))) {
+      return { stars: 1, esperado: 0, net: -1, staffIds: lo.staffIds, equipIds: lo.equipIds, falta: ['camaras'], puede: false };
+    }
+    const cq = computeQuality(s, c, staff, equip);
+    const esperado = cq.rango.esperado, stars = estrellasDe(esperado);
+    const req = cq.cameraPlan.positions.filter((p) => !p.opcional);
+    if (req.some((p) => !p.asignado)) falta.push('camaras');
+    cq.parts.forEach((x) => { const f = FALTA_PARTE[x[2]]; if (f && x[1] < 0 && !falta.includes(f)) falta.push(f); });
+    if (c.internacional && requisitosInternacional(s, c, lo.staffIds, lo.equipIds).some((r) => r.obligatorio && !r.ok) && !falta.includes('personal')) falta.push('personal');
+    const net = Math.round(c.pay * payMult(c, stars, s) - staff.reduce((a, p) => a + eventWage(p, c.diff), 0) - (c.travelCost || 0));
+    return { stars, esperado, net, staffIds: lo.staffIds, equipIds: lo.equipIds, falta, puede: !(stars <= 1 && falta.some((k) => FALTA_GRAVE.includes(k))) };
+  }
+  // La oferta recomendada: la que más rinde entre las que se pueden hacer con 2★ o más (la historia y los duelos que se
+  // pueden ganar pesan más). null si ninguna conviene. `est`: { id: estimarOferta } ya calculadas (opcional).
+  function ofertaRecomendada(s, est) {
+    let best = null;
+    (s.contracts || []).forEach((c) => {
+      const e = (est && est[c.id]) || estimarOferta(s, c);
+      if (!e || !e.puede || e.stars < 2) return;
+      if (c.internacional && e.falta.length) return;
+      if (e.net <= 0 && !c.story) return;
+      if (c.rival && e.esperado < (c.rivalQuality || 0) + 5) return;
+      const score = Math.max(1, e.net) * (c.story ? 2 : 1) * (e.stars >= 3 ? 1 : 0.5);
+      if (!best || score > best.score) best = { id: c.id, score };
+    });
+    return best ? best.id : null;
   }
 
   /* ---------- Partida de demostración (?demo=cap4) ----------
@@ -3900,13 +3997,9 @@
     s.contracts.forEach((c) => {
       if (c.internacional) return;
       const lo = suggestLoadout(s, c.id);
-      const staff = s.staff.filter((p) => lo.staffIds.includes(p.id));
       const equip = s.equip.filter((e) => lo.equipIds.includes(e.id));
       if (!equip.some((e) => itemOf(e).cat === 'cam')) return;
-      const cq = computeQuality(s, c, staff, equip);
-      const q = cq.rango.esperado, B = BALANCE.stars;
-      const st = q >= B[0] ? 5 : q >= B[1] ? 4 : q >= B[2] ? 3 : q >= B[3] ? 2 : 1;
-      const net = c.pay * payMult(c, st, s) - staff.reduce((a, p) => a + eventWage(p, c.diff), 0);
+      const est = estimarOferta(s, c), q = est.esperado, st = est.stars, net = est.net;
       if (net <= 0 && !c.story) return;
       if (c.rival && q < c.rivalQuality + 8) return;
       const score = net * (c.story ? 2 : 1) * (st >= 3 ? 1 : 0.4);
@@ -3988,7 +4081,7 @@
     // Personal internacional
     cursoIntl, cursoIntlCosto, puedeCursoIntl, darCursoIntl, searchStaffIntl, ayudaIntl, intlPersonalDisponible, isIntlExp, nuevoNombre: staffName, INTL_CREDITOS: D.INTL_CREDITOS,
     buy, buyConsumable, repair, sell, repairCost, sellPrice, nextDay, shopByCategory,
-    computeQuality, camGeo, suggestLoadout, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
+    computeQuality, camGeo, suggestLoadout, estimarOferta, ofertaRecomendada, estrellasDe, lenteFaltante, dependencias, opcionesDependencia, comboDe, creditosJuego, COMBO_CREDITOS: D.COMBO_CREDITOS, camaraParaPerfil, startEvent, currentIncident, resolveIncident, finishEvent,
     elegirOpcion, // imprevistos v2: la opción razonable (bot de pruebas y fantasma de los duelos)
     crewPlan, cameraPlan, validarColocacion, CAMARAS_REGLAS: CAMR, crewReq, requisitosInternacional, normRole, baseWage,
     canonRole: normRole, // nombre anterior (lo usan premium.js y duelos.js)

@@ -126,6 +126,12 @@
   function contratoFacil(s) {
     const cs = Array.isArray(s.contracts) ? s.contracts.slice() : [];
     if (!cs.length) return null;
+    // La "Recomendado" de Clientes (va primera en la lista; auditoría 13-nov), si hay
+    try {
+      const G = root.Game, id = G && G.ofertaRecomendada ? G.ofertaRecomendada(s) : null;
+      const r = id !== null ? cs.find((c) => c.id === id) : null;
+      if (r) return r;
+    } catch (e) { /* nada */ }
     // El primero entre los más fáciles (las 3 primeras ofertas de una partida nueva ya son fáciles)
     let mejor = cs[0];
     cs.forEach((c) => { if ((c.diff || 1) < (mejor.diff || 1) && !c.internacional) mejor = c; });

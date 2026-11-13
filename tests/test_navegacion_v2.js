@@ -278,8 +278,11 @@ const foto = async (page, nombre, ok) => { if (ok) { await page.evaluate(() => w
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.__game && window.__game.state && window.Api && window.Api.disponible !== null, null, { timeout: 10000 });
       await page.waitForTimeout(300); await cerrarVentanas(page);
+      // Auditoría 13-nov: con equipos en riesgo la Bodega abre en "Mis equipos" (ahí se reparan); si no, recuerda la última
+      const enRiesgo = await page.evaluate(() => { const S = window.__game.state, G = window.Game; return S.equip.some((e) => { const it = G.CATALOG[e.type]; return it && !it.alquiler && e.condition < (G.BALANCE.worn || 40) && G.repairCost(e) > 0; }); });
       await irTab(page, 'bodega');
-      bien(await subActual(page, 'bodega') === 'repuestos', `${tag} Bodega: al recargar recuerda "Repuestos"`);
+      const subB = await subActual(page, 'bodega');
+      bien(subB === (enRiesgo ? 'equipos' : 'repuestos'), `${tag} Bodega: al recargar ${enRiesgo ? 'abre en "Mis equipos" (hay equipos en riesgo)' : 'recuerda "Repuestos"'} (${subB})`);
       await irTab(page, 'personal');
       bien(await subActual(page, 'personal') === 'contratar', `${tag} Personal: al recargar recuerda "Contratar"`);
 

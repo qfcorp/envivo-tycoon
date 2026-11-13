@@ -139,14 +139,17 @@ async function foto(page, nombre, sel) {
         const esperados = EQUIPOS.filter((p) => catDe[p.entrega.item] === cat);
         if (cat === 'service') { if (l.some((x) => x.ex)) malas.push('service con exclusivo'); continue; }
         if (!esperados.length) { malas.push(cat + ': sin equipo con créditos en el servidor'); continue; }
-        const top = l.slice(0, esperados.length);
+        // Auditoría 13-nov: sin VIP activo, lo que se canjea solo con VIP va al final (no primero en "Recomendado")
+        const arriba = esperados.filter((p) => !p.vip), alFinal = esperados.filter((p) => p.vip);
+        const top = l.slice(0, arriba.length), fin = alFinal.length ? l.slice(-alFinal.length) : [];
         if (!top.every((x) => x.ex && x.oro && x.cred && /\d/.test(x.cred))) malas.push(cat + ': arriba no están sus exclusivos con botón de créditos');
+        if (!fin.every((x) => x.ex && alFinal.some((p) => p.entrega.item === x.key))) malas.push(cat + ': lo de solo VIP no quedó al final');
         for (const p of esperados) {
           const c = l.find((x) => x.key === p.entrega.item);
           if (!c || !c.cred || c.cred.replace(/\D/g, '') !== String(p.creditos)) malas.push(`${cat}: ${p.id} sin su costo (${p.creditos})`);
           if (c && /^ex_/.test(p.id) && (!c.libre || !c.medalla)) malas.push(`${cat}: ${p.id} sin camino gratis o sin medallón dorado`);
         }
-        if (l.slice(esperados.length).some((x) => x.ex)) malas.push(cat + ': un exclusivo quedó abajo');
+        if (l.slice(arriba.length, l.length - alFinal.length).some((x) => x.ex)) malas.push(cat + ': un exclusivo quedó en el medio');
       }
       bien(!malas.length, `Bodega: ${cats.length - 1} categorías con su exclusivo dorado arriba y botón de créditos (alquiler no lleva)` + (malas.length ? ' → ' + malas.join(' | ') : ''));
       const nuevos = EQUIPOS.filter((p) => /^ex_/.test(p.id)).length;

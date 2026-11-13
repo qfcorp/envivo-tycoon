@@ -124,7 +124,7 @@
     const st = document.createElement('style');
     st.textContent = `
 .ay-q{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;min-width:20px;padding:0;margin:0 0 0 6px;border-radius:50%;border:1px solid var(--line,#2a3242);background:var(--panel2,#1e2430);color:var(--amber,#ffb020);font:700 12px/1 inherit;cursor:pointer;vertical-align:middle;position:relative}
-.ay-q::after{content:"";position:absolute;inset:-10px}
+.ay-q::after{content:"";position:absolute;inset:-12px}   /* zona de toque de 44 px (el botón se ve de 20) */
 .ay-q:focus-visible{outline:2px solid var(--amber,#ffb020);outline-offset:2px}
 .ay-velo{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
 .ay-hoja{width:100%;max-width:520px;margin:0 8px 10px;background:var(--panel,#161b24);border:1px solid #5a4214;border-radius:16px;padding:14px 16px 12px;color:var(--text,#e9edf5);box-shadow:0 -6px 30px rgba(0,0,0,.5);animation:ay-sube .18s ease-out}

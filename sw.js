@@ -1,10 +1,15 @@
 /* Service worker de EN VIVO Tycoon: hace que el juego funcione sin internet.
    - Archivos del juego (app shell): primero desde la caché, si no, de la red.
    - Fuentes de Google: primero de la red (y se guardan); sin internet, desde la caché.
-   Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
+   - Idiomas (auditoría 13-nov): al instalar solo se guarda el español (js/lang/es.js) y el idioma que eligió el jugador
+     (si no es español). Otro idioma se guarda cuando se elige (lo pide js/i18n.js y pasa por aquí). Antes cada versión
+     bajaba los 19 archivos de idiomas (~1,7 MB) aunque se use uno solo.
+   - Al actualizar en segundo plano se pide al servidor con cache: 'no-cache' (revalida con ETag): así la caché nunca
+     junta un ui.js nuevo con un logic.js viejo por el Cache-Control: max-age de nginx.
+   Al cambiar archivos del juego, sube el número de VERSION (y el de js/api.js, X-EnVivo-Version) para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v50';
+const VERSION = 'envivo-v51';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -60,26 +65,7 @@ const SHELL = [
   './js/buzon.js',      // buzón y códigos de regalo
   './js/black_friday.js', // Black Friday: VIP 30 días gratis (franja de Inicio)
   './js/i18n.js',
-  './js/lang/es.js',
-  './js/lang/en.js',
-  './js/lang/pt-BR.js',
-  './js/lang/fr.js',
-  './js/lang/de.js',
-  './js/lang/it.js',
-  './js/lang/ru.js',
-  './js/lang/tr.js',
-  './js/lang/id.js',
-  './js/lang/zh-CN.js',
-  // Textos del juego por idioma (se cargan al elegir el idioma; aquí quedan para jugar sin internet)
-  './js/lang/juego/en.js',
-  './js/lang/juego/pt-BR.js',
-  './js/lang/juego/fr.js',
-  './js/lang/juego/de.js',
-  './js/lang/juego/it.js',
-  './js/lang/juego/ru.js',
-  './js/lang/juego/tr.js',
-  './js/lang/juego/id.js',
-  './js/lang/juego/zh-CN.js',
+  './js/lang/es.js',     // solo el español: los demás idiomas se guardan al elegirlos (ver arriba)
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -88,11 +74,25 @@ const SHELL = [
   './icons/favicon-32.png',
 ];
 
+// El idioma que eligió el jugador (lo anota la página en la caché "envivo-idioma", js/pwa.js PWA.idioma): con una versión
+// nueva se baja ese idioma además del español, para seguir jugando sin internet en su idioma
+const IDIOMA_CACHE = 'envivo-idioma';
+async function idiomaElegido() {
+  try {
+    const c = await caches.open(IDIOMA_CACHE);
+    const r = await c.match('./__idioma');
+    const code = r ? (await r.text()).trim() : '';
+    if (!/^[A-Za-z]{2,3}(-[A-Za-z]{2,4})?$/.test(code) || code === 'es') return [];
+    return ['./js/lang/' + code + '.js', './js/lang/juego/' + code + '.js'];
+  } catch (e) { return []; }
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
+    const lista = SHELL.concat(await idiomaElegido());
     // Uno por uno: si falta un archivo opcional, los demás se guardan igual.
-    await Promise.all(SHELL.map(async (url) => {
+    await Promise.all(lista.map(async (url) => {
       try {
         const res = await fetch(new Request(url, { cache: 'reload' }));
         if (res.ok) await cache.put(url, res);
@@ -102,9 +102,14 @@ self.addEventListener('install', (event) => {
   })());
 });
 
+// La página pide activar un service worker que quedó esperando (js/pwa.js)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.tipo === 'activar') self.skipWaiting();
+});
+
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    const keep = [SHELL_CACHE, FONT_CACHE];
+    const keep = [SHELL_CACHE, FONT_CACHE, IDIOMA_CACHE];
     const names = await caches.keys();
     await Promise.all(names
       .filter((n) => n.startsWith('envivo-') && !keep.includes(n))
@@ -136,7 +141,10 @@ async function networkFirstFont(request) {
 async function cacheFirstShell(request, event) {
   const cache = await caches.open(SHELL_CACHE);
   const hit = await cache.match(request, { ignoreSearch: true });
-  const update = fetch(request).then((res) => {
+  // cache: 'no-cache' = revalidar siempre con el servidor (ETag: si no cambió, no se baja de nuevo). Una navegación no se
+  // puede volver a pedir con opciones (TypeError): se pide la misma dirección.
+  const fresco = request.mode === 'navigate' ? new Request(request.url, { cache: 'no-cache', credentials: 'same-origin' }) : new Request(request, { cache: 'no-cache' });
+  const update = fetch(fresco).then((res) => {
     if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
     return res;
   });

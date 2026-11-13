@@ -67,7 +67,7 @@ const overlayOn = (page) => page.evaluate(() => document.getElementById('overlay
 async function cerrarVentanas(page) {
   for (let i = 0; i < 6; i++) {
     if (!(await overlayOn(page))) return;
-    const b = await page.$('#overlay.on [data-act="close-story"], #overlay.on [data-act="close-dia"], #overlay.on [data-act="after-result"], #overlay.on [data-act="close"]');
+    const b = await page.$('#overlay.on [data-act="close-story"], #overlay.on [data-act="close-dia"], #overlay.on [data-act="after-result"], #overlay.on [data-act="rep-aviso-no"], #overlay.on [data-act="close"]');   // rep-aviso-no: aviso "Equipo casi roto" (auditoría 13-nov)
     if (!b) return;
     await b.click(); await page.waitForTimeout(300);
   }

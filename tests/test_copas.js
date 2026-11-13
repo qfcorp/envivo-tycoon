@@ -233,8 +233,13 @@ async function noHScroll(page, tag) {
 
   console.log('Batalla (sábado)');
   srv.poner('batalla'); srv.estado.yo.equipo_registrado = true;
-  await abrir(page);
-  await page.waitForSelector('[data-copa-estado="batalla"]');
+  // Con la máquina cargada (pruebas en paralelo) puede quedar en curso la carga anterior (fase de antes): se abre otra
+  // vez hasta que llegue la batalla (espera de verdad, misma comprobación)
+  for (let i = 0; i < 6 && !(await page.$('[data-copa-estado="batalla"]')); i++) {
+    await abrir(page);
+    await page.waitForSelector('[data-copa-estado="batalla"]', { timeout: 5000 }).catch(() => {});
+  }
+  await page.waitForSelector('[data-copa-estado="batalla"]', { timeout: 30000 });
   const cabB = await page.locator('[data-copa="cabecera"]').textContent();
   ok(/EN VIVO/.test(cabB) && /La batalla termina en/.test(cabB) && /¡Tu servidor va primero!/.test(cabB), 'Fase batalla EN VIVO y "va primero"');
   ok(await page.locator('[data-cruce="21"] [data-partido]').count() === 5, 'Cruce 1: los 5 partidos con calidades');
