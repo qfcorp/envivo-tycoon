@@ -57,9 +57,9 @@ const IGUAL_TODOS = ['pos.prensa.abierta_ptz.ideal', 'pos.internacional_host.com
   'pais.argentina', 'pais.chile', 'pais.colombia', 'pais.mexico', 'pais.estados_unidos', 'pais.peru'];
 const IGUAL_IDIOMA = {
   en: ['cat.switcher', 'item.sop_gimbal_dgi_rz4_pro.nombre'],
-  'pt-BR': ['nivel.internacional', 'cap.0.prog', 'req.box2', 'req.bonding'],
+  'pt-BR': ['nivel.internacional', 'cap.0.prog', 'req.box2', 'req.bonding', 'toma.contraplano', 'toma.comcam', 'toma.prensa.abierta_ptz', 'toma.graduacion.lateral_diplomas', 'ctx.cliente_exigente'],
   de: ['cat.intercom'],
-  it: ['cap.5.fama'],
+  it: ['cap.5.fama', 'cam.z.edificio', 'cam.z.tribuna'],
 };
 // En zh-CN, textos sin ningún carácter chino permitidos (marcas y la sigla PTZ)
 const ZH_LATIN_OK = SOLO_MARCA.filter((k) => !/^item\.(lente_kanon_kx21x8_2|lente_kanon_cx25ex7_5|lente_box_|enc_liveyou_solo_pro|router4g|ups)\./.test(k))

@@ -79,7 +79,7 @@ const { chromium } = require('playwright');
       await click('[data-act="mkt"][data-k="visitar"]');
       // Resumen del día (avisos) y capítulos: se cierran como lo haría una persona
       for (let k = 0; k < 4; k++) {
-        const v = page.locator('#overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"], #overlay.on [data-act="close"]');
+        const v = page.locator('#overlay.on [data-act="close-dia"], #overlay.on [data-act="close-story"], #overlay.on [data-act="close"], #overlay.on [data-act="rep-aviso-no"]');
         if (await v.count()) await v.first().click(); else break;
       }
       continue;
@@ -103,8 +103,8 @@ const { chromium } = require('playwright');
     if (round === 0) await shot('08_resultado_evento');
     await click('[data-act="after-result"]');
     // Posibles ventanas de historia
-    for (let k = 0; k < 3; k++) {
-      const st = page.locator('#overlay.on [data-act="close-story"], #overlay.on [data-act="close-dia"], #overlay.on [data-act="close"]');
+    for (let k = 0; k < 4; k++) {
+      const st = page.locator('#overlay.on [data-act="close-story"], #overlay.on [data-act="close-dia"], #overlay.on [data-act="close"], #overlay.on [data-act="rep-aviso-no"]');
       if (await st.count()) { await shot(`09_historia_${played}_${k}`); await st.first().click(); }
     }
     played++;
