@@ -352,7 +352,7 @@ function partidaBase(cambios) {
       bien(/'\.\/js\/lang\/es\.js'/.test(shell) && !/lang\/en\.js|lang\/juego\//.test(shell), 'sw: la precarga solo trae el español (los otros idiomas, al elegirlos)');
       bien(/cache: 'no-cache'/.test(sw), "sw: la actualización en segundo plano pide con cache: 'no-cache'");
       const vSw = (/VERSION = '(envivo-v\d+)'/.exec(sw) || [])[1], vApi = (/'X-EnVivo-Version': '(envivo-v\d+)'/.exec(api) || [])[1];
-      bien(vSw === 'envivo-v51' && vSw === vApi, `sw: versión ${vSw} igual a la de js/api.js (${vApi})`);
+      bien(/^envivo-v(\d+)$/.test(vSw) && +vSw.slice(8) >= 51 && vSw === vApi, `sw: versión ${vSw} igual a la de js/api.js (${vApi})`);
       const { ctx, page, errores } = await abrir(browser, { partida: G.serialize(partidaBase({ s: { day: 3 } })) });
       await cerrarVentanas(page);
       await page.evaluate(() => window.__swAviso && window.__swAviso());
