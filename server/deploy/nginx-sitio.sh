@@ -99,6 +99,15 @@ cat <<NGINX
     index index.html;
     server_tokens off;
     charset utf-8;
+    # Compresion (auditoria 13-nov): el JavaScript del juego salia SIN comprimir (gzip_types de nginx solo trae text/html):
+    # la primera carga eran ~3 MB (~0,9 MB comprimido) y cada version nueva del service worker bajaba todo otra vez.
+    # text/html no va en la lista (nginx ya lo comprime siempre; repetirlo da un aviso en nginx -t).
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 512;
+    gzip_types text/css text/javascript application/javascript application/x-javascript application/json application/manifest+json image/svg+xml text/plain;
     # Lo que puede mandar un navegador: 64 KB en general (formularios, pago, panel).
     # /api/ permite 1 MB (abajo) porque ahi se guarda la partida (hasta 300 KB, unos 400 KB ya dentro del JSON).
     client_max_body_size 64k;

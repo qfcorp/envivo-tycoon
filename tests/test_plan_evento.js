@@ -19,6 +19,15 @@ const style = (indexHtml.match(/<style>[\s\S]*?<\/style>/) || [''])[0];
 const datos = JSON.parse(fs.readFileSync(path.join(root, 'docs', 'eventos_y_personal.json'), 'utf8'));
 
 let fallas = 0;
+// Captura de pantalla con reintentos: con la máquina cargada (pruebas en paralelo) Chromium a veces responde
+// "Unable to capture screenshot"; la captura es solo para mirar, no es lo que se prueba
+async function captura(page, opts) {
+  for (let i = 0; i < 4; i++) {
+    try { await page.screenshot(opts); return true; } catch (e) { await new Promise((r) => setTimeout(r, 400 * (i + 1))); }
+  }
+  console.log('  (captura omitida: ' + (opts && opts.path) + ')');
+  return false;
+}
 const ok = (c, m) => { console.log((c ? '  ✔ ' : '  ✘ ') + m); if (!c) fallas++; };
 
 /* ---------- Planes de ejemplo ---------- */
@@ -160,7 +169,7 @@ const CASOS = [
       ok(res.desborde === 0, `${tag}: ningún texto se sale de su fila`);
       ok(res.filas > 0 && res.chips > 0, `${tag}: ${res.filas} roles y ${res.chips} chips de riesgo`);
       if (intl) ok(res.intl === 1, `${tag}: tarjeta internacional`);
-      await page.screenshot({ path: path.join(outDir, `plan_${file}${width === 360 ? '_360' : ''}.png`), fullPage: true });
+      await captura(page, { path: path.join(outDir, `plan_${file}${width === 360 ? '_360' : ''}.png`), fullPage: true });
     }
 
     // Tocar una cámara muestra qué cámara va
@@ -178,7 +187,7 @@ const CASOS = [
     ok(sel === 2, `[${width}] se resalta en el plano y en la lista (${sel})`);
     const title = await page.locator('.pe-cam[data-pe-cam="2"] title').textContent();
     ok(/Zony HDC-3500/.test(title), `[${width}] el título (hover) dice la cámara asignada`);
-    if (width === 390) await page.screenshot({ path: path.join(outDir, 'plan_tocar.png'), fullPage: true });
+    if (width === 390) await captura(page, { path: path.join(outDir, 'plan_tocar.png'), fullPage: true });
 
     // Tolerancia: datos que faltan o raros no rompen
     const tol = await page.evaluate(() => {
@@ -219,7 +228,7 @@ const CASOS = [
     const PE = window.PlanEvento;
     document.getElementById('app').innerHTML = PE.internacional(a) + PE.internacional(b) + '<div class="card"><h3>Resultado</h3>' + PE.resumenRiesgo(c1) + PE.resumenRiesgo(c2) + '</div>';
   }, { a: INTL, b: INTL2, c1: crew('ligapro', 'under'), c2: crew('misa', 'full') });
-  await page.screenshot({ path: path.join(outDir, 'plan_tarjetas.png'), fullPage: true });
+  await captura(page, { path: path.join(outDir, 'plan_tarjetas.png'), fullPage: true });
   await ctx.close();
   await browser.close();
 

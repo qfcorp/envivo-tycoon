@@ -49,6 +49,8 @@
       pantalla: `${innerWidth}x${innerHeight}`, navegador: String(navigator.userAgent).slice(0, 180),
       // Copias de la partida que se reemplazó en este aparato (js/ui.js respaldar): soporte sabe si hay de dónde recuperar
       copias: (() => { try { return root.__respaldos ? root.__respaldos.lista() : []; } catch (e) { return []; } })(),
+      // Partidas que no se pudieron abrir y quedaron guardadas aparte (js/ui.js "No pudimos abrir tu partida")
+      rotas: (() => { try { return root.__respaldos && root.__respaldos.rotas ? root.__respaldos.rotas() : []; } catch (e) { return []; } })(),
     };
   }
   const fecha = (iso) => { try { return new Date(iso).toLocaleString((root.I18N && root.I18N.idioma) || 'es-EC', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };

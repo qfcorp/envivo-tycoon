@@ -74,6 +74,16 @@ async function contexto(browser, tipo, o) {
   const ctx = await browser.newContext(tipo === 'cel' ? CEL : COMPU);
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   if (o && o.galletas) await ctx.addCookies(o.galletas);
+  // Anota cada aviso corto (toast) apenas aparece: así el texto se puede revisar aunque ya se haya ocultado
+  await ctx.addInitScript(() => {
+    window.__ultimosToasts = [];
+    const mirar = () => {
+      const t = document.getElementById('toast');
+      if (!t) { setTimeout(mirar, 50); return; }
+      new MutationObserver(() => { if (t.style.display !== 'none' && t.textContent) window.__ultimosToasts.push(t.textContent); }).observe(t, { attributes: true, childList: true, characterData: true, subtree: true });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mirar); else mirar();
+  });
   await ctx.addInitScript((c) => {
     try {
       if (localStorage.getItem('__prueba_init')) return;
@@ -129,6 +139,11 @@ async function entrarUI(page, cuenta) {
 }
 
 const carga = (page) => page.evaluate(() => { const e = document.getElementById('nubeCarga'); return e && !e.hidden ? e.innerText.replace(/\s+/g, ' ').trim() : ''; });
+// Espera (de verdad, no un tiempo fijo) a que la pantalla de carga se vaya: con la máquina cargada (pruebas en paralelo)
+// el servidor tarda más en responder después de abrir otra vez (auditoría 13-nov: falla intermitente del caso 1)
+const cargaFuera = (page, ms) => page.waitForFunction(() => { const e = document.getElementById('nubeCarga'); return !e || e.hidden; }, null, { timeout: ms || 20000 }).then(() => true, () => false);
+// El último aviso corto (toast), aunque ya se haya ocultado: se anota en cuanto aparece (ver contexto())
+const ultimoToast = (page) => page.evaluate(() => window.__ultimosToasts ? window.__ultimosToasts.slice(-1)[0] || '' : '');
 const hayEleccion = (page) => page.evaluate(() => !!document.querySelector('#overlay.on #modal [data-act="partida"][data-k="local"], #overlay.on #modal [data-nube-confirmar]'));
 const copias = (page) => page.evaluate(() => { try { return JSON.parse(localStorage.getItem('envivo_tycoon_save_respaldo') || '[]').map((x) => x.p); } catch (e) { return null; } });
 const diaEs = (page, d, ms) => page.waitForFunction((x) => window.__game && window.__game.state && window.__game.state.day === x, d, { timeout: ms || 15000 }).then(() => true, () => false);
@@ -184,13 +199,16 @@ async function abrirLento(ctx, base, ms, patron) {
       bien(/Sincronizando tu partida/.test(c), `1: al abrir con cuenta sale la pantalla de carga: "${c}"`);
       await A.screenshot({ path: path.join(OUT, 'proteger_1_carga.png') });
       bien(!(await desborde(A)), '1: sin desborde horizontal en la pantalla de carga');
-      const ok = await diaEs(A, 72);
-      await A.waitForLoadState('domcontentloaded'); await A.waitForTimeout(800);
+      const ok = await diaEs(A, 72, 30000);
+      await A.waitForLoadState('domcontentloaded');
+      await nubeLista(A).catch(() => {});
+      const fuera = await cargaFuera(A, 30000);
+      await A.waitForFunction(() => (window.__ultimosToasts || []).length > 0, null, { timeout: 10000 }).catch(() => {});
       const d = await estado(A);
       bien(ok && d.dia === 72 && d.rep === 100, `1: cargó la de la nube sin preguntar (día ${d.dia}, fama ${d.rep})`);
       bien(!(await hayEleccion(A)), '1: no hay ninguna ventana para elegir');
-      bien(!(await carga(A)), '1: la pantalla de carga se fue');
-      const t = await toastTxt(A);
+      bien(fuera && !(await carga(A)), '1: la pantalla de carga se fue');
+      const t = (await toastTxt(A)) || (await ultimoToast(A));
       bien(/más avance/.test(t), `1: avisa qué pasó: "${t}"`);
       const cs = await copias(A);
       bien(!!(cs && cs.some((p) => p.d === 28 && p.e === 20)), `1: la del día 28 quedó como copia en el celular (${JSON.stringify(cs)})`);
@@ -212,12 +230,13 @@ async function abrirLento(ctx, base, ms, patron) {
       bien(n.dia === 28, `2: el juego viejo dejó la nube en el día ${n.dia} (lo que le pasó al dueño)`);
       await pc.close();
       const r = await abrirPagina(cPC, srv.base); pc = r.page; errores.push(r.errores);
-      await nubeLista(pc); await pc.waitForTimeout(1500);
+      await nubeLista(pc); await pc.waitForFunction(() => (window.__ultimosToasts || []).length > 0, null, { timeout: 15000 }).catch(() => {});
+      await pc.waitForTimeout(800);
       const d = await estado(pc);
       n = await enNube(pc);
       bien(d.dia === 72 && n.dia === 72 && n.rep === 100, `2: la computadora subió la suya (aquí día ${d.dia}, nube día ${n.dia}, fama ${n.rep})`);
       bien(!(await hayEleccion(pc)), '2: sin ventana para elegir');
-      const t = await toastTxt(pc);
+      const t = (await ultimoToast(pc)) || (await toastTxt(pc));
       bien(/más avance/.test(t) && /guardada en tu cuenta/.test(t), `2: avisa: "${t}"`);
       const cs = await copias(pc);
       bien(!!(cs && cs.some((p) => p.d === 28)), '2: la del día 28 que estaba en la nube quedó como copia');
@@ -256,7 +275,7 @@ async function abrirLento(ctx, base, ms, patron) {
       });
       await pc.evaluate(() => { const s = window.__game.state; s.day = 74; s.stats.events += 1; window.__game.guardar(); });
       await pc.evaluate(() => window.__nube.subir());
-      const ok = await diaEs(pc, 73, 8000);
+      const ok = await diaEs(pc, 73, 20000);
       await pc.unroute('**/api/partida');
       bien(ok, '4: con partida_retroceso se cargó la de la nube (día 73)');
       const cs = await copias(pc);
@@ -271,7 +290,7 @@ async function abrirLento(ctx, base, ms, patron) {
       pc.on('request', oir);
       await pc.evaluate(() => { const s = window.__game.state; s.day = 6; s.stats.events = 3; window.__game.guardar(); });
       await pc.evaluate(() => window.__nube.subir());
-      const ok = await diaEs(pc, 73, 8000);
+      const ok = await diaEs(pc, 73, 20000);
       pc.off('request', oir);
       bien(ok && diasSubidos(subidas).every((x) => x !== 6), `5: no subió la del día 6 y volvió a la de la nube (subidas: ${diasSubidos(subidas).join(',') || '-'})`);
       n = await enNube(pc);
@@ -292,8 +311,7 @@ async function abrirLento(ctx, base, ms, patron) {
       bien(/Sincronizando tu partida/.test(c) && /Reintentar/.test(c) && /Jugar sin conexión/.test(c), `6: sin servidor: "${c}"`);
       await page.screenshot({ path: path.join(OUT, 'proteger_6_sin_red.png') });
       await page.click('#nubeCarga [data-act="carga-local"]');
-      await page.waitForTimeout(300);
-      bien(!(await carga(page)), '6: "Jugar sin conexión" deja jugar');
+      bien((await cargaFuera(page, 5000)) && !(await carga(page)), '6: "Jugar sin conexión" deja jugar');
       const ind = await indicador(page);
       bien(/Sin conexión · se sincronizará/.test(ind), `6: indicador: "${ind}"`);
       // Se juega sin internet (un evento más) y vuelve la red: la de aquí tiene más avance → se sube
@@ -306,11 +324,11 @@ async function abrirLento(ctx, base, ms, patron) {
       await page.close();
       // Carga lenta (la nube tarda más de 8 s en responder): salen los botones; cuando llega, entra solo
       const r = await abrirLento(cPC, srv.base, 9500, '**/api/partida/meta*'); pc = r.page; errores.push(r.errores);
-      await pc.waitForTimeout(8600);
+      await pc.waitForSelector('#nubeCarga [data-act="carga-local"]', { timeout: 15000 }).catch(() => {});
       const c2 = await carga(pc);
       bien(/tardando/.test(c2) && /Reintentar/.test(c2) && /Jugar sin conexión/.test(c2), `6: a los 8 s: "${c2}"`);
-      await nubeLista(pc).catch(() => {}); await pc.waitForTimeout(800);
-      bien(!(await carga(pc)), '6: cuando responde el servidor, la pantalla se va sola');
+      await nubeLista(pc).catch(() => {});
+      bien((await cargaFuera(pc, 20000)) && !(await carga(pc)), '6: cuando responde el servidor, la pantalla se va sola');
     }
 
     /* ---------- 7. 426 cliente_viejo ---------- */

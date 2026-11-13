@@ -261,6 +261,13 @@ NGC
   CAB=$(curl -s -D - -o /dev/null "$B/recuperar.html" | tr -d '\r')
   check "nginx: /recuperar.html (200, CSP con script-src 'self', no-store) y /pago-assets/recuperar.js (200)" "200 1 1 200" "$(echo "$CAB" | head -1 | cut -d' ' -f2) $(echo "$CAB" | grep -ciE "^content-security-policy: .*script-src 'self'") $(echo "$CAB" | grep -ciE '^cache-control: no-store') $(curl -s -o /dev/null -w '%{http_code}' "$B/pago-assets/recuperar.js")"
   CAB=$(curl -s -D - -o /dev/null "$B/" | tr -d '\r')
+  # Compresion (auditoria 13-nov): el JavaScript, el CSS, el manifiesto y el JSON salen con gzip si el navegador lo pide
+  GZ=""
+  for r in /js/ui.js /js/logic.js /js/lang/es.js /manifest.webmanifest /api/estado /sw.js; do
+    e=$(curl -s -o /dev/null -D - -H 'Accept-Encoding: gzip, br' "$B$r" | tr -d '\r' | grep -ciE '^content-encoding: gzip'); [ "$e" = "1" ] || GZ="$GZ $r"
+  done
+  check "nginx: gzip en .js, manifiesto, JSON de la API y sw.js (ninguno sin comprimir)" "" "$GZ"
+  check "nginx: sin Accept-Encoding no se comprime (clientes viejos)" "0" "$(curl -s -o /dev/null -D - "$B/js/ui.js" | tr -d '\r' | grep -ciE '^content-encoding:')"
   check "nginx: CSP del juego con las fuentes de Google en connect-src (el service worker las baja)" "1" "$(echo "$CAB" | grep -ciE "^content-security-policy: .*connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;")"
   check "nginx: Permissions-Policy en el juego, la API y las legales" "1 1 1" "$(for r in / /api/estado /terminos.html; do curl -s -D - -o /dev/null "$B$r" | grep -ciE '^permissions-policy: camera=\(\)'; done | tr '\n' ' ' | sed 's/ $//')"
   head -c 100000 /dev/zero | tr '\0' a > "$TMP/grande.txt"

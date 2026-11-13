@@ -379,6 +379,7 @@
   .gear .row.between .ay-q,.gear .exq-top .ay-q{margin-inline-start:6px}
   .pkuso{font-size:11.5px;line-height:1.3;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .pick .ay-q{width:18px;height:18px;min-width:18px;font-size:11px;margin-inline-start:4px}
+  .pick .ay-q::after{inset:-10px}   /* en la fila del personal la zona de toque es la fila entera; no tapar el nombre */
   .gear .grow2{flex:1}
   .gear .btn{width:100%;margin-top:8px;padding:9px 6px;font-size:13px}
   .gear .btn.sm{display:block}
@@ -868,6 +869,31 @@
   .nubecarga .nc-btns .btn{width:100%;margin:6px 0 0}
   @keyframes ncgiro{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.nubecarga .nc-giro{animation-duration:2.5s}}
+  .nubecarga .nc-nota{color:var(--amber);margin:0 0 8px}
+  /* Arreglos del cliente (auditoría 13-nov): estrellas esperadas y "Recomendado" en las ofertas, protección de principiante,
+     aviso de reparar, "Hay una versión nueva", cuentas del resultado plegadas, "Cerrar el día" chico el día 1 */
+  .of-est{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:6px}
+  .of-stars{color:var(--amber);letter-spacing:1px;white-space:nowrap}
+  .of-stars i{font-style:normal;color:var(--muted)}
+  .tag.green{background:rgba(46,204,113,.14);border-color:rgba(46,204,113,.5);color:var(--green);margin:0}
+  .tag.green .ico{margin-inline-end:3px}
+  .ofc.of-recom{border-color:rgba(46,204,113,.55)}
+  .ofc.of-no{opacity:.72}
+  .of-no-t{color:var(--amber)}
+  .of-falta{display:flex;align-items:center;gap:4px;width:100%;color:var(--muted)}
+  .tip-prot{display:flex;gap:6px;align-items:flex-start;margin:0 0 8px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
+  #resProt{margin-top:8px}
+  .rep-lista{margin:0 0 10px}
+  .rep-fila{padding:4px 0;border-bottom:1px solid var(--line)}
+  .res-cuentas{margin-top:10px}
+  .res-cuentas summary{cursor:pointer;color:var(--muted);font-size:13px;padding:10px 0;min-height:44px;box-sizing:border-box}
+  .btn.dia-chico{display:block;width:auto;margin:10px auto 0;background:transparent;opacity:.85}
+  .swnueva{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:9500;display:flex;gap:8px;align-items:center;padding:6px 6px 6px 14px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.45);max-width:calc(100vw - 32px);font-size:14px}
+  .swnueva .btn{width:auto;margin:0;min-height:40px;white-space:nowrap}
+  .swnueva .swx{background:none;border:0;color:var(--muted);font-size:20px;min-width:40px;min-height:40px;cursor:pointer}
+  /* Casillas del personal: toda la fila es la zona de toque (≥44 px) */
+  .pick{min-height:48px;cursor:pointer}
+  .pick input{flex:none;margin:0}
 </style>
 </head>
 <body>

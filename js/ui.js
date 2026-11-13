@@ -171,15 +171,34 @@
   }
 
   /* ---------- Guardado ---------- */
+  let rotaPend = false;        // la partida guardada no se pudo abrir: no se guarda NADA hasta que el jugador elija
+  let guardarFallo = false;    // ya se avisó (una vez por sesión) que en este aparato no se puede guardar
+  let persistPedido = false;
   function save() {
+    if (!S || rotaPend) return;
     // Se está abriendo otra vez con la partida de la nube, u otro dispositivo tomó la partida: aquí no se guarda nada
     if (nubeRecargando) return;
     if (nubeBloqueo) { nubeAvisoOtro(); return; }
-    try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* sin espacio o modo privado */ }
+    try { localStorage.setItem(SAVE_KEY, G.serialize(S)); }
+    catch (e) {
+      // Sin espacio o modo privado: se avisa UNA vez (antes se perdía el avance sin ningún aviso; auditoría 13-nov)
+      if (!guardarFallo) { guardarFallo = true; setTimeout(() => { try { toast(T('guardar.fallo')); } catch (err) { /* nada */ } }, 0); }
+    }
+    pedirPersistente();
     marcarGuardado();                          // "Última vez" de la partida de aquí (al elegir entre esta y la de la nube)
     if (nubeInfo) lsSet(NUBE_KEY, nubeInfo);   // la versión de la nube va siempre junto a la partida guardada aquí
     nubePendiente = true;
     nubeLuego();
+  }
+  // Pide al navegador que no borre los datos del juego cuando falta espacio (Chrome puede borrar las partidas sin cuenta).
+  // Una vez por sesión y recién con avance (en Firefox puede salir una pregunta: no al abrir el juego por primera vez).
+  function pedirPersistente() {
+    if (persistPedido || !(S && S.stats && S.stats.events > 0)) return;
+    persistPedido = true;
+    try {
+      const st = navigator.storage;
+      if (st && st.persist && st.persisted) st.persisted().then((ya) => (ya ? true : st.persist())).catch(() => {});
+    } catch (e) { /* sin permiso */ }
   }
   /* ---------- Partida en la nube ----------
      Una partida por cuenta, con versión (server/src/Partidas.php). Esta pestaña recuerda de qué versión de la nube partió
@@ -253,6 +272,16 @@
     lsSet(NUBE_KEY, nubeInfo);
   }
   const nubeLeer = (r) => { try { return r && r.datos ? G.deserialize(r.datos) : null; } catch (e) { return null; } };
+  /* La nube SÍ tiene una partida, pero este juego no la puede leer (p. ej. la guardó un juego más nuevo): eso NO es "no hay
+     partida en la nube". No se sube la de aquí encima (la regla de siempre: nunca perder avance); se sigue jugando aquí,
+     se espera un rato antes de volver a revisar y se busca una versión nueva del juego (auditoría 13-nov). */
+  let nubeEspera = 0, nubeIlegibleAviso = false;
+  function nubeIlegible() {
+    nubeEstado = 'error'; nubeEspera = Date.now() + 60000; clearTimeout(nubeT);
+    if (!nubeIlegibleAviso) { nubeIlegibleAviso = true; toast(T('nube.ilegible')); }
+    try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then((reg) => (reg ? reg.update() : null)).catch(() => {}); } catch (e) { /* nada */ }
+    pintarNube();
+  }
   const esClienteViejo = (e) => !!(e && (e.status === 426 || e.codigo === 'cliente_viejo'));
   const esRetroceso = (e) => !!(e && e.codigo === 'partida_retroceso');
   const esConflicto = (e) => !!(e && (e.codigo === 'partida_desactualizada' || e.codigo === 'otro_dispositivo' || e.codigo === 'partida_retroceso'));
@@ -266,7 +295,8 @@
     nubeT = setTimeout(subirNube, 4000);
   }
   async function subirNube(tomar, reintento) {
-    if (!nubeActiva() || nubeBloqueo || nubeRecargando) return;
+    if (!nubeActiva() || nubeBloqueo || nubeRecargando || rotaPend || !S) return;
+    if (Date.now() < nubeEspera) return;   // la nube tiene una partida que aquí no se puede leer: no se sube nada por ahora
     const base = nubeBase();
     if (nubeLista !== nubeCuenta() || base === null) return revisarNube('subir');   // primero ver cómo está la nube
     if (nubeSubiendo) { await nubeSubiendo; return subirNube(tomar, reintento); }    // un guardado a la vez
@@ -299,7 +329,8 @@
   }
   // Revisa la nube (al abrir, al volver a la pestaña, al volver internet y cada minuto). Una revisión a la vez.
   function revisarNube(motivo) {
-    if (!nubeActiva() || nubeRecargando) return Promise.resolve();
+    if (!nubeActiva() || nubeRecargando || rotaPend || !S) return Promise.resolve();
+    if (Date.now() < nubeEspera) return Promise.resolve();
     if (nubeBloqueo) { if (motivo !== 'reloj') nubeAvisoOtro(); return Promise.resolve(); }
     if (!nubeRevisando) nubeRevisando = nubeRevisar(0).catch((e) => console.error('[nube]', e)).finally(() => { nubeRevisando = null; });
     return nubeRevisando;
@@ -349,6 +380,7 @@
     const nube = nubeLeer(r);
     nubeVio(r);
     const hayAqui = S.stats.events > 0 || S.day > 1;
+    if (!nube && r && r.datos) { nubeIlegible(); return; }   // hay partida en la nube pero no se puede leer: no se pisa
     if (!nube) {   // no hay en la nube: sube la de aquí (no se pisa nada) y se avisa
       nubeMarcar(r.rev || 0, '', null); nubeLista = nubeCuenta();
       if (hayAqui) toast(T('nube.subida', { aparato: aparato() }));
@@ -435,6 +467,8 @@
   // Para soporte (consola) y las pruebas: lista de copias y recuperar una (queda como la partida de aquí)
   window.__respaldos = {
     lista: () => respaldos().map((x, i) => ({ i, cuando: new Date(x.t).toISOString(), eventos: x.p.e, dia: x.p.d, fama: x.p.f, dinero: x.dinero })),
+    // Partidas que no se pudieron abrir (pantalla "No pudimos abrir tu partida"), tal cual: para soporte
+    rotas: () => rotos().map((x, i) => ({ i, cuando: new Date(x.t).toISOString(), largo: x.datos.length })),
     recuperar(i) {
       const x = respaldos()[i];
       if (!x) return false;
@@ -550,6 +584,7 @@
      Devuelve true si está intentando (entonces no hace falta revisar la nube aparte). */
   let reconectando = false;
   function reconectar() {
+    if (!S || rotaPend) return false;   // pantalla "No pudimos abrir tu partida": nada de red hasta que el jugador elija
     if (Api.disponible !== false || !Api.iniciar || !conServidorWeb()) return false;
     if (reconectando) return true;
     reconectando = true;
@@ -633,6 +668,69 @@
   }
   function load() {
     try { const raw = localStorage.getItem(SAVE_KEY); return raw ? G.deserialize(raw) : null; } catch (e) { return null; }
+  }
+  // La partida guardada tal cual (texto), o null si no hay ninguna ("null" o vacío tampoco cuentan como partida)
+  function saveCrudo() {
+    try { const raw = localStorage.getItem(SAVE_KEY); return raw && raw.trim() && raw.trim() !== 'null' ? raw : null; } catch (e) { return null; }
+  }
+
+  /* ---------- "No pudimos abrir tu partida" (auditoría 13-nov, CRÍTICO) ----------
+     Antes: si la partida guardada no se podía leer (error en una migración, la guardó un juego más nuevo...), el juego
+     empezaba una partida nueva y la guardaba encima: un jugador sin cuenta lo perdía todo. Ahora:
+       - la partida tal cual se copia aparte (envivo_tycoon_save_roto, las 3 últimas; soporte la ve en el diagnóstico),
+       - sale esta pantalla: Reintentar / Recuperar desde la nube (si hubo cuenta) / Empezar partida nueva,
+       - y NO se guarda nada hasta que el jugador elige. */
+  const ROTO_KEY = 'envivo_tycoon_save_roto';
+  function rotos() { const r = lsGet(ROTO_KEY); return Array.isArray(r) ? r.filter((x) => x && typeof x.datos === 'string') : []; }
+  function guardarRoto(raw) {
+    try {
+      const xs = rotos().filter((x) => x.datos !== raw);
+      xs.unshift({ t: Date.now(), datos: raw });
+      let n = Math.min(3, xs.length);
+      while (n > 0) { try { localStorage.setItem(ROTO_KEY, JSON.stringify(xs.slice(0, n))); return true; } catch (e) { n--; } }
+    } catch (e) { /* nada */ }
+    return false;
+  }
+  function rotaPantalla(raw, nota) {
+    rotaPend = true;
+    if (raw) guardarRoto(raw);
+    const el = cargaEl();
+    clearTimeout(cargaT);
+    const conCuenta = cuentaPrevia() && conServidorWeb();   // esta partida estuvo en una cuenta: se puede traer la de la nube
+    el.innerHTML = `<div class="nc-caja" data-rota><p class="nc-titulo">${T('roto.titulo')}</p>
+        <p class="small muted nc-texto">${T('roto.texto')}</p>
+        ${nota ? `<p class="small nc-nota" role="alert">${T(nota)}</p>` : ''}
+        <div class="nc-btns">
+          <button class="btn main" data-act="roto-reintentar">${T('roto.reintentar')}</button>
+          ${conCuenta ? `<button class="btn" data-act="roto-nube">${T('roto.nube')}</button>` : ''}
+          <button class="btn" data-act="roto-nueva">${T('roto.nueva')}</button>
+        </div></div>`;
+    el.hidden = false;
+  }
+  async function rotaNube() {
+    rotaPantalla(null, 'roto.buscando');
+    try {
+      if (window.Api && window.Api.iniciar && Api.disponible !== true) await window.Api.iniciar();
+      if (!Api.disponible) { rotaPantalla(null, 'roto.sin_red'); return; }
+      if (!Api.logueado()) { rotaPantalla(null, 'roto.sin_sesion'); return; }
+      const r = await Api.partida();
+      const nube = nubeLeer(r);
+      if (!nube) { rotaPantalla(null, r && r.datos ? 'roto.nube_ilegible' : 'roto.nube_vacia'); return; }
+      // La de la nube queda como la de aquí y el juego se abre otra vez (la rota ya quedó guardada aparte)
+      localStorage.setItem(SAVE_KEY, r.datos);
+      nubeMarcar(r.rev, nubeClave(nube), nube);
+      try { sessionStorage.setItem(NUBE_AVISO, 'nube.cargada'); } catch (e) { /* sin aviso */ }
+      nubeRecargando = true;
+      location.reload();
+    } catch (e) { rotaPantalla(null, 'roto.sin_red'); }
+  }
+  function rotaNueva() {
+    // La rota ya está guardada aparte (envivo_tycoon_save_roto): se empieza de cero y recién ahí se guarda
+    rotaPend = false;
+    const el = document.getElementById('nubeCarga');
+    if (el) { el.hidden = true; el.innerHTML = ''; }
+    S = G.newGame();
+    arrancarCon();
   }
 
   /* ---------- Mensajes cortos ---------- */
@@ -847,7 +945,7 @@
     document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === (tab === 'registro' ? 'inicio' : tab)));
     // Las pestañas que no se ven quedan vacías (menos nodos en la página); se vuelven a pintar al abrirlas
     document.querySelectorAll('main section').forEach((s) => { const on = s.id === 'tab-' + tab; s.classList.toggle('on', on); if (!on && s.firstChild) s.textContent = ''; });
-    if (Pm && Pm.tickVip(S)) { try { localStorage.setItem(SAVE_KEY, G.serialize(S)); } catch (e) { /* nada */ } }
+    if (Pm && Pm.tickVip(S)) save();   // por save(): respeta "se está cargando la de la nube" y "otro aparato" (auditoría 13-nov)
     $('vipBadge').hidden = !(Pm && Pm.vip);
     const bo = $('badgeO');
     if (bo) bo.textContent = avisosOnline() || '';
@@ -926,8 +1024,11 @@
     const hubHtml = window.Hub ? window.Hub.inicio(datosHub(story, costBox, turnoTxt)) : `<div class="card hqcard">${A.hq(S)}</div>`;
     $('tab-inicio').innerHTML = `${rojo}${hubHtml}
       ${tHoy ? `<div class="small turno-hoy hub-turno">${I('calendar', 'sm')} ${turnoTxt}${AY('dia')}</div>` : ''}
-      <button class="btn" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
+      <button class="btn ${primerDiaSinEventos() ? 'sm dia-chico' : ''}" data-act="next-day">${I('sleep')}${tHoy ? T('inicio.cerrar_dia') : T('inicio.descansar')} <span class="muted small">(${tHoy ? T(tHoy.n ? 'inicio.cerrar_det' : 'inicio.cerrar_det0', { m: M(cb ? cb.total : rent) }) : T('inicio.gastos', { m: M(cb ? cb.total : rent) })})</span></button>`;
   }
+
+  // Día 1 y todavía ningún evento (el "Cerrar el día" se ve más chico y pide confirmación)
+  const primerDiaSinEventos = () => !!(S && S.day === 1 && !(S.stats && S.stats.events > 0) && !S.gameOver);
 
   /* ---------- Datos para el hub de Inicio (js/hub.js) ----------
      Los módulos (window.EnVivoInicio) se pintan igual que antes; el hub los pone en su lugar de la sede
@@ -1109,20 +1210,44 @@
     if (!c || !c.internacional || !G.requisitosInternacional) return c;
     try { return Object.assign({}, c, { requisitos: G.requisitosInternacional(S, c, S.staff.map((p) => p.id), S.equip.map((e) => e.id)).map((r) => Object.assign({}, r, { texto: TL(r.texto) })) }); } catch (e) { return c; }
   }
+  /* Estrellas esperadas de cada oferta con lo que tienes (lo que propone "Elegir lo mejor"), la recomendada y lo que falta
+     para hacerla bien (auditoría 13-nov: el jugador nuevo tomaba ofertas imposibles y veía caer su fama). Mismo cálculo que
+     el bot de las pruebas (G.estimarOferta / G.ofertaRecomendada). */
+  function estimacionesOfertas() {
+    const est = {};
+    if (!G.estimarOferta) return { est, rec: null };
+    S.contracts.forEach((c) => { try { est[c.id] = G.estimarOferta(S, c); } catch (e) { est[c.id] = null; } });
+    let rec = null;
+    try { rec = G.ofertaRecomendada ? G.ofertaRecomendada(S, est) : null; } catch (e) { rec = null; }
+    return { est, rec };
+  }
+  const estrellasHtml = (n) => `<span class="of-stars" role="img" aria-label="${esc(T('estrellas.aria', { n }))}">${'★'.repeat(n)}<i>${'☆'.repeat(5 - n)}</i></span>`;
+  function ofertaEstHtml(c, e, rec) {
+    if (!e) return '';
+    const falta = e.falta.length ? `<span class="of-falta small">${I('bolt', 'sm')}${T('of.falta', { lista: e.falta.map((k) => T('of.falta.' + k)).join(', ') })}</span>` : '';
+    return `<div class="of-est small" data-of-est="${e.stars}">${rec ? `<span class="tag green of-rec">${I('check', 'sm')}${T('of.recomendado')}</span>` : ''}
+      <span class="of-esp">${T('of.esperado')} ${estrellasHtml(e.stars)}</span>${!e.puede ? `<span class="of-no-t">${T('of.no_puedes')}</span>` : ''}${falta}</div>`;
+  }
   function renderClientes() {
     const tHoy = turnoHoy();
-    // Orden de las ofertas (chips): mejor pago, la que vence antes o la más fácil
+    const { est, rec } = estimacionesOfertas();
+    // Orden de las ofertas (chips): mejor pago, la que vence antes o la más fácil. Por llegada: la recomendada primero y
+    // las que todavía no puedes hacer bien, al final.
     const ord = sub.clientesOrden;
+    const peso = (c) => (c.id === rec ? 0 : est[c.id] && !est[c.id].puede ? 2 : 1);
     const lista = S.contracts.slice().sort(ord === 'vence' ? (a, b) => a.daysLeft - b.daysLeft || b.pay - a.pay
-      : ord === 'facil' ? (a, b) => a.diff - b.diff || b.pay - a.pay : ord === 'pago' ? (a, b) => b.pay - a.pay : () => 0);
+      : ord === 'facil' ? (a, b) => a.diff - b.diff || b.pay - a.pay : ord === 'pago' ? (a, b) => b.pay - a.pay : (a, b) => peso(a) - peso(b));
+    const quedanProt = G.BALANCE && G.BALANCE.learn ? Math.max(0, G.BALANCE.learn.events - ((S.stats && S.stats.events) || 0)) : 0;
     const cards = lista.map((c) => {
+      const e = est[c.id] || null;
       const tmp = c.temporada ? `<div class="story-tag temp-oferta" style="margin-bottom:6px">${esc((G.EVENT_TYPES[c.type] || {}).icon || '')} ${T('temp.oferta_tag', { temporada: esc(TL(G.tx('temp.' + c.temporada + '.nombre'))) })}</div>` : '';
       const todoDia = tHoy && esJornada(c) ? `<span class="tag amber todo-dia">${I('calendar', 'sm')}${T('clientes.todo_dia')}</span>` : '';
-      return `<div class="card ofc ${c.temporada ? 'temp-card' : ''}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
+      return `<div class="card ofc ${c.temporada ? 'temp-card' : ''} ${e && !e.puede ? 'of-no' : ''} ${c.id === rec ? 'of-recom' : ''}" data-of="${c.id}" ${c.temporada ? `data-temporada="${esc(c.temporada)}"` : ''}>${tmp}
         <div class="row">${tile(c.type, TILE_COLOR[c.type])}
           <div class="grow"><h3>${esc(eventName(c.type))}</h3><div class="small muted">${esc(TL(c.client))}</div></div>
           <div class="pay">${M(c.pay)}</div></div>
         <div style="margin-top:6px">${reqTags(c)}${todoDia}</div>
+        ${ofertaEstHtml(c, e, c.id === rec)}
         ${PE ? PE.internacional(intlVista(c)) : ''}${c.internacional ? ayudaIntlHtml(c) : ''}
         ${c.rival && typeof c.rivalQuality === 'number' ? `<div class="duel small" style="margin-top:8px"><div class="row between"><span>${I('rival', 'sm')} ${T('clientes.mega_promete')} <b class="num">${c.rivalQuality}</b></span><span class="muted">${T('clientes.superala')}</span></div><div class="bar mega"><i style="width:${c.rivalQuality}%"></i></div></div>` : ''}
         <div class="of-pie">
@@ -1143,6 +1268,7 @@
         ${mkt('visitar', 'walk', T('nav2.visitar'), esc(T('nav2.visitar_det')), T('clientes.visitar'), false)}
       </div></div>
       <div class="sectitle">${T('clientes.disponibles', { n: S.contracts.length })}</div>
+      ${quedanProt > 0 && S.contracts.length ? `<div class="tip-prot small" id="tipProt">${I('tip', 'sm')} ${T('fama.protegida', { n: quedanProt })}</div>` : ''}
       ${tHoy ? `<div class="turnos-hoy tn-strip small"><b>${I('calendar', 'sm')} ${T('clientes.turnos', { n: tHoy.libres })}</b>${AY('dia')}${tHoy.max > 3 ? ` <span class="muted">${T('dia.vip_turnos', { n: tHoy.max })}</span>` : ''}</div>` : ''}
       ${orden}
       ${cards || emptyState('clients', T('clientes.vacio_t'), T('clientes.vacio'))}`;
@@ -1521,11 +1647,30 @@
           <div class="dn-cond"><span class="num">${rep ? `<span class="muted">${d.despues}%</span> → <b class="up">${ahora}%</b>` : `${d.antes !== null ? `<span class="muted">${d.antes}%</span> → ` : ''}<b class="${d.despues < WORN() ? 'neg' : ''}">${d.despues}%</b>`}</span></div>${bar}${d.despues < WORN() && rc > 0 ? `<span class="dn-riesgo">${I('bolt', 'sm')}${T('danos.riesgo')}</span>` : ''}</div>
         <div class="dn-acc">${btn}</div></div>`;
     }).join('');
-    const todo = pend.length > 1 ? `<button class="btn dn-todo" data-act="repair-all-res" ${S.money < total ? 'disabled' : ''}>${I('wrench', 'sm')}${T('danos.reparar_todo', { m: M(total) })}</button>${S.money < total ? `<div class="dn-falta" style="text-align:center">${T('danos.falta', { m: M(total - S.money) })}</div>` : ''}` : '';
+    const todo = pend.length > 1 ? `${repTodoBtn(pend.map((x) => x.e), 'repair-all-res', 'btn dn-todo')}${S.money < total ? `<div class="dn-falta" style="text-align:center">${T('danos.falta', { m: M(total - S.money) })}</div>` : ''}` : '';
     return `<div class="danos" id="resDanos" role="status"><div class="dn-hd">${I('wrench', 'sm')}<b>${T('danos.titulo')}</b></div>
       <div class="small muted" style="margin:2px 0 6px">${T('danos.sub')}</div>${filas}${todo}</div>`;
   }
   const pintarDanosRes = () => { const n = $('resDanos'); if (n) n.outerHTML = danosResHtml(); };
+  /* Qué se puede reparar con la plata de hoy: lo más en riesgo primero (menor condición), saltando lo que no alcanza
+     (auditoría 13-nov: "Reparar todo" se desactivaba si no alcanzaba para TODO, y el jugador seguía con equipos al 1%) */
+  function planReparar(xs) {
+    let dinero = Math.max(0, S.money);
+    const ok = [];
+    (xs || []).filter((e) => e && reparable(e) && costoRep(e) > 0).sort((a, b) => a.condition - b.condition).forEach((e) => {
+      const c = costoRep(e);
+      if (c <= dinero) { ok.push(e); dinero -= c; }
+    });
+    return { ok, costo: ok.reduce((a, e) => a + costoRep(e), 0) };
+  }
+  // Botón "Reparar todo" / "Reparar 3 de 5 ($X)": nunca desactivado si alcanza para algo
+  function repTodoBtn(xs, act, cls) {
+    const tot = xs.reduce((a, e) => a + costoRep(e), 0), plan = planReparar(xs);
+    const parte = plan.ok.length && plan.ok.length < xs.length;
+    const txt = parte ? T('danos.reparar_parte', { n: plan.ok.length, total: xs.length, m: M(plan.costo) }) : T('danos.reparar_todo', { m: M(tot) });
+    return `<button class="${cls}" data-act="${act}" data-n="${plan.ok.length}" ${plan.ok.length ? '' : 'disabled'}>${I('wrench', 'sm')}${txt}</button>`;
+  }
+  const equiposRes = () => (resDanos || []).map((d) => S.equip.find((x) => x.id === d.id)).filter((e) => e && costoRep(e) > 0);
   function repararVarios(ids) {
     let n = 0;
     ids.forEach((id) => { const e = S.equip.find((x) => x.id === id); if (e && costoRep(e) > 0 && S.money >= costoRep(e) && G.repair(S, id).ok) n++; });
@@ -1549,7 +1694,7 @@
     return `<div class="card rep-todo" id="repTodo"><div class="row between" style="gap:8px;align-items:center">
       <div class="grow" style="min-width:0"><b>${I('wrench', 'sm')} ${T('bodega.rep_todo_t', { n: xs.length })}</b>
         <div class="small muted">${T('bodega.rep_todo_det', { m: M(tot) })}</div>${falta > 0 ? `<div class="small neg">${T('danos.falta', { m: M(falta) })}</div>` : ''}</div>
-      <button class="btn sm green" data-act="repair-all-bodega" ${falta > 0 ? 'disabled' : ''} style="width:auto">${T('danos.reparar_todo', { m: M(tot) })}</button></div></div>`;
+      ${repTodoBtn(xs, 'repair-all-bodega', 'btn sm green').replace('<button ', '<button style="width:auto" ')}</div></div>`;
   }
   // Preparación: aviso en el equipo elegido que puede fallar (se ve solo si está marcado)
   function prepDano(e) {
@@ -1590,8 +1735,11 @@
   // Tienda de equipos: lo que se ve con la categoría, la búsqueda y el orden elegidos
   function shopHtml(cats, llena, maxEq) {
     const q = shopBusca.trim().toLowerCase();
+    // "Recomendado": primero lo que puedes comprar ahora (sin candado y con la plata que tienes), en el orden de siempre
+    const alcanza = (it) => (!it.locked && it.price <= S.money ? 0 : 1);
     const ordenar = (xs) => (sub.shopOrden === 'precio' ? xs.slice().sort((a, b) => (a.locked - b.locked) || a.price - b.price)
-      : sub.shopOrden === 'calidad' ? xs.slice().sort((a, b) => (a.locked - b.locked) || (b.q || 0) - (a.q || 0) || a.price - b.price) : xs);
+      : sub.shopOrden === 'calidad' ? xs.slice().sort((a, b) => (a.locked - b.locked) || (b.q || 0) - (a.q || 0) || a.price - b.price)
+      : xs.slice().sort((a, b) => alcanza(a) - alcanza(b)));
     if (q) {
       const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       const qq = norm(q);
@@ -1607,7 +1755,14 @@
     if (!cur) return '';
     const nota = cur.key === 'service' ? `<p class="small muted" style="margin-top:-2px">${T('bodega.alquiler_det')}</p>` : '';
     return `<div class="cathead"><b>${esc(TL(cur.nombre || cur.name || ''))}</b><span class="small muted">${T('bodega.n_equipos', { n: cur.items.length })}</span></div>${nota}
-      <div class="ggrid">${exclusivosDe(cur.key, cur.items).map((x) => exCard(x, llena, maxEq)).join('')}${ordenar(cur.items.filter((it) => !it.exclusivo)).map((it) => shopCard(it, llena, maxEq)).join('')}</div>`;
+      <div class="ggrid">${(() => {
+        // Sin VIP activo, lo que se canjea solo con VIP va después de lo que sí puedes comprar (no primero en "Recomendado")
+        const ex = exclusivosDe(cur.key, cur.items), sinVip = !(Pm && Pm.vip);
+        const vipAl = sinVip && sub.shopOrden === 'rec' ? ex.filter((x) => x.vip) : [];
+        return ex.filter((x) => !vipAl.includes(x)).map((x) => exCard(x, llena, maxEq)).join('')
+          + ordenar(cur.items.filter((it) => !it.exclusivo)).map((it) => shopCard(it, llena, maxEq)).join('')
+          + vipAl.map((x) => exCard(x, llena, maxEq)).join('');
+      })()}</div>`;
   }
   function renderBodega() {
     const maxEq = maxEquip();
@@ -3154,6 +3309,7 @@
     const caja0 = dia0 && dia0.day === dia && typeof dia0.money === 'number' ? dia0.money : null;
     const ty = S.currentEvent && S.currentEvent.contract ? S.currentEvent.contract.type : '';
     const evEq = S.currentEvent ? { ids: S.currentEvent.equipIds.slice(), cid: S.currentEvent.contract.id } : null;
+    repAvisoIds = evEq ? evEq.ids.slice() : null;   // al cerrar el resultado: ¿quedó algo de esto bajo el 25%?
     const f = G.finishEvent(S);
     save();
     snd.amb(null);
@@ -3230,6 +3386,27 @@
   }
   // Qué ventana toca después: el evento en curso, el resumen del día, los capítulos completados y la intro del capítulo
   const capPend = () => (S && Array.isArray(S.capCompletados) ? S.capCompletados : []);
+  /* Después de un evento: si algo de lo que llevaste quedó bajo el 25%, un aviso con un botón para repararlo (lo más en
+     riesgo primero, con la plata que tengas). Sale cuando no hay otra ventana pendiente (auditoría 13-nov: un jugador
+     jugó 30 eventos con la cámara al 1% ganando casi nada). */
+  const REP_AVISO = 25;
+  let repAvisoIds = null;
+  function avisoReparar() {
+    if (!repAvisoIds || !S || S.gameOver) return false;
+    const xs = S.equip.filter((e) => repAvisoIds.includes(e.id) && reparable(e) && e.condition < REP_AVISO && costoRep(e) > 0).sort((a, b) => a.condition - b.condition);
+    if (!xs.length) { repAvisoIds = null; return false; }
+    repAvisoIds = xs.map((e) => e.id);
+    const plan = planReparar(xs), tot = xs.reduce((a, e) => a + costoRep(e), 0);
+    const filas = xs.slice(0, 4).map((e) => `<div class="row between small rep-fila"><span>${esc(nmE(e))}</span><b class="num neg">${Math.round(e.condition)}%</b></div>`).join('');
+    snd.play('bad');
+    openModal(`<div data-rep-aviso><h2>${I('wrench')} ${T('danos.aviso_t')}</h2>
+      <p>${xs.length === 1 ? T('danos.aviso_txt', { equipo: `<b>${esc(nmE(xs[0]))}</b>`, n: Math.round(xs[0].condition) }) : T('danos.aviso_varios', { n: xs.length })}</p>
+      ${xs.length > 1 ? `<div class="rep-lista">${filas}</div>` : ''}
+      ${plan.ok.length ? `<button class="btn main green" data-act="rep-aviso-si">${I('wrench', 'sm')}${plan.ok.length < xs.length ? T('danos.reparar_parte', { n: plan.ok.length, total: xs.length, m: M(plan.costo) }) : T('danos.aviso_si', { m: M(plan.costo) })}</button>`
+        : `<p class="small neg">${T('danos.falta', { m: M(tot - Math.max(0, S.money)) })}</p><button class="btn" data-act="rep-aviso-bodega">${T('danos.ver_bodega')}</button>`}
+      <button class="btn" data-act="rep-aviso-no">${T('danos.aviso_no')}</button></div>`);
+    return true;
+  }
   function continuar() {
     if (VI || !S) return;
     if ($('overlay').classList.contains('on')) return;
@@ -3239,7 +3416,8 @@
     if (avisosPend().length || resDiaPend()) { showResumenDia(); return; }
     if (capPend().length) { showChapterDone(capPend()[0], true); return; }
     if (showChapterIntro()) return;
-    if (S.gameOver) showGameOver();
+    if (S.gameOver) { showGameOver(); return; }
+    avisoReparar();
   }
 
   // Líneas que agregan las extensiones al resultado (result.extras = [{ icon, k, p }])
@@ -3312,16 +3490,21 @@
       ${danosResHtml()}
       ${riesgo}
       <table style="margin-top:12px">
+        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
+      </table>
+      ${r.protegido ? `<div class="tip-prot small" id="resProt">${I('tip', 'sm')} ${T('fama.protegida_res', { n: r.protegidoQuedan || 0 })}</div>` : ''}
+      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
+      <details class="res-cuentas" id="resCuentas"><summary>${T('res.ver_cuentas')}</summary>
+      <table>
         <tr><td>${T('res.pago_cliente')}</td><td class="up">+${M(r.pay)}</td></tr>
         <tr><td>${T('res.sueldos')}</td><td class="down">-${M(r.wages)}</td></tr>
         ${r.travelCost ? `<tr><td>${T('res.viaje')}</td><td class="down">-${M(r.travelCost)}</td></tr>` : ''}
         ${window.Movilizacion ? window.Movilizacion.filaResultado(r, M) : ''}
         ${gastoDia !== null && !dd ? `<tr><td>${T('res.gastos_dia')}${AY('gastos')}${gastoDesg ? `<div class="small muted" style="font-size:11.5px">${gastoDesg}</div>` : ''}</td><td class="down">-${M(gastoDia)}</td></tr>` : ''}
         <tr><td><b>${T('res.ganancia')}</b>${AY('ganancia')}</td><td class="${tono}"><b>${M(neto)}</b></td></tr>
+        ${dd ? `<tr id="resConParte"><td>${T('res.con_parte')}</td><td class="${neto - dd.parte >= 0 ? 'up' : 'down'}">${sgn(neto - dd.parte)}</td></tr>` : ''}
         ${filaCaja}
-        <tr id="resFama"><td>${T('head.fama')}${AY('fama')}</td><td class="${r.repDelta >= 0 ? 'up' : 'down'}">${famaTxt(r)}</td></tr>
-      </table>
-      ${dd ? fijosRes(r, dd, gastoDesg, sgn) : ''}
+      </table></details>
       ${later}
       ${(r.ups || []).length ? `<p class="small">${I('trend', 'sm')} ${r.ups.map((u) => esc(typeof u === 'string' ? TL(u) : gtx(u, u.text))).join(' · ')}</p>` : ''}
       ${mientras.length ? `<div class="sectitle">${T('dia.mientras')}</div>${avisosHtml(mientras)}` : ''}
@@ -3354,8 +3537,7 @@
   /* Gastos fijos del día en el resultado (varios eventos por día): cuánto son, cuándo se cobran y la parte de este evento.
      Antes del cierre: "se cobran al cerrar el día; repartidos entre los N eventos de hoy, a este le tocan $Y" y cuánto
      bajaría con un evento más. Si el evento cerró el día: lo que se cobró (con los días de viaje de un internacional). */
-  function fijosRes(r, d, desg, sgn) {
-    const resto = r.net - d.parte;
+  function fijosRes(r, d, desg) {
     const dias = d.dias || 1;
     const linea = !d.cerrado ? T('res.fijos_luego', { n: d.n, m: M(d.parte) })
       : dias > 1 ? T('res.fijos_cobrados_viaje', { d: dias, m: M(d.gastos) }) : T('res.fijos_cobrados', { n: d.n, m: M(d.parte) });
@@ -3364,7 +3546,6 @@
       ${desg ? `<div class="small muted" style="font-size:11.5px">${desg}</div>` : ''}
       <div class="small" style="margin-top:3px">${linea}</div>
       ${!d.cerrado && typeof d.conOtro === 'number' && d.conOtro < d.parte ? `<div class="small up" id="resFijosOtro">${T('res.fijos_otro', { m: M(d.conOtro) })}</div>` : ''}
-      <div class="row between small" style="margin-top:4px"><span class="muted">${T('res.con_parte')}</span><b class="num ${resto >= 0 ? 'up' : 'down'}">${sgn(resto)}</b></div>
     </div></div>`;
   }
 
@@ -3638,6 +3819,15 @@
 
   /* ---------- Clics ---------- */
   document.addEventListener('click', (e) => {
+    // "No pudimos abrir tu partida": funciona sin partida cargada (S todavía es null)
+    const ro = e.target.closest('#nubeCarga [data-act^="roto-"]');
+    if (ro) {
+      const a = ro.dataset.act;
+      if (a === 'roto-reintentar') { try { location.reload(); } catch (err) { /* nada */ } }
+      else if (a === 'roto-nube') rotaNube();
+      else if (a === 'roto-nueva') rotaNueva();
+      return;
+    }
     if (!S) return;   // todavía cargando el idioma guardado
     snd.unlock();
     mus.init();
@@ -3645,6 +3835,8 @@
     if (nav) {
       if (VI) return;   // jugando un turno en línea: primero se termina o se deja para después
       if (nav.dataset.tab === 'online' && tab === 'online' && vistaOnline !== 'hub') { vistaOnline = 'hub'; desmontarOnline(); }
+      // Bodega: si hay equipos en riesgo, abre en "Mis equipos" (ahí se reparan); si no, en la última sección elegida
+      if (nav.dataset.tab === 'bodega' && tab !== 'bodega' && equiposEnRiesgo().length) setSub('bodega', 'equipos');
       tab = nav.dataset.tab; snd.play('tap'); mus.go('menu'); render(); window.scrollTo(0, 0); return;
     }
     const bm = e.target.closest('#overlay [data-merc]');
@@ -3727,7 +3919,17 @@
       case 'close': { const deprep = !!prep && !S.currentEvent; closeModal(); if (deprep) { prep = null; mus.go('menu'); } render(); break; }
       case 'confirm-yes': { const cb = confirmCb; confirmCb = null; closeModal(); if (cb) cb(); break; }
       case 'demo-no': confirmCb = null; closeModal(); render(); continuar(); break;
-      case 'next-day': diaAntes = { money: S.money }; diaCerrado = true; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); if (!resDiaPend()) toast(T('comun.dia_n', { n: S.day })); continuar(); break;
+      case 'next-day':
+        // Primer día sin ningún evento: pregunta antes (un jugador nuevo podía saltarse el día sin querer; auditoría 13-nov)
+        if (primerDiaSinEventos() && !el.dataset.ok) {
+          const cbD = G.dailyCostBreakdown ? G.dailyCostBreakdown(S) : null;
+          ask(T('dia.cerrar_conf', { m: M(cbD ? cbD.total : (G.dailyCost ? G.dailyCost(S) : 0)) }), T('dia.cerrar_si'), () => {
+            const b = document.createElement('button'); b.dataset.act = 'next-day'; b.dataset.ok = '1'; b.style.display = 'none';
+            document.body.appendChild(b); b.click(); b.remove();
+          });
+          break;
+        }
+        diaAntes = { money: S.money }; diaCerrado = true; aplicarFecha(); G.nextDay(S); save(); snd.play('day'); render(); if (!resDiaPend()) toast(T('comun.dia_n', { n: S.day })); continuar(); break;
       case 'close-dia': tomarAvisos(); closeModal(); render(); continuar(); break;
       case 'mkt': {
         const visita = el.dataset.k === 'visitar';
@@ -3802,8 +4004,11 @@
       case 'repair': act(G.repair(S, id), 'buy'); break;
       // Equipos dañados (resultado del evento, Inicio y preparación)
       case 'repair-res': act(G.repair(S, id), 'buy'); pintarDanosRes(); break;
-      case 'repair-all-bodega': repararVarios(porReparar().map((x) => x.id)); break;
-      case 'repair-all-res': repararVarios((resDanos || []).map((d) => d.id)); pintarDanosRes(); break;
+      case 'repair-all-bodega': repararVarios(planReparar(porReparar()).ok.map((x) => x.id)); break;
+      case 'repair-all-res': repararVarios(planReparar(equiposRes()).ok.map((x) => x.id)); pintarDanosRes(); break;
+      case 'rep-aviso-si': { const ids = (repAvisoIds || []).slice(); repAvisoIds = null; closeModal(); repararVarios(planReparar(S.equip.filter((x) => ids.includes(x.id))).ok.map((x) => x.id)); continuar(); break; }
+      case 'rep-aviso-no': repAvisoIds = null; closeModal(); render(); continuar(); break;
+      case 'rep-aviso-bodega': repAvisoIds = null; closeModal(); if (porReparar().length) setSub('eqFiltro', 'reparar'); snd.play('tap'); irA('bodega', 'equipos'); break;
       case 'repair-prep': e.preventDefault(); act(G.repair(S, id), 'buy'); if (prep) renderPrep(); break;
       case 'ir-danos': {
         // A Mis equipos, con el filtro "Por reparar" (lo más gastado arriba)
@@ -3903,6 +4108,7 @@
       if (S) render();
       if (window.Chat && window.Chat.refrescar) { try { window.Chat.refrescar(); } catch (e) { /* nada */ } }
       if (idiomaPedido && S) toast(T('idioma.cambiado'));
+      try { if (window.PWA && window.PWA.idioma) window.PWA.idioma(I18.idioma); } catch (e) { /* nada */ }
       idiomaPedido = false;
     });
   }
@@ -3939,7 +4145,15 @@
   function arrancar() {
     enlazarTraductor();
     if (I18) I18.aplicar();
-    S = load() || G.newGame();
+    const raw = saveCrudo();
+    S = raw ? load() : null;
+    // Hay una partida guardada pero no se pudo abrir: se guarda aparte y se pregunta (no se guarda nada todavía)
+    if (raw && !S) { rotaPantalla(raw); return; }
+    if (!S) S = G.newGame();
+    arrancarCon();
+  }
+  function arrancarCon() {
+    try { if (window.PWA && window.PWA.idioma && I18) window.PWA.idioma(I18.idioma); } catch (e) { /* nada */ }
     aplicarFecha();
     save();
     render();
