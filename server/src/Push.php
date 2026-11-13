@@ -23,10 +23,14 @@ final class Push
     /** Categorías que el jugador ve en Ajustes (valor = encendida por defecto). */
     public const CATEGORIAS = ['obra' => true, 'copa' => true, 'premio' => true, 'buzon' => true, 'duelo' => true, 'ofertas' => false];
     /** Categorías internas que obedecen al interruptor de otra (null = ninguno: prueba del Centro de Control). */
-    public const ALIAS = ['recordatorio' => 'premio', 'liga' => 'duelo', 'prueba' => null];
-    public const PRIORIDAD = ['prueba' => 9, 'buzon' => 3, 'obra' => 3, 'duelo' => 2, 'liga' => 2, 'copa' => 2, 'premio' => 1, 'recordatorio' => 1, 'ofertas' => 0];
+    public const ALIAS = ['recordatorio' => 'premio', 'liga' => 'duelo', 'prueba' => null, 'etapa' => 'premio', 'regreso' => 'premio', 'cierre' => 'duelo'];
+    public const PRIORIDAD = ['prueba' => 9, 'buzon' => 3, 'obra' => 3, 'duelo' => 2, 'liga' => 2, 'copa' => 2, 'cierre' => 2, 'premio' => 1, 'recordatorio' => 1, 'etapa' => 1, 'regreso' => 1, 'ofertas' => 0];
+    /** Avisos por etapa y de regreso (src/Regreso.php): máximo TOPE_REGRESO al día y silencio en la hora del jugador. */
+    public const CATS_REGRESO = ['etapa', 'regreso', 'cierre'];
+    public const TOPE_REGRESO = 2;
     /** Cuánto guarda el servicio de push el aviso si el aparato está apagado (segundos). */
-    public const TTL = ['prueba' => 600, 'buzon' => 86400, 'obra' => 43200, 'duelo' => 43200, 'liga' => 43200, 'copa' => 21600, 'premio' => 43200, 'recordatorio' => 86400, 'ofertas' => 86400];
+    public const TTL = ['prueba' => 600, 'buzon' => 86400, 'obra' => 43200, 'duelo' => 43200, 'liga' => 43200, 'copa' => 21600, 'premio' => 43200, 'recordatorio' => 86400, 'ofertas' => 86400,
+        'etapa' => 43200, 'regreso' => 86400, 'cierre' => 3600];
     /** Servicios de push permitidos (https). Más con PUSH_HOSTS_EXTRA (lista con comas; solo para pruebas). */
     public const HOSTS = ['fcm.googleapis.com', 'android.googleapis.com', 'updates.push.services.mozilla.com', '*.push.services.mozilla.com',
         '*.notify.windows.com', 'web.push.apple.com', '*.push.apple.com'];
@@ -514,10 +518,13 @@ final class Push
         if (!$forzar) {
             $inact = intdiv($t - self::ultimaActividad($j), 86400);
             if ($inact >= self::INACTIVO_PARAR) return self::cerrar((int) $f['id'], 'descartado', 'inactivo');
-            if ($cat === 'recordatorio' && $inact < self::INACTIVO_RECORDAR) return self::cerrar((int) $f['id'], 'descartado', 'volvio');
-            if (self::enSilencio($t)) return self::posponer($f, self::proximaManana($t) + random_int(0, 900), 'silencio');
+            if (($cat === 'recordatorio' || $cat === 'regreso') && $inact < self::INACTIVO_RECORDAR) return self::cerrar((int) $f['id'], 'descartado', 'volvio');
+            // Etapa / regreso (src/Regreso.php): silencio en la hora del jugador (si mandó su zona) y tope de 2 al día
+            $propia = in_array($cat, self::CATS_REGRESO, true) && class_exists(Regreso::class);
+            if ($propia) { $p = Regreso::posponerHasta($j, $t); if ($p !== null) return self::posponer($f, $p + random_int(0, 900), 'silencio'); }
+            elseif (self::enSilencio($t)) return self::posponer($f, self::proximaManana($t) + random_int(0, 900), 'silencio');
             $c = self::contador($j);
-            if ($c['enviados_dia'] >= self::maxDia()) return self::posponer($f, self::proximaManana($t) + random_int(0, 1800), 'tope');
+            if ($c['enviados_dia'] >= ($propia ? min(self::maxDia(), self::TOPE_REGRESO) : self::maxDia())) return self::posponer($f, ($propia ? (Regreso::posponerHasta($j, self::proximaManana($t)) ?? self::proximaManana($t)) : self::proximaManana($t)) + random_int(0, 1800), 'tope');
             if ($cat === 'ofertas' && ($c['ofertas_dia'] >= 1 || $c['enviados_dia'] >= self::maxDia() - 1)) return self::posponer($f, self::proximaManana($t) + random_int(0, 1800), 'tope');
         }
         $subs = self::destinos($j, $cat);
@@ -720,6 +727,7 @@ final class Push
             if ($dias < self::INACTIVO_RECORDAR || $dias >= self::INACTIVO_PARAR) continue;
             $esc = 0;
             foreach (self::RECORDAR_DIAS as $d) if ($dias >= $d) $esc = $d;
+            if (class_exists(Regreso::class) && Regreso::cubreRecordatorio($esc)) continue;   // lo avisa src/Regreso.php (con su regalo)
             if (self::encolarPlantilla($j, 'recordatorio', 'recordatorio', ['dias' => $dias], '/', 'recordatorio:' . self::dia($act) . ':' . $esc, ['vence' => $t + 10 * 3600]) !== null) $n++;
         }
         return $n;

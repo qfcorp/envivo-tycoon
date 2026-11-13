@@ -31,6 +31,9 @@ try {
     if (class_exists(\EnVivo\ErroresApi::class) && \EnVivo\ErroresApi::esRuta($ruta)) \EnVivo\ErroresApi::responder($ruta, $metodo);
     // Analítica propia (server/INTEGRAR_ANALITICA.md): /api/eventos va ANTES de X-Envivo (sendBeacon no pone cabeceras; revisa el mismo sitio)
     if (class_exists(\EnVivo\AnaliticaApi::class) && \EnVivo\AnaliticaApi::esRuta($ruta)) \EnVivo\AnaliticaApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Avisos por etapa y regreso del jugador (src/Regreso.php, INTEGRAR_REGRESO.md): /api/regreso*. Va ANTES de X-Envivo porque
+    // la baja del correo es un formulario sin cabecera; las demás rutas exigen la cabecera y la sesión ellas mismas.
+    if (class_exists(\EnVivo\RegresoApi::class) && \EnVivo\RegresoApi::esRuta($ruta)) \EnVivo\RegresoApi::responder($ruta, $metodo, Sesiones::jugadorId());
     // Monitor externo (docs/MONITOREO.md): sin sesión ni cabecera, GET o HEAD; prueba que PHP y la base respondan.
     if ($ruta === '/salud') api_salud($metodo);
 

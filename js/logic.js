@@ -255,7 +255,7 @@
 
   /* ---------- Extensiones (temporadas, sede...) ----------
      Un módulo se registra con registrarExtension({ id, migrar, alNuevoDia, alTerminarEvento, bonoCalidad, multPago,
-     multGastos, limites, contratosExtra }). Todo es opcional. Los intentos en línea (estado armado por intento.js:
+     multGastos, limites ({ turnos, staff, equip, xpEvento }), contratosExtra }). Todo es opcional. Los intentos en línea (estado armado por intento.js:
      s.intento = true) NUNCA aplican extensiones: el servidor repite el intento sin ellas y tiene que dar lo mismo. */
   const extensiones = [];
   function registrarExtension(ext) {
@@ -3674,11 +3674,13 @@
       if (e) e.condition = clamp(e.condition - desgasteVehiculo(tp.km), 1, 100);
     });
     const ups = [];
+    // Experiencia por evento: 1 + lo que den las extensiones (regreso del jugador: doble experiencia), nunca más de 3
+    const xpEvento = 1 + clamp(extLimite(s, 'xpEvento'), 0, 2);
     view.staff.forEach((p) => {
       p.events++;
       const tired = BALANCE.morale.fatigue * Math.max(0, c.diff - 2);
       if (!p.owner) p.morale = clamp(p.morale + (stars >= 4 ? 6 : stars <= 2 ? -10 : 1) - tired, 0, 100);
-      p.xp = (p.xp || 0) + 1;
+      p.xp = (p.xp || 0) + xpEvento;
       if (p.skill < 5 && p.xp >= BALANCE.skillUp[p.skill]) {
         p.skill++;
         p.xp = 0;

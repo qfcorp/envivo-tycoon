@@ -21,6 +21,7 @@ require __DIR__ . '/lib/buzon.php';   // Buzón y códigos (server/INTEGRAR_BUZO
 require __DIR__ . '/lib/promo.php';   // Black Friday: VIP 30 días gratis (src/BlackFriday.php), en la pestaña Buzón y códigos
 require __DIR__ . '/lib/eventos_servidor.php';   // Eventos del servidor y adviento (server/INTEGRAR_EVENTOS_SERVIDOR.md)
 require __DIR__ . '/lib/invitar.php';   // Invitar y aliados (src/Invitaciones.php, src/Aliados.php, INTEGRAR_INVITAR.md)
+require __DIR__ . '/lib/regreso.php';   // Avisos por etapa y regreso (src/Regreso.php), en la pestaña Notificaciones
 
 use EnVivo\{Auditoria, Config, Control, Db, Fallo, Http, Limite};
 
@@ -163,6 +164,7 @@ function cc_post_accion(): never
             str_starts_with($accion, 'promo_') => cc_a_promo($accion, $q),
             str_starts_with($accion, 'eventos_') => cc_a_eventos($accion, $q),
             str_starts_with($accion, 'aliados_') => cc_a_aliados($accion, $q),
+            str_starts_with($accion, 'regreso_') => cc_a_regreso($accion, $q),
             default => throw new Fallo('Acción desconocida.', 400),
         };
         cc_avisar('ok', $msg);

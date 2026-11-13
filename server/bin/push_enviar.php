@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // Envío de notificaciones push (server/INTEGRAR_PUSH.md): cada minuto por cron (www-data):
 //   * * * * * ENVIVO_CONFIG=/etc/envivo/config.env php /ruta/server/bin/push_enviar.php >> /var/log/envivo-push.log 2>&1
-// Corre los detectores (obra terminada, copa, duelos, buzón, premio diario, recordatorios) y vacía la cola con las
+// Corre los avisos de src/Regreso.php, los detectores (obra terminada, copa, duelos, buzón, premio diario, recordatorios) y vacía la cola con las
 // reglas de Push.php. Un candado evita que dos corridas se pisen. Solo escribe en el registro si hizo algo.
 if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 require dirname(__DIR__) . '/src/arranque.php';
@@ -14,6 +14,9 @@ $candado = fopen(sys_get_temp_dir() . '/envivo_push_' . substr(hash('sha256', \E
 if (!$candado || !flock($candado, LOCK_EX | LOCK_NB)) exit(0);   // la corrida anterior sigue
 try {
     Db::pdo();
+    // Avisos por etapa, regreso y el correo de los 7 días (src/Regreso.php): antes de la cola, también sin llaves VAPID
+    $rg = class_exists(\EnVivo\Regreso::class) ? \EnVivo\Regreso::tarea() : [];
+    if (array_sum($rg) > 0) echo date('c') . ' regreso: ' . json_encode($rg) . "\n";
     $r = Push::procesar();
     if ($r['sin_claves']) {
         if ((int) date('i') === 0) echo date('c') . " push: faltan las llaves VAPID (php server/bin/push_claves.php)\n";

@@ -10,7 +10,7 @@ use EnVivo\{Auditoria, Db, Fallo, Push};
 
 const CC_PUSH_CATS = ['obra' => 'Obra / sede terminada', 'copa' => 'Copa / batalla', 'premio' => 'Premio diario (y recordatorios)',
     'buzon' => 'Mensaje en el buzón', 'duelo' => 'Liga y duelos', 'ofertas' => 'Ofertas', 'recordatorio' => 'Recordatorio (inactivo)',
-    'liga' => 'Liga', 'prueba' => 'Prueba'];
+    'liga' => 'Liga', 'prueba' => 'Prueba', 'etapa' => 'Etapa (día 1, 2 y 3)', 'regreso' => 'Regreso (3/7/14 días)', 'cierre' => 'Cierre de Liga / Duelos'];
 
 function cc_t_push(): string
 {
@@ -38,6 +38,9 @@ function cc_t_push(): string
         . '<label>Jugador (número, correo o alias)<input name="jugador" required maxlength="120" autocapitalize="off" spellcheck="false" placeholder="Ej. 12 o ana@correo.com"></label>'
         . '<button class="btn" type="submit"' . ($s['disponible'] ? '' : ' disabled') . '>Enviar prueba</button></form>'
         . '<p class="tenue">Llega al instante (sin horario de silencio ni tope diario) y no cuenta para el tope del jugador.</p></section>';
+
+    // Avisos por etapa y regreso (lib/regreso.php)
+    if (function_exists('cc_regreso_panel')) $h .= cc_regreso_panel();
 
     // Por categoría
     $filas = [];

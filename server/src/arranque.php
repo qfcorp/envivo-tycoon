@@ -33,5 +33,6 @@ $registrar(Pase::class);          // \EnVivo\Pase::registrar(); pase de temporad
 $registrar(Estrellas::class);     // \EnVivo\Estrellas::registrar(); pase de copa ($2.99) — INTEGRAR_ESTRELLAS.md §2
 $registrar(Impulsos::class);       // \EnVivo\Impulsos::registrar(); equipo de obra extra, fondo, tarjeta semanal — INTEGRAR_MONETIZACION2.md
 $registrar(PanelVentas::class);     // \EnVivo\PanelVentas::registrar(); ventas al Panel Tukán → Cobros y facturas con TuFactura (6 nov 2026)
+$registrar(Regreso::class);         // \EnVivo\Regreso::registrar(); la oferta de regreso comprada queda usada — INTEGRAR_REGRESO.md
 $registrar(Facturacion::class);     // \EnVivo\Facturacion::registrar(); factura / nota de crédito SRI pendiente — INTEGRAR_FACTURACION.md
 unset($registrar);

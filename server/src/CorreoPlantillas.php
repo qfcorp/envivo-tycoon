@@ -27,6 +27,13 @@ final class CorreoPlantillas
             'c_no_fuiste' => 'Si no fuiste tú, escríbenos enseguida respondiendo a este correo o desde «Ayuda y soporte» del juego.',
             'pie' => 'Correo automático de EN VIVO Tycoon.',
             'pie_soporte' => '¿Dudas? Escríbenos a {soporte}.',
+            // regreso (src/Regreso.php): un solo correo a los 7 días sin entrar. Solo en español hasta la traducción final.
+            'g_asunto' => 'Tu productora te extraña: regalo de créditos',
+            'g_texto' => 'Hace {dias} días que tu productora no sale en vivo. Te guardamos un regalo de regreso: {creditos} créditos, dinero del juego y repuestos.',
+            'g_texto2' => 'Al volver tendrás 3 días de ventaja: los eventos pagan más y tu personal gana el doble de experiencia.',
+            'g_boton' => 'Volver a mi productora',
+            'g_baja' => 'No quiero recibir más correos como este',
+            'g_baja_txt' => 'Es el único correo que te mandamos por esta ausencia. Para no recibir más correos de regreso entra aquí: {enlace}',
         ],
         'en' => [
             'r_asunto' => 'Reset your EN VIVO Tycoon password',
@@ -202,6 +209,18 @@ final class CorreoPlantillas
             $html = self::html($L, $asunto, $hola, $parrafos, ['texto' => self::t($L, 'r_boton'), 'enlace' => $enlace], $despues, $pie);
             return ['asunto' => $asunto, 'html' => $html, 'texto' => $texto];
         }
+        if ($cual === 'regreso') {
+            $asunto = self::t($L, 'g_asunto');
+            $p = ['creditos' => (int) ($d['creditos'] ?? 100), 'dias' => (int) ($d['dias'] ?? 7)];
+            $parrafos = [self::t($L, 'g_texto', $p), self::t($L, 'g_texto2')];
+            $enlace = (string) $d['enlace'];
+            $baja = (string) ($d['baja'] ?? '');
+            $texto = $hola . "\n\n" . implode("\n\n", $parrafos) . "\n\n" . $enlace . "\n\n-- \n" . $pie . "\n"
+                . ($baja !== '' ? self::t($L, 'g_baja_txt', ['enlace' => $baja]) . "\n" : '');
+            $html = self::html($L, $asunto, $hola, $parrafos, ['texto' => self::t($L, 'g_boton'), 'enlace' => $enlace], [], $pie,
+                $baja !== '' ? ['texto' => self::t($L, 'g_baja'), 'enlace' => $baja] : null);
+            return ['asunto' => $asunto, 'html' => $html, 'texto' => $texto];
+        }
         if ($cual === 'clave_cambiada') {
             $asunto = self::t($L, 'c_asunto');
             $parrafos = [self::t($L, 'c_texto', ['fecha' => (string) ($d['fecha'] ?? date('Y-m-d H:i'))]), self::t($L, 'c_no_fuiste')];
@@ -211,7 +230,7 @@ final class CorreoPlantillas
         throw new \InvalidArgumentException('Plantilla de correo desconocida: ' . $cual);
     }
 
-    private static function html(string $L, string $titulo, string $hola, array $parrafos, ?array $boton, array $despues, string $pie): string
+    private static function html(string $L, string $titulo, string $hola, array $parrafos, ?array $boton, array $despues, string $pie, ?array $baja = null): string
     {
         $e = fn(string $t) => htmlspecialchars($t, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $p = fn(string $t, string $estilo = '') => '<p style="margin:0 0 14px;font-size:15px;line-height:1.5;color:#e9edf5;' . $estilo . '">' . $e($t) . '</p>';
@@ -233,7 +252,8 @@ final class CorreoPlantillas
             . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#161a22;border:1px solid #2a3142;border-radius:16px">'
             . '<tr><td style="padding:18px 20px 6px;font-weight:800;letter-spacing:.04em;font-size:17px;color:#ff3b3b">EN VIVO <span style="color:#ffb020">Tycoon</span></td></tr>'
             . '<tr><td style="padding:8px 20px 6px">' . $cuerpo . '</td></tr>'
-            . '<tr><td style="padding:12px 20px 18px;border-top:1px solid #2a3142;font-size:12px;line-height:1.5;color:#9aa3b5">' . $e($pie) . '</td></tr>'
+            . '<tr><td style="padding:12px 20px 18px;border-top:1px solid #2a3142;font-size:12px;line-height:1.5;color:#9aa3b5">' . $e($pie)
+            . ($baja ? '<br><a href="' . $e($baja['enlace']) . '" style="color:#9aa3b5;text-decoration:underline">' . $e($baja['texto']) . '</a>' : '') . '</td></tr>'
             . '</table></td></tr></table></body></html>';
     }
 }
