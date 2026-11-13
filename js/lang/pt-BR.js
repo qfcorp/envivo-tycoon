@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "Vários VIP grátis já foram resgatados a partir desta conexão. É um por pessoa.",
     "error.cupo_invalido": "O limite não é válido.",
     "error.google_ya_comprado": "Você já tem esse produto (só pode ser comprado uma vez), então não o entregamos de novo. Não se preocupe: o Google Play vai devolver seu dinheiro automaticamente em alguns dias.",
+    "error.no_disponible_ios": "Esta opção não está disponível neste app.",
     "prep.lente_falta": "Falta uma lente: {lente} ({m}) no Depósito, categoria Lentes.",
     "prep.lente_fama": "Falta uma lente: {lente}, que libera com {n} de fama. Enquanto isso, leve outra câmera.",
     "prep.ir_bodega": "Comprar no Depósito",

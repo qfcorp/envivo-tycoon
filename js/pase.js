@@ -373,7 +373,7 @@
       null = no se vende en este canal (el botón no sale). Sin ctx.precio: solo fuera de la app, con el precio del servidor. */
   function precioDe(ctx, id, usd) {
     try { if (ctx && typeof ctx.precio === 'function') { const v = ctx.precio(id, usd); return v ? String(v) : null; } } catch (e) { return null; }
-    try { if (root.GooglePlay && root.GooglePlay.enApp && root.GooglePlay.enApp()) return null; } catch (e) { return null; }
+    try { if ((root.TukanIOS && root.TukanIOS.activo()) || (root.GooglePlay && root.GooglePlay.enApp && root.GooglePlay.enApp())) return null; } catch (e) { return null; }   // iPhone (js/ios.js) o app de Google Play
     return usd !== undefined && usd !== null && isFinite(Number(usd)) ? precio(usd) : null;
   }
   /** Cuenta regresiva corta: 3 días o más = días; menos = días y horas (redondeando hacia arriba); menos de 1 h = minutos. */
@@ -716,7 +716,8 @@
     const pp = d.productos || {};
     const pPrem = pp.pase_premium && pp.pase_premium.activo !== false ? precioDe(ctx, 'pase_premium', pp.pase_premium.precio) : null;
     const pPlus = pp.pase_premium_plus && pp.pase_premium_plus.activo !== false ? precioDe(ctx, 'pase_premium_plus', pp.pase_premium_plus.precio) : null;
-    const compra = d.premium
+    const iosSinVenta = !d.premium && !pPrem && !pPlus && !!(root.TukanIOS && root.TukanIOS.activo());   // iPhone: sin ofrecer el premium (regla de Apple)
+    const compra = iosSinVenta ? '' : d.premium
       ? `<p class="small muted" style="margin:8px 0 0">${esc(t('creditos_vuelta', { a: num(d.creditos_dados), b: num(d.creditos_tope) }))}</p>`
       : `<p class="small" style="margin:10px 0 0">${esc(t('premium_txt', { c: num(d.creditos_tope) }))}</p>
          <div class="pase-compra">

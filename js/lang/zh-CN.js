@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "此网络已领取过多个免费 VIP。每人限领一个。",
     "error.cupo_invalido": "名额无效。",
     "error.google_ya_comprado": "你已拥有该物品（仅可购买一次），因此不会重复发放。别担心：Google Play 会在几天内自动退款。",
+    "error.no_disponible_ios": "此应用中无法使用此选项。",
     "prep.lente_falta": "缺一个镜头：{lente}（{m}），在仓库的“镜头”类别里。",
     "prep.lente_fama": "缺一个镜头：{lente}，名气达到 {n} 才解锁。在那之前先带别的摄像机。",
     "prep.ir_bodega": "去仓库购买",

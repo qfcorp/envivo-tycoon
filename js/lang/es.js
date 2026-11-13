@@ -776,6 +776,7 @@
     "error.promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
     "error.cupo_invalido": "El cupo no es válido.",
     "error.google_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. No te preocupes: Google Play te devolverá el dinero automáticamente en unos días.",
+    "error.no_disponible_ios": "Esta opción no está disponible en esta app.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Música",
     "head.musica_on": "Activar música",

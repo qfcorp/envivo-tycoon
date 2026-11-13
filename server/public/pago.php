@@ -15,6 +15,9 @@ require dirname(__DIR__) . '/src/arranque.php';
 
 use EnVivo\{Ajustes, Catalogo, Compras, Cuentas, Db, Http, PayPal, Plux, Sesiones, TukanPagos};
 
+// App de iPhone (User-Agent con «TukanIOS», regla de Apple 3.1.1): aquí no se paga con dinero real
+if (str_contains((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 'TukanIOS')) Http::pagina(403, 'No disponible', 'Esta opción no está disponible en esta app.');
+
 try {
     Db::pdo();
     $j = Sesiones::jugadorId();

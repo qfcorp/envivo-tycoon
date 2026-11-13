@@ -4,7 +4,7 @@
    Al cambiar archivos del juego, sube el número de VERSION para que se actualicen. */
 'use strict';
 
-const VERSION = 'envivo-v50';
+const VERSION = 'envivo-v51';
 const SHELL_CACHE = VERSION + '-shell';
 const FONT_CACHE = VERSION + '-fonts';
 
@@ -27,6 +27,7 @@ const SHELL = [
   './js/musica.js',     // música de fondo (opcional)
   './js/soporte.js',    // ayuda y soporte (opcional)
   './js/recuperar.js',  // "¿Olvidaste tu contraseña?" (opcional, server/INTEGRAR_CORREO.md)
+  './js/ios.js',        // app de iPhone: sin tienda de dinero real (regla de Apple)
   './js/googleplay.js', // compras de Google Play dentro de la app de Android (opcional)
   './js/cuenta.js',     // borrar la cuenta y aceptar términos (Google Play)
   './js/analitica.js',  // analítica propia (opcional)

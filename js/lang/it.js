@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "Da questa connessione sono già stati riscattati diversi VIP gratuiti. Uno a persona.",
     "error.cupo_invalido": "Il limite non è valido.",
     "error.google_ya_comprado": "Hai già questo prodotto (si può comprare una sola volta), quindi non te lo abbiamo consegnato di nuovo. Tranquillo: Google Play ti rimborserà automaticamente in pochi giorni.",
+    "error.no_disponible_ios": "Questa opzione non è disponibile in questa app.",
     "prep.lente_falta": "Manca un obiettivo: {lente} ({m}) nel Magazzino, categoria Obiettivi.",
     "prep.lente_fama": "Manca un obiettivo: {lente}, che si sblocca con {n} di fama. Nel frattempo porta un'altra telecamera.",
     "prep.ir_bodega": "Compra nel Magazzino",

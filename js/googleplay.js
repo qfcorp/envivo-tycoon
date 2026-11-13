@@ -101,6 +101,7 @@
   /* ---------- ¿estamos dentro de la app de Android? ---------- */
   function enApp() {
     try {
+      if (root.TukanIOS && root.TukanIOS.activo && root.TukanIOS.activo()) return false;   // el iPhone nunca es la app de Google Play
       var ses = guardado('sesion');
       if (ses && ses.getItem(CLAVE_ORIGEN) === 'android') return true;
       var porRef = /^android-app:\/\//.test(root.document && root.document.referrer || '');

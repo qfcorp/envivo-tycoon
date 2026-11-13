@@ -745,6 +745,7 @@
     "error.promo_conexion": "Several free VIPs have already been claimed from this connection. It's one per person.",
     "error.cupo_invalido": "The quota isn't valid.",
     "error.google_ya_comprado": "You already have that item (it can only be bought once), so it wasn't delivered again. Don't worry: Google Play will refund you automatically in a few days.",
+    "error.no_disponible_ios": "This option isn’t available in this app.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Music",
     "head.musica_on": "Turn music on",

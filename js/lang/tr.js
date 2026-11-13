@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "Bu bağlantıdan zaten birkaç ücretsiz VIP alındı. Kişi başı bir tane.",
     "error.cupo_invalido": "Kota geçersiz.",
     "error.google_ya_comprado": "Bu ürün zaten sende var (yalnızca bir kez satın alınabilir), bu yüzden tekrar teslim edilmedi. Endişelenme: Google Play birkaç gün içinde paranı otomatik olarak iade edecek.",
+    "error.no_disponible_ios": "Bu seçenek bu uygulamada kullanılamıyor.",
     "prep.lente_falta": "Lens eksik: {lente} ({m}), Depo'da Lensler kategorisinde.",
     "prep.lente_fama": "Lens eksik: {lente}, {n} ünle açılıyor. O zamana kadar başka bir kamera götür.",
     "prep.ir_bodega": "Depo'dan satın al",
