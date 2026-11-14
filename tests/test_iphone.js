@@ -3,7 +3,8 @@
      ios_ua     – User-Agent con «TukanIOS»: <html class="tukan-ios">; en la Tienda (todas sus sub-pestañas), el VIP y el Pase no hay
                   ningún precio en dólares, botón de comprar o suscribirse, Pago Plux, PayPal ni Google Play, ni «dónde pagar»;
                   lo que se canjea con créditos (Exclusivos) sí sigue; nunca se pide /api/orden.
-     ios_origen – sin User-Agent, abriendo con ?origen=ios: igual, y queda guardado (localStorage) al volver a abrir sin el parámetro.
+     ios_origen – sin User-Agent, abriendo con ?origen=ios: igual, y queda guardado (localStorage) al volver a abrir sin el parámetro;
+                  las peticiones de js/api.js (también /api/orden) llevan X-EnVivo-Canal: ios (el servidor rechaza los pagos con ella).
      ios_sin_servidor – iPhone sin conexión con el servidor: el aviso no dice «compra en juego.tukanec.com».
      web        – sin TukanIOS todo sigue igual: precios, botones de comprar y Pago Plux; sin la clase tukan-ios.
    Uso:  NODE_PATH=/opt/npm-tools/node_modules node tests/test_iphone.js   (capturas en tests/capturas/iphone_*.png) */
@@ -92,7 +93,7 @@ async function abrir(browser, caso) {
   const errores = [];
   page.on('pageerror', (e) => errores.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errores.push('console: ' + m.text()); });
-  const srv = { ordenes: [], pedidas: {} };
+  const srv = { ordenes: [], pedidas: {}, api: 0, canalIos: 0, ordenCanal: [], canalEstado: [] };
   const estado = () => {
     const e = { ok: true, tienda: { productos: caso.productos || PRODUCTOS, premium: PREMIUM }, logueado: caso.logueado !== false, entregas: [], inventario: [],
       plux: { disponible: true, ambiente: 'produccion' }, inicio_comprado: !!caso.inicioComprado };
@@ -108,6 +109,10 @@ async function abrir(browser, caso) {
     if (u.pathname.startsWith('/api/')) {
       if (caso.sinServidor) return route.abort();
       srv.pedidas[u.pathname] = (srv.pedidas[u.pathname] || 0) + 1;
+      // ¿El juego avisa al servidor que es la app de iPhone? (cabecera X-EnVivo-Canal: ios; con ella el servidor rechaza los pagos)
+      const canal = (req.headers()['x-envivo-canal'] || '').toLowerCase();
+      srv.api++; if (canal === 'ios') srv.canalIos++;
+      if (u.pathname === '/api/estado') srv.canalEstado.push(canal);
       if (u.pathname === '/api/estado') return json(200, estado());
       if (u.pathname === '/api/partida') return json(200, { ok: true, datos: null });
       if (u.pathname === '/api/chat') return json(200, { ok: true, mensajes: [] });
@@ -118,6 +123,7 @@ async function abrir(browser, caso) {
       if (u.pathname === '/api/orden') {
         let b = null; try { b = JSON.parse(req.postData() || 'null'); } catch (e) { b = null; }
         srv.ordenes.push(b && b.producto);
+        srv.ordenCanal.push(canal);
         return json(200, { ok: true, url: BASE + '/pago-prueba.html' });
       }
       // El resto de módulos (sede, copa, servidores...): "no existe" en este servidor de prueba
@@ -273,6 +279,11 @@ async function tiendaSinDinero(o, nombre) {
       const o = await abrir(browser, { nombre: 'ios_origen', query: '?origen=ios' });
       bien(await o.page.evaluate(() => document.documentElement.classList.contains('tukan-ios') && localStorage.getItem('envivo_canal') === 'ios'), '?origen=ios: clase tukan-ios y queda guardado en localStorage');
       await tiendaSinDinero(o, '?origen=ios');
+      bien(!o.srv.ordenes.length, '?origen=ios: nunca se pidió /api/orden');
+      bien(o.srv.canalEstado.length > 0 && o.srv.canalEstado.every((c) => c === 'ios'), `?origen=ios: las peticiones de js/api.js (/api/estado) llevan X-EnVivo-Canal: ios (${o.srv.canalEstado.length})`);
+      // Aunque algo llegara a pedir una orden de pago, va marcada como iPhone (el servidor responde 403 no_disponible_ios: server/tests/correr.sh «3-iPhone»)
+      await o.page.evaluate(() => window.Api.orden('creditos_250').catch(() => null));
+      bien(o.srv.ordenCanal.length === 1 && o.srv.ordenCanal[0] === 'ios', '?origen=ios: una orden pedida a la fuerza va con X-EnVivo-Canal: ios');
       await o.page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
       await o.page.waitForFunction(() => window.Api && window.Api.disponible !== null, null, { timeout: 15000 });
       bien(await o.page.evaluate(() => document.documentElement.classList.contains('tukan-ios')), '?origen=ios: al volver a abrir sin el parámetro sigue en modo iPhone');
@@ -303,6 +314,7 @@ async function tiendaSinDinero(o, nombre) {
       await o.page.click('[data-prod="creditos_250"] [data-act="comprar"]');
       await o.page.waitForURL(/pago-prueba/, { timeout: 8000 }).catch(() => null);
       bien(o.srv.ordenes.includes('creditos_250'), 'Web: Comprar sigue pidiendo POST /api/orden');
+      bien(o.srv.api > 0 && o.srv.canalIos === 0, 'Web: ninguna petición lleva X-EnVivo-Canal: ios');
       await cerrar(o, 'Web');
     }
   } catch (e) {

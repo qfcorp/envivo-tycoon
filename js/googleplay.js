@@ -155,7 +155,8 @@
     try {
       var r = await root.fetch(opciones.verificarUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' },
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Envivo': '1' },
+          (root.TukanIOS && root.TukanIOS.activo()) ? { 'X-EnVivo-Canal': 'ios' } : {}),   // app de iPhone: el servidor lo rechaza
         credentials: 'same-origin',
         cache: 'no-store',
         body: JSON.stringify({ producto: producto, purchaseToken: token, orderId: orderId || '' }),

@@ -11,12 +11,6 @@ use EnVivo\{Ajustes, Catalogo, Chat, Compras, Cuentas, Db, Desafio, Duelos, Fall
 /** Rutas que crean o completan un pago con dinero real: en la app de iPhone se rechazan (403 no_disponible_ios). */
 const API_RUTAS_PAGO = ['/orden', '/plux/pago', '/paypal/crear', '/tukanpagos/crear', '/google/verificar'];
 
-/** ¿La petición viene de la app de iPhone? (User-Agent con «TukanIOS») */
-function api_es_ios(): bool
-{
-    return str_contains((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 'TukanIOS');
-}
-
 $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $ruta = '/' . trim(substr($ruta, strlen('/api')), '/');
 $metodo = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -625,4 +619,13 @@ function api_cuenta_borrar(): never
     Cuentas::borrar($j, texto_de($in, 'clave'));
     Sesiones::cerrar();
     Http::json(200, ['ok' => true, 'borrada' => true]);
+}
+
+/** (Va al final del archivo: la revisión de X-Envivo de arriba debe ser la primera mención de esa cabecera.)
+ *  ¿La petición viene de la app de iPhone? (User-Agent con «TukanIOS», o la cabecera X-EnVivo-Canal: ios que manda el juego
+ *  cuando se abrió con ?origen=ios — js/ios.js, js/api.js, js/googleplay.js) */
+function api_es_ios(): bool
+{
+    return str_contains((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 'TukanIOS')
+        || strtolower(trim((string) ($_SERVER['HTTP_X_ENVIVO_CANAL'] ?? ''))) === 'ios';
 }
