@@ -114,7 +114,7 @@ check('Aviso del chat en los 10 idiomas (textos_json), con el tema traducido', [
     [array_keys($tj), str_contains($tj['en'] ?? '', 'Stars of the Airwaves Gala'), str_contains($tj['es'] ?? '', 'Gala de las Estrellas del Aire')]);
 $_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'en-US,en;q=0.9';
 $ult = fn(array $r) => (string) (end($r['mensajes'])['texto'] ?? '');
-check('Chat::leer muestra el aviso en el idioma de quien lee (Accept-Language: en)', true, str_starts_with($ult(Chat::leer($A1, 'asociacion', 0)), '🎬 The Big Production begins!'));
+check('Chat::leer muestra el aviso en el idioma de quien lee (Accept-Language: en)', true, str_starts_with($ult(Chat::leer($A1, 'asociacion', 0)), '🎬 The Grand Production begins!'));
 $_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'es-EC';
 check('… y en español con Accept-Language es', true, str_starts_with($ult(Chat::leer($A1, 'asociacion', 0)), '🎬 ¡Empieza la Gran Producción!'));
 unset($_SERVER['HTTP_ACCEPT_LANGUAGE']);
@@ -210,7 +210,7 @@ $reloj($ts('2026-11-13 18:30:00'));   // volver atrás no es posible en la vida 
 Db::q('UPDATE gp_producciones SET push_inicio = 0');
 Db::q("UPDATE push_suscripciones SET idioma = 'en' WHERE jugador_id = ?", [$A2]);   // Beto juega en inglés
 $k = GP::detectarPush();
-check('Inicio en el idioma del aparato: Beto en inglés, Ana en español', ['🎬 The Big Production begins!', true, '🎬 ¡Empieza la Gran Producción!'],
+check('Inicio en el idioma del aparato: Beto en inglés, Ana en español', ['🎬 The Grand Production begins!', true, '🎬 ¡Empieza la Gran Producción!'],
     [Db::valor("SELECT titulo FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' AND jugador_id = ?", [$A2]),
      str_contains((string) Db::valor("SELECT cuerpo FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' AND jugador_id = ?", [$A2]), 'Stars of the Airwaves Gala'),
      Db::valor("SELECT titulo FROM push_cola WHERE clave = 'gp:2026-11-13:inicio' AND jugador_id = ?", [$A1])]);

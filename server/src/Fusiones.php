@@ -429,10 +429,9 @@ final class Fusiones
                 $st->execute([$j, $O, $D, $planId, $a['antes'] ?? null, $a['nuevo'] ?? null, $as, $c['antes'] ?? null, $c['nueva'] ?? null, $t]);
             }
             // 5. Chat de los dos servidores
-            $txtO = '📦 ' . $p['origen']['nombre'] . ' se unió a ' . $p['destino']['nombre'] . '. Todas las productoras de aquí ya están allá: tu progreso, créditos y equipos siguen igual.';
-            $txtD = '🤝 ¡Bienvenidas las ' . count($ids) . ' productoras de ' . $p['origen']['nombre'] . '! Desde hoy juegan en ' . $p['destino']['nombre'] . '.';
-            Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['servidor:' . $O, mb_substr($txtO, 0, Chat::MAX_TEXTO), $t]);
-            Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['servidor:' . $D, mb_substr($txtD, 0, Chat::MAX_TEXTO), $t]);
+            $nom = ['origen' => (string) $p['origen']['nombre'], 'destino' => (string) $p['destino']['nombre']];
+            Chat::avisoPlantilla('servidor:' . $O, 'fusion_origen', $nom, $t);
+            Chat::avisoPlantilla('servidor:' . $D, 'fusion_destino', $nom + ['n' => count($ids)], $t);
             // 6. Resultado y auditoría
             Fallo::si((int) Db::valor('SELECT COALESCE(SUM(creditos), 0) FROM jugadores WHERE id IN (SELECT jugador_id FROM traslados WHERE fusion_id = ?)', [$planId]) !== $creditos, 'Los créditos no cuadran: no se fusiona.', 500, ['codigo' => 'creditos_no_cuadran']);
             $res = ['movidas' => $movidas, 'alias_renombrados' => count($aliasNuevo), 'asociaciones_renombradas' => count($asocCambio), 'jugadores' => count($ids), 'creditos_total' => $creditos];
@@ -588,7 +587,8 @@ final class Fusiones
                 [$j, $O, $dest, $aliasNuevo !== null ? $yo['alias'] : null, $aliasNuevo, $asocId, $asocAntes, $asocNueva, $t, $t]);
             Auditoria::anotar('jugador:' . $j, 'servidor_traslado', $o['nombre'] . ' -> ' . $d['nombre'] . ($aliasNuevo ? ' · alias: ' . $yo['alias'] . ' -> ' . $aliasNuevo : '')
                 . ($asocId ? ' · con su asociación N° ' . $asocId : '') . ($salio ? ' · dejó la asociación N° ' . $salio : ''), $j);
-            Chat::sistema($j, '🧳 Te trasladaste a ' . $d['nombre'] . '. Tu progreso, créditos y equipos siguen igual.' . ($aliasNuevo ? ' Tu productora ahora se llama "' . $aliasNuevo . '".' : ''));
+            Chat::sistemaPlantilla($j, 'traslado', ['destino' => (string) $d['nombre'],
+                'alias' => fn(string $L) => $aliasNuevo ? TextosSistema::texto('traslado_alias', $L, ['alias' => $aliasNuevo]) : '']);
             return ['ok' => true, 'servidor' => Social::servidorDe($j), 'alias_nuevo' => $aliasNuevo, 'asociacion' => Social::asociacionDe($j),
                     'dejo_asociacion' => $salio !== null, 'asociacion_renombrada' => $asocNueva, 'proximo_traslado' => Db::iso($t + self::DIAS_TRASLADO * 86400)];
         });

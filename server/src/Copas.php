@@ -696,13 +696,12 @@ final class Copas
         $nom = $h['campeon'] !== null ? self::nombreServidor($h['campeon']) : null;
         try {
             foreach ($h['tabla'] as $s) {
-                $txt = $nom !== null
-                    ? '🏆 ' . $copa['nombre'] . ': ¡' . $nom . ' es el campeón! Tu servidor terminó en el puesto ' . (int) $s['posicion'] . ' con ' . (int) $s['puntos_tabla'] . ' puntos.'
-                    : '🏆 ' . $copa['nombre'] . ' terminó. Gracias por producir para tu servidor.';
-                Db::q('INSERT INTO chat_mensajes (canal, jugador_id, texto, creado) VALUES (?, NULL, ?, ?)', ['servidor:' . (int) $s['servidor_id'], mb_substr($txt, 0, 300), time()]);
+                // nombres de copa y servidor: propios (no se traducen)
+                if ($nom !== null) Chat::avisoPlantilla('servidor:' . (int) $s['servidor_id'], 'copa_campeon', ['copa' => (string) $copa['nombre'], 'campeon' => $nom, 'puesto' => (int) $s['posicion'], 'puntos' => (int) $s['puntos_tabla']]);
+                else Chat::avisoPlantilla('servidor:' . (int) $s['servidor_id'], 'copa_fin', ['copa' => (string) $copa['nombre']]);
             }
             foreach ($h['premiados'] as [$j, $sid, $pts]) {
-                Chat::sistema($j, '🏆 ' . $copa['nombre'] . ': aportaste ' . $pts . ' puntos a tu servidor' . ($sid === $h['campeon'] ? ', ¡que salió campeón! Tu trofeo y tus premios' : '. Tus premios') . ' ya están en el juego.');
+                Chat::sistemaPlantilla($j, $sid === $h['campeon'] ? 'copa_aporte_campeon' : 'copa_aporte', ['copa' => (string) $copa['nombre'], 'pts' => $pts]);
             }
         } catch (\Throwable $e) {
             error_log('EN VIVO copa: anuncio en el chat ' . mb_substr($e->getMessage(), 0, 200));

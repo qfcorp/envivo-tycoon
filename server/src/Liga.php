@@ -301,9 +301,10 @@ final class Liga
                         if (!Db::valor('SELECT 1 FROM jugadores WHERE id = ?', [$j])) continue;
                         if ($fb > 0) self::moverFichas($j, $fb, 'bandera', 'liga:' . $semana . ':banderas:' . $p['asociacion_id'], $semana);
                         if ($fp > 0) self::moverFichas($j, $fp, 'posicion', 'liga:' . $semana . ':posicion:' . $p['asociacion_id'], $semana);
-                        $txt = 'Liga Semanal: ' . $p['nombre'] . ' terminó en el puesto ' . ($i + 1) . ' de ' . $n
-                             . ($res === 'sube' ? ' y sube a la ' . $nombreLiga : ($res === 'baja' ? ' y baja a la ' . $nombreLiga : '')) . '. Ganaste ' . ($fb + $fp) . ' fichas de liga.';
-                        try { if (class_exists(Chat::class) && method_exists(Chat::class, 'sistema')) Chat::sistema($j, $txt); } catch (\Throwable) {}
+                        $v = ['asoc' => (string) $p['nombre'], 'puesto' => $i + 1, 'n' => $n, 'fichas' => $fb + $fp,
+                              'cambio' => fn(string $L) => in_array($res, ['sube', 'baja'], true)
+                                  ? TextosSistema::texto('liga_' . $res, $L, ['liga' => $L === 'es' ? $nombreLiga : (TextosSistema::nombre('liga_semanal', $nueva, $L) ?? $nombreLiga)]) : ''];
+                        try { if (class_exists(Chat::class) && method_exists(Chat::class, 'sistemaPlantilla')) Chat::sistemaPlantilla($j, 'liga_fin', $v); } catch (\Throwable) {}
                     }
                 }
             }

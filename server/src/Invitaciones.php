@@ -148,7 +148,7 @@ final class Invitaciones
                 [$invitado, $de, self::codigoDe($de), $canal, $inst, $ip !== '' ? $ip : null, $estado, $motivo, $bien ? 1 : 0, $t]);
             $alias = Social::nombrePublico($inv['alias'] ?? null, $inv['nombre'] ?? null);
             if ($bien) {
-                Buzon::enviar($invitado, '🎁 Bienvenida de tu equipo', 'Llegaste invitado por ' . $alias . ". Aquí tienes un pack de bienvenida para empezar.\n¡Que tu primera transmisión salga perfecta!",
+                Buzon::enviarPlantilla($invitado, 'inv_bienvenida_t', 'inv_bienvenida_c', ['alias' => $alias],
                     self::BIENVENIDA, ['tipo' => 'regalo', 'ref' => 'invitar:bienvenida']);
             }
             Auditoria::anotar('juego', 'invitacion_vincular', 'Invitado por N° ' . $de . ' (' . $canal . ')' . ($estado === 'bloqueada' ? ' · NO cuenta: ' . $motivo : '') . ($bien ? ' · pack de bienvenida' : ' · sin pack'), $invitado);
@@ -231,7 +231,7 @@ final class Invitaciones
                     if ($orden > self::TOPE_AMIGOS) return 0;
                     $a = Cuentas::porId($inv) ?? [];
                     $alias = Social::nombrePublico($a['alias'] ?? null, $a['nombre'] ?? null);
-                    Buzon::enviar($invitador, '🤝 Tu invitado avanza', $alias . ' ' . self::NOMBRE_ETAPA[$etapa] . '. ¡Gracias por sumar gente a tu equipo!', self::ETAPAS[$etapa],
+                    Buzon::enviarPlantilla($invitador, 'inv_etapa_t', 'inv_etapa_' . $etapa . '_c', ['alias' => $alias], self::ETAPAS[$etapa],
                         ['tipo' => 'regalo', 'ref' => 'invitar:etapa:' . $inv . ':' . $etapa]);
                     return 1;
                 });
@@ -253,8 +253,10 @@ final class Invitaciones
                 if (Db::q('INSERT OR IGNORE INTO invitaciones_metas (invitador_id, meta, creado) VALUES (?, ?, ?)', [$invitador, $meta, $t])->rowCount() !== 1) return 0;
                 $dist = self::DISTINTIVO_META[$meta] ?? null;
                 if ($dist) Db::q('INSERT OR IGNORE INTO distintivos (jugador_id, clave, creado) VALUES (?, ?, ?)', [$invitador, $dist, $t]);
-                Buzon::enviar($invitador, '🏆 Meta de equipo: ' . $meta . ($meta === 1 ? ' amigo activo' : ' amigos activos'),
-                    '¡Ya tienes ' . $meta . ($meta === 1 ? ' amigo activo' : ' amigos activos') . ' en EN VIVO Tycoon!' . ($dist ? "\nAdemás ganaste el " . mb_strtolower(self::DISTINTIVOS[$dist]) . ': se ve en tu vitrina.' : ''),
+                $clave = $meta === 1 ? 'inv_meta1' : 'inv_meta';
+                Buzon::enviarPlantilla($invitador, $clave . '_t', $clave . '_c', ['n' => $meta,
+                    'extra' => fn(string $L) => $dist ? (isset(TextosSistema::T['es']['inv_meta_dist_' . $dist]) ? TextosSistema::texto('inv_meta_dist_' . $dist, $L)
+                        : "\nAdemás ganaste el " . mb_strtolower(self::DISTINTIVOS[$dist]) . ': se ve en tu vitrina.') : ''],
                     $premio, ['tipo' => 'regalo', 'ref' => 'invitar:meta:' . $meta]);
                 Auditoria::anotar('juego', 'invitacion_meta', 'Meta de ' . $meta . ' amigos activos' . ($dist ? ' + ' . $dist : ''), $invitador);
                 return 1;

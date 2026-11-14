@@ -734,8 +734,8 @@ final class Festival
             Db::q("UPDATE festival_instancias SET estado = 'cerrado', cerrado_en = ? WHERE id = ?", [self::ahora(), $id]);
             foreach ($part as $p) {
                 try {
-                    Chat::sistema((int) $p['jugador_id'], '🎪 ' . $inst['nombre'] . ' terminó con ' . $pct . ' % de calidad. Tu aporte: ' . (int) $p['puntos'] . ' puntos. Tus premios ya están en el juego.'
-                        . ($nueva > $liga ? ' ¡Tu asociación sube a la liga ' . self::LIGAS[$nueva] . '!' : ''));
+                    Chat::sistemaPlantilla((int) $p['jugador_id'], 'festival_fin', ['festival' => (string) $inst['nombre'], 'pct' => $pct, 'puntos' => (int) $p['puntos'],
+                        'sube' => fn(string $L) => $nueva > $liga ? TextosSistema::texto('festival_sube', $L, ['liga' => TextosSistema::nombre('liga_festival', $nueva, $L) ?? self::LIGAS[$nueva]]) : '']);
                 } catch (\Throwable) {
                 }
             }

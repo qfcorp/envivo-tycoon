@@ -186,8 +186,8 @@ final class RutaNovato
                     $entregas[] = Monedero::entregar($j, 'personal_intl', $p['rol'], (int) $p['habilidad'], $ref, 'semi_senior');
                 }
                 try {
-                    Buzon::enviar($j, '🏆 Completaste tus primeros 7 días', "¡Felicitaciones! Terminaste la ruta de novato.\nSe unió a tu equipo un camarógrafo internacional (habilidad "
-                        . self::FINAL['personal']['habilidad'] . ') y recibiste ' . self::FINAL['creditos'] . " créditos.\n¡Gracias por jugar EN VIVO Tycoon!", [], ['tipo' => 'evento', 'ref' => $ref]);
+                    Buzon::enviarPlantilla($j, 'novato_t', 'novato_c', ['habilidad' => self::FINAL['personal']['habilidad'], 'creditos' => self::FINAL['creditos']],
+                        [], ['tipo' => 'evento', 'ref' => $ref]);
                 } catch (\Throwable) {
                     // el aviso del buzón es opcional
                 }

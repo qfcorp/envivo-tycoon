@@ -82,11 +82,11 @@ final class GranProduccion
             'chat_fin' => '🎬 Terminó «{tema}»: {pct} % · nivel {nivel} · puesto {puesto} del servidor. Los premios llegaron al buzón de quienes aportaron.',
             'chat_cancelada' => '🎬 La Gran Producción de esta semana se canceló. Perdón por las molestias: la próxima llega en la fecha de siempre.',
             'tema_otro' => 'el mega evento'],
-        'en' => ['push_inicio_t' => '🎬 The Big Production begins!', 'push_inicio_c' => 'Your alliance is covering “{tema}”. Jump in and send your crew: every contribution counts.',
-            'push_2h_t' => '⏰ 2 h left before it closes', 'push_2h_c' => 'The Big Production “{tema}” ends soon and you have {libres} contributions ready.',
-            'chat_inicio' => '🎬 The Big Production begins! Your alliance is covering “{tema}” for {horas} h. Open “Big Production” and send your crew.',
+        'en' => ['push_inicio_t' => '🎬 The Grand Production begins!', 'push_inicio_c' => 'Your alliance is covering “{tema}”. Jump in and send your crew: every contribution counts.',
+            'push_2h_t' => '⏰ 2 h left before it closes', 'push_2h_c' => 'The Grand Production “{tema}” ends soon and you have {libres} contributions ready.',
+            'chat_inicio' => '🎬 The Grand Production begins! Your alliance is covering “{tema}” for {horas} h. Open “Grand Production” and send your crew.',
             'chat_fin' => '🎬 “{tema}” is over: {pct} % · {nivel} level · place {puesto} on the server. Rewards went to the mailbox of everyone who contributed.',
-            'chat_cancelada' => '🎬 This week\'s Big Production was canceled. Sorry for the trouble: the next one arrives on the usual date.',
+            'chat_cancelada' => '🎬 This week\'s Grand Production was canceled. Sorry for the trouble: the next one arrives on the usual date.',
             'tema_otro' => 'the mega event'],
         'pt-BR' => ['push_inicio_t' => '🎬 Começa a Grande Produção!', 'push_inicio_c' => 'Sua aliança vai cobrir "{tema}". Entre e envie sua equipe: cada contribuição conta.',
             'push_2h_t' => '⏰ Faltam 2 h para o fim', 'push_2h_c' => 'A Grande Produção "{tema}" termina logo e você tem {libres} contribuições prontas.',
@@ -506,9 +506,13 @@ final class GranProduccion
                     [$id, $j, $f['asociacion_id'], $f['nivel'], $f['puesto'], json_encode($prem, JSON_UNESCAPED_UNICODE), $t])->rowCount();
                 if (!$n) continue;
                 try {
-                    $mid = Buzon::enviar($j, '🎬 Gran Producción: nivel ' . self::NOMBRE_NIVEL[$f['nivel']], 'Tu asociación terminó «' . $tema . '» con ' . $f['progreso'] . ' %'
-                        . ((int) $f['puesto'] <= 3 ? ' y el puesto ' . $f['puesto'] . ' de tu servidor' : '') . '. Aportaste ' . $f['personal'] . ' de personal, ' . $f['equipos'] . ' de equipos y '
-                        . $f['transmision'] . ' transmisiones. ¡Gracias por cubrirla en equipo!', $prem, ['tipo' => 'evento', 'ref' => 'gp:' . $id, 'dias' => 14]);
+                    // tema y nivel con los nombres de cada idioma (self::texto con la "clave" '{tema}' devuelve solo el nombre)
+                    $mid = Buzon::enviarPlantilla($j, 'gp_premio_t', 'gp_premio_c', [
+                        'nivel' => fn(string $L) => self::texto('{nivel}', $L, ['nivel' => $f['nivel']]),
+                        'tema' => fn(string $L) => self::texto('{tema}', $L, ['tema' => $prod['tema']]),
+                        'pct' => $f['progreso'], 'personal' => $f['personal'], 'equipos' => $f['equipos'], 'transmision' => $f['transmision'],
+                        'puesto' => fn(string $L) => (int) $f['puesto'] <= 3 ? TextosSistema::texto('gp_premio_puesto', $L, ['puesto' => $f['puesto']]) : '',
+                    ], $prem, ['tipo' => 'evento', 'ref' => 'gp:' . $id, 'dias' => 14]);
                     if ($mid) Db::q('UPDATE gp_premios SET buzon_id = ? WHERE produccion_id = ? AND jugador_id = ?', [$mid, $id, $j]);
                     $entregados++;
                 } catch (\Throwable $e) {
