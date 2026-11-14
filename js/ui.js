@@ -71,6 +71,8 @@
   // js/googleplay.js llega después (defer): se busca cada vez
   let GP = window.GooglePlay || null;
   const enApp = () => { try { GP = GP || window.GooglePlay || null; return !!(GP && GP.enApp()); } catch (e) { return false; } };
+  // App de iPhone (js/ios.js, regla de Apple 3.1.1): sin tienda de dinero real (ni precios, ni comprar, ni Plux/PayPal/Google Play)
+  const enIOS = () => { try { return !!(window.TukanIOS && window.TukanIOS.activo()); } catch (e) { return false; } };
   let playOk = false;        // hay Play Billing en este celular
   let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play
 
@@ -135,7 +137,7 @@
     return { Api, A, G, T, TL, I18N: I18, M, money: M, N, esc, I, nombreProductora,
       estado: () => S, S: () => S, guardar: () => save(), save: () => save(), render: () => render(),
       toast, ask, openModal, closeModal, snd: sndCtx, mus,
-      vip: !!(Pm && Pm.vip), enApp: () => enApp(),
+      vip: !!(Pm && Pm.vip), enApp: () => enApp(), enIOS: () => enIOS(),
       onComprar: (id) => comprar(id), comprar: (id) => comprar(id),
       precio: (id, usd) => precioReal(id, usd),
       sincronizar: () => sincronizarNube(),
@@ -1862,17 +1864,18 @@
   const prodPorId = (id) => { try { return ((Api.estado && Api.estado.tienda && Api.estado.tienda.productos) || []).find((p) => p.id === id) || null; } catch (e) { return null; } };
   // PayPal (server/src/PayPal.php, docs/PAYPAL.md): SOLO en la web, nunca en la app de Google Play (enApp) ni en la versión
   // de un solo archivo (dist/, sin servidor: no llega "paypal" en /api/estado). Desde paypal.minimo (la comisión se come las ventas chicas).
-  const pluxDisp = () => !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible);
-  const paypalDisp = () => !enApp() && !!(Api.disponible && Api.estado && Api.estado.paypal && Api.estado.paypal.disponible);
+  const pluxDisp = () => !enIOS() && !!(Api.estado && Api.estado.plux && Api.estado.plux.disponible);
+  const paypalDisp = () => !enApp() && !enIOS() && !!(Api.disponible && Api.estado && Api.estado.paypal && Api.estado.paypal.disponible);
   function paypalPara(id, usd) {
     if (!paypalDisp()) return false;
     let v = usd !== undefined && usd !== null && usd !== '' && isFinite(Number(usd)) ? Number(usd) : null;
     if (v === null) { const p = prodPorId(id); v = p && isFinite(Number(p.precio)) ? Number(p.precio) : null; }
     return v !== null && v + 0.001 >= (Number(Api.estado.paypal.minimo) || 0);
   }
-  const puedePagarAhora = () => (enApp() ? playOk : pluxDisp() || paypalDisp());
+  const puedePagarAhora = () => (enIOS() ? false : enApp() ? playOk : pluxDisp() || paypalDisp());
   // Precio REAL de un producto en este canal: en la app solo el de Google Play (si no lo tiene: null, no se vende aquí)
   function precioReal(id, usd) {
+    if (enIOS()) return null;   // iPhone: nada se vende con dinero real
     if (enApp()) return playOk && preciosPlay[id] && preciosPlay[id].precio ? String(preciosPlay[id].precio) : null;
     if (usd !== undefined && usd !== null && usd !== '' && isFinite(Number(usd))) return precio(Number(usd));
     const p = prodPorId(id);
@@ -1996,7 +1999,7 @@
     const max = n >= 10 || (!!d && n > 0 && (pr.siguiente === null || pr.siguiente === undefined));
     const pct = max ? 100 : Math.max(0, Math.min(100, Number(pr.pct) || 0));
     const nombre = n ? (vt('vip_n', { n }) || T('tienda.vip_n', { n })) + (vt('insignia.' + n) ? ' · ' + vt('insignia.' + n) : '') : (vt('sin_nivel') || T('tienda.vip_sin'));
-    const det = !n ? vt('sin_nivel_txt') : max ? vt('maximo') : d && pr.faltan !== undefined ? vt('faltan', { n: N(Number(pr.faltan) || 0), s: pr.siguiente }) : '';
+    const det = !n ? (enIOS() ? '' : vt('sin_nivel_txt')) : max ? vt('maximo') : d && pr.faltan !== undefined ? vt('faltan', { n: N(Number(pr.faltan) || 0), s: pr.siguiente }) : '';
     const abrir = enRegistro('vip') ? 'data-ext="vip" data-acc="abrir"' : typeof V.abrir === 'function' ? 'data-act="tienda-vip"' : '';
     return `<div class="card tv-vipcard" data-vip-nivel="${n}" style="--vc:${esc(col)}">
       <div class="tv-head"><div class="tv-medal">${I('crown')}${n ? `<b class="num">${n}</b>` : ''}</div>
@@ -2004,7 +2007,7 @@
         ${abrir ? `<button class="btn sm" ${abrir}>${esc(vt('ver') || T('tienda.ver'))}</button>` : ''}</div>
       ${n ? `<div class="tv-bar" role="progressbar" aria-label="${esc(T('tienda.vip_progreso'))}" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.max(3, pct)}%"></i></div>` : ''}
       ${det ? `<p class="small muted tv-nota">${esc(det)}</p>` : ''}
-      ${vt('modal.puntos') ? `<p class="small muted tv-nota">${esc(vt('modal.puntos'))}</p>` : ''}</div>`;
+      ${vt('modal.puntos') && !enIOS() ? `<p class="small muted tv-nota">${esc(vt('modal.puntos'))}</p>` : ''}</div>`;
   }
   function cardOfertaVip(o) {
     const lis = [];
@@ -2118,12 +2121,13 @@
     const el = $('tab-tienda');
     if (Api.disponible === null) { el.innerHTML = `<div class="sectitle">${T('nav.tienda')}</div><div class="card muted">${T('tienda.conectando')}</div>`; return; }
     const app = enApp();   // dentro de la app de Google Play: nada de Plux ni de la tienda web
+    const ios = enIOS();   // dentro de la app de iPhone: nada de dinero real (solo lo que se gana jugando)
     if (!Api.disponible || !Api.estado) {
       const vitrina = Object.keys(G.CATALOG).filter((k) => G.CATALOG[k].premium).slice(0, 4).map((k) => {
         const r = rar(k);
         return `<div class="card gear rf r-${r.key}"><div class="row between">${rtag(k)}${infoBtn(k)}</div><div class="art">${itemArt(k, 110)}</div><div class="nm">${esc(TL(G.CATALOG[k].name))}</div>${usoHtml(k)}</div>`;
       }).join('');
-      const aviso = app
+      const aviso = app || ios
         ? `<h3>${T('tienda.sin_conexion_t')}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.sin_conexion')}</p>`
         : `<h3>${T('tienda.offline_t', { sitio: 'juego.tukanec.com' })}</h3><p class="small muted" style="margin:4px 0 0">${T('tienda.offline', { sitio: '<b>juego.tukanec.com</b>' })}</p>`;
       el.innerHTML = `<div class="sectitle">${T('nav.tienda')}</div><div class="card rf r-exclusivo">
@@ -2156,11 +2160,11 @@
         <button class="btn sm" data-act="salir">${T('cuenta.salir')}</button>${window.Cuenta ? window.Cuenta.botones() : ''}</div>`;
     }
     const conPaypal = paypalDisp();
-    const prueba = (!app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '')
+    const prueba = ios ? '' : (!app && E.plux && E.plux.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.sandbox')}</p>` : '')
       + (conPaypal && E.paypal.ambiente === 'sandbox' ? `<p class="small" style="color:var(--amber)">${T('tienda.paypal_sandbox')}</p>` : '');
     // En la app: solo lo que Google Play tiene activo, con su precio; nunca la transferencia de cuenta
-    const lista = ((E.tienda && E.tienda.productos) || []).filter((p) => p && p.id && p.id !== 'transferencia_cuenta' && (!app || (playOk && preciosPlay[p.id])));
-    const sinPago = app
+    const lista = ios ? [] : ((E.tienda && E.tienda.productos) || []).filter((p) => p && p.id && p.id !== 'transferencia_cuenta' && (!app || (playOk && preciosPlay[p.id])));
+    const sinPago = ios ? '' : app
       ? (playOk ? '' : `<div class="card small muted">${T('tienda.play_no_disp')}</div>`)
       : (pluxDisp() || conPaypal ? '' : `<div class="card small muted">${T('tienda.pago_inactivo')}</div>`);
     // Para empezar: ofertas de una sola vez (bienvenida y paquete de inicio)
@@ -2228,8 +2232,8 @@
       ${sinPago}
       ${cuerpo || emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))}
       <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
-      ${app && !playOk ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
-      <p class="small muted">${T('tienda.aviso')}</p>
+      ${ios || (app && !playOk) ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
+      ${ios ? '' : `<p class="small muted">${T('tienda.aviso')}</p>`}
       ${soporteBtn()}
       <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div></div>`;
   }
@@ -2360,6 +2364,7 @@
   // Se llama directo desde el clic: en la app, GooglePlay.comprar() va primero (sin nada esperado antes),
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
   function comprar(id, metodo) {
+    if (enIOS()) return;   // iPhone: no hay compras con dinero real (regla de Apple)
     if (enApp()) { AN('compra_iniciada', { producto: id, canal: 'google_play' }); comprarPlay(id); return; }   // en la app: solo Google Play
     // Botón sin método (pase, VIP, Copa...) y el producto se puede pagar con PayPal: se pregunta cómo pagar
     if (metodo !== 'tarjeta' && metodo !== 'paypal' && paypalPara(id)) { elegirPago(id); return; }
@@ -2370,6 +2375,7 @@
   }
   // ¿Cómo quieres pagar? (tarjeta con Pago Plux o PayPal). Solo en la web.
   function elegirPago(id) {
+    if (enIOS()) return;
     if (!Api.logueado()) { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
     const p = prodPorId(id);
     const valor = precioReal(id);
@@ -4211,8 +4217,8 @@
       // La partida de la nube ya se revisó en alConectar (más nueva, igual o hay que elegir): solo las entregas
       aplicarEntregas(); render();
     }
-    if (volvioDePago && !enApp()) AN('compra_aprobada', { canal: 'web_plux' });
-    if (volvioDePago && !enApp()) { tab = 'tienda'; trasCompra(); render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
+    if (volvioDePago && !enApp() && !enIOS()) AN('compra_aprobada', { canal: 'web_plux' });
+    if (volvioDePago && !enApp() && !enIOS()) { tab = 'tienda'; trasCompra(); render(); toast(T('tienda.compra_ok')); snd.play('chapter'); }
     else if (sinLeerSoporte()) toast(T('soporte.nuevas', { n: sinLeerSoporte() }));
     // Google Play (solo en la app de Android): precios y compras que quedaron sin confirmar
     await iniciarPlay();

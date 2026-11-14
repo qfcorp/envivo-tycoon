@@ -123,6 +123,28 @@ check "pruebas.php sin fallas" 0 "$?"
 P_OK=$(cut -d" " -f1 "$TMP/resumen_pruebas.txt" 2> /dev/null); P_FALLAS=$(cut -d" " -f2 "$TMP/resumen_pruebas.txt" 2> /dev/null)
 
 echo
+echo "== 3-iPhone. App de iPhone (User-Agent TukanIOS o cabecera X-EnVivo-Canal: ios de ?origen=ios, regla de Apple 3.1.1): el servidor no crea pagos con dinero real"
+A="http://127.0.0.1:$P_APP"; UAI='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 TukanIOS/1.0.0'
+curl -s -c "$TMP/ios.jar" -o /dev/null -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"email":"iphone@prueba.example","nombre":"iPhone","clave":"ClaveIphone1","acepta_terminos":true,"edad_16":true}' "$A/api/registro"
+MAL=""
+for r in /api/orden /api/plux/pago /api/paypal/crear /api/tukanpagos/crear /api/google/verificar; do
+  o=$(curl -s -b "$TMP/ios.jar" -A "$UAI" -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"producto":"creditos_250","o":"x","purchaseToken":"x"}' -w ' %{http_code}' "$A$r")
+  case "$o" in *no_disponible_ios*" 403") ;; *) MAL="$MAL $r" ;; esac
+done
+check "iPhone: /api/orden, /api/plux/pago, /api/paypal/crear, /api/tukanpagos/crear y /api/google/verificar -> 403 no_disponible_ios" "" "$MAL"
+check "iPhone: /pago.php -> 403 (no se paga en la app)" "403" "$(curl -s -o /dev/null -w '%{http_code}' -b "$TMP/ios.jar" -A "$UAI" "$A/pago.php?o=abc")"
+check "Sin TukanIOS: la misma cuenta sí crea la orden (200 con /pago.php)" "200 1" "$(curl -s -b "$TMP/ios.jar" -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"producto":"creditos_250"}' -o "$TMP/ios_orden.json" -w '%{http_code}' "$A/api/orden") $(grep -c '/pago.php?o=' "$TMP/ios_orden.json")"
+MAL=""
+for r in /api/orden /api/plux/pago /api/paypal/crear /api/tukanpagos/crear /api/google/verificar; do
+  o=$(curl -s -b "$TMP/ios.jar" -H 'X-EnVivo-Canal: ios' -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"producto":"creditos_250","o":"x","purchaseToken":"x"}' -w ' %{http_code}' "$A$r")
+  case "$o" in *no_disponible_ios*" 403") ;; *) MAL="$MAL $r" ;; esac
+done
+check "?origen=ios (cabecera X-EnVivo-Canal: ios, sin TukanIOS en el User-Agent): las 5 rutas de pago -> 403 no_disponible_ios" "" "$MAL"
+check "?origen=ios: /pago.php?origen=ios -> 403" "403" "$(curl -s -o /dev/null -w '%{http_code}' -b "$TMP/ios.jar" "$A/pago.php?o=abc&origen=ios")"
+check "iPhone: /api/estado y lo que se compra con lo ganado jugando siguen (estado 200)" "200" "$(curl -s -o /dev/null -w '%{http_code}' -b "$TMP/ios.jar" -A "$UAI" "$A/api/estado")"
+check "iPhone: el aviso del banco (webhook de Plux) no se bloquea (sin clave -> 401, no 403)" "401" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UAI" -X POST -d '{}' "$A/api/plux/webhook")"
+
+echo
 echo "== 3b. Soporte y Google Play (pruebas_soporte_google.php, con su propio Google falso y sus propios puertos)"
 php "$SRV/tests/pruebas_soporte_google.php" > "$TMP/soporte_google.log" 2>&1; R3B=$?
 grep -E "FALLA|PENDIENTE|Resumen|correctas" "$TMP/soporte_google.log" | sed 's/^/  /'

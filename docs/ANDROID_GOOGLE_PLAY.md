@@ -62,6 +62,11 @@ no aparece igual, escribe la palabra en inglés que va entre paréntesis en la *
 | **Dirección pública** | Como la app vende cosas, Google muestra en Play Store la **dirección completa** de tu perfil de pagos. Ecuador sí puede vender en Play. |
 | **Edad** | Por el chat, el mercado y las compras, declara el público como **mayores de 13 años** (mejor **16+**), **no** niños. Si marcas niños, aplican reglas de "Familias" mucho más estrictas. |
 
+> **App de iPhone: sin precios ni pagos (regla de Apple 3.1.1), se reconoce por TukanIOS** (13 nov 2026). La app de iPhone abre
+> `https://juego.tukanec.com/index.html?origen=ios` y su User-Agent trae `TukanIOS`. Ahí **no** hay tienda de dinero real: ni precios, ni botones de
+> comprar o suscribirse, ni Pago Plux, PayPal o Google Play, ni textos de dónde pagar (`js/ios.js`, `<html class="tukan-ios">`). Lo ganado jugando
+> (créditos, mercado) sí se usa. El servidor rechaza crear pagos con ese User-Agent (403 `no_disponible_ios`). Nada de esto cambia la app de Android.
+
 ---
 
 ## 2. Antes de empezar

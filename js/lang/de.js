@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "Über diese Verbindung wurden schon mehrere Gratis-VIP abgeholt. Nur eins pro Person.",
     "error.cupo_invalido": "Das Kontingent ist ungültig.",
     "error.google_ya_comprado": "Du hast diesen Artikel schon (er kann nur einmal gekauft werden), deshalb wurde er nicht noch einmal geliefert. Keine Sorge: Google Play erstattet dir das Geld in ein paar Tagen automatisch.",
+    "error.no_disponible_ios": "Diese Option ist in dieser App nicht verfügbar.",
     "prep.lente_falta": "Ihr fehlt ein Objektiv: {lente} ({m}) im Lager, Kategorie Objektive.",
     "prep.lente_fama": "Ihr fehlt ein Objektiv: {lente}, das mit {n} Ruhm freigeschaltet wird. Nimm solange eine andere Kamera mit.",
     "prep.ir_bodega": "Im Lager kaufen",

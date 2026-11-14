@@ -436,7 +436,8 @@
     "adviento_pronto": "existe · EventosServidor.php · 409",
     "adviento_perdido": "existe · EventosServidor.php · 410",
     "adviento_hecho": "existe · EventosServidor.php · 409",
-    "meta_invalida": "existe · EventosServidor.php · 400 · solo Centro de Control"
+    "meta_invalida": "existe · EventosServidor.php · 400 · solo Centro de Control",
+    "no_disponible_ios": "existe · public/api.php · 403 (app de iPhone: sin pagos con dinero real)"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -873,7 +874,8 @@
     "adviento_pronto": "Ese regalo todavía no se abre.",
     "adviento_perdido": "Ese regalo ya pasó: solo se recupera el de ayer.",
     "adviento_hecho": "Ya abriste el regalo de ese día.",
-    "meta_invalida": "La meta del evento no es válida."
+    "meta_invalida": "La meta del evento no es válida.",
+    "no_disponible_ios": "Esta opción no está disponible en esta app."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1310,7 +1312,8 @@
     "adviento_pronto": "That gift can't be opened yet.",
     "adviento_perdido": "That gift has passed: you can only recover yesterday's.",
     "adviento_hecho": "You already opened that day's gift.",
-    "meta_invalida": "The event goal isn't valid."
+    "meta_invalida": "The event goal isn't valid.",
+    "no_disponible_ios": "This option isn’t available in this app."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",
@@ -1747,7 +1750,8 @@
     "adviento_pronto": "Esse presente ainda não pode ser aberto.",
     "adviento_perdido": "Esse presente já passou: só dá para recuperar o de ontem.",
     "adviento_hecho": "Você já abriu o presente desse dia.",
-    "meta_invalida": "A meta do evento não é válida."
+    "meta_invalida": "A meta do evento não é válida.",
+    "no_disponible_ios": "Esta opção não está disponível neste app."
   },
   "fr": {
     "sin_asociacion": "Vous n'êtes dans aucune alliance.",
@@ -2184,7 +2188,8 @@
     "adviento_pronto": "Ce cadeau ne peut pas encore être ouvert.",
     "adviento_perdido": "Ce cadeau est passé : seul celui d'hier peut être rattrapé.",
     "adviento_hecho": "Vous avez déjà ouvert le cadeau de ce jour.",
-    "meta_invalida": "L'objectif de l'événement n'est pas valide."
+    "meta_invalida": "L'objectif de l'événement n'est pas valide.",
+    "no_disponible_ios": "Cette option n’est pas disponible dans cette application."
   },
   "de": {
     "sin_asociacion": "Du bist in keiner Allianz.",
@@ -2621,7 +2626,8 @@
     "adviento_pronto": "Dieses Geschenk kann noch nicht geöffnet werden.",
     "adviento_perdido": "Dieses Geschenk ist vorbei: Nur das von gestern lässt sich nachholen.",
     "adviento_hecho": "Du hast das Geschenk dieses Tages schon geöffnet.",
-    "meta_invalida": "Das Eventziel ist ungültig."
+    "meta_invalida": "Das Eventziel ist ungültig.",
+    "no_disponible_ios": "Diese Option ist in dieser App nicht verfügbar."
   },
   "it": {
     "sin_asociacion": "Non sei in nessuna alleanza.",
@@ -3058,7 +3064,8 @@
     "adviento_pronto": "Quel regalo non si può ancora aprire.",
     "adviento_perdido": "Quel regalo è passato: si recupera solo quello di ieri.",
     "adviento_hecho": "Hai già aperto il regalo di quel giorno.",
-    "meta_invalida": "L'obiettivo dell'evento non è valido."
+    "meta_invalida": "L'obiettivo dell'evento non è valido.",
+    "no_disponible_ios": "Questa opzione non è disponibile in questa app."
   },
   "ru": {
     "sin_asociacion": "Вы не состоите ни в одном альянсе.",
@@ -3495,7 +3502,8 @@
     "adviento_pronto": "Этот подарок пока нельзя открыть.",
     "adviento_perdido": "Этот подарок уже прошёл: можно вернуть только вчерашний.",
     "adviento_hecho": "Вы уже открыли подарок этого дня.",
-    "meta_invalida": "Недопустимая цель события."
+    "meta_invalida": "Недопустимая цель события.",
+    "no_disponible_ios": "Эта функция недоступна в этом приложении."
   },
   "tr": {
     "sin_asociacion": "Hiçbir ittifakta değilsin.",
@@ -3932,7 +3940,8 @@
     "adviento_pronto": "Bu hediye henüz açılamaz.",
     "adviento_perdido": "O hediyenin günü geçti: yalnızca dünkü telafi edilebilir.",
     "adviento_hecho": "O günün hediyesini zaten açtın.",
-    "meta_invalida": "Etkinlik hedefi geçerli değil."
+    "meta_invalida": "Etkinlik hedefi geçerli değil.",
+    "no_disponible_ios": "Bu seçenek bu uygulamada kullanılamıyor."
   },
   "id": {
     "sin_asociacion": "Kamu tidak tergabung dalam aliansi mana pun.",
@@ -4369,7 +4378,8 @@
     "adviento_pronto": "Hadiah itu belum bisa dibuka.",
     "adviento_perdido": "Hadiah itu sudah lewat: hanya hadiah kemarin yang bisa diambil.",
     "adviento_hecho": "Kamu sudah membuka hadiah hari itu.",
-    "meta_invalida": "Target acara tidak valid."
+    "meta_invalida": "Target acara tidak valid.",
+    "no_disponible_ios": "Opsi ini tidak tersedia di aplikasi ini."
   },
   "zh-CN": {
     "sin_asociacion": "你还没有加入任何联盟。",
@@ -4806,6 +4816,7 @@
     "adviento_pronto": "这份礼物还不能打开。",
     "adviento_perdido": "这份礼物已经过期，只能补领昨天的。",
     "adviento_hecho": "那天的礼物你已经打开过了。",
-    "meta_invalida": "活动目标无效。"
+    "meta_invalida": "活动目标无效。",
+    "no_disponible_ios": "此应用中无法使用此选项。"
   }
 }

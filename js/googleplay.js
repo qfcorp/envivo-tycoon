@@ -101,6 +101,7 @@
   /* ---------- ¿estamos dentro de la app de Android? ---------- */
   function enApp() {
     try {
+      if (root.TukanIOS && root.TukanIOS.activo && root.TukanIOS.activo()) return false;   // el iPhone nunca es la app de Google Play
       var ses = guardado('sesion');
       if (ses && ses.getItem(CLAVE_ORIGEN) === 'android') return true;
       var porRef = /^android-app:\/\//.test(root.document && root.document.referrer || '');
@@ -154,7 +155,8 @@
     try {
       var r = await root.fetch(opciones.verificarUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1' },
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Envivo': '1' },
+          (root.TukanIOS && root.TukanIOS.activo()) ? { 'X-EnVivo-Canal': 'ios' } : {}),   // app de iPhone: el servidor lo rechaza
         credentials: 'same-origin',
         cache: 'no-store',
         body: JSON.stringify({ producto: producto, purchaseToken: token, orderId: orderId || '' }),

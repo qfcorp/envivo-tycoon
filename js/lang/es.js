@@ -776,6 +776,7 @@
     "error.promo_conexion": "Desde esta conexión ya se reclamaron varios VIP gratis. Es uno por persona.",
     "error.cupo_invalido": "El cupo no es válido.",
     "error.google_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. No te preocupes: Google Play te devolverá el dinero automáticamente en unos días.",
+    "error.no_disponible_ios": "Esta opción no está disponible en esta app.",
     "error.evento_desconocido": "Ese evento no existe.",
     "error.evento_pronto": "Este evento todavía no empieza.",
     "error.evento_terminado": "Este evento ya terminó.",

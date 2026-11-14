@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "Sudah ada beberapa VIP gratis yang diklaim dari koneksi ini. Satu per orang.",
     "error.cupo_invalido": "Kuota tidak valid.",
     "error.google_ya_comprado": "Kamu sudah punya item itu (hanya bisa dibeli sekali), jadi tidak kami kirim lagi. Jangan khawatir: Google Play akan mengembalikan uangmu otomatis dalam beberapa hari.",
+    "error.no_disponible_ios": "Opsi ini tidak tersedia di aplikasi ini.",
     "prep.lente_falta": "Butuh lensa: {lente} ({m}) di Gudang, kategori Lensa.",
     "prep.lente_fama": "Butuh lensa: {lente}, terbuka di ketenaran {n}. Sementara itu bawa kamera lain.",
     "prep.ir_bodega": "Beli di Gudang",

@@ -1684,6 +1684,7 @@
     "error.promo_conexion": "Plusieurs VIP gratuits ont déjà été récupérés depuis cette connexion. C'est un par personne.",
     "error.cupo_invalido": "Le quota n'est pas valide.",
     "error.google_ya_comprado": "Tu as déjà ce produit (il ne s'achète qu'une fois), il n'a donc pas été livré à nouveau. Pas d'inquiétude : Google Play te remboursera automatiquement d'ici quelques jours.",
+    "error.no_disponible_ios": "Cette option n’est pas disponible dans cette application.",
     "prep.lente_falta": "Il lui manque un objectif : {lente} ({m}) dans Matériel, catégorie Objectifs.",
     "prep.lente_fama": "Il lui manque un objectif : {lente}, débloqué à {n} de renommée. En attendant, prends une autre caméra.",
     "prep.ir_bodega": "Acheter dans Matériel",

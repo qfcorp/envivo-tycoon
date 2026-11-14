@@ -1,0 +1,13 @@
+{
+  "_codigos": { "no_disponible_ios": "existe · public/api.php · 403 (app de iPhone: sin pagos con dinero real)" },
+  "es": { "no_disponible_ios": "Esta opción no está disponible en esta app." },
+  "en": { "no_disponible_ios": "This option isn’t available in this app." },
+  "pt-BR": { "no_disponible_ios": "Esta opção não está disponível neste app." },
+  "fr": { "no_disponible_ios": "Cette option n’est pas disponible dans cette application." },
+  "de": { "no_disponible_ios": "Diese Option ist in dieser App nicht verfügbar." },
+  "it": { "no_disponible_ios": "Questa opzione non è disponibile in questa app." },
+  "ru": { "no_disponible_ios": "Эта функция недоступна в этом приложении." },
+  "tr": { "no_disponible_ios": "Bu seçenek bu uygulamada kullanılamıyor." },
+  "id": { "no_disponible_ios": "Opsi ini tidak tersedia di aplikasi ini." },
+  "zh-CN": { "no_disponible_ios": "此应用中无法使用此选项。" }
+}

@@ -309,13 +309,15 @@
   const precio = (v) => { try { return '$' + Number(v || 0).toLocaleString(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch (e) { return '$' + Number(v || 0).toFixed(2); } };
   const TL = (t) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(t) : t; } catch (e) { return t; } };
   /** Ofertas que se pueden comprar en este canal, cada una con su precio real (`valor`). */
+  // App de iPhone (js/ios.js): sin precios, ofertas ni textos de compras con dinero real (regla de Apple 3.1.1)
+  const enIOS = () => { try { return !!(root.TukanIOS && root.TukanIOS.activo()); } catch (e) { return false; } };
   const ofertasVendibles = (d) => ((d && d.ofertas) || []).map((o) => Object.assign({}, o, { valor: precioDe(o.producto, o.precio) })).filter((o) => o.valor);
   /** Precio REAL de un producto: el que da ui.js (ctx.precio → Google Play dentro de la app, Pago Plux en la web).
       null = no se vende en este canal (la oferta no sale). Sin ctx.precio: solo fuera de la app, con el precio del servidor. */
   function precioDe(id, usd) {
     const c = st.ctx;
     try { if (c && typeof c.precio === 'function') { const v = c.precio(id, usd); return v ? String(v) : null; } } catch (e) { return null; }
-    try { if (root.GooglePlay && root.GooglePlay.enApp && root.GooglePlay.enApp()) return null; } catch (e) { return null; }
+    try { if (enIOS() || (root.GooglePlay && root.GooglePlay.enApp && root.GooglePlay.enApp())) return null; } catch (e) { return null; }
     return usd !== undefined && usd !== null && isFinite(Number(usd)) ? precio(usd) : null;
   }
   function fecha(v) {
@@ -526,7 +528,7 @@
         <button class="btn sm" data-ext="${ID}" data-acc="abrir">${esc(T('ver'))}</button></div>`;
     let cuerpo = '';
     if (d && nivel) cuerpo += barra(d);
-    else if (!nivel) cuerpo += `<p class="vip-txt">${esc(T('sin_nivel_txt'))}</p>`;
+    else if (!nivel && !enIOS()) cuerpo += `<p class="vip-txt">${esc(T('sin_nivel_txt'))}</p>`;
     regalos.slice(0, 2).forEach((g) => {
       cuerpo += `<div class="vip-regalo" data-vip="regalo" data-id="${g.id}">${icoCofre(26)}<div class="grow"><b>${esc(tituloRegalo(g))}</b><small>${esc(T('vence', { f: fecha(g.vence) }))}</small></div>
         <button class="btn sm main" data-ext="${ID}" data-acc="reclamar" data-id="${g.id}">${esc(T('abrir'))}</button></div>`;
@@ -551,7 +553,7 @@
     h += regalos.length ? regalos.map((g) => `<div class="vip-regalo" data-vip="regalo" data-id="${g.id}">${icoCofre(26)}<div class="grow"><b>${esc(tituloRegalo(g))}</b>
         <small>${esc((g.contenido || []).map(nombreItem).join(' · '))}</small><small>${esc(T('vence', { f: fecha(g.vence) }))}</small></div>
         <button class="btn sm main" data-ext="${ID}" data-acc="reclamar" data-id="${g.id}">${esc(T('abrir'))}</button></div>`).join('')
-      : `<p class="small muted" style="margin:0">${esc(T('regalos.vacio'))}</p>`;
+      : enIOS() ? '' : `<p class="small muted" style="margin:0">${esc(T('regalos.vacio'))}</p>`;
     const m = d.mensual || {};
     h += `<div class="vip-sec">${esc(T('sec.mensual'))}</div><div class="vip-caja" data-vip="mensual">`;
     if (d.nivel < 1) h += `<p class="small muted" style="margin:0">${esc(T('mensual.sin'))}</p>${listaItems(m.contenido, 'mini')}`;
@@ -618,11 +620,11 @@
       <div class="vip-hero"><div class="vip-medalla">${icoCorona(22)}${n ? `<b>${n}</b>` : ''}</div><div class="grow">
         <div class="vip-nom">${n ? esc(T('vip_n', { n }) + ' · ' + T('insignia.' + n)) : esc(T('sin_nivel'))}${n ? `<span class="vip-tit">${esc(T('titulo.' + n))}</span>` : ''}</div></div></div>
       ${barra(d)}
-      <p class="vip-sub" style="margin-top:4px"><span>${esc(T('modal.puntos'))}</span></p>
+      ${enIOS() ? '' : `<p class="vip-sub" style="margin-top:4px"><span>${esc(T('modal.puntos'))}</span></p>`}
       <div class="vip-tabs"><button class="btn sm ${st.vista === 'niveles' ? 'main' : ''}" data-ext="${ID}" data-acc="vista" data-k="niveles">${esc(T('tab.niveles'))}</button>
         <button class="btn sm ${st.vista === 'mecenas' ? 'main' : ''}" data-ext="${ID}" data-acc="vista" data-k="mecenas">${esc(T('tab.mecenas'))}</button></div>
       ${cuerpo}
-      <p class="vip-nota">${esc(T('modal.pase'))}</p></div>`);
+      ${enIOS() ? '' : `<p class="vip-nota">${esc(T('modal.pase'))}</p>`}</div>`);
   }
   async function cargarMecenas() {
     if (st.mecCargando) return;
@@ -729,7 +731,7 @@
     const of = ofv.length;
     return `<div class="card vip-card" data-vip="ficha" style="--vc:${color(n)}"><div class="vip-top"><div class="vip-medalla">${icoCorona(20)}${n ? `<b>${n}</b>` : ''}</div>
       <div class="grow"><div class="vip-lbl">${esc(T('tu_vip'))}</div><div class="vip-nom">${n ? esc(T('vip_n', { n }) + ' · ' + T('insignia.' + n)) : esc(T('sin_nivel'))}</div>
-      ${of ? `<span class="vip-tit" style="color:var(--amber)">${esc(T('oferta_nueva', { o: TL(ofv[0].nombre) }))}</span>` : `<span class="vip-tit">${esc(T('modal.puntos'))}</span>`}</div>
+      ${of ? `<span class="vip-tit" style="color:var(--amber)">${esc(T('oferta_nueva', { o: TL(ofv[0].nombre) }))}</span>` : `<span class="vip-tit">${esc(enIOS() ? T('tu_vip') : T('modal.puntos'))}</span>`}</div>
       <button class="btn sm" data-ext="${ID}" data-acc="abrir">${esc(T('ver'))}</button></div></div>`;
   }
 

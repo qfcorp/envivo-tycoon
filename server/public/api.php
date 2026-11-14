@@ -8,12 +8,19 @@ require dirname(__DIR__) . '/src/arranque.php';
 
 use EnVivo\{Ajustes, Catalogo, Chat, Compras, Cuentas, Db, Desafio, Duelos, Fallo, Google, Http, Inventario, Limite, Mercado, Monedero, Plux, Sesiones, Social, Soporte, Transferencias};
 
+/** Rutas que crean o completan un pago con dinero real: en la app de iPhone se rechazan (403 no_disponible_ios). */
+const API_RUTAS_PAGO = ['/orden', '/plux/pago', '/paypal/crear', '/tukanpagos/crear', '/google/verificar'];
+
 $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $ruta = '/' . trim(substr($ruta, strlen('/api')), '/');
 $metodo = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
 try {
     Db::pdo();   // abre la base y crea/actualiza las tablas si hace falta
+
+    // App de iPhone (User-Agent con «TukanIOS», regla de Apple 3.1.1): no se crean pagos con dinero real (Plux, PayPal, Tukán Pagos
+    // ni Google Play). Lo que se compra con créditos o dinero del juego sigue igual. Los avisos de los bancos (webhooks) no pasan por aquí.
+    if (api_es_ios() && in_array($ruta, API_RUTAS_PAGO, true)) Http::error(403, 'Esta opción no está disponible en esta app.', [], 'no_disponible_ios');
 
     // El aviso de pago de Plux (webhook) llega desde Plux, sin la cabecera del juego: tiene su propia clave (Basic Auth).
     if ($ruta === '/plux/webhook') api_plux_webhook();
@@ -612,4 +619,13 @@ function api_cuenta_borrar(): never
     Cuentas::borrar($j, texto_de($in, 'clave'));
     Sesiones::cerrar();
     Http::json(200, ['ok' => true, 'borrada' => true]);
+}
+
+/** (Va al final del archivo: la revisión de X-Envivo de arriba debe ser la primera mención de esa cabecera.)
+ *  ¿La petición viene de la app de iPhone? (User-Agent con «TukanIOS», o la cabecera X-EnVivo-Canal: ios que manda el juego
+ *  cuando se abrió con ?origen=ios — js/ios.js, js/api.js, js/googleplay.js) */
+function api_es_ios(): bool
+{
+    return str_contains((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 'TukanIOS')
+        || strtolower(trim((string) ($_SERVER['HTTP_X_ENVIVO_CANAL'] ?? ''))) === 'ios';
 }

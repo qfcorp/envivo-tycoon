@@ -161,6 +161,10 @@ Exclusivos con créditos (nombres de js/datos.js; costo editable en el Centro de
 ## Errores: campo `codigo`
 Todo error trae además `"codigo"`: un texto fijo para el juego (el `error` es para mostrar y puede cambiar).
 `{ "ok": false, "error": "Tu cuenta está suspendida…", "codigo": "cuenta_suspendida" }`.
+
+**App de iPhone** (User-Agent con `TukanIOS`, o cabecera `X-EnVivo-Canal: ios` que manda el juego cuando se abrió con `?origen=ios`; regla de Apple 3.1.1): `/api/orden`, `/api/plux/pago`, `/api/paypal/crear`, `/api/tukanpagos/crear` y
+`/api/google/verificar` responden `403 {"ok": false, "error": "Esta opción no está disponible en esta app.", "codigo": "no_disponible_ios"}`, y
+`/pago.php` responde 403 (también con `?origen=ios`). Lo que se paga con créditos o dinero del juego no cambia. Los avisos de los bancos (webhooks) no se tocan.
 Si no hay uno propio, sale del código HTTP (`sesion_requerida` 401, `sin_creditos` 402, `prohibido` 403, `no_encontrado` 404,
 `conflicto` 409, `limite_intentos` 429, `no_disponible` 503…). Propios, por ejemplo: `producto_inactivo`, `mantenimiento`,
 `cuenta_suspendida`, `cuenta_baneada`, `email_en_uso`, `credenciales_invalidas`, `compra_ajena`, `pago_en_proceso`,

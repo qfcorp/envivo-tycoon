@@ -291,7 +291,7 @@
   function precioDe(id, usd) {
     const c = st.ctx;
     try { if (c && typeof c.precio === 'function') { const v = c.precio(id, usd); return v ? String(v) : null; } } catch (e) { return null; }
-    try { if (root.GooglePlay && root.GooglePlay.enApp && root.GooglePlay.enApp()) return null; } catch (e) { return null; }
+    try { if ((root.TukanIOS && root.TukanIOS.activo()) || (root.GooglePlay && root.GooglePlay.enApp && root.GooglePlay.enApp())) return null; } catch (e) { return null; }   // iPhone (js/ios.js) o app de Google Play
     return usd ? dinero(usd) : null;
   }
 

@@ -44,13 +44,20 @@
     } catch (e) { return false; }
   }
 
+  /* App de iPhone (js/ios.js, regla de Apple 3.1.1): cabecera X-EnVivo-Canal: ios para que el servidor rechace los pagos
+     aunque el User-Agent no traiga TukanIOS (ej. se abrió con ?origen=ios). */
+  function canalIOS() {
+    try { return root.TukanIOS && root.TukanIOS.activo() ? { 'X-EnVivo-Canal': 'ios' } : {}; } catch (e) { return {}; }
+  }
+
   async function req(method, ruta, body, ms) {
     const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const t = ctrl ? setTimeout(() => ctrl.abort(), ms || 15000) : null;
     try {
       const r = await fetch(ruta, {
         method,
-        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v52', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v54', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+          canalIOS()),   // app de iPhone (también con ?origen=ios): el servidor rechaza los pagos con dinero real
         credentials: 'same-origin',
         cache: 'no-store',
         body: body === undefined ? undefined : JSON.stringify(body),
