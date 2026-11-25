@@ -309,8 +309,9 @@
   const precio = (v) => { try { return '$' + Number(v || 0).toLocaleString(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch (e) { return '$' + Number(v || 0).toFixed(2); } };
   const TL = (t) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(t) : t; } catch (e) { return t; } };
   /** Ofertas que se pueden comprar en este canal, cada una con su precio real (`valor`). */
-  // App de iPhone (js/ios.js): sin precios, ofertas ni textos de compras con dinero real (regla de Apple 3.1.1)
-  const enIOS = () => { try { return !!(root.TukanIOS && root.TukanIOS.activo()); } catch (e) { return false; } };
+  // App de iPhone SIN tienda de Apple (js/ios.js, app vieja): sin precios, ofertas ni textos de compras con dinero real (regla de
+  // Apple 3.1.1). Con el App Store (TukanIOS.conTienda) se porta como la app de Google Play.
+  const enIOS = () => { try { const I = root.TukanIOS; return !!(I && (I.sinTienda ? I.sinTienda() : I.activo())); } catch (e) { return false; } };
   const ofertasVendibles = (d) => ((d && d.ofertas) || []).map((o) => Object.assign({}, o, { valor: precioDe(o.producto, o.precio) })).filter((o) => o.valor);
   /** Precio REAL de un producto: el que da ui.js (ctx.precio → Google Play dentro de la app, Pago Plux en la web).
       null = no se vende en este canal (la oferta no sale). Sin ctx.precio: solo fuera de la app, con el precio del servidor. */

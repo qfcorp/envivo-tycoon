@@ -210,10 +210,10 @@ final class Facturacion
         if (!self::activa() || !is_int($d['compra_id'] ?? null)) return;
         $c = Compras::porId($d['compra_id']);
         if (!$c || $c['estado'] !== 'pagado') return;
-        if (($c['canal'] ?? '') === 'google_play' && !self::facturaGoogle()) return;
+        if (in_array($c['canal'] ?? '', ['google_play', 'apple'], true) && !self::facturaGoogle()) return;   // FACTURACION_GOOGLE vale también para el App Store
         // Compra de PRUEBA de Google Play (cuenta de pruebas de licencias, purchaseType 0): Google no cobró, no hay venta
         // que facturar al SRI (auditoría A1). Google::verificar ya la aprueba con pagado_por "Google Play (PRUEBA, sin cobro)".
-        if (($c['canal'] ?? '') === 'google_play' && PanelVentas::esPrueba($c)) return;
+        if (in_array($c['canal'] ?? '', ['google_play', 'apple'], true) && PanelVentas::esPrueba($c)) return;   // apple: compra de Sandbox (revisión de Apple / TestFlight)
         self::crearFactura($c);
     }
 
@@ -234,7 +234,7 @@ final class Facturacion
         $guardado = Db::valor('SELECT datos_json FROM facturacion_datos_compra WHERE compra_id = ?', [$c['id']]);
         $g = is_string($guardado) ? json_decode($guardado, true) : null;
         if (is_array($g) && isset(self::TIPOS_ID[$g['tipo_id'] ?? ''])) return $g + ['advertencia' => null];
-        if (in_array($c['canal'] ?? '', ['google_play', 'web_paypal'], true)) return $cf($correo) + ['advertencia' => null];   // no traen cédula
+        if (in_array($c['canal'] ?? '', ['google_play', 'apple', 'web_paypal'], true)) return $cf($correo) + ['advertencia' => null];   // no traen cédula
         $ced = (string) ($c['comprador_cedula'] ?? '');
         if ($ced !== '') {
             $tipo = self::tipoIdentificacion($ced);
@@ -271,7 +271,7 @@ final class Facturacion
         // Forma de pago del SRI (tabla 24): 19 = tarjeta de crédito (Pago Plux); 20 = "otros con utilización del sistema
         // financiero" (Google Play y PayPal: el comprador paga a un intermediario que liquida al vendedor por el sistema
         // financiero; no es tarjeta del comprador procesada por nosotros ni dinero electrónico del Banco Central, código 17).
-        $otrosFinanciero = in_array($c['canal'] ?? '', ['google_play', 'web_paypal'], true);
+        $otrosFinanciero = in_array($c['canal'] ?? '', ['google_play', 'apple', 'web_paypal'], true);   // apple: igual que Google Play
         Db::q("INSERT OR IGNORE INTO facturas (tipo, compra_id, jugador_id, canal, estado, comprador_tipo_id, comprador_identificacion, comprador_razon_social,
                  comprador_email, comprador_telefono, comprador_direccion, subtotal, iva, total, iva_pct, items_json, forma_pago, advertencia, fecha_venta,
                  creado, actualizado, webhook_estado, webhook_proximo)
@@ -348,7 +348,7 @@ final class Facturacion
             'id' => (int) $f['id'], 'referencia' => self::referencia($f), 'tipo' => $f['tipo'], 'estado' => $f['estado'],
             'intentos' => (int) $f['intentos'], 'ultimo_error' => $f['ultimo_error'],
             'compra' => ['id' => (int) $f['compra_id'], 'canal' => $f['canal'], 'producto' => $c['producto'] ?? null,
-                'transaccion' => $c ? ($google ? $c['google_order_id'] : $c['plux_transaccion']) : null,
+                'transaccion' => $c ? ($google ? $c['google_order_id'] : (($c['canal'] ?? '') === 'apple' ? ($c['apple_transaccion'] ?? $c['plux_transaccion']) : $c['plux_transaccion'])) : null,
                 'pagado_en' => $c && $c['pagado_en'] !== null ? Db::iso((int) $c['pagado_en']) : null],
             'fecha_venta' => date('Y-m-d', (int) $f['fecha_venta']),
             'comprador' => ['tipo_identificacion' => $f['comprador_tipo_id'], 'tipo_identificacion_nombre' => self::TIPOS_ID[$f['comprador_tipo_id']] ?? 'otro',
@@ -670,7 +670,7 @@ final class Facturacion
     public static function rellenar(int $desde, int $max = 5000): int
     {
         $n = 0;
-        $google = self::facturaGoogle() ? '' : " AND COALESCE(c.canal, 'web_plux') <> 'google_play'";
+        $google = self::facturaGoogle() ? '' : " AND COALESCE(c.canal, 'web_plux') NOT IN ('google_play', 'apple')";
         foreach (Db::todas("SELECT c.* FROM compras c WHERE c.estado IN ('pagado', 'revertido') AND c.pagado_en >= ?" . $google . "
                 AND NOT EXISTS (SELECT 1 FROM facturas f WHERE f.tipo = 'factura' AND f.compra_id = c.id) ORDER BY c.id LIMIT " . max(1, $max), [$desde]) as $c) {
             Db::tx(function () use ($c, &$n): void {

@@ -125,8 +125,9 @@ $(solo_cf)
     set \$envivo_mant "";
     if (-f $MANT) { set \$envivo_mant "1"; }
     if (\$uri !~ "^/(api/|pago\\.php)") { set \$envivo_mant ""; }
-    # PayPal (docs/PAYPAL.md): su aviso y el regreso del comprador tambien, para que un pago ya hecho se entregue
-    if (\$uri ~ "^/api/(salud|plux/webhook|plux/3ds|paypal/webhook|paypal/volver|paypal/cancelado|tukanpagos/aviso|tukanpagos/volver)/?\$") { set \$envivo_mant ""; }
+    # PayPal (docs/PAYPAL.md): su aviso y el regreso del comprador tambien, para que un pago ya hecho se entregue.
+    # Los avisos del App Store (devoluciones, docs/IPHONE_APP_STORE.md) tambien.
+    if (\$uri ~ "^/api/(salud|plux/webhook|plux/3ds|paypal/webhook|paypal/volver|paypal/cancelado|tukanpagos/aviso|tukanpagos/volver|apple/notificacion)/?\$") { set \$envivo_mant ""; }
     if (\$envivo_mant) { return 503; }
     error_page 503 = @envivo_503;
 

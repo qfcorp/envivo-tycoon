@@ -455,4 +455,17 @@ Todo está en main y probado (servidor 106/0, 56 pruebas del juego).
   - Tema visual por temporada (colores y adornos; tema nuevo «Copa Global Femenina» jun–jul 2027) e **ícono exclusivo de sede** en el nivel 40 premium (se ve en la sede). Título de chat pasa al nivel 30.
   - Pruebas: `server/tests/pruebas_pase_mejoras.php` (71) y `tests/test_pase_mejoras.js`; se ajustaron a propósito 4 líneas de `pruebas_pase.php` (rotación de misiones y premio del nivel 40), 1 de `pruebas_misiones.php` (las misiones del juego ahora cumplen las del pase sin conexión) y 1 de `pruebas_sede_oficial.php` (doble XP de ponerse al día con el reloj real).
   - Falta (dueño): crear en Play Console el producto `pase_semanal` (Mini Pase Semanal, $1,49) y activarlo; traducir los textos `pasem.*`.
+- 2026-11-25: **App de iPhone: compras dentro de la app con el App Store (StoreKit 2)** (rama `iphone-compras-apple`). Guía: `docs/IPHONE_APP_STORE.md`.
+  La app NUEVA de iPhone trae el puente nativo `window.webkit.messageHandlers.tukanAppStore`; con él el juego se porta como la app de Google Play
+  (precios del App Store, comprar, «Restaurar compras»). Sin el puente (app vieja) todo sigue como antes: nada de dinero real. Nunca Plux, PayPal,
+  Tukán Pagos, Google Play ni enlaces de pago en el iPhone. `js/ios.js`: `TukanIOS.conTienda()` / `sinTienda()`; `js/appstore.js` (nuevo, misma forma que
+  `js/googleplay.js`); `js/ui.js` usa `AppStore` en el iPhone con tienda y `GooglePlay` en Android (`enIOS()` ahora = iPhone SIN tienda); `js/vip.js`,
+  `js/pase.js` y `js/regreso.js` igual. Servidor: `server/src/Apple.php` verifica el JWS de StoreKit 2 (cadena x5c hasta la Apple Root CA - G3 del repo,
+  ES256, bundle `com.tukanec.envivo`, producto `envivo.<id>`, Production o Sandbox = PRUEBA sin factura, no devuelta, `appAccountToken` = `apple_cuenta`
+  del jugador), idempotente por transactionId / originalTransactionId; entrega como Google (canal `apple`); `POST /api/apple/verificar` (permitido con
+  TukanIOS) y `POST /api/apple/notificacion` (App Store Server Notifications V2: REFUND/REVOKE revierten). `/api/estado` trae `apple_cuenta`.
+  Migración `apple.sql` (columnas `apple_*`, tabla `apple_avisos`; `Db::ampliarCanales` agrega `apple` a la regla del canal). Lista para App Store Connect:
+  `php server/bin/apple_productos.php` (28 productos; 5 NON_CONSUMABLE). Centro de Control, facturación (forma de pago 20), Panel (canal «otro») y Aliados
+  conocen el canal `apple`. Textos nuevos en español e inglés. Versión del juego **`envivo-v55`**. Pruebas: `server/tests/pruebas_apple.php` (en `correr.sh`)
+  y `tests/test_appstore.js`. **Falta (dueño)**: el puente en la app de iPhone, crear los productos en App Store Connect y poner la URL de los avisos de Apple.
 - Próximo: lo que Dimitry encuentre al probar en el celular. Después, la traducción final (`node tools/pendientes_traduccion.js`) y la publicación.

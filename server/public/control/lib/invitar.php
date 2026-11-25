@@ -35,7 +35,7 @@ function cc_t_aliados(): string
         e((string) $a['nivel']),
         $a['jugador_id'] !== null ? '<a href="' . e(cc_url(['t' => 'jugadores', 'id' => $a['jugador_id']])) . '">N° ' . (int) $a['jugador_id'] . '</a>' : '<span class="tenue">sin cuenta</span>',
         cc_num($a['jugadores']), cc_num($a['compradores']),
-        e(cc_dinero($a['ventas'])) . '<br><small class="tenue">Plux ' . e(cc_dinero($a['por_canal']['plux'])) . ' · PayPal ' . e(cc_dinero($a['por_canal']['paypal'])) . ' · Google ' . e(cc_dinero($a['por_canal']['google'])) . '</small>',
+        e(cc_dinero($a['ventas'])) . '<br><small class="tenue">Plux ' . e(cc_dinero($a['por_canal']['plux'])) . ' · PayPal ' . e(cc_dinero($a['por_canal']['paypal'])) . ' · Google ' . e(cc_dinero($a['por_canal']['google'])) . ' · App Store ' . e(cc_dinero($a['por_canal']['apple'] ?? 0)) . '</small>',
         e(rtrim(rtrim(number_format((float) $a['pct'], 2, ',', ''), '0'), ',') . ' %'),
         e(cc_dinero($a['mes_actual'])),
         $a['pendiente'] > 0 ? '<b>' . e(cc_dinero($a['pendiente'])) . '</b>' : e(cc_dinero(0)),

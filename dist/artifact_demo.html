@@ -1699,6 +1699,17 @@
     "tienda.gp_pendiente": "Your payment is pending in Google Play. We’ll deliver it once it’s approved.",
     "tienda.gp_error": "The purchase couldn’t be completed. Please try again.",
     "tienda.gp_ocupado": "A purchase is already in progress.",
+    "tienda.as_precios": "Payments processed by Apple’s App Store.",
+    "tienda.as_ok": "Purchase done with Apple! It’s in your account.",
+    "tienda.as_pendiente": "Your purchase is pending in the App Store (for example, waiting for a parent’s approval). We’ll deliver it once it’s approved.",
+    "tienda.as_error": "The App Store purchase couldn’t be completed. Please try again.",
+    "tienda.as_llego": "Your App Store purchase has arrived!",
+    "tienda.as_restaurar": "Restore purchases",
+    "tienda.as_restaurar_txt": "Bought a one-time item with your Apple ID on another iPhone or before reinstalling? Get it back here.",
+    "tienda.as_restaurando": "Checking your App Store purchases…",
+    "tienda.as_restauradas": { "one": "Done: we restored {n} purchase.", "other": "Done: we restored {n} purchases." },
+    "tienda.as_nada": "There’s nothing to restore: everything is already in your account.",
+    "tienda.as_restaurar_error": "We couldn’t check your App Store purchases. Please try again.",
     "tienda.sin_conexion_t": "Shop offline",
     "tienda.sin_conexion": "The shop needs internet. Meanwhile you can play everything for free.",
     // Plan del evento (js/plan_evento.js)
@@ -3234,6 +3245,17 @@
     "error.adviento_perdido": "That gift has passed: you can only recover yesterday's.",
     "error.adviento_hecho": "You already opened that day's gift.",
     "error.meta_invalida": "The event goal isn't valid.",
+    "error.apple_no_disponible": "App Store purchases aren’t available yet. Please try again later.",
+    "error.apple_invalida": "We couldn’t confirm that purchase with Apple. Your purchase is saved and will be retried automatically.",
+    "error.apple_ambiente": "That test purchase isn’t accepted on this server.",
+    "error.apple_no_coincide": "The purchase details don’t match the App Store.",
+    "error.apple_otra_cuenta": "That App Store purchase belongs to another game account.",
+    "error.apple_revocada": "Apple refunded (or voided) that purchase.",
+    "error.apple_revertido": "That App Store purchase was refunded.",
+    "error.apple_rechazado": "That App Store purchase was declined.",
+    "error.apple_pendiente": "That App Store purchase is still pending.",
+    "error.apple_ya_comprado": "You already have that item (it can only be bought once), so it wasn’t delivered again. You can ask Apple for a refund at reportaproblem.apple.com.",
+    "error.apple_cuenta_distinta": "That App Store purchase was made with another game account. Sign in with that account to receive it.",
 
     logica: {},
   };
@@ -39437,6 +39459,17 @@
     "error.adviento_perdido": "Ese regalo ya pasó: solo se recupera el de ayer.",
     "error.adviento_hecho": "Ya abriste el regalo de ese día.",
     "error.meta_invalida": "La meta del evento no es válida.",
+    "error.apple_no_disponible": "Las compras del App Store todavía no están disponibles. Intenta más tarde.",
+    "error.apple_invalida": "No pudimos confirmar esa compra con Apple. Tu compra está guardada: se volverá a intentar sola.",
+    "error.apple_ambiente": "Esa compra de prueba no se acepta en este servidor.",
+    "error.apple_no_coincide": "Los datos de la compra no coinciden con el App Store.",
+    "error.apple_otra_cuenta": "Esa compra del App Store es de otra cuenta del juego.",
+    "error.apple_revocada": "Apple devolvió el dinero de esa compra (o la anuló).",
+    "error.apple_revertido": "Esa compra del App Store fue reembolsada.",
+    "error.apple_rechazado": "Esa compra del App Store fue rechazada.",
+    "error.apple_pendiente": "Esa compra del App Store todavía está pendiente.",
+    "error.apple_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. Puedes pedir la devolución a Apple en reportaproblem.apple.com.",
+    "error.apple_cuenta_distinta": "Esa compra del App Store se hizo con otra cuenta del juego. Entra con esa cuenta para recibirla.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Música",
     "head.musica_on": "Activar música",
@@ -39474,6 +39507,17 @@
     "tienda.gp_pendiente": "Tu pago está pendiente en Google Play. Te lo entregaremos cuando se apruebe.",
     "tienda.gp_error": "No se pudo completar la compra. Intenta otra vez.",
     "tienda.gp_ocupado": "Ya hay una compra en curso.",
+    "tienda.as_precios": "Pagos procesados por el App Store de Apple.",
+    "tienda.as_ok": "¡Compra hecha con Apple! Ya está en tu cuenta.",
+    "tienda.as_pendiente": "Tu compra está pendiente en el App Store (por ejemplo, esperando el permiso de un adulto). Te la entregaremos cuando se apruebe.",
+    "tienda.as_error": "No se pudo completar la compra en el App Store. Intenta otra vez.",
+    "tienda.as_llego": "¡Tu compra del App Store llegó!",
+    "tienda.as_restaurar": "Restaurar compras",
+    "tienda.as_restaurar_txt": "¿Compraste algo de una sola vez con tu Apple ID en otro iPhone o antes de reinstalar? Recupéralo aquí.",
+    "tienda.as_restaurando": "Revisando tus compras del App Store…",
+    "tienda.as_restauradas": { "one": "Listo: recuperamos {n} compra.", "other": "Listo: recuperamos {n} compras." },
+    "tienda.as_nada": "No hay compras para restaurar: todo ya está en tu cuenta.",
+    "tienda.as_restaurar_error": "No se pudieron revisar tus compras del App Store. Intenta otra vez.",
     "tienda.sin_conexion_t": "Tienda sin conexión",
     "tienda.sin_conexion": "La tienda necesita internet. Mientras tanto puedes jugar todo gratis.",
     // Plan del evento (js/plan_evento.js)
@@ -52991,7 +53035,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try {
       const r = await fetch(ruta, {
         method,
-        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v54', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
+        headers: Object.assign({ 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Version': 'envivo-v55', 'Accept-Language': (root.I18N && root.I18N.idioma) || 'es' },   // X-EnVivo-Version = VERSION de sw.js (el servidor no deja guardar a juegos viejos)
           canalIOS()),   // app de iPhone (también con ?origen=ios): el servidor rechaza los pagos con dinero real
         credentials: 'same-origin',
         cache: 'no-store',
@@ -54027,14 +54071,21 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   // Imprevistos graves: la música pasa a tensión. Los demás solo llevan un golpe ("última hora").
   const INC_GRAVE = /^(luz|internet|falla|robo|senal|senal_irl|cobertura|lluvia|transporte|dron)$/;
 
-  /* ---------- Compras de Google Play (solo dentro de la app de Android) ---------- */
-  // js/googleplay.js llega después (defer): se busca cada vez
-  let GP = window.GooglePlay || null;
-  const enApp = () => { try { GP = GP || window.GooglePlay || null; return !!(GP && GP.enApp()); } catch (e) { return false; } };
-  // App de iPhone (js/ios.js, regla de Apple 3.1.1): sin tienda de dinero real (ni precios, ni comprar, ni Plux/PayPal/Google Play)
-  const enIOS = () => { try { return !!(window.TukanIOS && window.TukanIOS.activo()); } catch (e) { return false; } };
-  let playOk = false;        // hay Play Billing en este celular
-  let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play
+  /* ---------- Compras dentro de la app: Google Play (Android) o App Store (iPhone con el puente nativo) ---------- */
+  // js/googleplay.js y js/appstore.js llegan después (defer): se busca cada vez. Los dos tienen la misma forma (enApp,
+  // disponible, productos, comprar, restaurar). En el iPhone con tienda de Apple manda el App Store; si no, Google Play.
+  const canalApp = () => { try { const A = window.AppStore; if (A && A.enApp && A.enApp()) return A; } catch (e) { /* abajo */ } return window.GooglePlay || null; };
+  const esAppStore = () => { try { return !!(GP && GP === window.AppStore); } catch (e) { return false; } };
+  let GP = canalApp();
+  const enApp = () => { try { GP = canalApp(); return !!(GP && GP.enApp()); } catch (e) { return false; } };
+  // App de iPhone SIN tienda de Apple (app vieja sin el puente; js/ios.js, regla de Apple 3.1.1): sin dinero real (ni precios,
+  // ni comprar, ni Plux/PayPal/Google Play). Con el puente (TukanIOS.conTienda) el iPhone se porta como la app de Google Play.
+  const enIOS = () => { try { const I = window.TukanIOS; return !!(I && I.activo() && !(I.conTienda && I.conTienda())); } catch (e) { return false; } };
+  const canalAN = () => (esAppStore() ? 'app_store' : 'google_play');   // analítica: de qué tienda de apps es la compra
+  // Textos de la tienda de apps: los de Google Play (tienda.gp_*, tienda.play_*) o los del App Store (tienda.as_*)
+  const TA = (k) => { const m = { gp_ok: 'as_ok', gp_pendiente: 'as_pendiente', gp_error: 'as_error', play_llego: 'as_llego', play_precios: 'as_precios' }; return T('tienda.' + (esAppStore() && m[k] ? m[k] : k)); };
+  let playOk = false;        // hay Play Billing (o el App Store) en este celular
+  let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play o del App Store
 
   /* ---------- Límites (de la lógica si los exporta) ---------- */
   const BAL = () => G.BALANCE || {};
@@ -56192,7 +56243,8 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       ${sinPago}
       ${cuerpo || emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))}
       <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
-      ${ios || (app && !playOk) ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
+      ${ios || (app && !playOk) ? '' : `<p class="small muted">${app ? TA('play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
+      ${app && esAppStore() ? `<div class="card tv-restaurar"><p class="small muted" style="margin:0 0 8px">${T('tienda.as_restaurar_txt')}</p><button class="btn sm" data-act="as-restaurar">${I('refresh', 'sm')}${T('tienda.as_restaurar')}</button></div>` : ''}
       ${ios ? '' : `<p class="small muted">${T('tienda.aviso')}</p>`}
       ${soporteBtn()}
       <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div></div>`;
@@ -56325,7 +56377,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
   function comprar(id, metodo) {
     if (enIOS()) return;   // iPhone: no hay compras con dinero real (regla de Apple)
-    if (enApp()) { AN('compra_iniciada', { producto: id, canal: 'google_play' }); comprarPlay(id); return; }   // en la app: solo Google Play
+    if (enApp()) { AN('compra_iniciada', { producto: id, canal: canalAN() }); comprarPlay(id); return; }   // en la app: solo Google Play (o el App Store en el iPhone)
     // Botón sin método (pase, VIP, Copa...) y el producto se puede pagar con PayPal: se pregunta cómo pagar
     if (metodo !== 'tarjeta' && metodo !== 'paypal' && paypalPara(id)) { elegirPago(id); return; }
     if (metodo === 'paypal' && !paypalPara(id)) metodo = 'tarjeta';
@@ -56362,25 +56414,35 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       r = r || { ok: false, estado: 'error' };
       if (r.ok) {
         snd.play('buy');
-        AN('compra_aprobada', { producto: id, canal: 'google_play' });
+        AN('compra_aprobada', { producto: id, canal: canalAN() });
         try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
         aplicarEntregas(); save(); render(); trasCompra();
-        toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : T('tienda.gp_ok'));
+        toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : TA('gp_ok'));
         subirNube();
         return;
       }
       if (r.estado === 'cancelado') return;
       if (r.estado === 'sesion_requerida') { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
-      if (r.estado === 'pendiente') { toast(T('tienda.gp_pendiente')); return; }
+      if (r.estado === 'pendiente') { toast(TA('gp_pendiente')); return; }
       const porCodigo = r.codigo && I18 && I18.T.has('error.' + r.codigo) ? T('error.' + r.codigo) : null;
-      toast(porCodigo || (r.estado === 'ocupado' ? T('tienda.gp_ocupado') : r.estado === 'no_disponible' ? T('tienda.play_no_disp') : T('tienda.gp_error')));
+      toast(porCodigo || (r.estado === 'ocupado' ? T('tienda.gp_ocupado') : r.estado === 'no_disponible' ? T('tienda.play_no_disp') : TA('gp_error')));
       snd.play('error');
-    }).catch(() => { toast(T('tienda.gp_error')); snd.play('error'); });
+    }).catch(() => { toast(TA('gp_error')); snd.play('error'); });
   }
-  // Precios de Google Play y compras que quedaron sin confirmar (al abrir el juego y al entrar a la cuenta)
+  // Precios de Google Play (o del App Store) y compras que quedaron sin confirmar (al abrir el juego y al entrar a la cuenta)
+  let asEscuchando = false;
   async function iniciarPlay() {
-    GP = GP || window.GooglePlay || null;
+    GP = canalApp();
     if (!GP || !Api.disponible || !Api.estado) return;
+    // App Store: una compra aprobada más tarde («Pedir permiso para comprar») llega sola: se entrega y se avisa
+    if (esAppStore() && !asEscuchando && GP.escuchar) {
+      asEscuchando = true;
+      GP.escuchar(async (info) => {
+        if (!info || !info.entregadas || !info.entregadas.length) return;
+        try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
+        aplicarEntregas(); save(); render(); trasCompra(); toast(TA('play_llego')); snd.play('chapter');
+      });
+    }
     try { playOk = !!(await GP.disponible()); } catch (e) { playOk = false; }
     if (playOk) {
       const ids = [...new Set(((Api.estado.tienda && Api.estado.tienda.productos) || []).map((p) => p.id).concat(PLAY_EXTRA))];
@@ -56405,9 +56467,25 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try {
       const r = await GP.restaurar();
       if (r && r.entregadas && r.entregadas.length) {
-        await Api.refrescar(); aplicarEntregas(); save(); render(); toast(T('tienda.play_llego')); snd.play('chapter');
+        await Api.refrescar(); aplicarEntregas(); save(); render(); trasCompra(); toast(TA('play_llego')); snd.play('chapter');
       }
     } catch (e) { /* se reintenta la próxima vez */ }
+  }
+  // «Restaurar compras» (solo en el iPhone con el App Store; Apple lo exige para lo de una sola vez): el servidor no entrega dos veces
+  let asRestaurando = false;
+  async function restaurarApple() {
+    if (asRestaurando || !esAppStore() || !GP.restaurarCompras) return;
+    if (!Api.logueado()) { abrirCuenta('entrar', T('cuenta.para_comprar')); return; }
+    asRestaurando = true; snd.play('tap'); toast(T('tienda.as_restaurando'));
+    try {
+      const r = await GP.restaurarCompras();
+      if (!r || r.omitido) { toast(T(r && r.omitido === 'sesion_requerida' ? 'cuenta.para_comprar' : 'tienda.as_restaurar_error')); snd.play('error'); return; }
+      if (r.entregadas.length) {
+        try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
+        aplicarEntregas(); save(); render(); trasCompra(); toast(T('tienda.as_restauradas', { n: r.entregadas.length })); snd.play('chapter');
+      } else if (r.errores.length && !r.revisadas) { toast(T('tienda.as_restaurar_error')); snd.play('error'); }
+      else toast(T('tienda.as_nada'));
+    } catch (e) { toast(T('tienda.as_restaurar_error')); snd.play('error'); } finally { asRestaurando = false; }
   }
 
   async function comprarWeb(id, metodo) {
@@ -57880,6 +57958,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
       case 'comprar': comprar(el.dataset.k, el.dataset.metodo); break;
+      case 'as-restaurar': restaurarApple(); break;
       case 'tienda-ir': snd.play('tap'); irSeccionTienda(el.dataset.k); break;
       case 'tienda-estrellas': snd.play('tap'); abrirEstrellas(); break;
       case 'tienda-pase': snd.play('tap'); try { window.Pase.abrir(ctxInicio()); } catch (err) { console.error('[tienda pase]', err); toast(T('err.no_completo')); } break;
@@ -58163,7 +58242,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
   // Conectar con la tienda (si hay servidor). Si volvemos de un pago aprobado, avisar.
   async function conectar() {
-    GP = GP || window.GooglePlay || null;
+    GP = canalApp();
     const volvioDePago = /[?&]compra=ok\b/.test(location.search);
     if (volvioDePago) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ } }
     // Con cuenta (esta partida ya estuvo en una cuenta): "Sincronizando tu partida…" antes de jugar
@@ -58213,17 +58292,26 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
 
 </script>
 <!-- No hacen falta para la primera pantalla: se cargan después (ui.js los usa cuando ya están) -->
+<!-- app de iPhone CON el puente del App Store: compras dentro de la app (docs/IPHONE_APP_STORE.md) -->
 <script>
 /* =========================================================
-   EN VIVO Tycoon — App de iPhone (App Store): sin tienda de dinero real (regla de Apple 3.1.1)
+   EN VIVO Tycoon — App de iPhone (App Store)
 
    La app de iPhone abre el juego con /index.html?origen=ios y su User-Agent trae «TukanIOS» (ej. «… TukanIOS/1.0.0»).
-   En el iPhone NO se muestra la tienda de dinero real: ni precios en USD, ni botones de comprar o suscribirse, ni Pago Plux,
-   PayPal o Google Play, ni textos que digan dónde pagar. Lo que se compra con lo ganado jugando (créditos, dinero del juego)
-   sí se queda. El servidor también rechaza crear pagos si el User-Agent trae TukanIOS (server/public/api.php).
+   - App nueva, CON el puente del App Store (window.webkit.messageHandlers.tukanAppStore, js/appstore.js): se vende con las
+     compras dentro de la app de Apple (StoreKit 2), igual que la app de Android con Google Play. Docs: docs/IPHONE_APP_STORE.md
+   - App vieja, SIN ese puente: NO se muestra la tienda de dinero real (regla de Apple 3.1.1): ni precios en USD, ni botones
+     de comprar o suscribirse, ni textos que digan dónde pagar. Lo que se compra con lo ganado jugando (créditos, dinero del
+     juego) sí se queda.
+   Nunca, en ningún iPhone: Pago Plux, PayPal, Tukán Pagos, Google Play ni enlaces de pago. El servidor rechaza esos pagos si
+   el User-Agent trae TukanIOS (server/public/api.php); solo acepta /api/apple/verificar.
 
-   API:  window.TukanIOS = { activo() -> true dentro de la app de iPhone }
-   Con activo(), <html> lleva class="tukan-ios".
+   API:  window.TukanIOS = {
+     activo()     -> true dentro de la app de iPhone
+     conTienda()  -> true dentro de la app de iPhone CON el puente del App Store
+     sinTienda()  -> true dentro de la app de iPhone SIN el puente (app vieja): nada de dinero real
+   }
+   Con activo(), <html> lleva class="tukan-ios" (y "tukan-ios-tienda" si conTienda()).
    ?origen=ios lo guarda en localStorage (por si la app abre una página sin el parámetro); ?origen=web lo quita.
    ========================================================= */
 (function (root) {
@@ -58246,8 +58334,20 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     }
   }
 
-  root.TukanIOS = { activo: activo };
-  try { if (activo() && root.document && root.document.documentElement) root.document.documentElement.classList.add('tukan-ios'); } catch (e) { /* nada */ }
+  // El puente del App Store lo pone la app nueva de iPhone (WKScriptMessageHandlerWithReply «tukanAppStore»)
+  function puente() {
+    try { var h = root.webkit && root.webkit.messageHandlers && root.webkit.messageHandlers.tukanAppStore; return !!(h && typeof h.postMessage === 'function'); } catch (e) { return false; }
+  }
+  function conTienda() { return activo() && puente(); }
+  function sinTienda() { return activo() && !puente(); }
+
+  root.TukanIOS = { activo: activo, conTienda: conTienda, sinTienda: sinTienda };
+  try {
+    if (activo() && root.document && root.document.documentElement) {
+      root.document.documentElement.classList.add('tukan-ios');
+      if (puente()) root.document.documentElement.classList.add('tukan-ios-tienda');
+    }
+  } catch (e) { /* nada */ }
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -67542,8 +67642,9 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   const precio = (v) => { try { return '$' + Number(v || 0).toLocaleString(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } catch (e) { return '$' + Number(v || 0).toFixed(2); } };
   const TL = (t) => { try { return root.I18N && root.I18N.TL ? root.I18N.TL(t) : t; } catch (e) { return t; } };
   /** Ofertas que se pueden comprar en este canal, cada una con su precio real (`valor`). */
-  // App de iPhone (js/ios.js): sin precios, ofertas ni textos de compras con dinero real (regla de Apple 3.1.1)
-  const enIOS = () => { try { return !!(root.TukanIOS && root.TukanIOS.activo()); } catch (e) { return false; } };
+  // App de iPhone SIN tienda de Apple (js/ios.js, app vieja): sin precios, ofertas ni textos de compras con dinero real (regla de
+  // Apple 3.1.1). Con el App Store (TukanIOS.conTienda) se porta como la app de Google Play.
+  const enIOS = () => { try { const I = root.TukanIOS; return !!(I && (I.sinTienda ? I.sinTienda() : I.activo())); } catch (e) { return false; } };
   const ofertasVendibles = (d) => ((d && d.ofertas) || []).map((o) => Object.assign({}, o, { valor: precioDe(o.producto, o.precio) })).filter((o) => o.valor);
   /** Precio REAL de un producto: el que da ui.js (ctx.precio → Google Play dentro de la app, Pago Plux en la web).
       null = no se vende en este canal (la oferta no sale). Sin ctx.precio: solo fuera de la app, con el precio del servidor. */
@@ -70491,7 +70592,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     const pp = d.productos || {};
     const pPrem = pp.pase_premium && pp.pase_premium.activo !== false ? precioDe(ctx, 'pase_premium', pp.pase_premium.precio) : null;
     const pPlus = pp.pase_premium_plus && pp.pase_premium_plus.activo !== false ? precioDe(ctx, 'pase_premium_plus', pp.pase_premium_plus.precio) : null;
-    const iosSinVenta = !d.premium && !pPrem && !pPlus && !!(root.TukanIOS && root.TukanIOS.activo());   // iPhone: sin ofrecer el premium (regla de Apple)
+    const iosSinVenta = !d.premium && !pPrem && !pPlus && !!(root.TukanIOS && (root.TukanIOS.sinTienda ? root.TukanIOS.sinTienda() : root.TukanIOS.activo()));   // iPhone sin App Store: sin ofrecer el premium (regla de Apple)
     const compra = iosSinVenta ? '' : d.premium
       ? `<p class="small muted" style="margin:8px 0 0">${esc(t('creditos_vuelta', { a: num(d.creditos_dados), b: num(d.creditos_tope) }))}</p>`
       : `<p class="small" style="margin:10px 0 0">${esc(t('premium_txt', { c: num(d.creditos_tope) }))}</p>
@@ -74444,6 +74545,272 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
   }
 
   root.Recuperar = { enlace, abrir, _D: D };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* =========================================================
+   EN VIVO Tycoon — Compras con el App Store dentro de la app de iPhone (StoreKit 2)
+   Guía completa: docs/IPHONE_APP_STORE.md
+
+   La app de iPhone (WKWebView, User-Agent con «TukanIOS») trae un puente nativo:
+     window.webkit.messageHandlers.tukanAppStore.postMessage(obj) → Promise (WKScriptMessageHandlerWithReply)
+       {accion:'productos', ids:['envivo.creditos_250', ...]} → {ok, productos:[{id, titulo, descripcion, precio, moneda, valor}]}
+       {accion:'comprar', id:'envivo.creditos_250', cuenta:'<uuid>'} → {ok:true, estado:'comprado', jws, transaccion, producto}
+                                                                      | {ok:false, estado:'cancelado'|'pendiente'|'error', mensaje}
+       {accion:'terminar', transaccion}  → {ok:true}   (SOLO después de que el servidor confirmó la entrega)
+       {accion:'pendientes'}             → {ok:true, transacciones:[{jws, transaccion, producto}]}  (pagadas sin terminar)
+       {accion:'restaurar'}              → {ok:true, transacciones:[{jws, transaccion, producto}]}  (lo de «una sola vez»)
+     y el evento window 'tukanAppStore' {detail:{tipo:'transaccion', jws, transaccion, producto}} (compra aprobada más tarde,
+     por ejemplo «Pedir permiso para comprar»).
+   Sin ese puente (app de iPhone vieja, web, Android) TODO esto queda apagado: enApp() = false y no se vende nada.
+
+   API (la MISMA forma que window.GooglePlay de js/googleplay.js, para que js/ui.js use una u otra):
+     window.AppStore = {
+       enApp()              -> true dentro de la app de iPhone CON el puente del App Store.
+       disponible()         -> Promise<boolean>: hay puente.
+       productos(ids)       -> Promise<[{ id, titulo, descripcion, precio, moneda, valor }]> con los ids del catálogo
+                               (sin «envivo.») y el precio del App Store ya formateado ("US$1.99"). Sin puente: [].
+       comprar(productoId)  -> Promise<{ ok, estado, mensaje, codigo?, respuesta?, reintentar? }>
+                               estado: 'entregado' | 'ya_entregado' | 'pendiente' | 'cancelado' | 'error'
+                                       | 'no_disponible' | 'sesion_requerida' | 'ocupado'
+       restaurar()          -> Promise<{ revisadas, entregadas:[ids], pendientes:[ids], errores:[{id, mensaje}], omitido? }>
+                               Compras pagadas que el servidor todavía no confirmó (puente 'pendientes'). Al abrir el juego
+                               y al entrar a la cuenta.
+       restaurarCompras()   -> igual, pero con lo de «una sola vez» del Apple ID (puente 'restaurar'): botón «Restaurar compras».
+       escuchar(fn)         -> fn({ entregadas:[ids] }) cuando llega sola una compra aprobada más tarde (evento 'tukanAppStore').
+       configurar(opciones) -> { verificarUrl, tiempoServidorMs, tiempoPuenteMs }
+     }
+   Flujo de compra: puente 'comprar' → POST /api/apple/verificar {producto, jws} → si el servidor entregó (o la compra ya no
+   sirve: de otra cuenta, devuelta...) puente 'terminar'. Si el servidor no respondió, NO se termina: Apple la vuelve a dar
+   en 'pendientes' y se entrega después. Nunca se entrega nada en el celular sin la respuesta del servidor.
+   ========================================================= */
+(function (root) {
+  'use strict';
+
+  var PREFIJO = 'envivo.';
+  var CLAVE_HECHOS = 'envivo_as_hechos';   // transacciones que el servidor ya confirmó (por si 'terminar' falló)
+  // Respuestas del servidor que no cambian si se reintenta: la transacción se termina igual (si no, se repetiría siempre)
+  var DEFINITIVOS = ['apple_otra_cuenta', 'apple_no_coincide', 'apple_revocada', 'apple_revertido', 'apple_rechazado', 'apple_ya_comprado', 'datos_invalidos'];
+
+  var opciones = {
+    verificarUrl: '/api/apple/verificar',
+    tiempoServidorMs: 20000,
+    tiempoPuenteMs: 15000,   // productos, pendientes, restaurar y terminar (comprar no tiene tiempo: el usuario decide)
+  };
+  var comprando = false;
+  var revisando = null;
+  var oyentes = [];
+
+  /* ---------- utilidades ---------- */
+  function guardado() { try { return root.localStorage; } catch (e) { return null; } }
+  function leerHechos() {
+    var s = guardado();
+    try { var v = s && JSON.parse(s.getItem(CLAVE_HECHOS) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+  }
+  function marcarHecho(t) {
+    var s = guardado();
+    if (!s || !t) return;
+    try {
+      var h = leerHechos().filter(function (x) { return x !== t; });
+      h.push(String(t));
+      s.setItem(CLAVE_HECHOS, JSON.stringify(h.slice(-80)));
+    } catch (e) { /* sin espacio o modo privado */ }
+  }
+  function yaHecho(t) { return !!t && leerHechos().indexOf(String(t)) !== -1; }
+
+  function aApple(id) { return PREFIJO + id; }
+  function aCatalogo(id) { id = String(id || ''); return id.indexOf(PREFIJO) === 0 ? id.slice(PREFIJO.length) : id; }
+
+  function sinSesion() {
+    try { return !!(root.Api && typeof root.Api.logueado === 'function' && !root.Api.logueado()); } catch (e) { return false; }
+  }
+  function cuentaApple() {
+    try { var c = root.Api && root.Api.estado && root.Api.estado.apple_cuenta; return typeof c === 'string' && c ? c : undefined; } catch (e) { return undefined; }
+  }
+
+  function manejador() {
+    try { var h = root.webkit && root.webkit.messageHandlers && root.webkit.messageHandlers.tukanAppStore; return h && typeof h.postMessage === 'function' ? h : null; } catch (e) { return null; }
+  }
+  function iphone() { try { return !!(root.TukanIOS && root.TukanIOS.activo && root.TukanIOS.activo()); } catch (e) { return false; } }
+
+  /* Mensaje al puente. Devuelve la respuesta (objeto) o null si falló o tardó más de ms (0 = sin tiempo). Nunca lanza error. */
+  function puente(msg, ms) {
+    var h = manejador();
+    if (!h) return Promise.resolve(null);
+    return new Promise(function (ok) {
+      var t = ms ? setTimeout(function () { ok(null); }, ms) : null;
+      var p;
+      try { p = Promise.resolve(h.postMessage(msg)); } catch (e) { p = Promise.resolve(null); }
+      p.then(function (r) {
+        if (t) clearTimeout(t);
+        if (typeof r === 'string') { try { r = JSON.parse(r); } catch (e) { r = null; } }
+        ok(r && typeof r === 'object' ? r : null);
+      }, function () { if (t) clearTimeout(t); ok(null); });
+    });
+  }
+
+  /* ---------- ¿estamos en la app de iPhone con el App Store? ---------- */
+  function enApp() { return iphone() && !!manejador(); }
+  function disponible() { return Promise.resolve(enApp()); }
+
+  async function productos(ids) {
+    if (!enApp() || !ids || !ids.length) return [];
+    var r = await puente({ accion: 'productos', ids: ids.map(aApple) }, opciones.tiempoPuenteMs);
+    if (!r || r.ok === false || !Array.isArray(r.productos)) return [];
+    return r.productos.filter(function (p) { return p && p.id && p.precio; }).map(function (p) {
+      return {
+        id: aCatalogo(p.id),
+        titulo: String(p.titulo || ''),
+        descripcion: String(p.descripcion || ''),
+        precio: String(p.precio),
+        moneda: String(p.moneda || ''),
+        valor: Number(p.valor) || 0,
+      };
+    });
+  }
+
+  /* POST /api/apple/verificar. Devuelve { ok, j, status }. Nunca lanza error. */
+  async function verificar(producto, jws) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var t = ctrl ? setTimeout(function () { ctrl.abort(); }, opciones.tiempoServidorMs) : null;
+    try {
+      var r = await root.fetch(opciones.verificarUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Envivo': '1', 'X-EnVivo-Canal': 'ios' },
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ producto: producto || '', jws: jws }),
+        signal: ctrl ? ctrl.signal : undefined,
+      });
+      var j = null;
+      try { j = await r.json(); } catch (e) { j = null; }
+      if (!j || typeof j !== 'object') return { ok: false, status: r.status, j: { error: 'El servidor no respondió bien.', codigo: 'error_servidor' } };
+      return { ok: r.ok && j.ok !== false, status: r.status, j: j };
+    } catch (e) {
+      return { ok: false, status: 0, j: { error: 'Sin conexión con el servidor. Tu compra está guardada: se entregará al volver el internet.', codigo: 'sin_conexion' } };
+    } finally {
+      if (t) clearTimeout(t);
+    }
+  }
+
+  /* Traduce la respuesta del servidor a un resultado para la Tienda (igual que GooglePlay). */
+  function resultadoServidor(v) {
+    var j = v.j || {};
+    if (v.ok) return { ok: true, estado: j.nueva === false ? 'ya_entregado' : 'entregado', mensaje: j.nueva === false ? 'Esta compra ya estaba en tu cuenta.' : '¡Compra lista! Ya está en tu cuenta.', respuesta: j };
+    var codigo = j.codigo || '';
+    if (codigo === 'sesion_requerida' || v.status === 401) return { ok: false, estado: 'sesion_requerida', codigo: 'sesion_requerida', mensaje: 'Entra a tu cuenta para recibir tu compra.', reintentar: true };
+    var definitivo = DEFINITIVOS.indexOf(codigo) !== -1;
+    return { ok: false, estado: 'error', codigo: codigo || 'error', mensaje: j.error || 'No se pudo confirmar la compra. Intenta otra vez.', reintentar: !definitivo, definitivo: definitivo };
+  }
+
+  function terminar(transaccion) {
+    if (!transaccion) return Promise.resolve(false);
+    return puente({ accion: 'terminar', transaccion: String(transaccion) }, opciones.tiempoPuenteMs).then(function (r) { return !!(r && r.ok !== false); });
+  }
+
+  /* Entrega una transacción ya pagada: servidor → (si toca) terminar. Devuelve el resultado como comprar(). */
+  async function entregar(t, terminarla) {
+    var producto = aCatalogo(t.producto);
+    if (terminarla && yaHecho(t.transaccion)) { await terminar(t.transaccion); return { ok: true, estado: 'ya_entregado', mensaje: 'Esta compra ya estaba en tu cuenta.', repetida: true }; }
+    var r = resultadoServidor(await verificar(producto, t.jws));
+    if (r.ok) marcarHecho(t.transaccion);
+    if (terminarla && (r.ok || r.definitivo)) r.terminada = await terminar(t.transaccion);
+    return r;
+  }
+
+  /* Compra. Se puede llamar directo desde el clic (el puente no necesita un toque reciente, pero así se parece a Google Play). */
+  function comprar(productoId) {
+    if (comprando) return Promise.resolve({ ok: false, estado: 'ocupado', mensaje: 'Ya hay una compra en curso.' });
+    if (!enApp()) return Promise.resolve({ ok: false, estado: 'no_disponible', mensaje: 'Las compras del App Store no están disponibles aquí.' });
+    if (sinSesion()) return Promise.resolve({ ok: false, estado: 'sesion_requerida', mensaje: 'Crea tu cuenta o entra para comprar: así tu compra queda guardada.' });
+    if (!productoId || typeof productoId !== 'string') return Promise.resolve({ ok: false, estado: 'error', mensaje: 'Producto no válido.' });
+    comprando = true;
+    return (async function () {
+      try {
+        var msg = { accion: 'comprar', id: aApple(productoId) };
+        var c = cuentaApple();
+        if (c) msg.cuenta = c;
+        var r = await puente(msg, 0);
+        if (!r) return { ok: false, estado: 'error', mensaje: 'El App Store no respondió. Intenta otra vez.' };
+        if (!r.ok || !r.jws) {
+          if (r.estado === 'cancelado') return { ok: false, estado: 'cancelado', mensaje: 'Compra cancelada.' };
+          if (r.estado === 'pendiente') return { ok: false, estado: 'pendiente', mensaje: 'Tu compra está pendiente en el App Store. Te la entregaremos cuando se apruebe.' };
+          return { ok: false, estado: 'error', mensaje: r.mensaje || 'El App Store no pudo completar la compra.', codigo: r.codigo };
+        }
+        return await entregar({ jws: r.jws, transaccion: r.transaccion, producto: r.producto || aApple(productoId) }, true);
+      } finally {
+        comprando = false;
+      }
+    })();
+  }
+
+  /* Revisa una lista de transacciones del puente y las manda al servidor. */
+  async function revisarLista(accion, terminarlas) {
+    var out = { revisadas: 0, entregadas: [], pendientes: [], errores: [] };
+    if (!enApp()) { out.omitido = 'no_disponible'; return out; }
+    if (sinSesion()) { out.omitido = 'sesion_requerida'; return out; }
+    var r = await puente({ accion: accion }, opciones.tiempoPuenteMs);
+    if (!r || r.ok === false || !Array.isArray(r.transacciones)) { out.omitido = 'error'; return out; }
+    for (var i = 0; i < r.transacciones.length; i++) {
+      var t = r.transacciones[i] || {};
+      if (!t.jws || !t.producto) continue;
+      out.revisadas++;
+      var x = await entregar(t, terminarlas);
+      var id = aCatalogo(t.producto);
+      if (x.ok) { if (x.estado === 'entregado') out.entregadas.push(id); }
+      else {
+        out.errores.push({ id: id, mensaje: x.mensaje, codigo: x.codigo });
+        if (x.estado === 'sesion_requerida') break;
+      }
+    }
+    return out;
+  }
+
+  /* Compras pagadas sin terminar (se cerró la app, se cayó el internet...). Al abrir el juego y al entrar a la cuenta. */
+  function restaurar() {
+    if (revisando) return revisando;
+    revisando = revisarLista('pendientes', true);
+    revisando.then(function () { revisando = null; }, function () { revisando = null; });
+    return revisando;
+  }
+
+  /* Botón «Restaurar compras» (Apple lo exige para lo de una sola vez). El servidor no entrega dos veces. */
+  function restaurarCompras() { return revisarLista('restaurar', false); }
+
+  function escuchar(fn) { if (typeof fn === 'function' && oyentes.indexOf(fn) === -1) oyentes.push(fn); }
+
+  /* Compra aprobada más tarde (p. ej. «Pedir permiso para comprar»): llega sola desde la app. */
+  try {
+    if (root.addEventListener) root.addEventListener('tukanAppStore', function (ev) {
+      var d = ev && ev.detail;
+      if (!d || d.tipo !== 'transaccion' || !d.jws || !enApp() || sinSesion()) return;
+      entregar({ jws: d.jws, transaccion: d.transaccion, producto: d.producto }, true).then(function (r) {
+        var info = { entregadas: r.ok && r.estado === 'entregado' ? [aCatalogo(d.producto)] : [], resultado: r };
+        oyentes.forEach(function (fn) { try { fn(info); } catch (e) { /* nada */ } });
+      });
+    });
+  } catch (e) { /* sin ventana (pruebas en node) */ }
+
+  function configurar(o) {
+    if (o && typeof o === 'object') {
+      Object.keys(o).forEach(function (k) { if (k in opciones) opciones[k] = o[k]; });
+    }
+    return Object.assign({}, opciones);
+  }
+
+  root.AppStore = {
+    PREFIJO: PREFIJO,
+    enApp: enApp,
+    disponible: disponible,
+    productos: productos,
+    comprar: comprar,
+    restaurar: restaurar,
+    restaurarCompras: restaurarCompras,
+    escuchar: escuchar,
+    configurar: configurar,
+    _reiniciar: function () { comprando = false; revisando = null; oyentes = []; },   // solo pruebas
+  };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
@@ -78872,7 +79239,7 @@ button.pe-clr.pe-on{background:#1d2230;box-shadow:inset 3px 0 0 var(--text,#e9ed
     try { if (ctx && typeof ctx.precio === 'function') { const v = ctx.precio(o.producto, o.precio); if (v) return String(v); } } catch (e) { /* abajo */ }
     if (st.precioPlay[o.producto]) return st.precioPlay[o.producto];
     if (enApp(ctx)) {
-      const GP = root.GooglePlay;
+      const GP = root.AppStore && root.AppStore.enApp && root.AppStore.enApp() ? root.AppStore : root.GooglePlay;   // iPhone con App Store o Android
       if (GP && typeof GP.productos === 'function' && st.precioPlay[o.producto] === undefined) {
         st.precioPlay[o.producto] = null;
         Promise.resolve(GP.productos([o.producto])).then((l) => {

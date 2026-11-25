@@ -189,7 +189,7 @@ function cc_chip(string $texto, string $tipo = ''): string { return '<span class
 /** Distintivo del canal en las tablas (la web con tarjeta no lleva distintivo). */
 function cc_chip_canal(array $c): string
 {
-    return match ($c['canal'] ?? '') { 'google_play' => ' ' . cc_chip('Google Play'), 'web_paypal' => ' ' . cc_chip('PayPal'), default => '' };
+    return match ($c['canal'] ?? '') { 'google_play' => ' ' . cc_chip('Google Play'), 'apple' => ' ' . cc_chip('App Store'), 'web_paypal' => ' ' . cc_chip('PayPal'), default => '' };
 }
 
 

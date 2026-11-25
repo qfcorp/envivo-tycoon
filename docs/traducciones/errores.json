@@ -437,7 +437,18 @@
     "adviento_perdido": "existe · EventosServidor.php · 410",
     "adviento_hecho": "existe · EventosServidor.php · 409",
     "meta_invalida": "existe · EventosServidor.php · 400 · solo Centro de Control",
-    "no_disponible_ios": "existe · public/api.php · 403 (app de iPhone: sin pagos con dinero real)"
+    "no_disponible_ios": "existe · public/api.php · 403 (app de iPhone: sin pagos con dinero real)",
+    "apple_no_disponible": "existe · src/Apple.php · 503 (falta la raíz de Apple en el servidor)",
+    "apple_invalida": "existe · src/Apple.php · 402 (la firma o los certificados de la compra no son de Apple)",
+    "apple_ambiente": "existe · src/Apple.php · 402 (compra de Sandbox con APPLE_SANDBOX=0, o de Xcode)",
+    "apple_no_coincide": "existe · src/Apple.php · 409 (otra app, otro producto u otro tipo de compra)",
+    "apple_otra_cuenta": "existe · src/Apple.php · 409 (appAccountToken de otra cuenta, o la compra ya se usó en otra cuenta)",
+    "apple_revocada": "existe · src/Apple.php · 409 (Apple devolvió el dinero antes de entregarla)",
+    "apple_revertido": "existe · src/Apple.php · 409 (la compra ya se revirtió por una devolución)",
+    "apple_rechazado": "existe · src/Apple.php · 409",
+    "apple_pendiente": "existe · src/Apple.php · 409",
+    "apple_ya_comprado": "existe · src/Apple.php · 409 (de una sola vez y ya lo tenía: no se entrega otra vez)",
+    "apple_cuenta_distinta": "existe · src/Apple.php · 409 (appAccountToken de otra cuenta: la app no la termina; se entrega al entrar con esa cuenta)"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -875,7 +886,18 @@
     "adviento_perdido": "Ese regalo ya pasó: solo se recupera el de ayer.",
     "adviento_hecho": "Ya abriste el regalo de ese día.",
     "meta_invalida": "La meta del evento no es válida.",
-    "no_disponible_ios": "Esta opción no está disponible en esta app."
+    "no_disponible_ios": "Esta opción no está disponible en esta app.",
+    "apple_no_disponible": "Las compras del App Store todavía no están disponibles. Intenta más tarde.",
+    "apple_invalida": "No pudimos confirmar esa compra con Apple. Tu compra está guardada: se volverá a intentar sola.",
+    "apple_ambiente": "Esa compra de prueba no se acepta en este servidor.",
+    "apple_no_coincide": "Los datos de la compra no coinciden con el App Store.",
+    "apple_otra_cuenta": "Esa compra del App Store es de otra cuenta del juego.",
+    "apple_revocada": "Apple devolvió el dinero de esa compra (o la anuló).",
+    "apple_revertido": "Esa compra del App Store fue reembolsada.",
+    "apple_rechazado": "Esa compra del App Store fue rechazada.",
+    "apple_pendiente": "Esa compra del App Store todavía está pendiente.",
+    "apple_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. Puedes pedir la devolución a Apple en reportaproblem.apple.com.",
+    "apple_cuenta_distinta": "Esa compra del App Store se hizo con otra cuenta del juego. Entra con esa cuenta para recibirla."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1313,7 +1335,18 @@
     "adviento_perdido": "That gift has passed: you can only recover yesterday's.",
     "adviento_hecho": "You already opened that day's gift.",
     "meta_invalida": "The event goal isn't valid.",
-    "no_disponible_ios": "This option isn’t available in this app."
+    "no_disponible_ios": "This option isn’t available in this app.",
+    "apple_no_disponible": "App Store purchases aren’t available yet. Please try again later.",
+    "apple_invalida": "We couldn’t confirm that purchase with Apple. Your purchase is saved and will be retried automatically.",
+    "apple_ambiente": "That test purchase isn’t accepted on this server.",
+    "apple_no_coincide": "The purchase details don’t match the App Store.",
+    "apple_otra_cuenta": "That App Store purchase belongs to another game account.",
+    "apple_revocada": "Apple refunded (or voided) that purchase.",
+    "apple_revertido": "That App Store purchase was refunded.",
+    "apple_rechazado": "That App Store purchase was declined.",
+    "apple_pendiente": "That App Store purchase is still pending.",
+    "apple_ya_comprado": "You already have that item (it can only be bought once), so it wasn’t delivered again. You can ask Apple for a refund at reportaproblem.apple.com.",
+    "apple_cuenta_distinta": "That App Store purchase was made with another game account. Sign in with that account to receive it."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",

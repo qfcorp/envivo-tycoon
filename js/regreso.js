@@ -153,7 +153,7 @@
     try { if (ctx && typeof ctx.precio === 'function') { const v = ctx.precio(o.producto, o.precio); if (v) return String(v); } } catch (e) { /* abajo */ }
     if (st.precioPlay[o.producto]) return st.precioPlay[o.producto];
     if (enApp(ctx)) {
-      const GP = root.GooglePlay;
+      const GP = root.AppStore && root.AppStore.enApp && root.AppStore.enApp() ? root.AppStore : root.GooglePlay;   // iPhone con App Store o Android
       if (GP && typeof GP.productos === 'function' && st.precioPlay[o.producto] === undefined) {
         st.precioPlay[o.producto] = null;
         Promise.resolve(GP.productos([o.producto])).then((l) => {

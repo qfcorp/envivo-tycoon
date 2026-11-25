@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace EnVivo;
 
 /**
- * Compras con dinero real (Pago Plux y PayPal en la web, Google Play en la app).
+ * Compras con dinero real (Pago Plux y PayPal en la web, Google Play en la app de Android, App Store en la de iPhone).
  * - Una compra nace "pendiente" con su valor FIJO del catálogo (total con IVA, subtotal e IVA aparte para la factura).
  * - aprobar() es IDEMPOTENTE y va en UNA transacción: marca "pagado" una sola vez y entrega una sola vez.
  *   Si llega dos veces (pago + aviso de Plux, recargar la página del banco...), la segunda no hace nada.
@@ -75,7 +75,7 @@ final class Compras
     }
 
     /** Inserta la compra pendiente con los valores de este momento. Debe ir dentro de una transacción. */
-    public static function insertar(int $jugador, array $p, string $canal, ?int $transferencia = null, array $google = []): array
+    public static function insertar(int $jugador, array $p, string $canal, ?int $transferencia = null, array $google = [], array $apple = []): array
     {
         $total = round((float) $p['precio'], 2);
         [$sub, $iva] = Catalogo::desglose($total);
@@ -84,7 +84,10 @@ final class Compras
                VALUES (?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?, ?, ?, ?, ?, ?)",
             [bin2hex(random_bytes(16)), $jugador, $p['id'], $total, $sub, $iva, time(), $canal, (int) $p['creditos'], (int) $p['bono_pct'], $transferencia,
              ($google['order_id'] ?? '') !== '' ? $google['order_id'] : null, $gt, $gt === null ? null : hash('sha256', $gt)]);
-        return self::porId(Db::ultimoId());
+        $id = Db::ultimoId();
+        // App Store (src/Apple.php): transactionId (único), originalTransactionId y ambiente (Production o Sandbox)
+        if ($apple) Db::q('UPDATE compras SET apple_transaccion = ?, apple_original = ?, apple_ambiente = ? WHERE id = ?', [$apple['transaccion'], $apple['original'] ?? null, $apple['ambiente'] ?? null, $id]);
+        return self::porId($id);
     }
 
     /** Guarda los datos del comprador (para la factura del SRI). Nunca datos de tarjeta. */
@@ -116,7 +119,7 @@ final class Compras
                 [time(), mb_substr($quien, 0, 150), $transaccion, $respuesta, $compraId]);
             $entregada = self::entregarCompra($c);
             if ($entregada) self::emitir('compra_aprobada', ['compra_id' => (int) $c['id'], 'jugador_id' => (int) $c['jugador_id'], 'producto' => (string) $c['producto'],
-                'monto_usd' => round((float) $c['total'], 2), 'canal' => match ($c['canal']) { 'google_play' => 'google', 'web_paypal' => 'paypal', default => 'plux' }]);
+                'monto_usd' => round((float) $c['total'], 2), 'canal' => match ($c['canal']) { 'google_play' => 'google', 'apple' => 'apple', 'web_paypal' => 'paypal', default => 'plux' }]);
             if ($previo === 'rechazado') Db::aviso('pagado_tras_rechazo', 'La compra N° ' . $compraId . ' estaba rechazada y luego llegó como pagada (' . $quien . '): se entregó.', $compraId);
             return [true, $c];
         });
@@ -229,7 +232,7 @@ final class Compras
     /**
      * Abuso de reembolsos (decisión del dueño): un contracargo, o N reembolsos en X días -> la cuenta queda BANEADA.
      * Las reglas están en Ajustes (se cambian en el Centro de Control): abuso_contracargo_banea (1/0),
-     * abuso_reembolsos (2) y abuso_dias (180). Vale para Pago Plux, PayPal y Google Play. Devuelve true si la baneó ahora.
+     * abuso_reembolsos (2) y abuso_dias (180). Vale para Pago Plux, PayPal, Google Play y el App Store. Devuelve true si la baneó ahora.
      */
     public static function revisarAbuso(int $jugador, string $tipo, string $quien): bool
     {

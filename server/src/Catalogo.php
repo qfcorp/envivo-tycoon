@@ -232,6 +232,21 @@ final class Catalogo
         return $p;
     }
 
+    /**
+     * El producto como está en ESTE archivo (con el contenido fijo de su módulo), SIN los cambios del Centro de Control ni
+     * ofertas: no abre la base. Lo usa la lista de productos del App Store (bin/apple_productos.php). Sin su módulo: oculto.
+     */
+    public static function productoBase(string $id): ?array
+    {
+        $p = self::PRODUCTOS[$id] ?? null;
+        if ($p === null) return null;
+        $listo = self::moduloListo($p);
+        if ($listo && !empty($p['modulo'])) $p = self::contenidoModulo($id, $p);
+        $p['id'] = $id;
+        if (!$listo) { $p['oculto'] = true; $p['sin_modulo'] = true; }
+        return $p;
+    }
+
     public static function producto(string $id): ?array
     {
         $p = self::PRODUCTOS[$id] ?? null;
