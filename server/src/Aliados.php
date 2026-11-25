@@ -230,10 +230,10 @@ final class Aliados
                           WHERE u.aliado_id = ? AND k.estado = 'pagado' AND COALESCE(k.pagado_en, k.creado) >= u.creado ORDER BY t", [$aliado]);
     }
 
-    public static function canal(string $c): string { return match ($c) { 'google_play' => 'google', 'web_paypal' => 'paypal', default => 'plux' }; }
+    public static function canal(string $c): string { return match ($c) { 'google_play' => 'google', 'apple' => 'apple', 'web_paypal' => 'paypal', default => 'plux' }; }
 
     /**
-     * Ventas por mes de un creador (lo más nuevo primero): [{mes, compras, compradores, ventas, plux, paypal, google, porcentaje,
+     * Ventas por mes de un creador (lo más nuevo primero): [{mes, compras, compradores, ventas, plux, paypal, google, apple, porcentaje,
      * monto, pagado: null | {pagado_en, pagado_por, monto_usd, nota}, cerrado}]. El mes en curso sale con cerrado = false.
      */
     public static function meses(int $aliado): array
@@ -245,7 +245,7 @@ final class Aliados
         $o = [];
         foreach (self::compras($aliado) as $c) {
             $m = date('Y-m', (int) $c['t']);
-            $o[$m] ??= ['mes' => $m, 'compras' => 0, 'compradores' => [], 'ventas' => 0.0, 'plux' => 0.0, 'paypal' => 0.0, 'google' => 0.0];
+            $o[$m] ??= ['mes' => $m, 'compras' => 0, 'compradores' => [], 'ventas' => 0.0, 'plux' => 0.0, 'paypal' => 0.0, 'google' => 0.0, 'apple' => 0.0];
             $o[$m]['compras']++;
             $o[$m]['compradores'][(int) $c['jugador_id']] = true;
             $o[$m]['ventas'] += (float) $c['total'];
@@ -254,12 +254,12 @@ final class Aliados
         $pagos = [];
         foreach (Db::todas('SELECT * FROM aliados_pagos WHERE aliado_id = ?', [$aliado]) as $p) {
             $pagos[$p['mes']] = $p;
-            $o[$p['mes']] ??= ['mes' => $p['mes'], 'compras' => 0, 'compradores' => [], 'ventas' => 0.0, 'plux' => 0.0, 'paypal' => 0.0, 'google' => 0.0];
+            $o[$p['mes']] ??= ['mes' => $p['mes'], 'compras' => 0, 'compradores' => [], 'ventas' => 0.0, 'plux' => 0.0, 'paypal' => 0.0, 'google' => 0.0, 'apple' => 0.0];
         }
         $actual = date('Y-m', self::ahora());
         foreach ($o as $m => &$f) {
             $f['compradores'] = count($f['compradores']);
-            foreach (['ventas', 'plux', 'paypal', 'google'] as $k) $f[$k] = round($f[$k], 2);
+            foreach (['ventas', 'plux', 'paypal', 'google', 'apple'] as $k) $f[$k] = round($f[$k], 2);
             $f['porcentaje'] = $pct;
             $f['monto'] = round($f['ventas'] * $pct / 100, 2);
             $f['cerrado'] = $m < $actual;
@@ -280,7 +280,7 @@ final class Aliados
         foreach (Db::todas('SELECT a.*, j.nombre AS cuenta_nombre, j.email AS cuenta_email FROM aliados a LEFT JOIN jugadores j ON j.id = a.jugador_id ORDER BY a.activo DESC, a.nombre COLLATE NOCASE') as $a) {
             $id = (int) $a['id'];
             $meses = self::meses($id);
-            $ventas = 0.0; $pendiente = 0.0; $pagado = 0.0; $porCanal = ['plux' => 0.0, 'paypal' => 0.0, 'google' => 0.0]; $comp = 0;
+            $ventas = 0.0; $pendiente = 0.0; $pagado = 0.0; $porCanal = ['plux' => 0.0, 'paypal' => 0.0, 'google' => 0.0, 'apple' => 0.0]; $comp = 0;
             foreach ($meses as $m) {
                 $ventas += $m['ventas']; $comp += $m['compras'];
                 foreach ($porCanal as $k => $_) $porCanal[$k] += $m[$k];

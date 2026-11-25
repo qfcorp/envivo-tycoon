@@ -6,9 +6,10 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/arranque.php';
 
-use EnVivo\{Ajustes, Catalogo, Chat, Compras, Cuentas, Db, Desafio, Duelos, Fallo, Google, Http, Inventario, Limite, Mercado, Monedero, Plux, Sesiones, Social, Soporte, Transferencias};
+use EnVivo\{Ajustes, Apple, Catalogo, Chat, Compras, Cuentas, Db, Desafio, Duelos, Fallo, Google, Http, Inventario, Limite, Mercado, Monedero, Plux, Sesiones, Social, Soporte, Transferencias};
 
-/** Rutas que crean o completan un pago con dinero real: en la app de iPhone se rechazan (403 no_disponible_ios). */
+/** Rutas que crean o completan un pago con dinero real: en la app de iPhone se rechazan (403 no_disponible_ios).
+ *  /apple/verificar NO va aquí: es la compra dentro de la app con el App Store (src/Apple.php), la única que Apple permite. */
 const API_RUTAS_PAGO = ['/orden', '/plux/pago', '/paypal/crear', '/tukanpagos/crear', '/google/verificar'];
 
 $ruta = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
@@ -20,6 +21,7 @@ try {
 
     // App de iPhone (User-Agent con «TukanIOS», regla de Apple 3.1.1): no se crean pagos con dinero real (Plux, PayPal, Tukán Pagos
     // ni Google Play). Lo que se compra con créditos o dinero del juego sigue igual. Los avisos de los bancos (webhooks) no pasan por aquí.
+    // Las compras del App Store (POST /api/apple/verificar, src/Apple.php) sí se permiten: es la compra dentro de la app que pide Apple.
     if (api_es_ios() && in_array($ruta, API_RUTAS_PAGO, true)) Http::error(403, 'Esta opción no está disponible en esta app.', [], 'no_disponible_ios');
 
     // El aviso de pago de Plux (webhook) llega desde Plux, sin la cabecera del juego: tiene su propia clave (Basic Auth).
@@ -41,6 +43,9 @@ try {
     // Avisos por etapa y regreso del jugador (src/Regreso.php, INTEGRAR_REGRESO.md): /api/regreso*. Va ANTES de X-Envivo porque
     // la baja del correo es un formulario sin cabecera; las demás rutas exigen la cabecera y la sesión ellas mismas.
     if (class_exists(\EnVivo\RegresoApi::class) && \EnVivo\RegresoApi::esRuta($ruta)) \EnVivo\RegresoApi::responder($ruta, $metodo, Sesiones::jugadorId());
+    // Avisos del App Store (App Store Server Notifications V2, src/Apple.php): llegan desde Apple, sin la cabecera del juego;
+    // la firma de Apple (JWS) es la que vale. Devoluciones -> la compra se revierte como un reembolso de Google.
+    if ($ruta === '/apple/notificacion') api_apple_notificacion($metodo);
     // Monitor externo (docs/MONITOREO.md): sin sesión ni cabecera, GET o HEAD; prueba que PHP y la base respondan.
     if ($ruta === '/salud') api_salud($metodo);
 
@@ -142,6 +147,8 @@ try {
         '/cuenta/transferir/cancelar' => $soloPost() && api_transferir_cancelar(),
         // Google Play (src/Google.php y GOOGLE_PLAY.md)
         '/google/verificar' => $soloPost() && api_google_verificar(),
+        // App Store en la app de iPhone (src/Apple.php y docs/IPHONE_APP_STORE.md)
+        '/apple/verificar' => $soloPost() && api_apple_verificar(),
         // Soporte dentro del juego (SOPORTE.md)
         '/soporte' => $metodo === 'GET' ? Http::json(200, Soporte::listar(requiere_sesion())) : Http::json(200, Soporte::crear(requiere_sesion(), Http::entrada(20000))),
         '/soporte/responder' => $soloPost() && api_soporte_responder(),
@@ -589,6 +596,33 @@ function api_google_verificar(): never
     $r = Google::verificar($j, texto_de($in, 'producto'), texto_de($in, 'purchaseToken'), texto_de($in, 'orderId'));
     $c = $r['compra'];
     Http::json(200, ['ok' => true, 'nueva' => $r['nueva'], 'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'estado' => $c['estado'], 'canal' => $c['canal']]] + \EnVivo\Universos::estado($j) + \EnVivo\Fusiones::estado($j) + Cuentas::estado($j) + \EnVivo\Discord::estado($j));
+}
+
+// ---------------------------------------------------------------------------------------------- App Store (iPhone)
+/** POST /api/apple/verificar {producto, jws}: la transacción firmada de StoreKit 2. Responde como /api/google/verificar
+ *  más "estado_compra": 'entregado' (nueva) o 'ya_entregado' (ya estaba: el juego la manda otra vez al restaurar). */
+function api_apple_verificar(): never
+{
+    $j = requiere_sesion();
+    $in = Http::entrada(80000);
+    if (Limite::contar('apple:' . $j, 30)) Http::error(429, 'Demasiados intentos. Espera unos minutos.', [], 'limite_intentos');
+    $r = Apple::verificar($j, texto_de($in, 'producto'), texto_de($in, 'jws'));
+    $c = $r['compra'];
+    Http::json(200, ['ok' => true, 'nueva' => $r['nueva'], 'estado_compra' => $r['nueva'] ? 'entregado' : 'ya_entregado',
+        'compra' => ['id' => (int) $c['id'], 'producto' => $c['producto'], 'estado' => $c['estado'], 'canal' => $c['canal']]]
+        + \EnVivo\Universos::estado($j) + \EnVivo\Fusiones::estado($j) + Cuentas::estado($j) + \EnVivo\Discord::estado($j));
+}
+
+/** POST /api/apple/notificacion: App Store Server Notifications V2 ({signedPayload}). Sin sesión ni X-Envivo (lo manda Apple). */
+function api_apple_notificacion(string $metodo): never
+{
+    if ($metodo !== 'POST') Http::error(405, 'Usa POST.');
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    if (Limite::excedido('apple_aviso:' . $ip, 120, 10)) Http::error(429, 'Demasiados avisos.', [], 'limite_intentos');
+    $cuerpo = (string) file_get_contents('php://input', false, null, 0, 200000);
+    [$http, $r] = Apple::notificacion($cuerpo);
+    if ($http !== 200) Limite::sumar('apple_aviso:' . $ip);   // solo los avisos con firma mala cuentan para el límite
+    Http::json($http, $r);
 }
 
 // ---------------------------------------------------------------------------------------------- soporte

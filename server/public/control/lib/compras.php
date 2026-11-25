@@ -15,7 +15,7 @@ function cc_compras_filtros(): array
     if (!isset(CC_ESTADOS_COMPRA[$f['estado']])) $f['estado'] = 'pagado';
     foreach (['desde', 'hasta'] as $k) if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $f[$k]) || strtotime($f[$k]) === false) $f[$k] = '';
     if ($f['producto'] !== '' && !Catalogo::productoCompra($f['producto'])) $f['producto'] = '';
-    if (!in_array($f['canal'], ['web_plux', 'web_paypal', 'google_play'], true) || !Control::columna('compras', 'canal')) $f['canal'] = '';
+    if (!in_array($f['canal'], ['web_plux', 'web_paypal', 'google_play', 'apple'], true) || !Control::columna('compras', 'canal')) $f['canal'] = '';
     return $f;
 }
 
@@ -51,7 +51,7 @@ function cc_t_compras(): string
        . '<label>Desde<input type="date" name="desde" value="' . e($f['desde']) . '"></label>'
        . '<label>Hasta<input type="date" name="hasta" value="' . e($f['hasta']) . '"></label>'
        . '<label>Producto<select name="producto">' . cc_opciones($prods, $f['producto']) . '</select></label>'
-       . ($canal ? '<label>Canal<select name="canal">' . cc_opciones(['' => 'Todos', 'web_plux' => 'Web (Plux)', 'web_paypal' => 'Web (PayPal)', 'google_play' => 'Google Play'], $f['canal']) . '</select></label>' : '')
+       . ($canal ? '<label>Canal<select name="canal">' . cc_opciones(['' => 'Todos', 'web_plux' => 'Web (Plux)', 'web_paypal' => 'Web (PayPal)', 'google_play' => 'Google Play', 'apple' => 'App Store'], $f['canal']) . '</select></label>' : '')
        . '<label class="ancho">Buscar<input type="search" name="q" value="' . e($f['q']) . '" placeholder="N°, cédula, nombre, correo, transacción"></label>'
        . '<div class="botones"><button class="btn" type="submit">Filtrar</button><a class="btn btn-sec" id="csv-sri" href="' . e(cc_url(['t' => 'compras', 'csv' => '1'] + $f)) . '">Exportar CSV para el SRI</a></div></form>';
     $filas = cc_compras_consulta($f, 300);
@@ -153,7 +153,7 @@ function cc_compras_csv(): never
         $p = Catalogo::productoCompra((string) $c['producto']);
         fputcsv($o, array_map('cc_csv_seguro', [$c['id'], $c['pagado_en'] ? date('Y-m-d H:i', (int) $c['pagado_en']) : '', $c['comprador_cedula'], $c['comprador_nombre'], $c['comprador_email'], $c['comprador_telefono'],
             $p['nombre'] ?? $c['producto'], number_format((float) $c['subtotal'], 2, '.', ''), number_format((float) $c['iva'], 2, '.', ''), number_format((float) $c['total'], 2, '.', ''),
-            $c['estado'], $c['canal'] ?? 'web_plux', ($c['canal'] ?? '') === 'google_play' ? ($c['google_order_id'] ?? '') : $c['plux_transaccion'], $c['jugador_email']]), ';', '"', '');
+            $c['estado'], $c['canal'] ?? 'web_plux', ($c['canal'] ?? '') === 'google_play' ? ($c['google_order_id'] ?? '') : (($c['canal'] ?? '') === 'apple' ? ($c['apple_transaccion'] ?? '') : $c['plux_transaccion']), $c['jugador_email']]), ';', '"', '');
     }
     fclose($o);
     exit;

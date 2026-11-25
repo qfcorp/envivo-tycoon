@@ -55,7 +55,7 @@ final class PanelVentas
     public static function esPrueba(array $c): bool
     {
         return match ($c['canal'] ?? 'web_plux') {
-            'google_play' => str_contains((string) ($c['pagado_por'] ?? ''), 'PRUEBA'),
+            'google_play', 'apple' => str_contains((string) ($c['pagado_por'] ?? ''), 'PRUEBA'),   // apple: Sandbox (Apple::QUIEN_PRUEBA)
             'web_paypal' => PayPal::ambiente() === 'sandbox',
             default => TukanPagos::activo() ? TukanPagos::ambiente() === 'sandbox' : Plux::ambiente() === 'sandbox',
         };
@@ -105,7 +105,7 @@ final class PanelVentas
             'fecha' => date('Y-m-d', (int) ($c['pagado_en'] ?: $c['creado'])),
             'concepto' => (string) ($p['nombre'] ?? $c['producto']),
             'producto' => (string) $c['producto'],
-            'canal' => match ($c['canal'] ?? 'web_plux') { 'web_paypal' => 'paypal', 'google_play' => 'google_play', default => 'tarjeta' },
+            'canal' => match ($c['canal'] ?? 'web_plux') { 'web_paypal' => 'paypal', 'google_play' => 'google_play', 'apple' => 'otro', default => 'tarjeta' },   // el Panel no tiene "app_store": va como otro (forma de pago 20)
             'subtotal' => round((float) $c['subtotal'], 2),
             'total' => round((float) $c['total'], 2),
             'prueba' => $prueba,

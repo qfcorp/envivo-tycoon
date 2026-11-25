@@ -165,6 +165,7 @@ Todo error trae además `"codigo"`: un texto fijo para el juego (el `error` es p
 **App de iPhone** (User-Agent con `TukanIOS`, o cabecera `X-EnVivo-Canal: ios` que manda el juego cuando se abrió con `?origen=ios`; regla de Apple 3.1.1): `/api/orden`, `/api/plux/pago`, `/api/paypal/crear`, `/api/tukanpagos/crear` y
 `/api/google/verificar` responden `403 {"ok": false, "error": "Esta opción no está disponible en esta app.", "codigo": "no_disponible_ios"}`, y
 `/pago.php` responde 403 (también con `?origen=ios`). Lo que se paga con créditos o dinero del juego no cambia. Los avisos de los bancos (webhooks) no se tocan.
+La app de iPhone NUEVA (con el puente nativo del App Store) compra con **`/api/apple/verificar`**, que SÍ se permite con TukanIOS (ver abajo y `docs/IPHONE_APP_STORE.md`).
 Si no hay uno propio, sale del código HTTP (`sesion_requerida` 401, `sin_creditos` 402, `prohibido` 403, `no_encontrado` 404,
 `conflicto` 409, `limite_intentos` 429, `no_disponible` 503…). Propios, por ejemplo: `producto_inactivo`, `mantenimiento`,
 `cuenta_suspendida`, `cuenta_baneada`, `email_en_uso`, `credenciales_invalidas`, `compra_ajena`, `pago_en_proceso`,
@@ -173,7 +174,7 @@ responde `429` en JSON (`ok:false`, `error`, `Retry-After: 60`) si una IP abusa 
 `/api/plux/pago` o `/api/chat`.
 
 ## `/api/estado`: campos nuevos
-Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar` y `google/verificar`.
+Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar`, `google/verificar` y `apple/verificar`.
 | campo | qué es | detalle en |
 |---|---|---|
 | `inventario`, `mercado`, `creditos_retenidos` | equipos del servidor y mercado; créditos de ventas aún retenidos (7 días) | `MERCADO.md` |
@@ -191,6 +192,7 @@ Los devuelven también `registro`, `entrar`, `cuenta/transferir/confirmar` y `go
 | `pase` | `{temporada: {numero, nombre, icono, fin} \| null, nivel, premium, por_reclamar}` del Pase de Temporada; `null` sin sesión o sin el módulo | `INTEGRAR_PASE.md` |
 | `sede_oficial` | `{nivel, bono}` (nivel oficial y bono de competencia 0..6); `null` sin sesión o sin el módulo | `INTEGRAR_SEDE_OFICIAL.md` |
 | `terminos` | `{version, aceptados, aceptado_en, edad_minima: 16}`; `null` sin sesión. Con `aceptados: false` el juego pide aceptar una vez antes del chat, mercado y modos en línea | `INTEGRAR_CUENTA.md` |
+| `apple_cuenta` | UUID v5 estable del jugador (`null` sin sesión): la app de iPhone lo pasa como `appAccountToken` al comprar en el App Store; el servidor revisa que la compra traiga el de esta cuenta | `docs/IPHONE_APP_STORE.md` |
 
 Las 4 claves de monetización salen SIEMPRE (lo arma `Cuentas::estado`, así llegan en `/api/estado` y en todas las respuestas
 con el estado completo); un módulo que falla nunca rompe `/api/estado`.
@@ -210,6 +212,8 @@ Control no sale, y su costo puede cambiar desde ahí (siempre usar el `creditos`
 | `/api/cuenta/transferir/confirmar` | `{email, codigo, clave, nombre}` | el nuevo dueño entra con sesión (estado completo) |
 | `/api/cuenta/transferir/cancelar` | — | cancela la pendiente |
 | `/api/google/verificar` | `{producto, purchaseToken, orderId?}` | `{nueva, compra:{id, producto, estado, canal}}` + estado. `orderId` opcional (TWA): se toma de Google; un token se acepta una sola vez (409 si es de otra cuenta). Ver `GOOGLE_PLAY.md` |
+| `/api/apple/verificar` | `{producto, jws}` (`jws` = transacción firmada de StoreKit 2; `producto` = id del catálogo, sin «envivo.») | `{nueva, estado_compra: 'entregado'\|'ya_entregado', compra:{id, producto, estado, canal:'apple'}}` + estado. Con sesión; la app de iPhone SÍ puede llamarla. Idempotente por transactionId y originalTransactionId. Errores: 402 `apple_invalida` / `apple_ambiente`, 409 `apple_no_coincide` / `apple_otra_cuenta` / `apple_revocada` / `apple_revertido` / `apple_ya_comprado`, 404 `no_existe`, 503 `apple_no_disponible`. Ver `docs/IPHONE_APP_STORE.md` |
+| `/api/apple/notificacion` | App Store Server Notifications V2 `{signedPayload}` (sin sesión ni `X-Envivo`: lo manda Apple) | `{ok, resultado}`; `REFUND`/`REVOKE` revierten la compra como un reembolso. 400 si la firma no es de Apple |
 | `/api/mercado/*`, `/api/perfil`, `/api/asociaciones/*`, `/api/chat*` | | `MERCADO.md`, `SOCIAL.md` |
 | `/api/soporte` (GET y POST), `/api/soporte/responder`, `/api/soporte/leido`, GET `/api/soporte/contacto` | | `SOPORTE.md` (solo dentro del juego y por correo) |
 | `/api/discord/codigo`, `/api/discord/desvincular` | — | `INTEGRAR_DISCORD.md` |

@@ -141,6 +141,7 @@ for r in /api/orden /api/plux/pago /api/paypal/crear /api/tukanpagos/crear /api/
 done
 check "?origen=ios (cabecera X-EnVivo-Canal: ios, sin TukanIOS en el User-Agent): las 5 rutas de pago -> 403 no_disponible_ios" "" "$MAL"
 check "?origen=ios: /pago.php?origen=ios -> 403" "403" "$(curl -s -o /dev/null -w '%{http_code}' -b "$TMP/ios.jar" "$A/pago.php?o=abc&origen=ios")"
+check "iPhone: /api/apple/verificar (compras del App Store, src/Apple.php) SÍ se permite: sin JWS -> 400 datos_invalidos, no 403" "400 datos_invalidos" "$(curl -s -b "$TMP/ios.jar" -A "$UAI" -X POST -H 'Content-Type: application/json' -H 'X-Envivo: 1' -d '{"producto":"creditos_250","jws":""}' -o "$TMP/ios_apple.json" -w '%{http_code}' "$A/api/apple/verificar") $(php -r 'echo json_decode(file_get_contents($argv[1]), true)["codigo"] ?? "";' "$TMP/ios_apple.json")"
 check "iPhone: /api/estado y lo que se compra con lo ganado jugando siguen (estado 200)" "200" "$(curl -s -o /dev/null -w '%{http_code}' -b "$TMP/ios.jar" -A "$UAI" "$A/api/estado")"
 check "iPhone: el aviso del banco (webhook de Plux) no se bloquea (sin clave -> 401, no 403)" "401" "$(curl -s -o /dev/null -w '%{http_code}' -A "$UAI" -X POST -d '{}' "$A/api/plux/webhook")"
 
@@ -152,8 +153,8 @@ check "pruebas_soporte_google.php sin fallas" 0 "$R3B"
 check "pruebas_soporte_google.php: nada PENDIENTE del servidor (S5 = dist/, lo reconstruye el juego)" "" "$(grep 'PENDIENTE' "$TMP/soporte_google.log" | grep -v ' S5 ' | tr -s ' ' | tr '\n' ';')"
 
 echo
-echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo, Partida en la nube (versión y dispositivo activo)"
-for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta cuenta_clave facturacion visitas errores misiones push buzon edad_servidor paypal tukanpagos panel_ventas conector_central black_friday eventos_servidor invitar regreso novato buzon_idiomas; do
+echo "== 3c. Módulos (cada suite arranca sus propios servidores falsos, puertos y base): Discord, Festival, Liga, Centro de Control (y su pestaña Servidores), Duelos y Desafío, Universos, Copa de Servidores, Salud y fusión, datos del demo, Partida en la nube (versión y dispositivo activo), App Store (iPhone)"
+for suite in discord festival liga control control_servidores duelos_desafio universos copas fusiones demo_datos partida discord2 cuenta cuenta_clave facturacion visitas errores misiones push buzon edad_servidor paypal tukanpagos panel_ventas conector_central black_friday eventos_servidor invitar regreso novato buzon_idiomas apple; do
   # sin la configuración de esta prueba (cada suite hace la suya) y con puertos libres al azar
   env -u ENVIVO_CONFIG P_APP="$(puerto)" P_VAL="$(puerto)" P_FALSO="$(puerto)" P_NGINX="$(puerto)" php "$SRV/tests/pruebas_$suite.php" > "$TMP/modulo_$suite.log" 2>&1; RM=$?
   grep -E "FALLA" "$TMP/modulo_$suite.log" | sed 's/^/  /'

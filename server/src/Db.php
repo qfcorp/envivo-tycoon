@@ -510,19 +510,25 @@ final class Db
     }
 
     /**
-     * PayPal (src/PayPal.php, migraciones/paypal.sql): la regla del canal de compras (migración 4) solo aceptaba 'web_plux'
-     * y 'google_play'. SQLite no cambia un CHECK con ALTER TABLE: se rehace la tabla con el MISMO texto (todas sus columnas,
-     * también las que hayan agregado los módulos) más 'web_paypal', se copian todas las filas y se vuelven a crear sus índices.
-     * Ninguna tabla apunta a compras con REFERENCES. Si ya acepta 'web_paypal' no hace nada.
+     * PayPal (src/PayPal.php, migraciones/paypal.sql) y App Store (src/Apple.php, migraciones/apple.sql): la regla del canal
+     * de compras (migración 4) solo aceptaba 'web_plux' y 'google_play'. SQLite no cambia un CHECK con ALTER TABLE: se rehace
+     * la tabla con el MISMO texto (todas sus columnas, también las que hayan agregado los módulos) con la lista completa
+     * de canales, se copian todas las filas y se vuelven a crear sus índices. Ninguna tabla apunta a compras con REFERENCES.
+     * Si ya acepta todos los canales no hace nada.
      */
+    public const CANALES = ['web_plux', 'google_play', 'web_paypal', 'apple'];
+
     private static function ampliarCanales(PDO $pdo): void
     {
         $sql = (string) $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'compras'")->fetchColumn();
-        if ($sql === '' || str_contains($sql, "'web_paypal'")) return;
-        $nuevo = str_replace("CHECK (canal IN ('web_plux', 'google_play'))", "CHECK (canal IN ('web_plux', 'google_play', 'web_paypal'))", $sql, $n);
+        if ($sql === '') return;
+        $faltan = array_filter(self::CANALES, fn($c) => !str_contains($sql, "'" . $c . "'"));
+        if (!$faltan) return;
+        $lista = "CHECK (canal IN ('" . implode("', '", self::CANALES) . "'))";
+        $nuevo = (string) preg_replace("/CHECK \\(canal IN \\('web_plux', 'google_play'(, 'web_paypal')?\\)\\)/", $lista, $sql, -1, $n);
         if ($n !== 1 || !preg_match('/^CREATE TABLE "?compras"?\s*\(/i', $nuevo)) {
-            // Esquema distinto al esperado: NO se toca nada (el juego sigue funcionando; solo PayPal no podrá guardar compras)
-            error_log('EN VIVO: compras: no se pudo ampliar la regla del canal para PayPal (esquema inesperado); se deja como está');
+            // Esquema distinto al esperado: NO se toca nada (el juego sigue funcionando; solo PayPal / App Store no podrán guardar compras)
+            error_log('EN VIVO: compras: no se pudo ampliar la regla del canal (PayPal / App Store: esquema inesperado); se deja como está');
             return;
         }
         $indices = $pdo->query("SELECT sql FROM sqlite_master WHERE type = 'index' AND tbl_name = 'compras' AND sql IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
