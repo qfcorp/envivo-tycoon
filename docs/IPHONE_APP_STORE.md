@@ -49,8 +49,9 @@ servidor revisa que sea el de la cuenta que la manda.
 - El servidor la entregó (o ya estaba entregada): **se termina**.
 - El servidor dijo algo que no cambia aunque se reintente (`apple_otra_cuenta`, `apple_no_coincide`, `apple_revocada`,
   `apple_revertido`, `apple_ya_comprado`, `datos_invalidos`): **se termina** (si no, se repetiría siempre).
-- Sin internet, servidor caído, sin sesión, firma no aceptada (`apple_invalida`) o producto que no existe: **NO se termina**.
-  Apple la vuelve a dar en `pendientes` y se entrega después.
+- Sin internet, servidor caído, sin sesión, firma no aceptada (`apple_invalida`), producto que no existe o comprada con OTRA
+  cuenta del juego abierta (`apple_cuenta_distinta`): **NO se termina**. Apple la vuelve a dar en `pendientes` y se entrega
+  después (la de otra cuenta, cuando el jugador entre con esa cuenta).
 
 ## Servidor: `POST /api/apple/verificar {producto, jws}`
 
@@ -64,7 +65,7 @@ Con sesión de jugador y `X-Envivo: 1`. El servidor nunca le cree al celular; co
 4. `environment` = `Production`, o `Sandbox` (revisión de Apple y TestFlight). Lo de Sandbox **se entrega** (Apple lo
    necesita para revisar la app) pero queda como **PRUEBA**: `pagado_por` «App Store (PRUEBA, Sandbox, sin cobro)», sin factura
    del SRI y fuera de las ventas del Panel. Con `APPLE_SANDBOX=0` en `/etc/envivo/config.env` se rechaza.
-5. No devuelta (`revocationDate`) y, si trae `appAccountToken`, que sea el de esta cuenta.
+5. No devuelta (`revocationDate`) y, si trae `appAccountToken`, que sea el de esta cuenta (si no: 409 `apple_cuenta_distinta`).
 6. Una sola entrega por `transactionId` y por `originalTransactionId`: si ya se entregó responde
    `{ok:true, nueva:false, estado_compra:'ya_entregado'}`. La misma compra desde otra cuenta → 409 `apple_otra_cuenta`.
 7. Entrega igual que Google Play (`Compras::insertar` + `Compras::aprobar`, canal `apple`): créditos, VIP, pase, packs, ofertas.

@@ -123,10 +123,11 @@ console.log('errores.json');
     // Códigos que solo ve el Centro de Control (en español): _codigos._solo_panel (palabras sueltas)
     const soloPanel = new Set(String((json._codigos || {})._solo_panel || '').match(/[a-z_]+/g) || []);
     for (const c of usados) ok(claves.includes(c) || pendientes.has(c) || soloPanel.has(c) || (/^falta_/.test(c) && claves.includes('falta_dato')), `errores.json: falta el código del servidor "${c}"`);
-    // Prefijos dinámicos: falta_<campo> y google_<estado>
+    // Prefijos dinámicos: falta_<campo>, google_<estado> y apple_<estado>
     for (const p of prefijos) {
       if (p === 'falta_') ok(claves.includes('falta_dato'), 'errores.json: falta "falta_dato" para el prefijo falta_<campo>');
       else if (p === 'google_') for (const e of ['pendiente', 'rechazado', 'revertido']) ok(claves.includes('google_' + e), `errores.json: falta "google_${e}" (prefijo google_<estado>)`);
+      else if (p === 'apple_') for (const e of ['pendiente', 'rechazado', 'revertido']) ok(claves.includes('apple_' + e), `errores.json: falta "apple_${e}" (prefijo apple_<estado>, src/Apple.php)`);
       else if (p === 'cuenta_') for (const e of ['suspendido', 'baneado', 'borrado']) ok(claves.includes('cuenta_' + e), `errores.json: falta "cuenta_${e}" (prefijo cuenta_<estado>)`);
       else if (p === 'plan_') for (const e of ['ejecutada', 'cancelada']) ok(claves.includes('plan_' + e), `errores.json: falta "plan_${e}" (prefijo plan_<estado>)`);
       else ok(false, `errores.json: prefijo dinámico nuevo en el servidor: "${p}" (agregar sus textos y este caso a la prueba)`);

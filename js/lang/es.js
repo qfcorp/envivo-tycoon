@@ -805,6 +805,7 @@
     "error.apple_rechazado": "Esa compra del App Store fue rechazada.",
     "error.apple_pendiente": "Esa compra del App Store todavía está pendiente.",
     "error.apple_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. Puedes pedir la devolución a Apple en reportaproblem.apple.com.",
+    "error.apple_cuenta_distinta": "Esa compra del App Store se hizo con otra cuenta del juego. Entra con esa cuenta para recibirla.",
     // Integración: música, soporte, plan del evento (pe.*), Google Play y arreglos de QA
     "head.musica": "Música",
     "head.musica_on": "Activar música",

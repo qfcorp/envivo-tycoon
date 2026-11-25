@@ -2339,6 +2339,7 @@
     "error.apple_rechazado": "That App Store purchase was declined.",
     "error.apple_pendiente": "That App Store purchase is still pending.",
     "error.apple_ya_comprado": "You already have that item (it can only be bought once), so it wasn’t delivered again. You can ask Apple for a refund at reportaproblem.apple.com.",
+    "error.apple_cuenta_distinta": "That App Store purchase was made with another game account. Sign in with that account to receive it.",
 
     logica: {},
   };

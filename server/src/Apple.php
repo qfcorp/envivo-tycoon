@@ -19,7 +19,8 @@ namespace EnVivo;
  *     1.2.840.113635.100.6.11.1), certificados vigentes, firma ES256 con la llave de la hoja.
  *  2. bundleId = com.tukanec.envivo, productId = envivo.<id del catálogo> (el mismo que pidió el juego), ambiente Production
  *     o Sandbox (Sandbox = revisión de Apple y TestFlight: se entrega igual pero queda como PRUEBA, sin factura ni venta),
- *     no revocada (devuelta) y, si trae appAccountToken, que sea el de este jugador (apple_cuenta en /api/estado).
+ *     no revocada (devuelta) y, si trae appAccountToken, que sea el de este jugador (apple_cuenta en /api/estado; si no:
+ *     409 apple_cuenta_distinta y la app NO la termina, se entrega cuando entre la cuenta con la que se compró).
  *  3. Idempotente por transactionId y por originalTransactionId: si ya se entregó responde ok con estado «ya_entregado».
  *  4. Entrega como Google (Compras::insertar + Compras::aprobar, canal 'apple'). Lo de una sola vez repetido NO se entrega
  *     otra vez (queda un aviso para el dueño; el jugador pide la devolución a Apple).
@@ -250,11 +251,10 @@ final class Apple
         $tipoApple = (string) ($tx['type'] ?? '');
         $tipoEsperado = self::tipo($p) === 'NON_CONSUMABLE' ? 'Non-Consumable' : 'Consumable';
         Fallo::si($tipoApple !== '' && $tipoApple !== $tipoEsperado, 'La compra no corresponde a ese producto.', 409, ['codigo' => 'apple_no_coincide']);
+        // Comprada con otra cuenta del juego abierta (appAccountToken de otra cuenta): no se entrega aquí. Código propio porque la
+        // app NO debe terminarla: se entrega cuando el jugador entre con la cuenta con la que compró.
         $tok = strtolower((string) ($tx['appAccountToken'] ?? ''));
-        if ($tok !== '' && !hash_equals(self::cuenta($jugador), $tok)) {
-            Db::aviso('apple_otra_cuenta', 'La cuenta ' . $jugador . ' intentó usar la compra del App Store ' . $txid . ' hecha para otra cuenta del juego. Rechazado.');
-            throw new Fallo('Esa compra del App Store es de otra cuenta del juego.', 409, ['codigo' => 'apple_otra_cuenta']);
-        }
+        Fallo::si($tok !== '' && !hash_equals(self::cuenta($jugador), $tok), 'Esa compra del App Store se hizo con otra cuenta del juego. Entra con esa cuenta para recibirla.', 409, ['codigo' => 'apple_cuenta_distinta']);
         // ¿Ya se registró? (el juego la manda varias veces: al comprar, al abrir el juego, al restaurar)
         $ya = self::existente($txid, $original);
         if ($ya) return self::yaRegistrada($jugador, $id, $ya);

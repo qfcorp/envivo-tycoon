@@ -447,7 +447,8 @@
     "apple_revertido": "existe · src/Apple.php · 409 (la compra ya se revirtió por una devolución)",
     "apple_rechazado": "existe · src/Apple.php · 409",
     "apple_pendiente": "existe · src/Apple.php · 409",
-    "apple_ya_comprado": "existe · src/Apple.php · 409 (de una sola vez y ya lo tenía: no se entrega otra vez)"
+    "apple_ya_comprado": "existe · src/Apple.php · 409 (de una sola vez y ya lo tenía: no se entrega otra vez)",
+    "apple_cuenta_distinta": "existe · src/Apple.php · 409 (appAccountToken de otra cuenta: la app no la termina; se entrega al entrar con esa cuenta)"
   },
   "es": {
     "sin_asociacion": "No estás en ninguna asociación.",
@@ -895,7 +896,8 @@
     "apple_revertido": "Esa compra del App Store fue reembolsada.",
     "apple_rechazado": "Esa compra del App Store fue rechazada.",
     "apple_pendiente": "Esa compra del App Store todavía está pendiente.",
-    "apple_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. Puedes pedir la devolución a Apple en reportaproblem.apple.com."
+    "apple_ya_comprado": "Ya tienes ese producto (se compra una sola vez), así que no te lo entregamos otra vez. Puedes pedir la devolución a Apple en reportaproblem.apple.com.",
+    "apple_cuenta_distinta": "Esa compra del App Store se hizo con otra cuenta del juego. Entra con esa cuenta para recibirla."
   },
   "en": {
     "sin_asociacion": "You're not in any alliance.",
@@ -1343,7 +1345,8 @@
     "apple_revertido": "That App Store purchase was refunded.",
     "apple_rechazado": "That App Store purchase was declined.",
     "apple_pendiente": "That App Store purchase is still pending.",
-    "apple_ya_comprado": "You already have that item (it can only be bought once), so it wasn’t delivered again. You can ask Apple for a refund at reportaproblem.apple.com."
+    "apple_ya_comprado": "You already have that item (it can only be bought once), so it wasn’t delivered again. You can ask Apple for a refund at reportaproblem.apple.com.",
+    "apple_cuenta_distinta": "That App Store purchase was made with another game account. Sign in with that account to receive it."
   },
   "pt-BR": {
     "sin_asociacion": "Você não está em nenhuma aliança.",

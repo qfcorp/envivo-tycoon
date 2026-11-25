@@ -231,10 +231,10 @@ check('4 pedidos a la vez con la misma compra: los 4 en 200, UNA sola nueva, +70
 // =====================================================================
 titulo('Datos que no coinciden');
 [$B, $jarB] = $jugador('Beto Otro');
-check('La misma compra desde otra cuenta del juego -> 409 apple_otra_cuenta (y aviso)', [[409, 'apple_otra_cuenta'], true],
+check('La misma compra (ya entregada a Ana) desde otra cuenta del juego -> 409 apple_otra_cuenta (y aviso)', [[409, 'apple_otra_cuenta'], true],
     [$cod($verificar($jarB, 'creditos_250', $AF->transaccion(['transactionId' => $t1]))), (bool) Db::valor("SELECT 1 FROM avisos WHERE tipo = 'apple_otra_cuenta'")]);
 $sinLimites();
-check('appAccountToken de otra cuenta (Ana compró, Beto la manda) -> 409 apple_otra_cuenta, sin entregar', [[409, 'apple_otra_cuenta'], 0],
+check('appAccountToken de otra cuenta (Ana compró, Beto la manda) -> 409 apple_cuenta_distinta (la app no la termina), sin entregar', [[409, 'apple_cuenta_distinta'], 0],
     [$cod($verificar($jarB, 'creditos_250', $AF->transaccion(['transactionId' => $tx = $txid(), 'appAccountToken' => Apple::cuenta($A)]))), (int) Db::valor('SELECT COUNT(*) FROM compras WHERE apple_transaccion = ?', [$tx])]);
 check('appAccountToken en mayúsculas de la misma cuenta -> 200 (se compara sin mayúsculas)', 200,
     $verificar($jarB, 'creditos_250', $AF->transaccion(['transactionId' => $txid(), 'appAccountToken' => strtoupper(Apple::cuenta($B))]))[0]);

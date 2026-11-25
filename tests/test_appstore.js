@@ -100,6 +100,9 @@ async function parteA() {
     const m4 = cargarModulo({ respuestas: { comprar: { ok: true, jws: 'a.b.c', transaccion: '9', producto: 'envivo.creditos_250' } }, servidor: () => ({ status: 402, j: { ok: false, codigo: 'apple_invalida', error: 'x' } }) });
     await m4.AS.comprar('creditos_250');
     bien(!m4.msgs.some((x) => x.accion === 'terminar'), 'Firma no aceptada por el servidor (402 apple_invalida): NO se termina (se reintenta)');
+    const m5 = cargarModulo({ respuestas: { pendientes: { ok: true, transacciones: [{ jws: 'j', transaccion: '10', producto: 'envivo.creditos_250' }] } }, servidor: () => ({ status: 409, j: { ok: false, codigo: 'apple_cuenta_distinta', error: 'x' } }) });
+    const r5 = await m5.AS.restaurar();
+    bien(r5.errores.length === 1 && !m5.msgs.some((x) => x.accion === 'terminar'), 'Pendiente comprada con OTRA cuenta del juego (409 apple_cuenta_distinta): NO se termina (se entrega cuando entre esa cuenta)');
   }
   {
     const m = cargarModulo({ logueado: false });
