@@ -67,14 +67,21 @@
   // Imprevistos graves: la música pasa a tensión. Los demás solo llevan un golpe ("última hora").
   const INC_GRAVE = /^(luz|internet|falla|robo|senal|senal_irl|cobertura|lluvia|transporte|dron)$/;
 
-  /* ---------- Compras de Google Play (solo dentro de la app de Android) ---------- */
-  // js/googleplay.js llega después (defer): se busca cada vez
-  let GP = window.GooglePlay || null;
-  const enApp = () => { try { GP = GP || window.GooglePlay || null; return !!(GP && GP.enApp()); } catch (e) { return false; } };
-  // App de iPhone (js/ios.js, regla de Apple 3.1.1): sin tienda de dinero real (ni precios, ni comprar, ni Plux/PayPal/Google Play)
-  const enIOS = () => { try { return !!(window.TukanIOS && window.TukanIOS.activo()); } catch (e) { return false; } };
-  let playOk = false;        // hay Play Billing en este celular
-  let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play
+  /* ---------- Compras dentro de la app: Google Play (Android) o App Store (iPhone con el puente nativo) ---------- */
+  // js/googleplay.js y js/appstore.js llegan después (defer): se busca cada vez. Los dos tienen la misma forma (enApp,
+  // disponible, productos, comprar, restaurar). En el iPhone con tienda de Apple manda el App Store; si no, Google Play.
+  const canalApp = () => { try { const A = window.AppStore; if (A && A.enApp && A.enApp()) return A; } catch (e) { /* abajo */ } return window.GooglePlay || null; };
+  const esAppStore = () => { try { return !!(GP && GP === window.AppStore); } catch (e) { return false; } };
+  let GP = canalApp();
+  const enApp = () => { try { GP = canalApp(); return !!(GP && GP.enApp()); } catch (e) { return false; } };
+  // App de iPhone SIN tienda de Apple (app vieja sin el puente; js/ios.js, regla de Apple 3.1.1): sin dinero real (ni precios,
+  // ni comprar, ni Plux/PayPal/Google Play). Con el puente (TukanIOS.conTienda) el iPhone se porta como la app de Google Play.
+  const enIOS = () => { try { const I = window.TukanIOS; return !!(I && I.activo() && !(I.conTienda && I.conTienda())); } catch (e) { return false; } };
+  const canalAN = () => (esAppStore() ? 'app_store' : 'google_play');   // analítica: de qué tienda de apps es la compra
+  // Textos de la tienda de apps: los de Google Play (tienda.gp_*, tienda.play_*) o los del App Store (tienda.as_*)
+  const TA = (k) => { const m = { gp_ok: 'as_ok', gp_pendiente: 'as_pendiente', gp_error: 'as_error', play_llego: 'as_llego', play_precios: 'as_precios' }; return T('tienda.' + (esAppStore() && m[k] ? m[k] : k)); };
+  let playOk = false;        // hay Play Billing (o el App Store) en este celular
+  let preciosPlay = {};      // id → { precio, ... } con el precio de Google Play o del App Store
 
   /* ---------- Límites (de la lógica si los exporta) ---------- */
   const BAL = () => G.BALANCE || {};
@@ -2232,7 +2239,8 @@
       ${sinPago}
       ${cuerpo || emptyState('gem', T('tienda.pronto_t'), T('tienda.pronto'))}
       <div class="tv-trust">${I('check')}<span>${T('tienda.sin_azar')}</span></div>
-      ${ios || (app && !playOk) ? '' : `<p class="small muted">${app ? T('tienda.play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
+      ${ios || (app && !playOk) ? '' : `<p class="small muted">${app ? TA('play_precios') : conPaypal ? T('tienda.precios_paypal', { p: esc(precio(Number(E.paypal.minimo) || 0)) }) : T('tienda.precios')}</p>`}
+      ${app && esAppStore() ? `<div class="card tv-restaurar"><p class="small muted" style="margin:0 0 8px">${T('tienda.as_restaurar_txt')}</p><button class="btn sm" data-act="as-restaurar">${I('refresh', 'sm')}${T('tienda.as_restaurar')}</button></div>` : ''}
       ${ios ? '' : `<p class="small muted">${T('tienda.aviso')}</p>`}
       ${soporteBtn()}
       <div class="legal"><a href="/terminos.html">${T('tienda.terminos')}</a><a href="/privacidad.html">${T('tienda.privacidad')}</a></div></div>`;
@@ -2365,7 +2373,7 @@
   // porque Chrome exige un toque reciente para abrir la ventana de pago. La nube se guarda después.
   function comprar(id, metodo) {
     if (enIOS()) return;   // iPhone: no hay compras con dinero real (regla de Apple)
-    if (enApp()) { AN('compra_iniciada', { producto: id, canal: 'google_play' }); comprarPlay(id); return; }   // en la app: solo Google Play
+    if (enApp()) { AN('compra_iniciada', { producto: id, canal: canalAN() }); comprarPlay(id); return; }   // en la app: solo Google Play (o el App Store en el iPhone)
     // Botón sin método (pase, VIP, Copa...) y el producto se puede pagar con PayPal: se pregunta cómo pagar
     if (metodo !== 'tarjeta' && metodo !== 'paypal' && paypalPara(id)) { elegirPago(id); return; }
     if (metodo === 'paypal' && !paypalPara(id)) metodo = 'tarjeta';
@@ -2402,25 +2410,35 @@
       r = r || { ok: false, estado: 'error' };
       if (r.ok) {
         snd.play('buy');
-        AN('compra_aprobada', { producto: id, canal: 'google_play' });
+        AN('compra_aprobada', { producto: id, canal: canalAN() });
         try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
         aplicarEntregas(); save(); render(); trasCompra();
-        toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : T('tienda.gp_ok'));
+        toast(r.estado === 'ya_entregado' ? T('tienda.gp_ya') : TA('gp_ok'));
         subirNube();
         return;
       }
       if (r.estado === 'cancelado') return;
       if (r.estado === 'sesion_requerida') { abrirCuenta('registro', T('cuenta.para_comprar')); return; }
-      if (r.estado === 'pendiente') { toast(T('tienda.gp_pendiente')); return; }
+      if (r.estado === 'pendiente') { toast(TA('gp_pendiente')); return; }
       const porCodigo = r.codigo && I18 && I18.T.has('error.' + r.codigo) ? T('error.' + r.codigo) : null;
-      toast(porCodigo || (r.estado === 'ocupado' ? T('tienda.gp_ocupado') : r.estado === 'no_disponible' ? T('tienda.play_no_disp') : T('tienda.gp_error')));
+      toast(porCodigo || (r.estado === 'ocupado' ? T('tienda.gp_ocupado') : r.estado === 'no_disponible' ? T('tienda.play_no_disp') : TA('gp_error')));
       snd.play('error');
-    }).catch(() => { toast(T('tienda.gp_error')); snd.play('error'); });
+    }).catch(() => { toast(TA('gp_error')); snd.play('error'); });
   }
-  // Precios de Google Play y compras que quedaron sin confirmar (al abrir el juego y al entrar a la cuenta)
+  // Precios de Google Play (o del App Store) y compras que quedaron sin confirmar (al abrir el juego y al entrar a la cuenta)
+  let asEscuchando = false;
   async function iniciarPlay() {
-    GP = GP || window.GooglePlay || null;
+    GP = canalApp();
     if (!GP || !Api.disponible || !Api.estado) return;
+    // App Store: una compra aprobada más tarde («Pedir permiso para comprar») llega sola: se entrega y se avisa
+    if (esAppStore() && !asEscuchando && GP.escuchar) {
+      asEscuchando = true;
+      GP.escuchar(async (info) => {
+        if (!info || !info.entregadas || !info.entregadas.length) return;
+        try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
+        aplicarEntregas(); save(); render(); trasCompra(); toast(TA('play_llego')); snd.play('chapter');
+      });
+    }
     try { playOk = !!(await GP.disponible()); } catch (e) { playOk = false; }
     if (playOk) {
       const ids = [...new Set(((Api.estado.tienda && Api.estado.tienda.productos) || []).map((p) => p.id).concat(PLAY_EXTRA))];
@@ -2445,9 +2463,25 @@
     try {
       const r = await GP.restaurar();
       if (r && r.entregadas && r.entregadas.length) {
-        await Api.refrescar(); aplicarEntregas(); save(); render(); toast(T('tienda.play_llego')); snd.play('chapter');
+        await Api.refrescar(); aplicarEntregas(); save(); render(); trasCompra(); toast(TA('play_llego')); snd.play('chapter');
       }
     } catch (e) { /* se reintenta la próxima vez */ }
+  }
+  // «Restaurar compras» (solo en el iPhone con el App Store; Apple lo exige para lo de una sola vez): el servidor no entrega dos veces
+  let asRestaurando = false;
+  async function restaurarApple() {
+    if (asRestaurando || !esAppStore() || !GP.restaurarCompras) return;
+    if (!Api.logueado()) { abrirCuenta('entrar', T('cuenta.para_comprar')); return; }
+    asRestaurando = true; snd.play('tap'); toast(T('tienda.as_restaurando'));
+    try {
+      const r = await GP.restaurarCompras();
+      if (!r || r.omitido) { toast(T(r && r.omitido === 'sesion_requerida' ? 'cuenta.para_comprar' : 'tienda.as_restaurar_error')); snd.play('error'); return; }
+      if (r.entregadas.length) {
+        try { await Api.refrescar(); } catch (e) { /* se verá al volver */ }
+        aplicarEntregas(); save(); render(); trasCompra(); toast(T('tienda.as_restauradas', { n: r.entregadas.length })); snd.play('chapter');
+      } else if (r.errores.length && !r.revisadas) { toast(T('tienda.as_restaurar_error')); snd.play('error'); }
+      else toast(T('tienda.as_nada'));
+    } catch (e) { toast(T('tienda.as_restaurar_error')); snd.play('error'); } finally { asRestaurando = false; }
   }
 
   async function comprarWeb(id, metodo) {
@@ -3920,6 +3954,7 @@
       case 'idioma': abrirIdiomas(); break;
       case 'set-idioma': closeModal(); elegirIdioma(el.dataset.k); snd.play('tap'); break;
       case 'comprar': comprar(el.dataset.k, el.dataset.metodo); break;
+      case 'as-restaurar': restaurarApple(); break;
       case 'tienda-ir': snd.play('tap'); irSeccionTienda(el.dataset.k); break;
       case 'tienda-estrellas': snd.play('tap'); abrirEstrellas(); break;
       case 'tienda-pase': snd.play('tap'); try { window.Pase.abrir(ctxInicio()); } catch (err) { console.error('[tienda pase]', err); toast(T('err.no_completo')); } break;
@@ -4203,7 +4238,7 @@
   }
   // Conectar con la tienda (si hay servidor). Si volvemos de un pago aprobado, avisar.
   async function conectar() {
-    GP = GP || window.GooglePlay || null;
+    GP = canalApp();
     const volvioDePago = /[?&]compra=ok\b/.test(location.search);
     if (volvioDePago) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* nada */ } }
     // Con cuenta (esta partida ya estuvo en una cuenta): "Sincronizando tu partida…" antes de jugar

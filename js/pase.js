@@ -774,7 +774,7 @@
     const pp = d.productos || {};
     const pPrem = pp.pase_premium && pp.pase_premium.activo !== false ? precioDe(ctx, 'pase_premium', pp.pase_premium.precio) : null;
     const pPlus = pp.pase_premium_plus && pp.pase_premium_plus.activo !== false ? precioDe(ctx, 'pase_premium_plus', pp.pase_premium_plus.precio) : null;
-    const iosSinVenta = !d.premium && !pPrem && !pPlus && !!(root.TukanIOS && root.TukanIOS.activo());   // iPhone: sin ofrecer el premium (regla de Apple)
+    const iosSinVenta = !d.premium && !pPrem && !pPlus && !!(root.TukanIOS && (root.TukanIOS.sinTienda ? root.TukanIOS.sinTienda() : root.TukanIOS.activo()));   // iPhone sin App Store: sin ofrecer el premium (regla de Apple)
     const compra = iosSinVenta ? '' : d.premium
       ? `<p class="small muted" style="margin:8px 0 0">${esc(t('creditos_vuelta', { a: num(d.creditos_dados), b: num(d.creditos_tope) }))}</p>`
       : `<p class="small" style="margin:10px 0 0">${esc(t('premium_txt', { c: num(d.creditos_tope) }))}</p>
