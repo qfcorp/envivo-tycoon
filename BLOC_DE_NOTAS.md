@@ -1,0 +1,7 @@
+
+## País y Ciudad en los datos de la factura (27 nov 2026)
+- La página de pago (`Facturacion::htmlPago`, `public/assets/factura.js`) pide **País** (por defecto Ecuador, visible) y **Ciudad**; el comprador los puede cambiar. `Facturacion::datosDePago` los limpia y los guarda en `facturacion_datos_compra` (sin migración: es JSON).
+- `PanelVentas::datosVenta` los manda al Panel (`comprador.pais/ciudad`, `factura.pais/ciudad/tipo_id`) y aplica la regla de exterior (`src/Exterior.php`, copia de tufactura): cédula o RUC ecuatoriano válido => con IVA; si no, país distinto de Ecuador => exterior; si no, ciudad/dirección con país extranjero; si no, tipo 08.
+- Para el exterior el Panel exige subtotal = total (si no, 422): solo en lo que se le informa al Panel se manda subtotal = total y `exterior: true`. **El cobro, el catálogo y el precio NO cambian.** Google Play y PayPal no cambian (sin datos: consumidor final, País Ecuador).
+- **PENDIENTE (decisión de Dimitry): ajuste de precio para extranjeros.** Hoy el extranjero paga el mismo precio con IVA incluido ($4,99) y el Panel lo registra y factura al 0 % por ese total. Falta decidir si el precio publicado «+ IVA» se cobra sin IVA (ej. $4,34 en vez de $4,99) como en los demás programas. No se tocó hasta que él lo decida.
+- Pruebas: `server/tests/pruebas_facturacion.php` (sección País y Ciudad) y `pruebas_panel_ventas.php` (venta del exterior contra el Panel de verdad).

@@ -100,19 +100,29 @@ final class PanelVentas
         $q = Facturacion::compradorDe($c);   // lo que eligió en la página de pago; Google / PayPal sin datos: consumidor final
         $cf = ($q['tipo_id'] ?? '07') === '07';
         $p = Catalogo::productoCompra((string) $c['producto']);
+        $pais = (string) ($q['pais'] ?? '') !== '' ? (string) $q['pais'] : 'Ecuador';
+        $ciudad = (string) ($q['ciudad'] ?? '');
+        // Regla de exterior (27 nov 2026): cédula/RUC ecuatoriano válido => con IVA; si no, país ≠ Ecuador => exterior sin IVA.
+        $exterior = Exterior::esExterior(['identificacion' => (string) ($q['identificacion'] ?? ''), 'tipo_id' => (string) ($q['tipo_id'] ?? ''),
+            'pais' => $pais, 'ciudad' => $ciudad, 'direccion' => (string) ($q['direccion'] ?? '')]);
+        $total = round((float) $c['total'], 2);
+        // El Panel exige subtotal = total en una venta al exterior (sin IVA). SOLO se cambia lo que se le informa al Panel: el
+        // cobro, el catálogo y el precio NO cambian (ajuste de precio a extranjeros: pendiente de decisión de Dimitry).
+        $sub = $exterior ? $total : round((float) $c['subtotal'], 2);
         return [
             'referencia' => self::referencia((int) $c['id']),
             'fecha' => date('Y-m-d', (int) ($c['pagado_en'] ?: $c['creado'])),
             'concepto' => (string) ($p['nombre'] ?? $c['producto']),
             'producto' => (string) $c['producto'],
             'canal' => match ($c['canal'] ?? 'web_plux') { 'web_paypal' => 'paypal', 'google_play' => 'google_play', 'apple' => 'otro', default => 'tarjeta' },   // el Panel no tiene "app_store": va como otro (forma de pago 20)
-            'subtotal' => round((float) $c['subtotal'], 2),
-            'total' => round((float) $c['total'], 2),
+            'subtotal' => $sub,
+            'total' => $total,
+            'exterior' => $exterior,
             'prueba' => $prueba,
-            'comprador' => ['id' => (string) $c['jugador_id'], 'nombre' => (string) ($j['nombre'] ?? ''), 'correo' => (string) ($j['email'] ?? '')],
-            'factura' => $cf ? ['modo' => 'consumidor', 'correo' => (string) ($q['email'] ?? '')]
+            'comprador' => ['id' => (string) $c['jugador_id'], 'nombre' => (string) ($j['nombre'] ?? ''), 'correo' => (string) ($j['email'] ?? ''), 'pais' => $pais, 'ciudad' => $ciudad],
+            'factura' => $cf ? ['modo' => 'consumidor', 'correo' => (string) ($q['email'] ?? ''), 'pais' => $pais, 'ciudad' => $ciudad]
                 : ['modo' => 'auto', 'identificacion' => (string) $q['identificacion'], 'razon_social' => (string) $q['razon_social'],
-                   'correo' => (string) ($q['email'] ?? ''), 'telefono' => (string) ($q['telefono'] ?? ''), 'direccion' => (string) ($q['direccion'] ?? '')],
+                   'correo' => (string) ($q['email'] ?? ''), 'telefono' => (string) ($q['telefono'] ?? ''), 'direccion' => (string) ($q['direccion'] ?? ''), 'pais' => $pais, 'ciudad' => $ciudad, 'tipo_id' => (string) ($q['tipo_id'] ?? '')],
         ];
     }
 

@@ -146,6 +146,15 @@ PanelVentas::enviarPendientes();
 check('Panel: el cobro queda anulado y avisa que falta la nota de crédito en TuFactura', [1, 'enviado', true],
     [(int) ($cobro($c1)['anulado'] ?? 0), $cola($c1, 'revertir')['estado'], str_contains((string) $cola($c1, 'revertir')['factura'], 'nota de crédito')]);
 
+titulo('Comprador del exterior (27 nov 2026): País y Ciudad llegan al Panel; el Panel lo acepta y el precio no cambia');
+$ext = $jugador('John Smith');
+$c5 = $comprar($ext, 'creditos_700', 'web_plux', ['modo' => 'otro', 'tipo_id' => '06', 'identificacion' => 'AB123456', 'razon_social' => 'JOHN SMITH', 'email' => 'john@prueba.example', 'telefono' => '', 'direccion' => '', 'pais' => 'Colombia', 'ciudad' => 'Bogota']);
+$v5 = PanelVentas::datosVenta(Compras::porId($c5), false);
+check('Lo que se manda: exterior, subtotal = total (el Panel lo exige), País y Ciudad', [true, true, 'Colombia', 'Bogota'], [$v5['exterior'], $v5['subtotal'] === $v5['total'], $v5['comprador']['pais'], $v5['factura']['ciudad']]);
+check('Mandar: el Panel acepta la venta del exterior (no 422)', 1, PanelVentas::enviarPendientes());
+$x5 = $cobro($c5);
+check('Panel: el cobro es por el total que pagó el comprador (4,99, factura al 0 %)', [4.99, 'enviado'], [(float) ($x5['monto'] ?? 0), $cola($c5)['estado']]);
+
 titulo('Seguridad');
 file_put_contents($TMP . '/config.env', str_replace("TUKAN_CENTRAL_SECRET=$secreto", 'TUKAN_CENTRAL_SECRET=' . str_repeat('x', 32), $conf));
 $salida = shell_exec('ENVIVO_CONFIG=' . escapeshellarg($TMP . '/config.env') . ' php -r ' . escapeshellarg('require "' . $SRV . '/src/arranque.php"; \EnVivo\Db::pdo(); [$h] = \EnVivo\PanelVentas::probar(); echo $h;') . ' 2>&1');

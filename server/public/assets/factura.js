@@ -36,9 +36,10 @@
     rucValido: rucValido,
     leer: function (msg) {
       var m = modo(), dir = $('fact-direccion').value.trim();
+      var pais = ($('fact-pais') ? $('fact-pais').value.trim() : '') || 'Ecuador', ciudad = $('fact-ciudad') ? $('fact-ciudad').value.trim() : '';
       if (m === 'consumidor_final') {
         if (parseFloat(caja.dataset.total) > parseFloat(caja.dataset.tope)) { msg('Para este valor el SRI pide identificar al comprador. Elige otra opción de factura.', 'error'); return false; }
-        return { modo: m };
+        return { modo: m, pais: pais, ciudad: ciudad };
       }
       if (m === 'otro') {
         var id = limpiar($('fact-identificacion').value), razon = $('fact-razon').value.trim(), email = $('fact-email').value.trim();
@@ -46,13 +47,13 @@
         if (id.length === 13 && /^\d+$/.test(id) && !rucValido(id)) { msg('El RUC no es válido. Revísalo (13 números).', 'error'); return false; }
         if (id.length === 10 && /^\d+$/.test(id) && !cedulaValida(id)) { msg('La cédula para la factura no es válida. Revísala.', 'error'); return false; }
         if (email && !/^\S+@\S+\.\S+$/.test(email)) { msg('Escribe un correo válido para la factura.', 'error'); return false; }
-        return { modo: m, identificacion: id, razon_social: razon, email: email, direccion: dir };
+        return { modo: m, identificacion: id, razon_social: razon, email: email, direccion: dir, pais: pais, ciudad: ciudad };
       }
       var ced = limpiar(($('plux-cedula') || {}).value);
       if ((ced.length === 10 && /^\d+$/.test(ced) && !cedulaValida(ced)) || (ced.length === 13 && /^\d+$/.test(ced) && !rucValido(ced))) {
         msg('La cédula del titular no es válida para la factura. Revísala o elige «Consumidor final».', 'error'); return false;
       }
-      return { modo: 'titular', direccion: dir };
+      return { modo: 'titular', direccion: dir, pais: pais, ciudad: ciudad };
     }
   };
 })();

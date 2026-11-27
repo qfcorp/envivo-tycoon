@@ -125,3 +125,6 @@ El CSV de la pestaña sale de `cc_t_facturacion()` con `?csv=1`, así que en `in
      `FACTURACION_GOOGLE=0` las apaga.
    - ¿Qué hacer con los reembolsos de ventas a consumidor final? Desde 2026 no se permite nota de crédito; el juego las
      deja como `no_aplica` y avisa.
+
+## País y Ciudad (27 nov 2026)
+La página de pago manda también `factura.pais` (por defecto Ecuador) y `factura.ciudad`. Al Panel Tukán se le envía `comprador.pais/ciudad` y `factura.pais/ciudad`; si la regla de exterior aplica (cédula/RUC ecuatoriano válido => con IVA; si no, país distinto de Ecuador => exterior) se manda `exterior: true` y subtotal = total (el Panel lo exige). El precio cobrado no cambia; el ajuste de precio para extranjeros está pendiente de decisión de Dimitry (ver BLOC_DE_NOTAS.md).

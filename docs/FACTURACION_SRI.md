@@ -322,3 +322,6 @@ En todas hay un campo de dirección opcional. El servidor revisa los datos **ant
 RUC con su estructura y, si es de persona natural, la cédula). Así nunca queda un cobro sin una factura posible.
 
 Google Play no manda datos del comprador. Esas compras van a consumidor final con el correo de la cuenta.
+
+## País y Ciudad (27 nov 2026)
+La página de pago manda también `factura.pais` (por defecto Ecuador) y `factura.ciudad`. Al Panel Tukán se le envía `comprador.pais/ciudad` y `factura.pais/ciudad`; si la regla de exterior aplica (cédula/RUC ecuatoriano válido => con IVA; si no, país distinto de Ecuador => exterior) se manda `exterior: true` y subtotal = total (el Panel lo exige). El precio cobrado no cambia; el ajuste de precio para extranjeros está pendiente de decisión de Dimitry (ver BLOC_DE_NOTAS.md).
