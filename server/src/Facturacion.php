@@ -133,6 +133,9 @@ final class Facturacion
         $f = is_array($in['factura'] ?? null) ? $in['factura'] : [];
         $modo = in_array($f['modo'] ?? null, ['titular', 'otro', 'consumidor_final'], true) ? $f['modo'] : 'titular';
         $dir = self::texto($f['direccion'] ?? '', 300);
+        $pais = self::texto($f['pais'] ?? '', 60);
+        if ($pais === '') $pais = 'Ecuador';   // por defecto Ecuador; el comprador del exterior lo cambia
+        $ciudad = self::texto($f['ciudad'] ?? '', 80);
         $email = self::texto($f['email'] ?? '', 120);
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $email = (string) ($comprador['email'] ?? ($jugador['email'] ?? ''));
         $tel = (string) ($comprador['telefono'] ?? '');
@@ -145,7 +148,7 @@ final class Facturacion
         if ($modo === 'consumidor_final') {
             if ($total > $tope) throw new Fallo('Para compras de más de ' . Http::dinero($tope) . ' el SRI pide identificar al comprador: elige «A nombre del titular» o «A otro nombre o RUC».', 422, ['codigo' => 'factura_consumidor_final_tope']);
             return ['modo' => 'consumidor_final', 'tipo_id' => '07', 'identificacion' => self::CONSUMIDOR_FINAL_ID, 'razon_social' => 'CONSUMIDOR FINAL',
-                'email' => $email, 'telefono' => $tel, 'direccion' => $dir];
+                'email' => $email, 'telefono' => $tel, 'direccion' => $dir, 'pais' => $pais, 'ciudad' => $ciudad];
         }
         if ($modo === 'otro') {
             $razon = self::texto($f['razon_social'] ?? '', 300);
@@ -155,13 +158,13 @@ final class Facturacion
                 throw new Fallo(strlen($id) === 13 ? 'El RUC ' . $id . ' no es válido. Revísalo (13 números) o elige otra opción de factura.'
                     : 'La cédula ' . $id . ' no es válida. Revísala o elige otra opción de factura.', 422, ['codigo' => strlen($id) === 13 ? 'factura_ruc_invalido' : 'factura_cedula_invalida']);
             }
-            return ['modo' => 'otro', 'tipo_id' => $tipo, 'identificacion' => $id, 'razon_social' => mb_strtoupper($razon), 'email' => $email, 'telefono' => $tel, 'direccion' => $dir];
+            return ['modo' => 'otro', 'tipo_id' => $tipo, 'identificacion' => $id, 'razon_social' => mb_strtoupper($razon), 'email' => $email, 'telefono' => $tel, 'direccion' => $dir, 'pais' => $pais, 'ciudad' => $ciudad];
         }
         $id = (string) ($comprador['cedula'] ?? '');
         $tipo = self::tipoIdentificacion($id);
         if ($tipo === null) throw new Fallo('La cédula del titular (' . $id . ') no es válida para la factura. Revísala o elige «Consumidor final».', 422, ['codigo' => 'factura_cedula_invalida']);
         $razon = mb_strtoupper(self::texto($comprador['nombre'] ?? trim(($comprador['nombres'] ?? '') . ' ' . ($comprador['apellidos'] ?? '')), 300));
-        return ['modo' => 'titular', 'tipo_id' => $tipo, 'identificacion' => $id, 'razon_social' => $razon, 'email' => $email, 'telefono' => $tel, 'direccion' => $dir];
+        return ['modo' => 'titular', 'tipo_id' => $tipo, 'identificacion' => $id, 'razon_social' => $razon, 'email' => $email, 'telefono' => $tel, 'direccion' => $dir, 'pais' => $pais, 'ciudad' => $ciudad];
     }
 
     /** Guarda lo que eligió el comprador (se usa al aprobar la compra). Nunca datos de tarjeta. */
@@ -197,6 +200,10 @@ final class Facturacion
             . '<label class="ancho">Cédula, RUC o pasaporte<input id="fact-identificacion" maxlength="20" inputmode="text" autocomplete="off" placeholder="1790012345001"></label>'
             . '<label class="ancho">Nombre o razón social<input id="fact-razon" maxlength="300" autocomplete="organization"></label>'
             . '<label class="ancho">Correo para la factura<input id="fact-email" type="email" maxlength="120" autocomplete="email" value="' . $e((string) ($jugador['email'] ?? '')) . '"></label>'
+            . '</div>'
+            . '<div class="campos" id="fact-pais-ciudad">'
+            . '<label>País<input id="fact-pais" maxlength="60" autocomplete="country-name" value="Ecuador"></label>'
+            . '<label>Ciudad<input id="fact-ciudad" maxlength="80" autocomplete="address-level2"></label>'
             . '</div>'
             . '<div class="campos" id="fact-dir"><label class="ancho">Dirección (opcional)<input id="fact-direccion" maxlength="300" autocomplete="street-address"></label></div>'
             . '<p class="tenue">Te enviamos la factura autorizada por el SRI a tu correo. Con «Consumidor final» la factura no lleva tus datos y después no se puede cambiar.</p>'

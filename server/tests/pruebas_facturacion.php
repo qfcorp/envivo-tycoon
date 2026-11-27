@@ -484,6 +484,33 @@ check('errores_nuevos/facturacion.json: los 10 idiomas de errores.json, cada uno
 check('Cada código que manda el servidor está traducido', $usados, array_values(array_intersect($cs, $usados)));
 
 // =====================================================================
+titulo('País y Ciudad en los datos de la factura (27 nov 2026): se guardan y se mandan al Panel sin cambiar el precio');
+$html = Facturacion::htmlPago(['total' => 5.75], ['email' => 'x@prueba.example']);
+check('La página de pago trae País (con Ecuador por defecto) y Ciudad', [true, true, true], [str_contains($html, 'id="fact-pais"') && str_contains($html, 'value="Ecuador"'), str_contains($html, 'id="fact-ciudad"'), str_contains($html, 'País')]);
+$js = (string) file_get_contents($SRV . '/public/assets/factura.js');
+check('factura.js manda pais y ciudad en las tres opciones', 3, substr_count($js, 'pais: pais, ciudad: ciudad'));
+$jP = $nuevoJugador('PaisCiudad');
+$cDef = $compraPlux($jP, 'creditos_250');
+$g = json_decode((string) Db::valor('SELECT datos_json FROM facturacion_datos_compra WHERE compra_id = ?', [$cDef]), true);
+check('Sin País: queda Ecuador y Ciudad vacía', ['Ecuador', ''], [$g['pais'] ?? null, $g['ciudad'] ?? null]);
+$cEx = $compraPlux($jP, 'creditos_250', ['modo' => 'otro', 'identificacion' => 'AB123456', 'razon_social' => 'John Smith', 'email' => 'john@example.com', 'pais' => 'Colombia', 'ciudad' => 'Bogotá <b>']);
+$g = json_decode((string) Db::valor('SELECT datos_json FROM facturacion_datos_compra WHERE compra_id = ?', [$cEx]), true);
+check('Pasaporte con País Colombia y Ciudad (sin etiquetas): se guardan', ['Colombia', 'Bogotá b', '06'], [$g['pais'] ?? null, $g['ciudad'] ?? null, $g['tipo_id'] ?? null]);
+$cEc = $compraPlux($jP, 'creditos_250', ['modo' => 'titular', 'pais' => 'Colombia', 'ciudad' => 'Bogotá']);
+$vEx = \EnVivo\PanelVentas::datosVenta(Compras::porId($cEx), false);
+$vEc = \EnVivo\PanelVentas::datosVenta(Compras::porId($cEc), false);
+$cRow = Compras::porId($cEx);
+check('Exterior: el Panel recibe exterior = true, subtotal = total y País / Ciudad', [true, round((float) $cRow['total'], 2), round((float) $cRow['total'], 2), 'Colombia', 'Bogotá b', 'Colombia'],
+    [$vEx['exterior'], $vEx['subtotal'], $vEx['total'], $vEx['comprador']['pais'], $vEx['comprador']['ciudad'], $vEx['factura']['pais']]);
+check('El cobro NO cambia: el total mandado al Panel del extranjero es el mismo que el de la compra con Ecuador', round((float) Compras::porId($cDef)['total'], 2), $vEx['total']);
+check('Cédula ecuatoriana válida PREVALECE sobre País Colombia: con IVA (subtotal del desglose)', [false, round((float) Compras::porId($cEc)['subtotal'], 2)], [$vEc['exterior'], $vEc['subtotal']]);
+$vDef = \EnVivo\PanelVentas::datosVenta(Compras::porId($cDef), false);
+check('País Ecuador por defecto: con IVA, subtotal del desglose', [false, round((float) Compras::porId($cDef)['subtotal'], 2)], [$vDef['exterior'], $vDef['subtotal']]);
+check('Exterior::esExterior: orden de la regla', [false, true, false, true, true, false],
+    array_map(fn($c) => \EnVivo\Exterior::esExterior($c), [['identificacion' => '1710034065', 'pais' => 'Peru'], ['identificacion' => 'X1', 'pais' => 'Peru'], ['identificacion' => 'X1', 'pais' => 'ecuador'],
+        ['ciudad' => 'Miami, Estados Unidos'], ['tipo_id' => '08'], []]));
+
+// =====================================================================
 foreach ($procs as $p) { proc_terminate($p); proc_close($p); }
 $errores = is_file($TMP . '/php_errores.log') ? trim((string) file_get_contents($TMP . '/php_errores.log')) : '';
 check('Sin errores ni avisos de PHP en los servidores', '', $errores);

@@ -109,3 +109,6 @@ tarjeta decía «Sin conexión: el conector está apagado o no existe (404)». A
 | `src/PanelVentas.php`, `src/migraciones/panel_ventas.sql` | Cola de ventas y reversos, firma y envío al Panel |
 | `bin/panel_ventas.php`, `deploy/conectar_central.sh` | Revisar, mandar a mano, conectar |
 | `tests/pruebas_panel_ventas.php` | 25 pruebas de punta a punta: juego → Panel de verdad → TuFactura de mentira |
+
+## País y Ciudad (27 nov 2026)
+La página de pago manda también `factura.pais` (por defecto Ecuador) y `factura.ciudad`. Al Panel Tukán se le envía `comprador.pais/ciudad` y `factura.pais/ciudad`; si la regla de exterior aplica (cédula/RUC ecuatoriano válido => con IVA; si no, país distinto de Ecuador => exterior) se manda `exterior: true` y subtotal = total (el Panel lo exige). El precio cobrado no cambia; el ajuste de precio para extranjeros está pendiente de decisión de Dimitry (ver BLOC_DE_NOTAS.md).
